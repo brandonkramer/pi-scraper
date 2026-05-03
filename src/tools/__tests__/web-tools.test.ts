@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { ModelAdapter, ModelRequest } from "../../extract/model.js";
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.js";
 import type { ResultEnvelope } from "../../types.js";
-import type { WebTool } from "../define.js";
+import type { RenderComponent, WebTool } from "../define.js";
+import { registerWebTools } from "../register.js";
 import { createWebExtractTool, webExtractTool } from "../web-extract.js";
 import { webListExtractorsTool } from "../web-list-extractors.js";
-import { registerWebTools } from "../register.js";
 import { createWebSummarizeTool } from "../web-summarize.js";
 
 const signal = new AbortController().signal;
@@ -150,18 +150,24 @@ describe("selected web tool handlers", () => {
 
 	it("renders compact calls and expanded results", async () => {
 		const result = await webListExtractorsTool.execute("call", {}, signal);
-		expect(webListExtractorsTool.renderCall?.({}, undefined)).toBe(
-			"web_list_extractors",
-		);
 		expect(
-			webListExtractorsTool.renderResult?.(
-				result,
-				{ expanded: true },
-				undefined,
+			renderComponentText(webListExtractorsTool.renderCall?.({}, undefined)),
+		).toBe("web_list_extractors");
+		expect(
+			renderComponentText(
+				webListExtractorsTool.renderResult?.(
+					result,
+					{ expanded: true },
+					undefined,
+				),
 			),
 		).toContain("extractor");
 	});
 });
+
+function renderComponentText(component: RenderComponent | undefined): string {
+	return component?.render(80).join("\n") ?? "";
+}
 
 function fakeModelAdapter(
 	respond: (request: ModelRequest) => unknown,

@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { PiToolShell, ResultEnvelope } from "../../types.js";
+import type { RenderComponent } from "../define.js";
 import { webTools } from "../register.js";
 
 let homeDir: string;
@@ -39,11 +40,14 @@ describe("registered web tools smoke test", () => {
 			expect(result.content[0]?.type).toBe("text");
 			expect(typeof result.content[0]?.text).toBe("string");
 			expect(result.details).toBeTruthy();
-			expect(tool.renderCall?.(params as never, undefined)).toContain(
-				tool.name,
+			const callText = renderComponentText(
+				tool.renderCall?.(params as never, undefined),
 			);
+			expect(callText).toContain(tool.name);
 			expect(
-				tool.renderResult?.(result, { expanded: false }, undefined),
+				renderComponentText(
+					tool.renderResult?.(result, { expanded: false }, undefined),
+				),
 			).toBeTruthy();
 
 			const envelope = result.details as ResultEnvelope;
@@ -64,6 +68,10 @@ describe("registered web tools smoke test", () => {
 		});
 	}
 });
+
+function renderComponentText(component: RenderComponent | undefined): string {
+	return component?.render(80).join("\n") ?? "";
+}
 
 function smokeParams(name: string): unknown {
 	switch (name) {
