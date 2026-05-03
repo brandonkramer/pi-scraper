@@ -1,59 +1,174 @@
-import { afterEach, describe, expect, it } from "vitest";
 import { MockAgent } from "undici";
-import { getFingerprintFetchAdapter, UnsupportedFingerprintOptionError } from "../fingerprint.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+	createFingerprintFetchAdapter,
+	type FingerprintBackendFactory,
+	type FingerprintRequestBackend,
+	getFingerprintFetchAdapter,
+	registerFingerprintBackendFactory,
+} from "../fingerprint.js";
 
-const agents: MockAgent[] = [];
+let agents: MockAgent[] = [];
 
 afterEach(async () => {
-  await Promise.all(agents.map((agent) => agent.close()));
-  agents.length = 0;
+	await Promise.all(agents.map((agent) => agent.close()));
+	agents = [];
 });
 
-describe("fingerprint adapter", () => {
-  it("exposes a pooled static adapter boundary without Playwright", async () => {
-    const agent = new MockAgent();
-    agent.disableNetConnect();
-    agents.push(agent);
-    agent.get("https://example.com").intercept({ path: "/robots.txt" }).reply(404, "");
-    agent.get("https://example.com").intercept({ path: "/" }).reply(200, "fingerprint", {
-      headers: { "content-type": "text/plain" },
-    });
+function mockAgent(): MockAgent {
+	const agent = new MockAgent();
+	agent.disableNetConnect();
+	agents.push(agent);
+	return agent;
+}
 
-    const adapter = getFingerprintFetchAdapter(
-      { browserProfile: "chrome", osProfile: "mac" },
-      { dispatcher: agent, resolveDns: false },
-    );
-    expect(getFingerprintFetchAdapter({ browserProfile: "chrome", osProfile: "mac" })).toBe(adapter);
+function allowRobots(agent: MockAgent, origin: string): void {
+	agent.get(origin).intercept({ path: "/robots.txt" }).reply(404, "");
+}
 
-    await expect(adapter.fetch("https://example.com/")).resolves.toMatchObject({ text: "fingerprint" });
-  });
+describe("fingerprint fetch adapter", () => {
+	it("uses an injected single-hop backend and pools it by profile and host", async () => {
+		const agent = mockAgent();
+		allowRobots(agent, "https://example.com");
+		const backend: FingerprintRequestBackend = {
+			fetchOnce: vi.fn(async () => ({
+				status: 200,
+				headers: { "content-type": "text/html" },
+				body: "<html><body>fingerprinted</body></html>",
+			})),
+		};
+		const factory: FingerprintBackendFactory = vi.fn(() => backend);
+		const adapter = createFingerprintFetchAdapter(
+			factory,
+			{ browserProfile: "chrome120", osProfile: "macos" },
+			{ dispatcher: agent, resolveDns: false },
+		);
 
-  it("rejects proxy options explicitly until a proxy-capable backend exists", async () => {
-    const adapter = getFingerprintFetchAdapter({ browserProfile: "no-proxy", osProfile: "test" });
+		await expect(
+			adapter.fetch("https://example.com/a", { respectRobots: true }),
+		).resolves.toMatchObject({
+			url: "https://example.com/a",
+			finalUrl: "https://example.com/a",
+			status: 200,
+			text: "<html><body>fingerprinted</body></html>",
+		});
+		await adapter.fetch("https://example.com/b", { respectRobots: false });
 
-    expect(() => getFingerprintFetchAdapter({ proxy: "http://proxy.example" })).toThrow(UnsupportedFingerprintOptionError);
-    await expect(adapter.fetch("https://example.com/", { proxy: "http://proxy.example" })).rejects.toMatchObject({
-      structured: { code: "UNSUPPORTED_FINGERPRINT_OPTION", phase: "fingerprint" },
-    });
-  });
+		expect(factory).toHaveBeenCalledTimes(1);
+		expect(factory).toHaveBeenCalledWith({
+			browserProfile: "chrome120",
+			osProfile: "macos",
+			host: "example.com",
+			proxy: undefined,
+		});
+		expect(backend.fetchOnce).toHaveBeenCalledWith(
+			"https://example.com/a",
+			expect.objectContaining({
+				browserProfile: "chrome120",
+				osProfile: "macos",
+				headers: expect.objectContaining({
+					accept: expect.stringContaining("text/html"),
+					"upgrade-insecure-requests": "1",
+				}),
+			}),
+			expect.any(AbortSignal),
+		);
+	});
 
-  it("uses browser-like headers but does not claim full TLS/proxy emulation", async () => {
-    const agent = new MockAgent();
-    agent.disableNetConnect();
-    agents.push(agent);
-    agent.get("https://headers.example").intercept({ path: "/robots.txt" }).reply(404, "");
-    agent.get("https://headers.example").intercept({
-      path: "/",
-      headers: {
-        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "accept-language": "en-US,en;q=0.9",
-      },
-    }).reply(200, "headers", { headers: { "content-type": "text/plain" } });
+	it("reports a structured missing-backend error when no backend is configured", () => {
+		expect(() => getFingerprintFetchAdapter()).toThrowError(
+			expect.objectContaining({
+				structured: expect.objectContaining({
+					code: "FINGERPRINT_BACKEND_MISSING",
+					phase: "fingerprint",
+				}),
+			}),
+		);
+	});
 
-    const adapter = getFingerprintFetchAdapter(
-      { browserProfile: "baseline-docs", osProfile: "test" },
-      { dispatcher: agent, resolveDns: false },
-    );
-    await expect(adapter.fetch("https://headers.example/")).resolves.toMatchObject({ text: "headers" });
-  });
+	it("uses a registered backend factory for configured fingerprint mode", async () => {
+		const agent = mockAgent();
+		allowRobots(agent, "https://configured.example");
+		const backend: FingerprintRequestBackend = {
+			fetchOnce: vi.fn(async () => ({
+				status: 200,
+				headers: { "content-type": "text/plain" },
+				body: "configured",
+			})),
+		};
+		const unregister = registerFingerprintBackendFactory(() => backend);
+		try {
+			const adapter = getFingerprintFetchAdapter(
+				{ browserProfile: "chrome" },
+				{ dispatcher: agent, resolveDns: false },
+			);
+			await expect(
+				adapter.fetch("https://configured.example/"),
+			).resolves.toMatchObject({ text: "configured" });
+		} finally {
+			unregister();
+		}
+	});
+
+	it("rejects proxy options until a backend can enforce proxy safety", async () => {
+		const adapter = createFingerprintFetchAdapter(() => ({
+			fetchOnce: vi.fn(),
+		}));
+
+		await expect(
+			adapter.fetch("https://example.com/", {
+				proxy: "http://proxy.example:8080",
+				respectRobots: false,
+			}),
+		).rejects.toMatchObject({
+			structured: {
+				code: "UNSUPPORTED_FINGERPRINT_OPTION",
+				phase: "fingerprint",
+			},
+		});
+	});
+
+	it("blocks unsafe initial URLs before invoking the backend", async () => {
+		const backend: FingerprintRequestBackend = { fetchOnce: vi.fn() };
+		const adapter = createFingerprintFetchAdapter(() => backend);
+
+		await expect(
+			adapter.fetch("http://127.0.0.1/private", { respectRobots: false }),
+		).rejects.toMatchObject({
+			structured: {
+				code: "PRIVATE_NETWORK_ADDRESS",
+				phase: "url_safety",
+			},
+		});
+		expect(backend.fetchOnce).not.toHaveBeenCalled();
+	});
+
+	it("revalidates redirect hops before requesting the next URL", async () => {
+		const agent = mockAgent();
+		allowRobots(agent, "https://example.com");
+		const backend: FingerprintRequestBackend = {
+			fetchOnce: vi.fn(async () => ({
+				status: 302,
+				headers: { location: "http://127.0.0.1/private" },
+			})),
+		};
+		const adapter = createFingerprintFetchAdapter(
+			() => backend,
+			{},
+			{
+				dispatcher: agent,
+				resolveDns: false,
+			},
+		);
+
+		await expect(
+			adapter.fetch("https://example.com/start"),
+		).rejects.toMatchObject({
+			structured: {
+				code: "PRIVATE_NETWORK_ADDRESS",
+				phase: "url_safety",
+			},
+		});
+		expect(backend.fetchOnce).toHaveBeenCalledTimes(1);
+	});
 });

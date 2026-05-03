@@ -13,7 +13,7 @@ import { createHttpClient, HttpClientError } from "../http/client.js";
 import type { FingerprintFetchAdapter } from "../http/fingerprint.js";
 import {
 	getFingerprintFetchAdapter,
-	UnsupportedFingerprintOptionError,
+	isFingerprintFetchError,
 } from "../http/fingerprint.js";
 import { extractFastPage } from "../parse/fast.js";
 import {
@@ -129,7 +129,7 @@ async function scrapeByMode(
 	if (mode === "readable") return withReadable(fast, deps);
 
 	const signals = fast.data.signals;
-	if (signals?.blockedLikely) {
+	if (signals?.shouldTryFingerprint) {
 		const fingerprint = await tryFingerprint(
 			input,
 			format,
@@ -466,7 +466,7 @@ function structuredError(error: unknown, url: string): StructuredError {
 	if (
 		error instanceof BrowserRenderError ||
 		error instanceof HttpClientError ||
-		error instanceof UnsupportedFingerprintOptionError
+		isFingerprintFetchError(error)
 	)
 		return { url, ...error.structured };
 	return {

@@ -8,7 +8,7 @@ import {
 } from "../../browser/playwright.js";
 import type { FetchUrlResult } from "../../http/client.js";
 import type { FingerprintFetchAdapter } from "../../http/fingerprint.js";
-import { scrapeUrl, type ScrapePipelineDeps } from "../pipeline.js";
+import { type ScrapePipelineDeps, scrapeUrl } from "../pipeline.js";
 
 const URL = "https://example.com/page";
 const rootDir = path.resolve(
@@ -30,6 +30,20 @@ describe("scrapeUrl", () => {
 		expect(result.data.title).toBe("Static Article");
 		expect(result.data.markdown).toContain("Hello static world");
 		expect(browser.calls()).toBe(0);
+	});
+
+	it("does not try fingerprint mode for ordinary auto pages", async () => {
+		const fingerprint: FingerprintFetchAdapter = {
+			fetch: vi.fn(async () => htmlResponse(articleHtml())),
+		};
+		const result = await scrapeUrl(
+			URL,
+			{ mode: "auto" },
+			deps(htmlResponse(articleHtml()), { fingerprintAdapter: fingerprint }),
+		);
+
+		expect(result.mode).toBe("fast");
+		expect(fingerprint.fetch).not.toHaveBeenCalled();
 	});
 
 	it("escalates to readable when readable extraction is better", async () => {
@@ -67,6 +81,16 @@ describe("scrapeUrl", () => {
 		expect(result.data.text).toContain("Island Title");
 		expect(result.data.signals?.reasons).toContain("rich_data_islands");
 		expect(browser.calls()).toBe(0);
+	});
+
+	it("returns structured missing-backend errors for explicit fingerprint mode", async () => {
+		const result = await scrapeUrl(URL, { mode: "fingerprint" });
+
+		expect(result.mode).toBe("fingerprint");
+		expect(result.error).toMatchObject({
+			code: "FINGERPRINT_BACKEND_MISSING",
+			phase: "fingerprint",
+		});
 	});
 
 	it("routes PDFs through the PDF extraction boundary", async () => {

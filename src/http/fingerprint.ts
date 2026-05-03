@@ -1,89 +1,101 @@
-import type { StructuredError } from "../types.js";
-import type { FetchUrlOptions, FetchUrlResult, HttpClientOptions } from "./client.js";
-import { HttpClient } from "./client.js";
+import type { HttpClientOptions } from "./client.js";
+import { SafeFingerprintAdapter } from "./fingerprint-adapter.js";
+import {
+	assertSupportedFingerprintOptions,
+	MissingFingerprintBackendError,
+	UnsupportedFingerprintOptionError,
+	isFingerprintFetchError,
+	type FingerprintBackendFactory,
+	type FingerprintBackendKey,
+	type FingerprintBackendRequestOptions,
+	type FingerprintBackendResponse,
+	type FingerprintFetchAdapter,
+	type FingerprintFetchOptions,
+	type FingerprintProfile,
+	type FingerprintRequestBackend,
+} from "./fingerprint-types.js";
 
-export interface FingerprintProfile {
-  browserProfile?: string;
-  osProfile?: string;
-  proxy?: string;
-}
+export {
+	MissingFingerprintBackendError,
+	UnsupportedFingerprintOptionError,
+	isFingerprintFetchError,
+	type FingerprintBackendFactory,
+	type FingerprintBackendKey,
+	type FingerprintBackendRequestOptions,
+	type FingerprintBackendResponse,
+	type FingerprintFetchAdapter,
+	type FingerprintFetchOptions,
+	type FingerprintProfile,
+	type FingerprintRequestBackend,
+};
 
-export interface FingerprintFetchOptions extends FetchUrlOptions, FingerprintProfile {}
+const adapterPool = new Map<string, FingerprintFetchAdapter>();
+let registeredBackendFactory: FingerprintBackendFactory | undefined;
 
-export interface FingerprintFetchAdapter {
-  fetch(url: string | URL, options?: FingerprintFetchOptions, signal?: AbortSignal): Promise<FetchUrlResult>;
-}
-
-const pool = new Map<string, FingerprintFetchAdapter>();
-
-export class UnsupportedFingerprintOptionError extends Error {
-  readonly structured: StructuredError;
-
-  constructor(option: string) {
-    super(`Fingerprint fallback does not support ${option} yet`);
-    this.name = "UnsupportedFingerprintOptionError";
-    this.structured = {
-      code: "UNSUPPORTED_FINGERPRINT_OPTION",
-      phase: "fingerprint",
-      message: this.message,
-      retryable: false,
-    };
-  }
+export function registerFingerprintBackendFactory(
+	factory: FingerprintBackendFactory,
+): () => void {
+	registeredBackendFactory = factory;
+	adapterPool.clear();
+	return () => {
+		if (registeredBackendFactory === factory) {
+			registeredBackendFactory = undefined;
+			adapterPool.clear();
+		}
+	};
 }
 
 /**
- * Current baseline boundary for fingerprinted static fetching.
+ * Resolves the optional fingerprint fetch adapter.
  *
- * Browser and OS profile fields are honored only as pool keys today. Proxy is
- * rejected explicitly until a real proxy-capable fingerprint backend exists.
- * The fallback adapter does not yet emulate a full browser TLS/HTTP
- * fingerprint. It intentionally reuses the safe Undici HTTP path with
- * browser-like request headers so callers can wire `mode: "fingerprint"`
- * without pulling in Playwright or overpromising anti-bot behavior. A future
- * optional backend can replace `StaticFingerprintAdapter` behind this boundary.
+ * @remarks
+ * pi-scraper does not bundle a TLS/HTTP impersonation backend because candidate
+ * packages must expose no-follow-redirect semantics and must not hide DNS or
+ * proxy behavior from the shared SSRF policy. Installers may register a backend
+ * factory explicitly; absence is reported as a structured unsupported result.
  */
 export function getFingerprintFetchAdapter(
-  profile: FingerprintProfile = {},
-  clientOptions: HttpClientOptions = {},
+	profile: FingerprintProfile = {},
+	clientOptions: HttpClientOptions = {},
 ): FingerprintFetchAdapter {
-  assertSupportedFingerprintOptions(profile);
-  const key = JSON.stringify({
-    browserProfile: profile.browserProfile ?? "default",
-    osProfile: profile.osProfile ?? "default",
-  });
-  const existing = pool.get(key);
-  if (existing) {
-    return existing;
-  }
+	assertSupportedFingerprintOptions(profile);
+	const factory = registeredBackendFactory;
+	if (!factory) {
+		throw new MissingFingerprintBackendError();
+	}
 
-  const adapter = new StaticFingerprintAdapter(clientOptions);
-  pool.set(key, adapter);
-  return adapter;
+	const key = adapterPoolKey(profile, clientOptions);
+	const existing = adapterPool.get(key);
+	if (existing) return existing;
+
+	const adapter = createFingerprintFetchAdapter(
+		factory,
+		profile,
+		clientOptions,
+	);
+	adapterPool.set(key, adapter);
+	return adapter;
 }
 
-function assertSupportedFingerprintOptions(profile: FingerprintProfile): void {
-  if (profile.proxy) {
-    throw new UnsupportedFingerprintOptionError("proxy");
-  }
+export function createFingerprintFetchAdapter(
+	factory: FingerprintBackendFactory,
+	profile: FingerprintProfile = {},
+	clientOptions: HttpClientOptions = {},
+): FingerprintFetchAdapter {
+	assertSupportedFingerprintOptions(profile);
+	return new SafeFingerprintAdapter(factory, profile, clientOptions);
 }
 
-class StaticFingerprintAdapter implements FingerprintFetchAdapter {
-  private readonly client: HttpClient;
-
-  constructor(clientOptions: HttpClientOptions) {
-    this.client = new HttpClient(clientOptions);
-  }
-
-  async fetch(url: string | URL, options: FingerprintFetchOptions = {}, signal?: AbortSignal): Promise<FetchUrlResult> {
-    assertSupportedFingerprintOptions(options);
-    return this.client.fetchUrl(url, {
-      ...options,
-      headers: {
-        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "accept-language": "en-US,en;q=0.9",
-        "upgrade-insecure-requests": "1",
-        ...options.headers,
-      },
-    }, signal);
-  }
+function adapterPoolKey(
+	profile: FingerprintProfile,
+	options: HttpClientOptions,
+): string {
+	return JSON.stringify({
+		browserProfile: profile.browserProfile ?? "chrome",
+		osProfile: profile.osProfile ?? "default",
+		proxy: profile.proxy,
+		allowPrivateNetwork: options.allowPrivateNetwork === true,
+		resolveDns: options.resolveDns !== false,
+		maxRedirects: options.maxRedirects ?? 5,
+	});
 }
