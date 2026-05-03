@@ -87,7 +87,7 @@ describe("packed pi-scraper extension", () => {
 		const events = [];
 		register({
 			registerTool: (tool) => tools.push(tool.name),
-			registerCommand: (command) => commands.push(command.name),
+			registerCommand: (name, _definition) => commands.push(name),
 			on: (event) => events.push(event),
 		});
 		expect(tools.sort()).toEqual([...expectedTools].sort());
