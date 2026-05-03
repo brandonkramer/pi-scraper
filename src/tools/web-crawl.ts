@@ -17,7 +17,7 @@ export const webCrawlSchema = Type.Object({
 	crawlId: Type.Optional(
 		Type.String({
 			description:
-				"Stable crawl id for persisted state under ~/.pi/crawl/<crawlId>/.",
+				"Stable crawl id for persisted state under ~/.pi/pi-scraper/crawl/<crawlId>/.",
 		}),
 	),
 	resume: Type.Optional(

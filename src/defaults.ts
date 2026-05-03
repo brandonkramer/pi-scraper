@@ -61,8 +61,8 @@ export const DEFAULT_RETRY = {
 } as const;
 
 export const DEFAULT_STORAGE_PATHS = {
-	crawl: "~/.pi/crawl",
-	snapshots: "~/.pi/snapshots",
+	crawl: "~/.pi/pi-scraper/crawl",
+	snapshots: "~/.pi/pi-scraper/snapshots",
 } as const;
 
 export const COMMON_TRACKING_QUERY_PARAMS = [

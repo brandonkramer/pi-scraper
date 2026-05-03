@@ -30,7 +30,7 @@ export const webDiffTool = defineWebTool({
 	name: "web_diff",
 	label: "Web Diff",
 	description:
-		"Re-scrape one URL with the shared pipeline, compare to an unnamed or named snapshot, and store deterministic snapshot metadata under ~/.pi/snapshots/.",
+		"Re-scrape one URL with the shared pipeline, compare to an unnamed or named snapshot, and store deterministic snapshot metadata under ~/.pi/pi-scraper/snapshots/.",
 	parameters: webDiffSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		await emitProgress(onUpdate, {
