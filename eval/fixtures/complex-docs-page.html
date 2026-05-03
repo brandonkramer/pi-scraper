@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Widget SDK Documentation</title>
+    <meta
+      name="description"
+      content="Reference documentation for the Widget SDK."
+    />
+  </head>
+  <body>
+    <header>
+      <nav><a href="/docs">Docs</a><a href="/changelog">Changelog</a></nav>
+    </header>
+    <main>
+      <article>
+        <h1>Widget SDK Documentation</h1>
+        <p>
+          The Widget SDK lets agents crawl, map, and extract structured data
+          from content systems.
+        </p>
+        <h2>Install</h2>
+        <pre><code>npm install @example/widget-sdk
+node examples/quickstart.mjs</code></pre>
+        <h2>Quickstart</h2>
+        <ol>
+          <li>Create a client with <code>new WidgetClient()</code>.</li>
+          <li>Call <code>client.scrape(url)</code> with a public HTTPS URL.</li>
+          <li>
+            Persist the returned <code>responseId</code> for later retrieval.
+          </li>
+        </ol>
+        <blockquote>
+          <p>
+            Tip: use <code>mode: "fast"</code> for static pages and escalate
+            only when needed.
+          </p>
+        </blockquote>
+        <h2>Options</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>timeoutSeconds</code></td>
+              <td>30</td>
+              <td>Network timeout.</td>
+            </tr>
+            <tr>
+              <td><code>respectRobots</code></td>
+              <td>true</td>
+              <td>Honor robots.txt.</td>
+            </tr>
+          </tbody>
+        </table>
+        <h2>Links</h2>
+        <p>
+          See the <a href="https://example.com/api">API reference</a> and
+          <a href="https://example.com/guides">guides</a>.
+        </p>
+      </article>
+    </main>
+  </body>
+</html>

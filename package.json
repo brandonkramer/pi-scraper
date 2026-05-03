@@ -1,0 +1,78 @@
+{
+  "name": "pi-scraper",
+  "version": "0.1.0",
+  "description": "Crawl, map, and structured extraction for Pi — scraper-first, Pi-native, and local-first.",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "scraping",
+    "crawler",
+    "web-scraping",
+    "structured-extraction",
+    "firecrawl"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "src",
+    "!src/**/*.test.ts",
+    "!src/**/__tests__/**",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:tools": "vitest run src/tools/__tests__/tools-smoke.test.ts --reporter=verbose",
+    "smoke:install": "node bench/scripts/install-smoke.mjs",
+    "smoke:live": "vitest run src/tools/__tests__/tools-smoke.live.test.ts --reporter=verbose",
+    "smoke:browser": "vitest run src/browser/__tests__/browser-smoke.test.ts --reporter=verbose",
+    "audit:strict": "npm audit --omit=dev --audit-level=high",
+    "lint:workflows": "github-actionlint .github/workflows/*.yml",
+    "bench": "node bench/run-extraction-eval.mjs eval/corpus.json",
+    "compare:extract": "node bench/compare-extractors.mjs",
+    "compare:serialize": "node bench/compare-serializers.mjs",
+    "profile:linkedom": "node bench/profile-linkedom-parse.mjs",
+    "profile:markdown": "node bench/profile-turndown-rules.mjs",
+    "bench:tool-registration": "node bench/bench-tool-registration.mjs",
+    "prepublishOnly": "npm run typecheck"
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-ai": "*",
+    "@sinclair/typebox": "*"
+  },
+  "devDependencies": {
+    "@mariozechner/pi-ai": "latest",
+    "@sinclair/typebox": "latest",
+    "@types/node": "latest",
+    "@types/turndown": "^5.0.6",
+    "defuddle": "^0.18.1",
+    "github-actionlint": "^1.7.12",
+    "html-to-text": "^10.0.0",
+    "node-html-markdown": "^2.0.0",
+    "typescript": "latest",
+    "vitest": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=22.19.0",
+    "pi": ">=0.65.0"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "cheerio": "^1.2.0",
+    "linkedom": "^0.18.12",
+    "robots-parser": "^3.0.1",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
+    "undici": "^8.2.0"
+  }
+}

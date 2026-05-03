@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>How Local-First Crawlers Stay Fast</title>
+    <meta name="author" content="Casey Example" />
+  </head>
+  <body>
+    <main>
+      <article>
+        <h1>How Local-First Crawlers Stay Fast</h1>
+        <p>
+          Local-first crawlers win by avoiding browser work until content
+          signals justify it.
+        </p>
+        <figure>
+          <img src="/crawler-diagram.svg" alt="Crawler diagram" />
+          <figcaption>
+            Figure 1: a queue, a fetcher, and an extractor.
+          </figcaption>
+        </figure>
+        <h2>Pipeline</h2>
+        <p>The core loop is small:</p>
+        <ul>
+          <li>Normalize URLs and strip tracking parameters.</li>
+          <li>Fetch with strict byte caps and timeouts.</li>
+          <li>Recover data islands before launching a browser.</li>
+        </ul>
+        <h2>Escalation policy</h2>
+        <p>
+          Use <em>fast</em>, then <em>readable</em>, then <em>fingerprint</em>,
+          and only then <em>browser</em>.
+        </p>
+        <pre><code>if (signals.sparseDom && signals.hasDataIsland) {
+  return recoverFromJsonScripts(page)
+}</code></pre>
+        <h2>Results</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Mode</th>
+              <th>Latency</th>
+              <th>Quality</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>fast</td>
+              <td>low</td>
+              <td>good</td>
+            </tr>
+            <tr>
+              <td>browser</td>
+              <td>high</td>
+              <td>best for SPAs</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Read the
+          <a href="https://example.com/local-first-crawling">full paper</a>.
+        </p>
+      </article>
+    </main>
+  </body>
+</html>

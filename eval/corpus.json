@@ -1,0 +1,119 @@
+{
+  "corpusVersion": "2026-05-02",
+  "description": "Small offline pi-scraper eval corpus. Fixtures are synthetic and dev-only; live URL benchmarking should be deliberate and robots/politeness aware.",
+  "metrics": [
+    "fetch_ms",
+    "parse_ms",
+    "total_ms",
+    "downloaded_bytes",
+    "markdown_chars",
+    "visible_text_chars",
+    "estimated_tokens",
+    "extraction_quality_notes",
+    "noise_false_positive_notes"
+  ],
+  "cases": [
+    {
+      "id": "static-article",
+      "category": "static_article",
+      "goal": "Verify fast/static extraction and readable fallback quality on a normal article.",
+      "expectedSignals": [
+        "title",
+        "main_text",
+        "headings",
+        "links"
+      ]
+    },
+    {
+      "id": "complex-docs-page",
+      "category": "documentation",
+      "goal": "Verify headings, code-ish text, navigation-noise filtering, and stable markdown output.",
+      "expectedSignals": [
+        "headings",
+        "body_text",
+        "internal_links"
+      ]
+    },
+    {
+      "id": "complex-product-page",
+      "category": "product",
+      "goal": "Verify metadata, product-like content, JSON-LD/data-island recovery, and image-removal behavior.",
+      "expectedSignals": [
+        "metadata",
+        "json_ld",
+        "price_or_features"
+      ]
+    },
+    {
+      "id": "complex-article-page",
+      "category": "complex_article",
+      "goal": "Verify richer article structure with figures, lists, code blocks, tables, and outbound references.",
+      "expectedSignals": [
+        "title",
+        "main_text",
+        "headings",
+        "links"
+      ]
+    },
+    {
+      "id": "spa-data-islands",
+      "category": "spa",
+      "goal": "Verify sparse DOM detection and recovery from hydration/data-island payloads before browser escalation.",
+      "expectedSignals": [
+        "sparse_dom",
+        "data_island_text",
+        "no_unnecessary_browser"
+      ]
+    },
+    {
+      "id": "bot-block-page",
+      "category": "blocked",
+      "goal": "Verify block detection returns structured blocked/error signals rather than junk extraction.",
+      "expectedSignals": [
+        "blocked_signal",
+        "structured_error"
+      ]
+    },
+    {
+      "id": "pdf-document",
+      "category": "pdf",
+      "goal": "Verify PDF routing boundary and text extraction behavior when supported.",
+      "expectedSignals": [
+        "content_type_pdf",
+        "pdf_text_or_metadata"
+      ]
+    },
+    {
+      "id": "noisy-marketing-page",
+      "category": "marketing",
+      "goal": "Verify noise filtering plus recovery of useful H1/hero text, announcements, CTA links, and footer sitemap links.",
+      "expectedSignals": [
+        "hero_text",
+        "section_headings",
+        "footer_links",
+        "low_noise"
+      ]
+    },
+    {
+      "id": "large-docs-page",
+      "category": "large_documentation",
+      "goal": "Verify performance and signal preservation on a larger docs page with tables, code blocks, links, and a large JSON data island.",
+      "expectedSignals": [
+        "headings",
+        "body_text",
+        "internal_links",
+        "data_island_text"
+      ]
+    },
+    {
+      "id": "large-spa-data-islands",
+      "category": "large_spa",
+      "goal": "Verify sparse DOM detection and recovery performance on a larger hydration payload without browser escalation.",
+      "expectedSignals": [
+        "sparse_dom",
+        "data_island_text",
+        "no_unnecessary_browser"
+      ]
+    }
+  ]
+}

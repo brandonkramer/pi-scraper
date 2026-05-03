@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# bench artifacts (dev-only)
+bench/.eval-runner-build/
+bench/.tool-registration-build/
+bench/results/
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+
+# coverage
+coverage/
+.nyc_output/
+
+# typescript incremental
+*.tsbuildinfo
+
+# npm pack output
+*.tgz
+
+# logs
+*.log
+
+# os
+.DS_Store
