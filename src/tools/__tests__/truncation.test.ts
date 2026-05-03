@@ -33,7 +33,7 @@ describe("tool retrieval for truncated full output", () => {
 		expect(truncated.text.length).toBeLessThan(fullText.length);
 		expect(truncated.metadata?.responseId).toBeTruthy();
 		expect(truncated.metadata?.fullOutputPath).toContain(
-			path.join(homeDir, ".pi", "pi-scraper", "results"),
+			path.join(homeDir, ".pi", "scraper", "results"),
 		);
 
 		const retrieved = await webGetResultTool.execute(

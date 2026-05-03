@@ -77,7 +77,7 @@ The package declares its extension entrypoint and packaged skills in `package.js
 | `web_map`             | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; does not extract page content. |
 | `web_batch`           | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results.                                                          |
 | `web_brand`           | Local; browser optional via mode                | Extract colors, fonts, logos, favicons, manifests, JSON-LD, Open Graph, and Twitter assets.                                         |
-| `web_diff`            | Local                                           | Re-scrape, normalize, compare against unnamed or named cached snapshots, and store metadata under `~/.pi/pi-scraper/snapshots/`.               |
+| `web_diff`            | Local                                           | Re-scrape, normalize, compare against unnamed or named cached snapshots, and store metadata under `~/.pi/scraper/snapshots/`.               |
 | `web_list_extractors` | Local                                           | List deterministic vertical extractors and their browser/cloud/LLM capability declarations.                                         |
 | `web_vertical_scrape` | Local/API depending on extractor                | Run known-site extractors that prefer public APIs/feeds over HTML scraping.                                                         |
 | `web_extract`         | Model/LLM                                       | Ad hoc schema or prompt extraction from one page after scraping clean text.                                                         |
@@ -106,11 +106,11 @@ Used by `web_scrape`, `web_batch`, `web_crawl`, `web_brand`, `web_diff`, and scr
 
 ### Diff snapshots
 
-`web_diff` stores snapshots under `~/.pi/pi-scraper/snapshots/` and returns a stored diff `responseId` for full details. Pass `snapshotName` to keep a repeatable baseline per URL, for example `web_diff({ url, snapshotName: "homepage" })`. Reusing the same `snapshotName` compares against and then replaces that named baseline.
+`web_diff` stores snapshots under `~/.pi/scraper/snapshots/` and returns a stored diff `responseId` for full details. Pass `snapshotName` to keep a repeatable baseline per URL, for example `web_diff({ url, snapshotName: "homepage" })`. Reusing the same `snapshotName` compares against and then replaces that named baseline.
 
 Use `web_get_result({ responseId })` to retrieve a stored diff result. Use `web_get_result({ snapshotUrl: url, snapshotName: "homepage" })` for current snapshot metadata, or `web_get_result({ listSnapshots: true, snapshotUrl: url })` to list known snapshots for a URL.
 
-Diff details include content and normalized hashes, scrape metadata, added/removed headings and links, metadata changes, paragraph-level changes, and an `unchangedAfterNormalization` flag when only conservative volatile patterns changed. There is no automatic snapshot retention policy yet; reuse stable `snapshotName` values for baselines or remove old files from `~/.pi/pi-scraper/snapshots/` when local storage growth matters.
+Diff details include content and normalized hashes, scrape metadata, added/removed headings and links, metadata changes, paragraph-level changes, and an `unchangedAfterNormalization` flag when only conservative volatile patterns changed. There is no automatic snapshot retention policy yet; reuse stable `snapshotName` values for baselines or remove old files from `~/.pi/scraper/snapshots/` when local storage growth matters.
 
 ### Crawl and map parameters
 
@@ -121,7 +121,7 @@ Diff details include content and normalized hashes, scrape metadata, added/remov
 | `sameOrigin`                     | Defaults to same-origin crawling.                                                             |
 | `include` / `exclude`            | URL pattern filters.                                                                          |
 | `concurrency` / per-host options | Bound crawl work while HTTP politeness also enforces host limits.                             |
-| `crawlId`                        | Resume/persist crawl state under `~/.pi/pi-scraper/crawl/<crawlId>/` where supported.                    |
+| `crawlId`                        | Resume/persist crawl state under `~/.pi/scraper/crawl/<crawlId>/` where supported.                    |
 | `resume`                         | For `web_crawl`, resume existing `crawlId` state; defaults to true when a saved crawl exists. |
 
 ## Scrape modes
@@ -184,10 +184,10 @@ Persistent paths:
 
 | Data         | Path                    |
 | ------------ | ----------------------- |
-| Config       | `~/.pi/pi-scraper/config/web.json` |
-| Full results | `~/.pi/pi-scraper/results/`        |
-| Crawl state  | `~/.pi/pi-scraper/crawl/`          |
-| Snapshots    | `~/.pi/pi-scraper/snapshots/`      |
+| Config       | `~/.pi/scraper/config/web.json` |
+| Full results | `~/.pi/scraper/results/`        |
+| Crawl state  | `~/.pi/scraper/crawl/`          |
+| Snapshots    | `~/.pi/scraper/snapshots/`      |
 
 ## Safety and anti-bot scope
 

@@ -16,10 +16,10 @@ afterEach(async () => {
 });
 
 describe("storage paths and results", () => {
-	it("resolves default runtime storage under ~/.pi/pi-scraper", () => {
+	it("resolves default runtime storage under ~/.pi/scraper", () => {
 		const paths = resolvePiStoragePaths();
 		expect(paths.root).toBe(
-			path.join(process.env.HOME ?? "", ".pi", "pi-scraper"),
+			path.join(process.env.HOME ?? "", ".pi", "scraper"),
 		);
 		expect(paths.results).toBe(path.join(paths.root, "results"));
 		expect(paths.crawl).toBe(path.join(paths.root, "crawl"));
