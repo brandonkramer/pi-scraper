@@ -8,6 +8,8 @@ Layout:
 - `compare-extractors.mjs` — extractor comparison entrypoint.
 - `compare-serializers.mjs` — serializer comparison entrypoint.
 - `profile-linkedom-parse.mjs` — isolates `linkedom.parseHTML()` cost on large fixtures and compares it with `cheerio.load()`.
+- `prototype-dom-adapters.mjs` — Cheerio-ectomy spike benchmark comparing current Cheerio usage with benchmark-only `linkedom` and `htmlparser2`/`css-select`/`domutils` adapter prototypes.
+- `cheerio-ectomy-decision.md` — decision note for the parser replacement spike.
 - `profile-turndown-rules.mjs` — profiles incremental Turndown/GFM/stable-link/normalization costs on large cleaned HTML fixtures.
 - `bench-tool-registration.mjs` — cold-process Pi tool registration benchmark for the compiled extension.
 - `harness/` — shared build, timing, reporting, and signal-evaluation code.
@@ -71,12 +73,15 @@ Raw Turndown is configured with the same base options as pi-scraper's wrapper (a
 npm run profile:linkedom              # large fixtures only, default warmup 5 / repeats 50
 npm run profile:linkedom -- --fixtures=large-docs-page,large-spa-data-islands
 npm run profile:markdown              # Turndown/GFM/stable-link profiling, default warmup 5 / repeats 50
+npm run spike:cheerio                 # Cheerio/linkedom/htmlparser2 adapter spike, default warmup 3 / repeats 20
 npm run bench:tool-registration       # cold Node process import + Pi registration, default warmup 3 / repeats 20
 ```
 
 `profile:linkedom` writes `linkedom-parse-<ISO>.json` and `linkedom-parse-latest.md`; it isolates `linkedom.parseHTML()` and `parseHTML()+querySelectorAll()` costs on large HTML fixtures, with `cheerio.load()` comparators for context.
 
 `profile:markdown` writes `turndown-rules-<ISO>.json` and `turndown-rules-latest.md`; it compares base Turndown, normalization, GFM, stable-link rules, image removal, and the runtime `htmlToMarkdown` wrapper on the cleaned HTML that `extractFastPage` returns.
+
+`spike:cheerio` writes `cheerio-ectomy-<ISO>.json` and `cheerio-ectomy-latest.md`; it is benchmark-only evidence for parser migration decisions and does not change runtime extraction behavior. The lower-level parser prototype intentionally imports `htmlparser2`, `css-select`, and `domutils` from the installed dependency graph; production source must declare direct dependencies before using those packages.
 
 `bench:tool-registration` compiles `src/index.ts` into `bench/.tool-registration-build/`, then measures a fresh Node process importing the compiled extension and registering tools, commands, and session handlers against a stub Pi registrar. Reports are written to `tool-registration-<ISO>.json` and `tool-registration-latest.md`.
 

@@ -44,6 +44,7 @@
     "profile:linkedom": "node bench/profile-linkedom-parse.mjs",
     "profile:markdown": "node bench/profile-turndown-rules.mjs",
     "bench:tool-registration": "node bench/bench-tool-registration.mjs",
+    "spike:cheerio": "node bench/prototype-dom-adapters.mjs",
     "prepublishOnly": "npm run typecheck"
   },
   "peerDependencies": {
