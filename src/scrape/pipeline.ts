@@ -22,7 +22,6 @@ import {
 	type RoutedContentKind,
 	routeContentType,
 } from "../parse/passthrough.js";
-import { extractPdfText } from "../parse/pdf.js";
 import { extractReadable, type ReadableExtraction } from "../parse/readable.js";
 import { normalizeWhitespace } from "../serialize/text.js";
 import type {
@@ -32,6 +31,7 @@ import type {
 	ScrapeMode,
 	StructuredError,
 } from "../types.js";
+import { pdfResult } from "./pdf-route.js";
 import { finishResult, materializeFormat, renderFormat } from "./render.js";
 import {
 	analyzeFastResult,
@@ -115,6 +115,7 @@ async function scrapeByMode(
 			"fingerprint",
 			format,
 			options,
+			signal,
 		);
 
 	const fast = await responseScrape(
@@ -122,6 +123,7 @@ async function scrapeByMode(
 		"fast",
 		format,
 		options,
+		signal,
 	);
 	if (mode === "fast" || fast.data.route !== "html") return fast;
 	if (mode === "readable") return withReadable(fast, deps);
@@ -215,6 +217,7 @@ async function responseScrape(
 	mode: ScrapeMode,
 	format: OutputFormat,
 	options: CommonScrapeOptions,
+	signal?: AbortSignal,
 ): Promise<ScrapeResult> {
 	const route = routeContentType(response.contentType, response.finalUrl);
 	const base = resultBase(
@@ -236,15 +239,14 @@ async function responseScrape(
 			},
 		};
 	if (route.kind === "pdf")
-		return {
-			...base,
-			data: {
-				route: "pdf",
-				extractionPath: [mode],
-				file: response.file,
-				pdf: await extractPdfText(response.body ?? new Uint8Array()),
-			},
-		};
+		return pdfResult(
+			base,
+			response.body ?? new Uint8Array(),
+			response.file,
+			format,
+			mode,
+			signal,
+		);
 	if (!route.shouldParseHtml)
 		return passthroughResult(
 			base,
@@ -365,7 +367,7 @@ async function browserScrape(
 		text: rendered.html,
 		downloadedBytes: Buffer.byteLength(rendered.html),
 	};
-	return responseScrape(response, "browser", format, options);
+	return responseScrape(response, "browser", format, options, signal);
 }
 
 async function tryFingerprint(
@@ -381,6 +383,7 @@ async function tryFingerprint(
 			"fingerprint",
 			format,
 			options,
+			signal,
 		);
 	} catch {
 		return undefined;

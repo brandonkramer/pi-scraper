@@ -78,8 +78,13 @@ function signalStatus(name, context) {
 		no_unnecessary_browser: !browserUsed,
 		blocked_signal: blocked,
 		structured_error: blocked,
-		content_type_pdf: fixtureExt === ".pdf",
-		pdf_text_or_metadata: fixtureExt === ".pdf",
+		content_type_pdf: fixtureExt === ".pdf" && scrape?.route === "pdf",
+		pdf_text_or_metadata:
+			fixtureExt === ".pdf" &&
+			(Boolean(scrape?.pdf?.ok && text.length > 0) ||
+				Boolean(
+					scrape?.pdf?.metadata && Object.keys(scrape.pdf.metadata).length > 0,
+				)),
 		hero_text: /class=["'][^"']*hero/iu.test(html),
 		section_headings: headingsCount >= 2,
 		footer_links: /<footer[\s>]/iu.test(html),
@@ -89,12 +94,7 @@ function signalStatus(name, context) {
 	};
 	if (!(name in pass))
 		return { status: "unverifiable_offline", details: "no_offline_heuristic" };
-	if (
-		["blocked_signal", "structured_error", "pdf_text_or_metadata"].includes(
-			name,
-		) &&
-		!pass[name]
-	) {
+	if (["blocked_signal", "structured_error"].includes(name) && !pass[name]) {
 		return {
 			status: "unverifiable_offline",
 			details: "requires_live_or_specialized_fixture",

@@ -63,7 +63,8 @@ export async function runEval({
 async function runCase(testCase, compiled, fixturesDir, rootDir, options) {
 	const fixture = await findFixture(fixturesDir, testCase.id);
 	if (!fixture) return skippedCase(testCase, "no_fixture");
-	if (fixture.ext === ".pdf") return runPdfCase(testCase, fixture, rootDir);
+	if (fixture.ext === ".pdf")
+		return runPdfCase(testCase, compiled, fixture, rootDir, options);
 	const totalStart = performance.now();
 	const fetchStart = performance.now();
 	const htmlBuffer = await readFile(fixture.path);
@@ -104,37 +105,67 @@ async function runCase(testCase, compiled, fixturesDir, rootDir, options) {
 
 // Inject a fixture-backed HttpClient stub so scrapeUrl(fast) drives the full pipeline
 // (signal aggregation, blocked detection, format rendering, truncation) with no network I/O.
-function stubHttpClient(url, html, bytes) {
+function stubHttpClient(
+	url,
+	payload,
+	bytes,
+	contentType = "text/html; charset=utf-8",
+) {
 	return {
 		fetchUrl: async () => ({
 			url,
 			finalUrl: url,
 			status: 200,
-			headers: { "content-type": "text/html; charset=utf-8" },
-			contentType: "text/html; charset=utf-8",
-			text: html,
+			headers: { "content-type": contentType },
+			contentType,
+			body: Buffer.isBuffer(payload) ? payload : Buffer.from(payload),
+			text: typeof payload === "string" ? payload : undefined,
 			downloadedBytes: bytes,
 		}),
 	};
 }
 
-async function runPdfCase(testCase, fixture, rootDir) {
+async function runPdfCase(testCase, compiled, fixture, rootDir, options) {
 	const totalStart = performance.now();
-	const bytes = (await stat(fixture.path)).size;
+	const fetchStart = performance.now();
+	const pdfBuffer = await readFile(fixture.path);
+	const fetchMs = performance.now() - fetchStart;
+	const fileUrl = pathToFileURL(fixture.path).toString();
+	const scrapeOnce = () =>
+		compiled.scrapeUrl(
+			fileUrl,
+			{ mode: "fast", format: "markdown" },
+			{
+				httpClient: stubHttpClient(
+					fileUrl,
+					pdfBuffer,
+					pdfBuffer.byteLength,
+					"application/pdf",
+				),
+			},
+		);
+	const parseStart = performance.now();
+	const result = await scrapeOnce();
+	const parseMs = performance.now() - parseStart;
+	const markdown = result.data.markdown ?? "";
+	const text = result.data.text ?? "";
 	const signals = evaluateSignals(testCase.expectedSignals ?? [], {
 		html: "",
-		markdown: "",
-		text: "",
-		scrape: undefined,
+		markdown,
+		text,
+		scrape: result.data,
 		fixtureExt: fixture.ext,
 	});
-	return caseResult(
-		testCase,
-		fixture,
-		rootDir,
-		signals,
-		metricsFor(0, 0, performance.now() - totalStart, bytes, "", ""),
+	const metrics = metricsFor(
+		fetchMs,
+		parseMs,
+		performance.now() - totalStart,
+		pdfBuffer.byteLength,
+		markdown,
+		text,
 	);
+	const perf = await timedRepeats(scrapeOnce, options);
+	return caseResult(testCase, fixture, rootDir, signals, metrics, perf);
 }
 
 function caseResult(testCase, fixture, rootDir, signals, metrics, perf) {

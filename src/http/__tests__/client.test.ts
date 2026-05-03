@@ -114,6 +114,20 @@ describe("HttpClient", () => {
     await expect(readFile(result.file?.path ?? "")).resolves.toEqual(Buffer.from([1, 2, 3]));
   });
 
+  it("keeps parseable PDF bytes in memory under maxBytes", async () => {
+    const { agent, client } = mockClient();
+    allowRobots(agent, "https://example.com");
+    const body = Buffer.from("%PDF bytes");
+    agent.get("https://example.com").intercept({ path: "/doc.pdf" }).reply(200, body, {
+      headers: { "content-type": "application/octet-stream" },
+    });
+
+    const result = await client.fetchUrl("https://example.com/doc.pdf");
+    expect(result.body).toEqual(body);
+    expect(result.text).toBeUndefined();
+    expect(result.file).toBeUndefined();
+  });
+
   it("wraps blocked URLs as safety errors before HTTP I/O", async () => {
     const { client } = mockClient();
     await expect(client.fetchUrl("http://127.0.0.1/")).rejects.toMatchObject({

@@ -143,14 +143,24 @@ Used by `web_scrape`, `web_batch`, `web_crawl`, `web_brand`, `web_diff`, and scr
 
 Current built-in deterministic extractors are intentionally small and capability-declared. More known-site extractors can be added under `src/extract/verticals/`.
 
-| Extractor     | Input patterns         | Primary strategy                                       | Browser/cloud/LLM requirement                                      |
-| ------------- | ---------------------- | ------------------------------------------------------ | ------------------------------------------------------------------ |
-| `github_repo` | GitHub repository URLs | GitHub public REST/API-shaped endpoint where available | No browser; no LLM; no cloud provider beyond public GitHub access. |
-| `npm`         | npm package URLs       | npm registry JSON                                      | No browser; no LLM.                                                |
-| `pypi`        | PyPI package URLs      | PyPI JSON API                                          | No browser; no LLM.                                                |
-| `hackernews`  | Hacker News item URLs  | Public item/API/feed-style data where available        | No browser; no LLM.                                                |
+| Extractor             | Input patterns                | Primary strategy                | Browser/cloud/LLM requirement                                      |
+| --------------------- | ----------------------------- | ------------------------------- | ------------------------------------------------------------------ |
+| `github_repo`         | GitHub repository URLs        | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access. |
+| `github_issue`        | GitHub issue URLs             | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access. |
+| `github_pr`           | GitHub pull request URLs      | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access. |
+| `github_release`      | GitHub release tag URLs       | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access. |
+| `npm`                 | npm package URLs              | npm registry JSON               | No browser; no LLM.                                                |
+| `pypi`                | PyPI package URLs             | PyPI JSON API                   | No browser; no LLM.                                                |
+| `crates_io`           | crates.io crate URLs          | crates.io API                   | No browser; no LLM.                                                |
+| `docker_hub`          | Docker Hub repository URLs    | Docker Hub repository API       | No browser; no LLM.                                                |
+| `huggingface_model`   | Hugging Face model URLs       | Hugging Face public model API   | No browser; no LLM.                                                |
+| `huggingface_dataset` | Hugging Face dataset URLs     | Hugging Face public dataset API | No browser; no LLM.                                                |
+| `hackernews`          | Hacker News item URLs         | Hacker News Firebase item API   | No browser; no LLM.                                                |
+| `arxiv`               | arXiv abstract/PDF entry URLs | arXiv Atom export feed          | No browser; no LLM.                                                |
 
 Use `web_list_extractors` to inspect the exact capability declarations at runtime. Use `web_extract` for arbitrary pages that need a custom schema/prompt and model-backed extraction.
+
+Reddit, Substack, and Shopify candidates are intentionally not listed as built-ins yet because their reliable machine-readable surfaces vary by community, publication, or storefront. They should be added only with narrow URL support and truthful browser/cloud capability declarations.
 
 ## Companion search and research extensions
 
