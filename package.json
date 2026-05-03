@@ -1,6 +1,6 @@
 {
   "name": "pi-scraper",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Crawl, map, and structured extraction for Pi — scraper-first, Pi-native, and local-first.",
   "keywords": [
     "pi-package",
