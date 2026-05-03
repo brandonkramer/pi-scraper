@@ -2,7 +2,7 @@
 
 Crawl, map, and structured extraction for Pi — scraper-first, Pi-native, and local-first.
 
-`pi-scraper` is a Pi extension for fast page scraping, recursive crawling, URL/site mapping, brand extraction, content diffing, and deterministic vertical extraction. Broad web search and multi-source research are intentionally handled by companion extensions such as `pi-gemini-acp`; use those to find URLs, then use `pi-scraper` to read, crawl, diff, or extract them.
+`pi-scraper` is a Pi extension for fast page scraping, recursive crawling, URL/site mapping, brand extraction, content diffing, PDF text extraction, and deterministic vertical extraction.
 
 ## Install
 
@@ -10,18 +10,6 @@ From npm:
 
 ```bash
 pi install npm:pi-scraper
-```
-
-From a Git checkout for local development:
-
-```bash
-git clone <repo-url>
-cd pi-scraper
-npm install
-npm run typecheck
-npm test
-npm pack --dry-run
-# then install the local package with Pi using your normal local-extension workflow
 ```
 
 ## Requirements
@@ -93,7 +81,7 @@ The package declares its extension entrypoint and packaged skills in `package.js
 | `web_list_extractors` | Local                                           | List deterministic vertical extractors and their browser/cloud/LLM capability declarations.                                         |
 | `web_vertical_scrape` | Local/API depending on extractor                | Run known-site extractors that prefer public APIs/feeds over HTML scraping.                                                         |
 | `web_extract`         | Model/LLM                                       | Ad hoc schema or prompt extraction from one page after scraping clean text.                                                         |
-| `web_summarize`       | Model/LLM                                       | Page-scoped summary after scraping; use a dedicated research/search extension for multi-source synthesis.                           |
+| `web_summarize`       | Model/LLM                                       | Page-scoped summary after scraping clean page text.                                                                                 |
 | `web_get_result`      | Local storage                                   | Retrieve full stored output by `responseId` from large crawl, batch, diff, or scrape results.                                       |
 
 ## Common parameters
@@ -127,19 +115,15 @@ Used by `web_scrape`, `web_batch`, `web_crawl`, `web_brand`, `web_diff`, and scr
 | `concurrency` / per-host options | Bound crawl work while HTTP politeness also enforces host limits.          |
 | `crawlId`                        | Resume/persist crawl state under `~/.pi/crawl/<crawlId>/` where supported. |
 
-### Search and research
-
-`pi-scraper` no longer registers `web_search` or `web_research`. Install a dedicated search/research extension such as `pi-gemini-acp` for source discovery, then pass selected URLs to `web_scrape`, `web_batch`, `web_crawl`, or `web_extract`.
-
 ## Scrape modes
 
-| Mode          | JavaScript support | Playwright required | Typical latency | Extraction quality               | Best use case                                                                                                                                            |
-| ------------- | ------------------ | ------------------- | --------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fast`        | No                 | No                  | Lowest          | Good for static pages            | Static HTML, docs, product pages, quick link/text extraction.                                                                                            |
+| Mode          | JavaScript support | Playwright required | Typical latency | Extraction quality               | Best use case                                                                                                                                                                                |
+| ------------- | ------------------ | ------------------- | --------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fast`        | No                 | No                  | Lowest          | Good for static pages            | Static HTML, docs, product pages, quick link/text extraction.                                                                                                                                |
 | `fingerprint` | No                 | No                  | Low-medium      | Same parser as static path       | Sites that block plain HTTP clients but do not require JavaScript. Requires a configured optional no-redirect fingerprint backend; proxy is rejected until equivalent SSRF guarantees exist. |
-| `readable`    | No                 | No                  | Medium          | Higher for articles/main content | Articles, blogs, noisy pages where Readability improves main content.                                                                                    |
-| `browser`     | Yes                | Yes, optional/lazy  | Highest         | Best for rendered DOM            | JavaScript-rendered pages when static/data-island recovery is insufficient.                                                                              |
-| `auto`        | Only if justified  | Only if escalated   | Adaptive        | Adaptive                         | Default. Starts local/static, reuses fetched HTML, tries recovery/readable/fingerprint before browser only when block/rendering signals justify it.       |
+| `readable`    | No                 | No                  | Medium          | Higher for articles/main content | Articles, blogs, noisy pages where Readability improves main content.                                                                                                                        |
+| `browser`     | Yes                | Yes, optional/lazy  | Highest         | Best for rendered DOM            | JavaScript-rendered pages when static/data-island recovery is insufficient.                                                                                                                  |
+| `auto`        | Only if justified  | Only if escalated   | Adaptive        | Adaptive                         | Default. Starts local/static, reuses fetched HTML, tries recovery/readable/fingerprint before browser only when block/rendering signals justify it.                                          |
 
 ## Vertical extraction strategy
 
@@ -164,15 +148,9 @@ Use `web_list_extractors` to inspect the exact capability declarations at runtim
 
 Reddit, Substack, and Shopify candidates are intentionally not listed as built-ins yet because their reliable machine-readable surfaces vary by community, publication, or storefront. They should be added only with narrow URL support and truthful browser/cloud capability declarations.
 
-## Companion search and research extensions
+## Using with pi-gemini-acp
 
-Use a dedicated provider extension such as `pi-gemini-acp` for Gemini ACP-backed source discovery and grounded research. A typical workflow is:
-
-1. Use `gemini_acp_search` or `gemini_acp_research` from `pi-gemini-acp` to find candidate source URLs.
-2. Use `web_scrape` or `web_batch` from `pi-scraper` to read important pages for exact quotes, dates, numbers, or structured extraction.
-3. Use `web_get_result` only for stored `pi-scraper` crawl/batch/diff/scrape outputs.
-
-This keeps `pi-scraper` local-first and avoids making scraping, crawling, mapping, brand extraction, or diffing depend on search credentials or Gemini ACP.
+Use [`pi-gemini-acp`](https://github.com/brandonkramer/pi-gemini-acp) when you need Gemini-backed source discovery or multi-source research. Use `pi-scraper` after that to read selected URLs with `web_scrape`, process many URLs with `web_batch`, crawl a site with `web_crawl`, or run page-scoped extraction with `web_extract`.
 
 ## Output, truncation, and storage
 

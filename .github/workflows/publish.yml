@@ -48,6 +48,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Tool smoke
+        run: npm run test:tools
+
       - name: Verify tag matches package version
         run: |
           VERSION="$(node -p "require('./package.json').version")"
@@ -74,7 +77,7 @@ jobs:
           fi
 
       - name: Verify package contents
-        run: npm pack --dry-run
+        run: npm pack --dry-run --json
 
       - name: Publish to npm
         run: npm publish

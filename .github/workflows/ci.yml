@@ -2,9 +2,13 @@ name: CI
 
 on:
   pull_request:
+    paths-ignore:
+      - "**/*.md"
   push:
     branches:
       - main
+    paths-ignore:
+      - "**/*.md"
 
 permissions: {}
 
@@ -76,4 +80,4 @@ jobs:
         run: npm run audit:strict
 
       - name: Verify package contents
-        run: npm pack --dry-run
+        run: npm pack --dry-run --json
