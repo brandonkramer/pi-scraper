@@ -31,8 +31,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:tools": "vitest run src/tools/__tests__/tools-smoke.test.ts --reporter=verbose",
+    "test": "vitest run --exclude '.pi/**' --exclude '**/.pi/**'",
+    "test:tools": "vitest run src/tools/__tests__/tools-smoke.test.ts --reporter=verbose --exclude '.pi/**' --exclude '**/.pi/**'",
     "smoke:install": "node bench/scripts/install-smoke.mjs",
     "smoke:live": "vitest run src/tools/__tests__/tools-smoke.live.test.ts --reporter=verbose",
     "smoke:browser": "vitest run src/browser/__tests__/browser-smoke.test.ts --reporter=verbose",
