@@ -4,13 +4,54 @@ import type { RenderComponent, RenderTheme } from "./define.js";
 class TextRenderComponent implements RenderComponent {
 	constructor(private readonly text: string) {}
 
-	render(_width: number): string[] {
-		return this.text.split("\n");
+	render(width: number): string[] {
+		const safeWidth = Math.max(1, Math.floor(width || 80));
+		return this.text
+			.split("\n")
+			.flatMap((line) => wrapAnsiAwareLine(line, safeWidth));
 	}
 
 	invalidate(): void {
 		// Static text renderers have no cached state to clear.
 	}
+}
+
+const ansiPattern = /\u001B\[[0-?]*[ -/]*[@-~]/g;
+
+function wrapAnsiAwareLine(line: string, width: number): string[] {
+	if (visibleWidth(line) <= width) return [line];
+	const chunks: string[] = [];
+	let remaining = line;
+	while (visibleWidth(remaining) > width) {
+		const chunk = truncateToWidth(remaining, Math.max(1, width - 1));
+		chunks.push(`${chunk}…`);
+		remaining = remaining.slice(chunk.length);
+	}
+	if (remaining) chunks.push(remaining);
+	return chunks;
+}
+
+function visibleWidth(text: string): number {
+	return text.replace(ansiPattern, "").length;
+}
+
+function truncateToWidth(text: string, width: number): string {
+	let output = "";
+	let used = 0;
+	let index = 0;
+	while (index < text.length && used < width) {
+		const ansi = text.slice(index).match(/^\u001B\[[0-?]*[ -/]*[@-~]/);
+		if (ansi) {
+			output += ansi[0];
+			index += ansi[0].length;
+			continue;
+		}
+		const char = text[index] ?? "";
+		output += char;
+		used += 1;
+		index += char.length;
+	}
+	return output;
 }
 
 export function renderText(text: string): RenderComponent {

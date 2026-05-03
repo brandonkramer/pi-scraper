@@ -4,6 +4,7 @@ import type { ScrapePipelineDeps } from "../../scrape/pipeline.js";
 import type { ResultEnvelope } from "../../types.js";
 import type { RenderComponent, WebTool } from "../define.js";
 import { registerWebTools } from "../register.js";
+import { renderText } from "../render.js";
 import { createWebExtractTool, webExtractTool } from "../web-extract.js";
 import { webListExtractorsTool } from "../web-list-extractors.js";
 import { createWebSummarizeTool } from "../web-summarize.js";
@@ -162,6 +163,12 @@ describe("selected web tool handlers", () => {
 				),
 			),
 		).toContain("extractor");
+	});
+
+	it("wraps long custom renderer lines to the requested terminal width", () => {
+		const lines = renderText("x".repeat(150)).render(40);
+		expect(lines.length).toBeGreaterThan(1);
+		expect(lines.every((line) => line.length <= 40)).toBe(true);
 	});
 });
 
