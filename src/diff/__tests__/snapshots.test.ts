@@ -4,36 +4,163 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ScrapeResult } from "../../scrape/pipeline.js";
 import { compareSnapshotText } from "../compare.js";
-import { diffScrapeResult } from "../snapshots.js";
+import { normalizeVolatileSnapshotText } from "../normalize.js";
+import { diffScrapeResult, listSnapshots, loadSnapshot } from "../snapshots.js";
 
 let rootDir: string;
 
 beforeEach(async () => {
-  rootDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-diff-"));
+	rootDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-diff-"));
 });
 
 afterEach(async () => {
-  await rm(rootDir, { recursive: true, force: true });
+	await rm(rootDir, { recursive: true, force: true });
 });
 
 describe("snapshot diffing", () => {
-  it("compares added, removed, changed, and unchanged normalized lines", () => {
-    const diff = compareSnapshotText("a\nb\nPrice: $10", "b\nc\nPrice: $12");
-    expect(diff.changed.map((entry) => [entry.previous, entry.current])).toEqual([["Price: $10", "Price: $12"]]);
-    expect(diff.added).toEqual(["c"]);
-    expect(diff.removed).toEqual(["a"]);
-    expect(diff.unchanged).toBe(1);
-  });
+	it("compares added, removed, changed, and unchanged normalized lines", () => {
+		const diff = compareSnapshotText("a\nb\nPrice: $10", "b\nc\nPrice: $12");
+		expect(
+			diff.changed.map((entry) => [entry.previous, entry.current]),
+		).toEqual([["Price: $10", "Price: $12"]]);
+		expect(diff.added).toEqual(["c"]);
+		expect(diff.removed).toEqual(["a"]);
+		expect(diff.unchanged).toBe(1);
+	});
 
-  it("stores deterministic snapshots and diffs the next scrape", async () => {
-    await diffScrapeResult(result("https://example.com", "A\nB"), { rootDir });
-    const second = await diffScrapeResult(result("https://example.com", "B\nC"), { rootDir });
-    expect(second.previous?.content.text).toBe("A\nB");
-    expect(second.diff?.added).toEqual(["C"]);
-    expect(second.diff?.removed).toEqual(["A"]);
-  });
+	it("stores deterministic snapshots and diffs the next scrape", async () => {
+		await diffScrapeResult(result("https://example.com", "A\nB"), { rootDir });
+		const second = await diffScrapeResult(
+			result("https://example.com", "B\nC"),
+			{ rootDir },
+		);
+		expect(second.previous?.content.text).toBe("A\nB");
+		expect(second.diff?.added).toEqual(["C"]);
+		expect(second.diff?.removed).toEqual(["A"]);
+	});
+
+	it("keeps named snapshots isolated for the same URL", async () => {
+		await diffScrapeResult(result("https://example.com", "Baseline A"), {
+			rootDir,
+			snapshotName: "homepage",
+		});
+		await diffScrapeResult(result("https://example.com", "Baseline B"), {
+			rootDir,
+			snapshotName: "docs",
+		});
+		const homepage = await loadSnapshot("https://example.com", {
+			rootDir,
+			snapshotName: "homepage",
+		});
+		const docs = await loadSnapshot("https://example.com", {
+			rootDir,
+			snapshotName: "docs",
+		});
+		expect(homepage?.content.text).toBe("Baseline A");
+		expect(docs?.content.text).toBe("Baseline B");
+	});
+
+	it("persists snapshot metadata and lists snapshots by URL/name", async () => {
+		const first = await diffScrapeResult(
+			result(
+				"https://example.com",
+				"# Title\nParagraph with enough words to summarize.",
+				{ status: 201, contentType: "text/html", downloadedBytes: 123 },
+			),
+			{ rootDir, snapshotName: "homepage" },
+		);
+		const entries = await listSnapshots({
+			rootDir,
+			url: "https://example.com",
+			snapshotName: "homepage",
+		});
+		expect(entries).toHaveLength(1);
+		expect(entries[0]?.metadata).toMatchObject({
+			url: "https://example.com",
+			finalUrl: "https://example.com",
+			mode: "fast",
+			format: "markdown",
+			statusCode: 201,
+			contentType: "text/html",
+			contentLength: 123,
+			snapshotName: "homepage",
+		});
+		expect(entries[0]?.metadata.contentHash).toHaveLength(64);
+		expect(entries[0]?.metadata.normalizedHash).toHaveLength(64);
+		expect(first.current.content.headings).toEqual(["Title"]);
+	});
+
+	it("summarizes headings, links, metadata, and paragraph changes", async () => {
+		await diffScrapeResult(
+			result(
+				"https://example.com",
+				"# Old\nParagraph one has enough words to count.",
+				{ title: "Old", links: [{ url: "https://example.com/a", text: "A" }] },
+			),
+			{ rootDir },
+		);
+		const second = await diffScrapeResult(
+			result(
+				"https://example.com",
+				"# New\nParagraph two has enough words to count.",
+				{ title: "New", links: [{ url: "https://example.com/b", text: "B" }] },
+			),
+			{ rootDir },
+		);
+		expect(second.summary?.addedHeadings).toEqual(["New"]);
+		expect(second.summary?.removedHeadings).toEqual(["Old"]);
+		expect(second.summary?.addedLinks.map((link) => link.url)).toEqual([
+			"https://example.com/b",
+		]);
+		expect(second.summary?.removedLinks.map((link) => link.url)).toEqual([
+			"https://example.com/a",
+		]);
+		expect(
+			second.summary?.changedMetadata.some((entry) => entry.key === "title"),
+		).toBe(true);
+		expect(second.summary?.paragraphs.changedCount).toBe(1);
+	});
+
+	it("normalizes conservative volatile values without hiding semantic text", async () => {
+		const before =
+			"Last updated 2 minutes ago\nRead https://example.com/?utm_source=x&token=abcdef1234567890\nPrice: $10";
+		const after =
+			"Last updated 3 minutes ago\nRead https://example.com/?utm_source=y&token=zzzzzz1234567890\nPrice: $10";
+		expect(normalizeVolatileSnapshotText(before)).toBe(
+			normalizeVolatileSnapshotText(after),
+		);
+		await diffScrapeResult(result("https://example.com", before), { rootDir });
+		const second = await diffScrapeResult(
+			result("https://example.com", after),
+			{ rootDir },
+		);
+		expect(second.summary?.unchangedAfterNormalization).toBe(true);
+		expect(second.diff?.addedCount).toBe(0);
+	});
 });
 
-function result(url: string, text: string): ScrapeResult {
-  return { url, finalUrl: url, status: 200, mode: "fast", format: "markdown", timing: { startedAt: new Date().toISOString() }, truncated: false, data: { route: "html", extractionPath: ["fast"], markdown: text } };
+function result(
+	url: string,
+	text: string,
+	overrides: Partial<ScrapeResult> & { title?: string; links?: unknown[] } = {},
+): ScrapeResult {
+	return {
+		url,
+		finalUrl: url,
+		status: overrides.status ?? 200,
+		mode: "fast",
+		format: "markdown",
+		timing: { startedAt: new Date().toISOString() },
+		truncated: false,
+		contentType: overrides.contentType,
+		downloadedBytes: overrides.downloadedBytes,
+		data: {
+			route: "html",
+			extractionPath: ["fast"],
+			markdown: text,
+			title: overrides.title,
+			metadata: { title: overrides.title },
+			links: overrides.links,
+		},
+	};
 }

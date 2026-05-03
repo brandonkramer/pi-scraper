@@ -1,60 +1,375 @@
 import { createHash } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { scrapeUrl, type ScrapePipelineDeps, type ScrapeResult } from "../scrape/pipeline.js";
-import { ensureDir, resolvePiStoragePaths, type ResolveStorageOptions } from "../storage/paths.js";
+import {
+	type ScrapePipelineDeps,
+	type ScrapeResult,
+	scrapeUrl,
+} from "../scrape/pipeline.js";
+import {
+	ensureDir,
+	type ResolveStorageOptions,
+	resolvePiStoragePaths,
+} from "../storage/paths.js";
+import type { ResponseStorageMetadata } from "../types.js";
 import { normalizeUrl } from "../url/normalize.js";
 import { compareSnapshotText, type TextDiffSummary } from "./compare.js";
-import { normalizeScrapeForSnapshot, type NormalizedSnapshotContent } from "./normalize.js";
+import {
+	type NormalizedSnapshotContent,
+	normalizeScrapeForSnapshot,
+	type SnapshotLink,
+} from "./normalize.js";
+
+export interface SnapshotOptions extends ResolveStorageOptions {
+	snapshotName?: string;
+}
+
+export interface PageSnapshotMetadata {
+	url: string;
+	finalUrl?: string;
+	timestamp: string;
+	mode?: string;
+	format?: string;
+	statusCode?: number;
+	contentType?: string;
+	contentLength?: number;
+	contentHash: string;
+	normalizedHash: string;
+	snapshotName?: string;
+	responseId?: string;
+	fullOutputPath?: string;
+}
 
 export interface PageSnapshot {
-  url: string;
-  finalUrl?: string;
-  timestamp: string;
-  textHash: string;
-  content: NormalizedSnapshotContent;
+	url: string;
+	finalUrl?: string;
+	timestamp: string;
+	textHash: string;
+	contentHash: string;
+	normalizedHash: string;
+	snapshotName?: string;
+	metadata: PageSnapshotMetadata;
+	content: NormalizedSnapshotContent;
+}
+
+export interface SnapshotChangeSummary {
+	addedHeadings: string[];
+	removedHeadings: string[];
+	addedLinks: SnapshotLink[];
+	removedLinks: SnapshotLink[];
+	changedMetadata: Array<{ key: string; previous?: string; current?: string }>;
+	paragraphs: TextDiffSummary;
+	unchangedAfterNormalization: boolean;
+	hashOnlyChange: boolean;
 }
 
 export interface SnapshotDiffResult {
-  previous?: PageSnapshot;
-  current: PageSnapshot;
-  diff?: TextDiffSummary;
-  snapshotPath: string;
+	previous?: PageSnapshot;
+	current: PageSnapshot;
+	diff?: TextDiffSummary;
+	summary?: SnapshotChangeSummary;
+	snapshotPath: string;
+	snapshotName?: string;
 }
 
-export async function saveSnapshot(result: ScrapeResult, options: ResolveStorageOptions = {}): Promise<{ snapshot: PageSnapshot; path: string }> {
-  const snapshot = snapshotFromResult(result);
-  const filePath = await snapshotPath(snapshot.url, options);
-  await writeFile(filePath, JSON.stringify(snapshot, null, 2), { mode: 0o600 });
-  return { snapshot, path: filePath };
+export interface SnapshotListingEntry {
+	snapshotPath: string;
+	metadata: PageSnapshotMetadata;
 }
 
-export async function loadSnapshot(url: string, options: ResolveStorageOptions = {}): Promise<PageSnapshot | undefined> {
-  const filePath = await snapshotPath(url, options);
-  try { return JSON.parse(await readFile(filePath, "utf8")) as PageSnapshot; } catch { return undefined; }
+export async function saveSnapshot(
+	result: ScrapeResult,
+	options: SnapshotOptions = {},
+): Promise<{ snapshot: PageSnapshot; path: string }> {
+	const snapshot = snapshotFromResult(result, options);
+	const filePath = await snapshotPath(snapshot.url, options);
+	await writeFile(filePath, JSON.stringify(snapshot, null, 2), { mode: 0o600 });
+	return { snapshot, path: filePath };
 }
 
-export async function diffScrapeResult(result: ScrapeResult, options: ResolveStorageOptions = {}): Promise<SnapshotDiffResult> {
-  const previous = await loadSnapshot(result.url ?? "", options);
-  const saved = await saveSnapshot(result, options);
-  const diff = previous ? compareSnapshotText(previous.content.text, saved.snapshot.content.text) : undefined;
-  return { previous, current: saved.snapshot, diff, snapshotPath: saved.path };
+export async function loadSnapshot(
+	url: string,
+	options: SnapshotOptions = {},
+): Promise<PageSnapshot | undefined> {
+	const filePath = await snapshotPath(url, options);
+	try {
+		return normalizeLoadedSnapshot(
+			JSON.parse(await readFile(filePath, "utf8")) as PageSnapshot,
+		);
+	} catch {
+		return undefined;
+	}
 }
 
-export async function diffUrl(url: string, options: ResolveStorageOptions = {}, deps: ScrapePipelineDeps = {}, signal?: AbortSignal): Promise<SnapshotDiffResult> {
-  return diffScrapeResult(await scrapeUrl(url, {}, deps, signal), options);
+export async function getSnapshot(
+	url: string,
+	options: SnapshotOptions = {},
+): Promise<SnapshotListingEntry | undefined> {
+	const snapshot = await loadSnapshot(url, options);
+	if (!snapshot) return undefined;
+	return {
+		snapshotPath: await snapshotPath(url, options),
+		metadata: snapshot.metadata,
+	};
 }
 
-function snapshotFromResult(result: ScrapeResult): PageSnapshot {
-  const content = normalizeScrapeForSnapshot(result);
-  return { url: content.url, finalUrl: content.finalUrl, timestamp: new Date().toISOString(), textHash: hash(content.text), content };
+export async function listSnapshots(
+	options: SnapshotOptions & { url?: string } = {},
+): Promise<SnapshotListingEntry[]> {
+	const dir = await ensureDir(resolvePiStoragePaths(options).snapshots);
+	const files = await readdir(dir);
+	const entries: SnapshotListingEntry[] = [];
+	for (const file of files.filter((entry) => entry.endsWith(".json"))) {
+		const snapshotPath = path.join(dir, file);
+		try {
+			const snapshot = normalizeLoadedSnapshot(
+				JSON.parse(await readFile(snapshotPath, "utf8")) as PageSnapshot,
+			);
+			if (
+				options.url &&
+				normalizeUrl(snapshot.url) !== normalizeUrl(options.url)
+			)
+				continue;
+			if (
+				options.snapshotName &&
+				(!snapshot.snapshotName ||
+					safeSnapshotName(snapshot.snapshotName) !==
+						safeSnapshotName(options.snapshotName))
+			)
+				continue;
+			entries.push({ snapshotPath, metadata: snapshot.metadata });
+		} catch {
+			/* Ignore corrupt/partial snapshot files during listing. */
+		}
+	}
+	return entries.sort((left, right) =>
+		right.metadata.timestamp.localeCompare(left.metadata.timestamp),
+	);
 }
 
-async function snapshotPath(url: string, options: ResolveStorageOptions): Promise<string> {
-  const dir = await ensureDir(resolvePiStoragePaths(options).snapshots);
-  return path.join(dir, `${hash(normalizeUrl(url))}.json`);
+export async function diffScrapeResult(
+	result: ScrapeResult,
+	options: SnapshotOptions = {},
+): Promise<SnapshotDiffResult> {
+	const previous = await loadSnapshot(result.url ?? "", options);
+	const saved = await saveSnapshot(result, options);
+	const diff = previous
+		? compareSnapshotText(previous.content.text, saved.snapshot.content.text)
+		: undefined;
+	const summary = previous
+		? summarizeSnapshotChanges(previous, saved.snapshot, diff)
+		: undefined;
+	return {
+		previous,
+		current: saved.snapshot,
+		diff,
+		summary,
+		snapshotPath: saved.path,
+		snapshotName: options.snapshotName,
+	};
+}
+
+export async function diffUrl(
+	url: string,
+	options: SnapshotOptions = {},
+	deps: ScrapePipelineDeps = {},
+	signal?: AbortSignal,
+): Promise<SnapshotDiffResult> {
+	return diffScrapeResult(await scrapeUrl(url, {}, deps, signal), options);
+}
+
+export function snapshotFromResult(
+	result: ScrapeResult,
+	options: SnapshotOptions = {},
+): PageSnapshot {
+	const content = normalizeScrapeForSnapshot(result);
+	const timestamp = new Date().toISOString();
+	const contentHash = hash(content.rawText);
+	const normalizedHash = hash(content.text);
+	const metadata: PageSnapshotMetadata = {
+		url: content.url,
+		finalUrl: content.finalUrl,
+		timestamp,
+		mode: result.mode,
+		format: result.format,
+		statusCode: result.status,
+		contentType: result.contentType,
+		contentLength: result.downloadedBytes ?? Buffer.byteLength(content.rawText),
+		contentHash,
+		normalizedHash,
+		snapshotName: options.snapshotName,
+		responseId: result.responseId,
+		fullOutputPath: result.fullOutputPath,
+	};
+	return {
+		url: content.url,
+		finalUrl: content.finalUrl,
+		timestamp,
+		textHash: normalizedHash,
+		contentHash,
+		normalizedHash,
+		snapshotName: options.snapshotName,
+		metadata,
+		content,
+	};
+}
+
+export function summarizeSnapshotChanges(
+	previous: PageSnapshot,
+	current: PageSnapshot,
+	diff = compareSnapshotText(previous.content.text, current.content.text),
+): SnapshotChangeSummary {
+	const paragraphs = compareSnapshotText(
+		previous.content.paragraphs.join("\n"),
+		current.content.paragraphs.join("\n"),
+	);
+	const changedMetadata = compareMetadata(
+		previous.content.metadata,
+		current.content.metadata,
+	);
+	const unchangedAfterNormalization =
+		previous.contentHash !== current.contentHash &&
+		previous.normalizedHash === current.normalizedHash;
+	return {
+		addedHeadings: missingFrom(
+			current.content.headings,
+			previous.content.headings,
+		),
+		removedHeadings: missingFrom(
+			previous.content.headings,
+			current.content.headings,
+		),
+		addedLinks: missingLinks(current.content.links, previous.content.links),
+		removedLinks: missingLinks(previous.content.links, current.content.links),
+		changedMetadata,
+		paragraphs,
+		unchangedAfterNormalization,
+		hashOnlyChange:
+			previous.contentHash !== current.contentHash &&
+			diff.addedCount === 0 &&
+			diff.removedCount === 0 &&
+			diff.changedCount === 0,
+	};
+}
+
+export async function updateSnapshotReference(
+	url: string,
+	response: ResponseStorageMetadata,
+	options: SnapshotOptions = {},
+): Promise<{ snapshot: PageSnapshot; path: string } | undefined> {
+	const snapshot = await loadSnapshot(url, options);
+	if (!snapshot) return undefined;
+	const updated = attachSnapshotResponse(snapshot, response);
+	const filePath = await snapshotPath(url, options);
+	await writeFile(filePath, JSON.stringify(updated, null, 2), { mode: 0o600 });
+	return { snapshot: updated, path: filePath };
+}
+
+export function attachSnapshotResponse(
+	snapshot: PageSnapshot,
+	response: ResponseStorageMetadata,
+): PageSnapshot {
+	return {
+		...snapshot,
+		metadata: {
+			...snapshot.metadata,
+			responseId: response.responseId,
+			fullOutputPath: response.fullOutputPath,
+		},
+	};
+}
+
+async function snapshotPath(
+	url: string,
+	options: SnapshotOptions,
+): Promise<string> {
+	const dir = await ensureDir(resolvePiStoragePaths(options).snapshots);
+	const name = options.snapshotName
+		? `--${safeSnapshotName(options.snapshotName)}`
+		: "";
+	return path.join(dir, `${hash(normalizeUrl(url))}${name}.json`);
+}
+
+function normalizeLoadedSnapshot(snapshot: PageSnapshot): PageSnapshot {
+	const content = normalizeLoadedContent(snapshot.content);
+	const normalizedHash = snapshot.normalizedHash ?? snapshot.textHash;
+	const contentHash = snapshot.contentHash ?? hash(content.rawText);
+	return {
+		...snapshot,
+		content,
+		contentHash,
+		normalizedHash,
+		textHash: normalizedHash,
+		metadata: snapshot.metadata ?? {
+			url: snapshot.url,
+			finalUrl: snapshot.finalUrl,
+			timestamp: snapshot.timestamp,
+			contentHash,
+			normalizedHash,
+			snapshotName: snapshot.snapshotName,
+		},
+	};
+}
+
+function normalizeLoadedContent(
+	content: NormalizedSnapshotContent,
+): NormalizedSnapshotContent {
+	const rawText = content.rawText ?? content.text;
+	return {
+		...content,
+		rawText,
+		headings: content.headings ?? [],
+		links: content.links ?? [],
+		metadata: content.metadata ?? {},
+		paragraphs:
+			content.paragraphs ??
+			rawText
+				.split("\n")
+				.filter((line) => line.length >= 24)
+				.slice(0, 100),
+	};
+}
+
+function compareMetadata(
+	previous: Record<string, string>,
+	current: Record<string, string>,
+): SnapshotChangeSummary["changedMetadata"] {
+	const keys = [
+		...new Set([...Object.keys(previous), ...Object.keys(current)]),
+	].sort();
+	return keys
+		.filter((key) => previous[key] !== current[key])
+		.map((key) => ({ key, previous: previous[key], current: current[key] }))
+		.slice(0, 50);
+}
+
+function missingFrom(left: string[], right: string[]): string[] {
+	const rightSet = new Set(right.map((value) => value.toLowerCase()));
+	return left
+		.filter((value) => !rightSet.has(value.toLowerCase()))
+		.slice(0, 25);
+}
+
+function missingLinks(
+	left: SnapshotLink[],
+	right: SnapshotLink[],
+): SnapshotLink[] {
+	const rightSet = new Set(right.map((link) => link.url));
+	return left.filter((link) => !rightSet.has(link.url)).slice(0, 25);
+}
+
+function safeSnapshotName(input: string): string {
+	const safe = input
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9._-]+/gu, "-")
+		.replace(/^-+|-+$/gu, "")
+		.slice(0, 80);
+	if (!safe)
+		throw new Error("snapshotName must contain at least one letter or number");
+	return safe;
 }
 
 function hash(input: string): string {
-  return createHash("sha256").update(input).digest("hex");
+	return createHash("sha256").update(input).digest("hex");
 }

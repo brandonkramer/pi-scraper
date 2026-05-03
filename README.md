@@ -77,12 +77,12 @@ The package declares its extension entrypoint and packaged skills in `package.js
 | `web_map`             | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; does not extract page content. |
 | `web_batch`           | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results.                                                          |
 | `web_brand`           | Local; browser optional via mode                | Extract colors, fonts, logos, favicons, manifests, JSON-LD, Open Graph, and Twitter assets.                                         |
-| `web_diff`            | Local                                           | Re-scrape, normalize, compare against cached snapshots, and store snapshots under `~/.pi/snapshots/`.                               |
+| `web_diff`            | Local                                           | Re-scrape, normalize, compare against unnamed or named cached snapshots, and store metadata under `~/.pi/snapshots/`.               |
 | `web_list_extractors` | Local                                           | List deterministic vertical extractors and their browser/cloud/LLM capability declarations.                                         |
 | `web_vertical_scrape` | Local/API depending on extractor                | Run known-site extractors that prefer public APIs/feeds over HTML scraping.                                                         |
 | `web_extract`         | Model/LLM                                       | Ad hoc schema or prompt extraction from one page after scraping clean text.                                                         |
 | `web_summarize`       | Model/LLM                                       | Page-scoped summary after scraping clean page text.                                                                                 |
-| `web_get_result`      | Local storage                                   | Retrieve full stored output by `responseId` from large crawl, batch, diff, or scrape results.                                       |
+| `web_get_result`      | Local storage                                   | Retrieve full stored output by `responseId`, crawl status by `crawlId`, or `web_diff` snapshot metadata by URL/name.                |
 
 ## Common parameters
 
@@ -104,16 +104,25 @@ Used by `web_scrape`, `web_batch`, `web_crawl`, `web_brand`, `web_diff`, and scr
 | `proxy`                        | Optional proxy for supported modes/providers.                                                        |
 | `browserProfile` / `osProfile` | Optional browser/fingerprint profile hints.                                                          |
 
+### Diff snapshots
+
+`web_diff` stores snapshots under `~/.pi/snapshots/` and returns a stored diff `responseId` for full details. Pass `snapshotName` to keep a repeatable baseline per URL, for example `web_diff({ url, snapshotName: "homepage" })`. Reusing the same `snapshotName` compares against and then replaces that named baseline.
+
+Use `web_get_result({ responseId })` to retrieve a stored diff result. Use `web_get_result({ snapshotUrl: url, snapshotName: "homepage" })` for current snapshot metadata, or `web_get_result({ listSnapshots: true, snapshotUrl: url })` to list known snapshots for a URL.
+
+Diff details include content and normalized hashes, scrape metadata, added/removed headings and links, metadata changes, paragraph-level changes, and an `unchangedAfterNormalization` flag when only conservative volatile patterns changed. There is no automatic snapshot retention policy yet; reuse stable `snapshotName` values for baselines or remove old files from `~/.pi/snapshots/` when local storage growth matters.
+
 ### Crawl and map parameters
 
-| Parameter                        | Description                                                                |
-| -------------------------------- | -------------------------------------------------------------------------- |
-| `maxPages`                       | Maximum pages to crawl or discover.                                        |
-| `maxDepth`                       | Maximum link depth from the seed URL.                                      |
-| `sameOrigin`                     | Defaults to same-origin crawling.                                          |
-| `include` / `exclude`            | URL pattern filters.                                                       |
-| `concurrency` / per-host options | Bound crawl work while HTTP politeness also enforces host limits.          |
-| `crawlId`                        | Resume/persist crawl state under `~/.pi/crawl/<crawlId>/` where supported. |
+| Parameter                        | Description                                                                                   |
+| -------------------------------- | --------------------------------------------------------------------------------------------- |
+| `maxPages`                       | Maximum pages to crawl or discover.                                                           |
+| `maxDepth`                       | Maximum link depth from the seed URL.                                                         |
+| `sameOrigin`                     | Defaults to same-origin crawling.                                                             |
+| `include` / `exclude`            | URL pattern filters.                                                                          |
+| `concurrency` / per-host options | Bound crawl work while HTTP politeness also enforces host limits.                             |
+| `crawlId`                        | Resume/persist crawl state under `~/.pi/crawl/<crawlId>/` where supported.                    |
+| `resume`                         | For `web_crawl`, resume existing `crawlId` state; defaults to true when a saved crawl exists. |
 
 ## Scrape modes
 
@@ -169,7 +178,7 @@ Pi inline truncation defaults are preserved:
 - 50KB
 - 2000 lines
 
-Large crawl, batch, diff, and optionally scrape outputs are stored locally and returned with a compact summary plus `responseId`. Retrieve full content later with `web_get_result`.
+Large crawl, batch, diff, and optionally scrape outputs are stored locally and returned with a compact summary plus `responseId`. Retrieve full content later with `web_get_result`. For long crawls, call `web_get_result` with `{ "crawlId": "..." }` to inspect persisted crawl status metadata, including status, counts, frontier size, last error, and the final `responseId` when available. For diff workflows, `web_get_result` can also list or retrieve snapshot metadata by URL and optional `snapshotName`.
 
 Persistent paths:
 

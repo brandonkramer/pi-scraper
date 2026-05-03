@@ -5,9 +5,10 @@ import {
 	type ScrapeResult,
 	scrapeUrl,
 } from "../scrape/pipeline.js";
-import type { CommonScrapeOptions } from "../types.js";
-import { CrawlFrontier } from "./frontier.js";
+import type { CommonScrapeOptions, StructuredError } from "../types.js";
+import { CrawlFrontier, type FrontierItem } from "./frontier.js";
 import {
+	type CrawlMetadata,
 	type CrawlStateOptions,
 	createCrawlState,
 	loadCrawlState,
@@ -19,6 +20,8 @@ export interface CrawlProgress {
 	current: number;
 	total?: number;
 	url?: string;
+	message?: string;
+	metadata?: CrawlMetadata;
 }
 
 export interface CrawlRunOptions
@@ -30,6 +33,7 @@ export interface CrawlRunOptions
 	include?: string[];
 	exclude?: string[];
 	seedSitemap?: boolean;
+	resume?: boolean;
 	concurrency?: number;
 	perHostConcurrency?: number;
 	onProgress?: (progress: CrawlProgress) => void;
@@ -40,6 +44,7 @@ export interface CrawlRunResult {
 	pages: ScrapeResult[];
 	visited: string[];
 	statePath: string;
+	metadata: CrawlMetadata;
 }
 
 export async function runCrawl(
@@ -48,8 +53,12 @@ export async function runCrawl(
 	deps: ScrapePipelineDeps & SiteMapDeps = {},
 	signal?: AbortSignal,
 ): Promise<CrawlRunResult> {
-	const loaded = options.crawlId
-		? await loadCrawlState(options.crawlId, options).catch(() => undefined)
+	const shouldResume =
+		options.crawlId !== undefined && options.resume !== false;
+	const loaded = shouldResume
+		? await loadCrawlState(options.crawlId as string, options).catch(
+				() => undefined,
+			)
 		: undefined;
 	const state = loaded ?? createCrawlState(seedUrl, options.crawlId);
 	const frontier = new CrawlFrontier({
@@ -81,59 +90,138 @@ export async function runCrawl(
 		1,
 		options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
 	);
+	const counts = {
+		succeeded: state.metadata?.succeededCount ?? state.results.length,
+		failed: state.metadata?.failedCount ?? 0,
+	};
+	const progressTotal = counts.succeeded + counts.failed + maxPages;
+	const activeItems = new Map<string, FrontierItem>();
+	let currentDepth = state.metadata?.currentDepth;
+	let maxDepthVisited = state.metadata?.maxDepthVisited ?? 0;
+	let statePath = "";
+	let persistChain: Promise<CrawlMetadata | undefined> =
+		Promise.resolve(undefined);
+
 	const hostLimits = new HostLimitPool(perHostConcurrency);
 	const coordinator = new CrawlCoordinator(frontier, maxPages, signal);
+	const queuedMetadata = await persist("queued");
 	options.onProgress?.({
 		state: "queued",
-		current: 0,
-		total: maxPages,
+		current: counts.succeeded + counts.failed,
+		total: progressTotal,
 		url: seedUrl,
+		message: progressSummary(queuedMetadata, progressTotal),
+		metadata: queuedMetadata,
 	});
+
+	async function persist(
+		status: CrawlMetadata["status"],
+		lastError?: CrawlMetadata["lastError"],
+	): Promise<CrawlMetadata> {
+		persistChain = persistChain
+			.catch(() => undefined)
+			.then(async () => {
+				state.frontier = [...activeItems.values(), ...frontier.remaining()];
+				state.visited = frontier.visitedUrls();
+				state.metadata = {
+					...(state.metadata ?? {
+						crawlId: state.crawlId,
+						seedUrl: state.seedUrl,
+						createdAt: state.createdAt,
+						updatedAt: state.updatedAt,
+						status,
+						visitedCount: 0,
+						frontierCount: 0,
+						succeededCount: 0,
+						failedCount: 0,
+					}),
+					status,
+					visitedCount: state.visited.length,
+					frontierCount: state.frontier.length,
+					succeededCount: counts.succeeded,
+					failedCount: counts.failed,
+					currentDepth,
+					maxDepthVisited,
+					lastError: lastError ?? state.metadata?.lastError,
+				};
+				statePath = await saveCrawlState(state, options);
+				return state.metadata;
+			});
+		return (await persistChain) as CrawlMetadata;
+	}
 
 	async function worker(): Promise<void> {
 		while (true) {
 			const item = await coordinator.next();
 			if (!item) return;
+			activeItems.set(item.url, item);
+			currentDepth = item.depth;
+			maxDepthVisited = Math.max(maxDepthVisited, item.depth);
+			const processingMetadata = await persist("running");
 			options.onProgress?.({
 				state: "processing",
-				current: pages.length,
-				total: maxPages,
+				current: counts.succeeded + counts.failed,
+				total: progressTotal,
 				url: item.url,
+				message: progressSummary(processingMetadata, progressTotal),
+				metadata: processingMetadata,
 			});
 			const releaseHost = await hostLimits.acquire(
 				new URL(item.url).host,
 				signal,
 			);
+			let completed = false;
 			try {
 				const result = await scrapeUrl(item.url, options, deps, signal);
 				pages.push(result);
-				options.onProgress?.({
-					state: result.error ? "error" : "done",
-					current: pages.length,
-					total: maxPages,
-					url: item.url,
-				});
+				if (result.error) counts.failed += 1;
+				else counts.succeeded += 1;
 				for (const link of extractLinks(result))
 					frontier.enqueue(link, item.depth + 1, item.url);
+				completed = true;
+				activeItems.delete(item.url);
+				const doneMetadata = await persist(
+					"running",
+					result.error ? errorSummary(result.error) : undefined,
+				);
+				options.onProgress?.({
+					state: result.error ? "error" : "done",
+					current: counts.succeeded + counts.failed,
+					total: progressTotal,
+					url: item.url,
+					message: progressSummary(doneMetadata, progressTotal),
+					metadata: doneMetadata,
+				});
 			} finally {
 				releaseHost();
+				if (completed) activeItems.delete(item.url);
 				coordinator.done();
 			}
 		}
 	}
 
-	await Promise.all(
-		Array.from({ length: Math.min(concurrency, maxPages) }, () => worker()),
-	);
-
-	state.frontier = frontier.remaining();
-	state.visited = frontier.visitedUrls();
-	state.results = [
-		...state.results,
-		...pages.map((page) => page.finalUrl ?? page.url ?? "").filter(Boolean),
-	];
-	const statePath = await saveCrawlState(state, options);
-	return { crawlId: state.crawlId, pages, visited: state.visited, statePath };
+	try {
+		await Promise.all(
+			Array.from({ length: Math.min(concurrency, maxPages) }, () => worker()),
+		);
+		state.results = [
+			...state.results,
+			...pages.map((page) => page.finalUrl ?? page.url ?? "").filter(Boolean),
+		];
+		const finalStatus = frontier.size > 0 ? "paused" : "done";
+		const metadata = await persist(finalStatus);
+		return {
+			crawlId: state.crawlId,
+			pages,
+			visited: state.visited,
+			statePath,
+			metadata,
+		};
+	} catch (error) {
+		const status = isAbortError(error, signal) ? "paused" : "error";
+		await persist(status, unknownErrorSummary(error));
+		throw error;
+	}
 }
 
 function extractLinks(result: ScrapeResult): string[] {
@@ -143,6 +231,42 @@ function extractLinks(result: ScrapeResult): string[] {
 			typeof link === "string" ? link : (link as { url?: string }).url,
 		)
 		.filter(Boolean) as string[];
+}
+
+function progressSummary(metadata: CrawlMetadata, maxPages: number): string {
+	const done = metadata.succeededCount + metadata.failedCount;
+	return `${done}/${maxPages} pages · ${metadata.failedCount} failed · depth ${metadata.currentDepth ?? 0} · frontier ${metadata.frontierCount}`;
+}
+
+function errorSummary(
+	error: StructuredError,
+): Pick<StructuredError, "code" | "message" | "phase" | "url"> {
+	return {
+		code: error.code,
+		message: error.message,
+		phase: error.phase,
+		url: error.url,
+	};
+}
+
+function unknownErrorSummary(
+	error: unknown,
+): Pick<StructuredError, "code" | "message" | "phase" | "url"> {
+	if (typeof error === "object" && error !== null && "structured" in error) {
+		return errorSummary((error as { structured: StructuredError }).structured);
+	}
+	return {
+		code: error instanceof Error ? error.name : "CRAWL_ERROR",
+		message: error instanceof Error ? error.message : "Crawl failed",
+		phase: "crawl",
+	};
+}
+
+function isAbortError(error: unknown, signal?: AbortSignal): boolean {
+	return (
+		signal?.aborted === true ||
+		(error instanceof Error && error.name === "AbortError")
+	);
 }
 
 class CrawlCoordinator {

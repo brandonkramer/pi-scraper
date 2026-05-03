@@ -14,12 +14,12 @@ Use this skill when deciding which `pi-scraper` tool to call.
 - Use `web_crawl` to recursively fetch and extract pages from a site.
 - Use `web_batch` for many independent URLs.
 - Use `web_brand` for colors, fonts, logos, favicons, manifests, Schema.org, Open Graph, and Twitter assets.
-- Use `web_diff` to compare current content to cached or supplied snapshots.
+- Use `web_diff` to compare current content to unnamed or named cached snapshots; pass `snapshotName` for repeatable baselines like `homepage` and reuse names to avoid unbounded local snapshot growth.
 - Use `web_list_extractors` before `web_vertical_scrape` to inspect available deterministic extractors and their capabilities.
 - Use `web_vertical_scrape` for known site types with deterministic API/feed parsing.
 - Use `web_extract` for ad hoc schema/prompt extraction from an arbitrary page; this needs a model-backed adapter.
 - Use `web_summarize` for one-page summaries.
-- Use `web_get_result` when a previous scraper/crawl/batch/diff tool returned a `responseId`.
+- Use `web_get_result` when a previous scraper/crawl/batch/diff tool returned a `responseId`; use `crawlId` for persisted crawl status metadata, or `snapshotUrl`, `snapshotName`, and `listSnapshots` for diff snapshot metadata.
 
 ## Defaults
 
@@ -27,8 +27,9 @@ Prefer local-first paths:
 
 1. Try `web_scrape` with `mode: "auto"`.
 2. Use `web_map` before `web_crawl` when the user asks for site structure or URL inventory.
-3. Use browser mode only when requested or when static/data-island/readable recovery is insufficient.
-4. Use a dedicated search/research extension such as `pi-gemini-acp` for broad source discovery or multi-source synthesis, then call `web_scrape` or `web_batch` for deeper reading of selected URLs.
+3. For long crawls, pass a stable `crawlId`; call `web_crawl` again with the same `crawlId` to resume, or call `web_get_result` with that `crawlId` to check counts, frontier size, status, last error, and final `responseId`.
+4. Use browser mode only when requested or when static/data-island/readable recovery is insufficient.
+5. Use a dedicated search/research extension such as `pi-gemini-acp` for broad source discovery or multi-source synthesis, then call `web_scrape` or `web_batch` for deeper reading of selected URLs.
 
 ## Provider cautions
 
