@@ -56,6 +56,11 @@ describe("runCrawl", () => {
 	it("processes discovered pages concurrently up to the global limit", async () => {
 		let active = 0;
 		let maxActive = 0;
+		let firstStarted = false;
+		let releaseFirst: (() => void) | undefined;
+		const firstRelease = new Promise<void>((resolve) => {
+			releaseFirst = resolve;
+		});
 		const result = await runCrawl(
 			"https://example.com",
 			{ rootDir, crawlId: "global", maxPages: 5, maxDepth: 1, concurrency: 2 },
@@ -71,7 +76,13 @@ describe("runCrawl", () => {
 						}
 						active += 1;
 						maxActive = Math.max(maxActive, active);
-						await sleep(5);
+						if (!firstStarted) {
+							firstStarted = true;
+							await Promise.race([firstRelease, sleep(200)]);
+						} else {
+							releaseFirst?.();
+							await sleep(5);
+						}
 						active -= 1;
 						return html(value, `<html><main>${value}</main></html>`);
 					},
@@ -88,6 +99,11 @@ describe("runCrawl", () => {
 		const activeByHost = new Map<string, number>();
 		const maxByHost = new Map<string, number>();
 		let maxGlobal = 0;
+		let heldHost: string | undefined;
+		let releaseHeld: (() => void) | undefined;
+		const heldRelease = new Promise<void>((resolve) => {
+			releaseHeld = resolve;
+		});
 		const result = await runCrawl(
 			"https://example.com",
 			{
@@ -119,7 +135,15 @@ describe("runCrawl", () => {
 							maxGlobal,
 							[...activeByHost.values()].reduce((sum, count) => sum + count, 0),
 						);
-						await sleep(30);
+						if (!heldHost) {
+							heldHost = host;
+							await Promise.race([heldRelease, sleep(200)]);
+						} else if (host !== heldHost) {
+							releaseHeld?.();
+							await sleep(5);
+						} else {
+							await sleep(30);
+						}
 						activeByHost.set(host, (activeByHost.get(host) ?? 1) - 1);
 						return html(value, `<html><main>${value}</main></html>`);
 					},
