@@ -17,6 +17,8 @@ Use this skill when deciding which `pi-scraper` tool to call.
 - Use `web_diff` to compare current content to unnamed or named cached snapshots; pass `snapshotName` for repeatable baselines like `homepage` and reuse names to avoid unbounded local snapshot growth.
 - Use `web_list_extractors` before `web_vertical_scrape` to inspect available deterministic extractors and their capabilities.
 - Use `web_vertical_scrape` for known site types with deterministic API/feed parsing.
+- For npm package metadata, construct or accept `npmx.dev/package/<name>` URLs for the `npm` vertical extractor when the user names a package without a URL; it resolves to compact npm registry endpoints internally. If the user asks to scrape/read an npm package page rather than extract typed metadata, prefer `web_scrape` on `https://npmx.dev/package/<name>` over npmjs.com.
+- Use `web_vertical_scrape` with `extractor: deepwiki` for `https://deepwiki.com/owner/repo` URLs. When a GitHub repo README is sparse or when an npm package points to a GitHub repo that has DeepWiki coverage, consider DeepWiki as a fallback for richer generated documentation, architecture diagrams, and section navigation.
 - Use `web_extract` for ad hoc schema/prompt extraction from an arbitrary page; this needs a model-backed adapter.
 - Use `web_summarize` for one-page summaries.
 - Use `web_get_result` when a previous scraper/crawl/batch/diff tool returned a `responseId`; use `crawlId` for persisted crawl status metadata, or `snapshotUrl`, `snapshotName`, and `listSnapshots` for diff snapshot metadata.

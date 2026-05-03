@@ -7,6 +7,7 @@ import type {
 } from "./capabilities.js";
 import { arxivExtractor } from "./verticals/arxiv.js";
 import { cratesIoExtractor } from "./verticals/crates-io.js";
+import { deepWikiExtractor } from "./verticals/deepwiki.js";
 import { dockerHubExtractor } from "./verticals/docker-hub.js";
 import { githubIssueExtractor } from "./verticals/github-issue.js";
 import { githubPrExtractor } from "./verticals/github-pr.js";
@@ -33,6 +34,7 @@ export const verticalExtractors = [
 	huggingFaceDatasetExtractor,
 	hackerNewsItemExtractor,
 	arxivExtractor,
+	deepWikiExtractor,
 ] as const satisfies readonly VerticalExtractor[];
 
 export interface VerticalRegistryDeps {

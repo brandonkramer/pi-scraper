@@ -61,12 +61,21 @@ const context: VerticalExtractorContext = {
 				license: { spdx_id: "MIT" },
 			} as T;
 		}
-		if (url.includes("registry.npmjs.org")) {
+		if (url.includes("registry.npmjs.org/pi-scraper/2.0.0")) {
 			return {
 				name: "pi-scraper",
+				version: "2.0.0",
 				description: "scrape",
-				"dist-tags": { latest: "1.2.3" },
-				versions: { "1.2.3": { license: "MIT" } },
+				license: "MIT",
+			} as T;
+		}
+		if (url.includes("registry.npmjs.org")) {
+			expect(url).toBe("https://registry.npmjs.org/pi-scraper/latest");
+			return {
+				name: "pi-scraper",
+				version: "1.2.3",
+				description: "scrape",
+				license: "MIT",
 			} as T;
 		}
 		if (url.includes("pypi.org")) {
@@ -133,6 +142,21 @@ const context: VerticalExtractorContext = {
 		throw new Error(`Unexpected URL: ${url}`);
 	},
 	fetchText: async (url: string) => {
+		if (url.includes("deepwiki.com")) {
+			return `
+				<div>Loading...<span>Index your code with Devin</span></div>
+				<div>DeepWiki<span>mario/pi</span><button>Edit Wiki</button></div>
+				<div>Last indexed: <!-- -->25 March 2026<!-- --> (<a href="https://github.com/mario/pi/commit/3cb2c4">3cb2c4</a>)</div>
+				<nav>
+					<a href="/mario/pi">Overview</a>
+					<a href="/mario/pi/repository-structure">Repository Structure</a>
+					<span>Packages</span><span>Feature Flags</span><span>Build System</span>
+					<a href="/mario/pi/glossary">Glossary</a>
+				</nav>
+				<div>Menu<span>Overview</span></div>
+				<section><h2>Relevant source files</h2><a>README.md</a><span>package.json</span></section>
+				<footer>Footer links</footer>`;
+		}
 		if (!url.includes("export.arxiv.org"))
 			throw new Error(`Unexpected text URL: ${url}`);
 		return `<?xml version="1.0"?><feed><entry><id>http://arxiv.org/abs/2401.12345v1</id><title>Test Paper</title><summary>A useful paper.</summary><published>2024-01-01T00:00:00Z</published><updated>2024-01-02T00:00:00Z</updated><author><name>Ada Lovelace</name></author><category term="cs.CL"/><link title="pdf" href="http://arxiv.org/pdf/2401.12345v1"/></entry></feed>`;
@@ -158,6 +182,7 @@ describe("vertical extractor registry", () => {
 				"huggingface_dataset",
 				"hackernews",
 				"arxiv",
+				"deepwiki",
 			]),
 		);
 		expect(listExtractorCapabilities()[0]).toMatchObject({
@@ -188,6 +213,63 @@ describe("vertical extractor registry", () => {
 			name: "pi-scraper",
 			latestVersion: "1.2.3",
 		});
+
+		const npmVersion = await runVerticalExtractor(
+			"npm",
+			"https://www.npmjs.com/package/pi-scraper/v/2.0.0",
+			{ context },
+		);
+		expect(npmVersion.data).toMatchObject({
+			name: "pi-scraper",
+			version: "2.0.0",
+			requestedVersion: "2.0.0",
+		});
+		expect(
+			(npmVersion.data as Record<string, unknown> | undefined)?.latestVersion,
+		).toBeUndefined();
+
+		const npmxPackage = await runVerticalExtractor(
+			"npm",
+			"https://npmx.dev/package/pi-scraper",
+			{ context },
+		);
+		expect(npmxPackage.data).toMatchObject({
+			name: "pi-scraper",
+			latestVersion: "1.2.3",
+		});
+
+		const deepwiki = await runVerticalExtractor(
+			"deepwiki",
+			"https://deepwiki.com/mario/pi",
+			{ context },
+		);
+		expect(deepwiki.data).toMatchObject({
+			owner: "mario",
+			repo: "pi",
+			githubUrl: "https://github.com/mario/pi",
+			lastIndexed: "25 March 2026",
+			commit: "3cb2c4",
+			activeSection: "Overview",
+		});
+		expect(
+			(deepwiki.data as Record<string, unknown> | undefined)?.sections,
+		).toEqual([
+			"Overview",
+			"Repository Structure",
+			"Packages",
+			"Feature Flags",
+			"Build System",
+		]);
+		expect(
+			(deepwiki.data as Record<string, unknown> | undefined)?.sourceFiles,
+		).toEqual(["README.md", "package.json"]);
+		await expect(
+			runVerticalExtractor(
+				"deepwiki",
+				"https://deepwiki.com/mario/pi/overview",
+				{ context },
+			),
+		).resolves.toMatchObject({ data: { owner: "mario", repo: "pi" } });
 	});
 
 	it("runs added GitHub issue, PR, and release extractors", async () => {
