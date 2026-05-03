@@ -12,6 +12,14 @@
     "firecrawl"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brandonkramer/pi-scraper"
+  },
+  "bugs": {
+    "url": "https://github.com/brandonkramer/pi-scraper/issues"
+  },
+  "homepage": "https://github.com/brandonkramer/pi-scraper#readme",
   "type": "module",
   "files": [
     "src",
