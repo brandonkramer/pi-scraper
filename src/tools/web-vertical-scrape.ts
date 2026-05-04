@@ -26,7 +26,13 @@ export const webVerticalScrapeSchema = Type.Object({
 		description: "Named deterministic vertical extractor.",
 	}),
 	url: urlProperty("URL supported by the selected extractor."),
-	cacheTtlSeconds: Type.Optional(Type.Number({ minimum: 1, description: "Opt-in fetch cache TTL in seconds for extractor API/page fetches." })),
+	cacheTtlSeconds: Type.Optional(
+		Type.Number({
+			minimum: 1,
+			description:
+				"Opt-in fetch cache TTL in seconds for extractor API/page fetches.",
+		}),
+	),
 	maxAgeSeconds: Type.Optional(Type.Number({ minimum: 1 })),
 	refresh: Type.Optional(Type.Boolean()),
 });
@@ -48,9 +54,16 @@ export const webVerticalScrapeTool = defineWebTool({
 		const result = await runVerticalExtractor(
 			params.extractor,
 			params.url,
-			{ requestOptions: { cacheTtlSeconds: params.cacheTtlSeconds, maxAgeSeconds: params.maxAgeSeconds, refresh: params.refresh } },
+			{
+				requestOptions: {
+					cacheTtlSeconds: params.cacheTtlSeconds,
+					maxAgeSeconds: params.maxAgeSeconds,
+					refresh: params.refresh,
+				},
+			},
 			signal,
 		);
+		const firstSourceUrl = result.sources?.[0]?.url;
 		return toolResult({
 			text: result.error
 				? `${params.extractor} failed: ${result.error.message}`
@@ -58,6 +71,10 @@ export const webVerticalScrapeTool = defineWebTool({
 			data: result,
 			url: params.url,
 			format: "json",
+			sources: result.sources,
+			summary: result.error
+				? `${params.extractor} failed · ${params.url}`
+				: `${params.extractor} done${firstSourceUrl ? ` · source: ${firstSourceUrl}` : ` · ${params.url}`}`,
 			error: result.error && {
 				...result.error,
 				phase: "vertical_extract",

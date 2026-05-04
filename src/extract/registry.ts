@@ -1,5 +1,9 @@
 import { createHttpClient, type HttpClient } from "../http/client.js";
-import type { CommonRequestOptions, ExtractorCapability } from "../types.js";
+import type {
+	CommonRequestOptions,
+	ExtractorCapability,
+	SourceReference,
+} from "../types.js";
 import type {
 	VerticalExtractionResult,
 	VerticalExtractor,
@@ -40,7 +44,10 @@ export const verticalExtractors = [
 export interface VerticalRegistryDeps {
 	context?: VerticalExtractorContext;
 	httpClient?: Pick<HttpClient, "fetchUrl">;
-	requestOptions?: Pick<CommonRequestOptions, "cacheTtlSeconds" | "maxAgeSeconds" | "refresh">;
+	requestOptions?: Pick<
+		CommonRequestOptions,
+		"cacheTtlSeconds" | "maxAgeSeconds" | "refresh"
+	>;
 }
 
 export function listExtractorCapabilities(): ExtractorCapability[] {
@@ -78,18 +85,26 @@ export async function runVerticalExtractor<T = unknown>(
 				retryable: false,
 			},
 		};
+	const sources: SourceReference[] = [];
 	try {
 		const data = await extractor.extract(
 			url,
 			match,
-			deps.context ?? httpContext(deps.httpClient, deps.requestOptions),
+			deps.context ??
+				httpContext(deps.httpClient, deps.requestOptions, sources),
 			signal,
 		);
-		return { extractor: name, url: url.toString(), data: data as T };
+		return {
+			extractor: name,
+			url: url.toString(),
+			data: data as T,
+			sources: sources.length ? sources : undefined,
+		};
 	} catch (error) {
 		return {
 			extractor: name,
 			url: url.toString(),
+			sources: sources.length ? sources : undefined,
 			error: {
 				code: "EXTRACTION_FAILED",
 				message:
@@ -102,10 +117,15 @@ export async function runVerticalExtractor<T = unknown>(
 
 function httpContext(
 	client: Pick<HttpClient, "fetchUrl"> = createHttpClient(),
-	requestOptions: Pick<CommonRequestOptions, "cacheTtlSeconds" | "maxAgeSeconds" | "refresh"> = {},
+	requestOptions: Pick<
+		CommonRequestOptions,
+		"cacheTtlSeconds" | "maxAgeSeconds" | "refresh"
+	> = {},
+	sources: SourceReference[] = [],
 ): VerticalExtractorContext {
 	return {
 		fetchJson: async <T>(url: string, signal?: AbortSignal) => {
+			recordVerticalSource(sources, url, "api");
 			const response = await client.fetchUrl(
 				url,
 				{
@@ -119,6 +139,7 @@ function httpContext(
 			return JSON.parse(response.text ?? "null") as T;
 		},
 		fetchText: async (url: string, signal?: AbortSignal) => {
+			recordVerticalSource(sources, url, "feed");
 			const response = await client.fetchUrl(
 				url,
 				{ forceText: true, respectRobots: false, ...requestOptions },
@@ -127,4 +148,18 @@ function httpContext(
 			return response.text ?? "";
 		},
 	};
+}
+
+function recordVerticalSource(
+	sources: SourceReference[],
+	url: string,
+	provider: string,
+): void {
+	if (sources.some((source) => source.url === url)) return;
+	sources.push({
+		id: `source-${sources.length + 1}`,
+		url,
+		provider,
+		accessedAt: new Date().toISOString(),
+	});
 }
