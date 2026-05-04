@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-05-04T04:56:30.389Z",
+  "urls": [
+    {
+      "id": "github-repo",
+      "url": "https://github.com/brandonkramer/pi-scraper",
+      "finalUrl": "https://github.com/brandonkramer/pi-scraper",
+      "status": 200,
+      "filename": "github-repo.html",
+      "bytes": 348560
+    },
+    {
+      "id": "npmx-package",
+      "url": "https://npmx.dev/package/pi-scraper",
+      "finalUrl": "https://npmx.dev/package/pi-scraper",
+      "status": 200,
+      "filename": "npmx-package.html",
+      "bytes": 140205
+    },
+    {
+      "id": "docs-site",
+      "url": "https://docs.astro.build/en/getting-started/",
+      "finalUrl": "https://docs.astro.build/en/getting-started/",
+      "status": 200,
+      "filename": "docs-site.html",
+      "bytes": 144087
+    },
+    {
+      "id": "article-page",
+      "url": "https://example.com/",
+      "finalUrl": "https://example.com/",
+      "status": 200,
+      "filename": "article-page.html",
+      "bytes": 528
+    },
+    {
+      "id": "marketing-page",
+      "url": "https://www.cloudflare.com/",
+      "finalUrl": "https://www.cloudflare.com/",
+      "status": 200,
+      "filename": "marketing-page.html",
+      "bytes": 982135
+    },
+    {
+      "id": "spa-json-hydration",
+      "url": "https://quotes.toscrape.com/js/",
+      "finalUrl": "https://quotes.toscrape.com/js/",
+      "status": 200,
+      "filename": "spa-json-hydration.html",
+      "bytes": 5808
+    }
+  ]
+}

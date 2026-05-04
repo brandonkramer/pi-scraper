@@ -8,7 +8,6 @@ Tracked input snapshots for real-world DOM adapter comparisons. These files are 
 | ------------------------- | ------------------------------------------ |
 | `article-page.html`       | Small article/static-page shape.           |
 | `docs-site.html`          | Documentation site navigation and content. |
-| `dogster-home.html`       | Marketing/editorial homepage.              |
 | `github-repo.html`        | GitHub repository HTML shape.              |
 | `marketing-page.html`     | Commercial marketing page.                 |
 | `npmx-package.html`       | npm package frontend page.                 |

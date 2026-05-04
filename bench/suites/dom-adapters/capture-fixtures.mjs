@@ -13,7 +13,6 @@ const args = process.argv.slice(2);
 const timeoutSeconds = intFlag(args, "timeoutSeconds", 30);
 const outDir = path.join(rootDir, "bench/fixtures");
 const urls = [
-	["dogster-home", "https://www.dogster.com/"],
 	["github-repo", "https://github.com/brandonkramer/pi-scraper"],
 	["npmx-package", "https://npmx.dev/package/pi-scraper"],
 	["docs-site", "https://docs.astro.build/en/getting-started/"],
