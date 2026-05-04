@@ -23,6 +23,10 @@ import {
 	huggingFaceModelExtractor,
 } from "./verticals/huggingface.js";
 import { npmPackageExtractor } from "./verticals/npm.js";
+import { ossInsightCollectionRankingExtractor } from "./verticals/ossinsight-collection-ranking.js";
+import { ossInsightCollectionsExtractor } from "./verticals/ossinsight-collections.js";
+import { ossInsightRepoAnalyticsExtractor } from "./verticals/ossinsight-repo-analytics.js";
+import { ossInsightTrendingReposExtractor } from "./verticals/ossinsight-trending-repos.js";
 import { pypiPackageExtractor } from "./verticals/pypi.js";
 
 export const verticalExtractors = [
@@ -39,6 +43,10 @@ export const verticalExtractors = [
 	hackerNewsItemExtractor,
 	arxivExtractor,
 	deepWikiExtractor,
+	ossInsightCollectionsExtractor,
+	ossInsightCollectionRankingExtractor,
+	ossInsightTrendingReposExtractor,
+	ossInsightRepoAnalyticsExtractor,
 ] as const satisfies readonly VerticalExtractor[];
 
 export interface VerticalRegistryDeps {

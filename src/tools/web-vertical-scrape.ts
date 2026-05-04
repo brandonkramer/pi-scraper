@@ -6,7 +6,7 @@ import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
 import { toolResult } from "./result.js";
 import { urlProperty } from "./schemas.js";
 
-const extractorNames = [
+export const extractorNames = [
 	"github_repo",
 	"github_issue",
 	"github_pr",
@@ -19,6 +19,11 @@ const extractorNames = [
 	"huggingface_dataset",
 	"hackernews",
 	"arxiv",
+	"deepwiki",
+	"ossinsight_collections",
+	"ossinsight_collection_ranking",
+	"ossinsight_trending_repos",
+	"ossinsight_repo_analytics",
 ] as const;
 
 export const webVerticalScrapeSchema = Type.Object({
