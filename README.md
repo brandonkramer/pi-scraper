@@ -16,16 +16,17 @@ pi install npm:pi-scraper
 
 - Node.js `>=22.19.0`
 - Pi `>=0.65.0`
-- Normal install does **not** require Playwright browser binaries.
+- Normal install includes the optional Playwright package but does **not** bundle Chromium browser binaries.
 
 `pi-scraper` uses Undici 8 for the local HTTP stack, so Node `>=22.19.0` is required.
 
-Optional browser rendering for users that need `mode: "browser"`:
+Optional browser rendering for users that need `mode: "browser"` requires Chromium browser binaries in the extension environment:
 
 ```bash
-npm install playwright
 npx playwright install chromium
 ```
+
+If dependencies were installed with optional packages omitted, first run `npm install playwright` in the `pi-scraper` checkout/install directory. A global Playwright install is not enough for the extension's lazy `import("playwright")` path.
 
 `mode: "fingerprint"` is an optional static-fetch capability. The package exposes a safe backend boundary for a no-redirect TLS/HTTP fingerprint adapter, but does not bundle a fingerprint backend by default. Without a configured backend, fingerprint mode returns structured `FINGERPRINT_BACKEND_MISSING` metadata; other modes continue to work.
 
@@ -35,11 +36,11 @@ Managed environments that install browsers separately can set:
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 ```
 
-Optional browser smoke testing from this checkout can install Playwright without saving it to `package.json`:
+Optional browser smoke testing from this checkout:
 
 ```bash
 nvm use 22.19.0
-npm install --no-save --package-lock=false playwright
+npm install
 export PLAYWRIGHT_BROWSERS_PATH="${TMPDIR:-/tmp}/pi-scraper-ms-playwright"
 npx playwright install chromium
 PI_SCRAPER_BROWSER=1 npm run smoke:browser
@@ -229,7 +230,7 @@ Optional live/browser smoke checks before release:
 1. Run `PI_SCRAPER_LIVE=1 npm run smoke:live` to exercise public-network scrape/map paths.
 2. For browser mode, run:
    ```bash
-   npm install --no-save --package-lock=false playwright
+   npm install
    export PLAYWRIGHT_BROWSERS_PATH="${TMPDIR:-/tmp}/pi-scraper-ms-playwright"
    npx playwright install chromium
    PI_SCRAPER_BROWSER=1 npm run smoke:browser

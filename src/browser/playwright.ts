@@ -182,7 +182,7 @@ async function loadPlaywright(
 			code: "BROWSER_UNAVAILABLE",
 			phase: "browser",
 			message:
-				"Playwright is not installed or browser binaries are unavailable. Install optional browser support with `npm install playwright` and `npx playwright install chromium`.",
+				"Playwright is not installed or Chromium browser binaries are unavailable. Playwright is an optional dependency; if it was omitted, run `npm install playwright` in the extension directory, then `npx playwright install chromium`.",
 			retryable: false,
 			url,
 			cause,
