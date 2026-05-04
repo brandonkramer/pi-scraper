@@ -1,6 +1,7 @@
 import type { Cheerio, CheerioAPI } from "cheerio";
 import * as cheerio from "cheerio";
 import type { AnyNode } from "domhandler";
+import { loadHtmlparser2Dom } from "./htmlparser2-dom-adapter.js";
 
 /** Opaque DOM node handle owned by a {@link DomAdapter}. */
 export type DomNode = unknown;
@@ -23,6 +24,8 @@ export interface DomSelection {
  * or jQuery-only selector extensions require an explicit call-site rewrite or a
  * documented adapter method before they are used through this boundary.
  */
+export type DomBackend = "htmlparser2" | "cheerio";
+
 export interface DomAdapter {
 	root(): DomSelection;
 	select(selector: string, scope?: DomSelection): DomSelection;
@@ -39,8 +42,30 @@ export interface DomAdapter {
 	removeSelection(selection: DomSelection): void;
 }
 
-/** Loads HTML into the current production DOM adapter backend. */
+/** Loads HTML into the configured production DOM adapter backend. */
 export function loadDom(html: string): DomAdapter {
+	return loadDomWithBackend(html, defaultDomBackend());
+}
+
+/** Loads HTML with an explicit backend for tests and rollback-sensitive callers. */
+export function loadDomWithBackend(
+	html: string,
+	backend: DomBackend,
+): DomAdapter {
+	return backend === "cheerio"
+		? loadCheerioDom(html)
+		: loadHtmlparser2Dom(html);
+}
+
+/** Returns the configured DOM backend, defaulting to htmlparser2. */
+export function defaultDomBackend(): DomBackend {
+	return process.env.PI_SCRAPER_DOM_BACKEND === "cheerio"
+		? "cheerio"
+		: "htmlparser2";
+}
+
+/** Loads HTML into the Cheerio-backed fallback DOM adapter. */
+export function loadCheerioDom(html: string): DomAdapter {
 	return new CheerioDomAdapter(cheerio.load(html));
 }
 
