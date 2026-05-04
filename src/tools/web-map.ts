@@ -10,6 +10,9 @@ import { urlProperty } from "./schemas.js";
 export const webMapSchema = Type.Object({
   url: urlProperty("Seed URL for discovery-only site mapping."),
   maxSitemaps: Type.Optional(Type.Number({ minimum: 1, maximum: 200 })),
+  cacheTtlSeconds: Type.Optional(Type.Number({ minimum: 1, description: "Opt-in fetch cache TTL in seconds for robots, sitemap, and llms.txt discovery fetches." })),
+  maxAgeSeconds: Type.Optional(Type.Number({ minimum: 1 })),
+  refresh: Type.Optional(Type.Boolean()),
 });
 
 type Params = Static<typeof webMapSchema>;

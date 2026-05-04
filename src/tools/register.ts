@@ -3,12 +3,15 @@ import { resolveToolModelAdapter } from "./model-adapter.js";
 import { webBatchTool } from "./web-batch.js";
 import { webBrandTool } from "./web-brand.js";
 import { webCrawlTool } from "./web-crawl.js";
+import { webCrawlsTool } from "./web-crawls.js";
 import { webDiffTool } from "./web-diff.js";
 import { createWebExtractTool, webExtractTool } from "./web-extract.js";
 import { webGetResultTool } from "./web-get-result.js";
+import { webHistoryTool } from "./web-history.js";
 import { webListExtractorsTool } from "./web-list-extractors.js";
 import { webMapTool } from "./web-map.js";
 import { webScrapeTool } from "./web-scrape.js";
+import { webSearchScrapesTool } from "./web-search-scrapes.js";
 import { createWebSummarizeTool, webSummarizeTool } from "./web-summarize.js";
 import { webVerticalScrapeTool } from "./web-vertical-scrape.js";
 
@@ -24,6 +27,9 @@ export const webTools: readonly WebTool[] = [
 	webExtractTool,
 	webSummarizeTool,
 	webGetResultTool,
+	webHistoryTool,
+	webCrawlsTool,
+	webSearchScrapesTool,
 ];
 
 export function registerWebTools(pi: PiToolRegistrar): void {

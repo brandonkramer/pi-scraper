@@ -78,12 +78,15 @@ The package declares its extension entrypoint and packaged skills in `package.js
 | `web_map`             | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; does not extract page content. |
 | `web_batch`           | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results.                                                          |
 | `web_brand`           | Local; browser optional via mode                | Extract colors, fonts, logos, favicons, manifests, JSON-LD, Open Graph, and Twitter assets.                                         |
-| `web_diff`            | Local                                           | Re-scrape, normalize, compare against unnamed or named cached snapshots, and store metadata under `~/.pi/scraper/snapshots/`.               |
+| `web_diff`            | Local                                           | Re-scrape, normalize, compare against unnamed or named cached snapshots, and store metadata under `~/.pi/scraper/snapshots/`.       |
 | `web_list_extractors` | Local                                           | List deterministic vertical extractors and their browser/cloud/LLM capability declarations.                                         |
 | `web_vertical_scrape` | Local/API depending on extractor                | Run known-site extractors that prefer public APIs/feeds over HTML scraping.                                                         |
 | `web_extract`         | Model/LLM                                       | Ad hoc schema or prompt extraction from one page after scraping clean text.                                                         |
 | `web_summarize`       | Model/LLM                                       | Page-scoped summary after scraping clean page text.                                                                                 |
 | `web_get_result`      | Local storage                                   | Retrieve full stored output by `responseId`, crawl status by `crawlId`, or `web_diff` snapshot metadata by URL/name.                |
+| `web_history`         | Local storage                                   | List prior local scrapes/fetches for a URL so recent stored content can be reused deliberately.                                     |
+| `web_crawls`          | Local storage                                   | List prior crawls with staleness and recommended resume/reuse/recrawl guidance.                                                     |
+| `web_search_scrapes`  | Local storage                                   | Full-text stored scrape recall when runtime SQLite has FTS5; otherwise returns a clean unsupported response.                        |
 
 ## Common parameters
 
@@ -104,6 +107,8 @@ Used by `web_scrape`, `web_batch`, `web_crawl`, `web_brand`, `web_diff`, and scr
 | `headers`                      | Optional HTTP headers.                                                                               |
 | `proxy`                        | Optional proxy for supported modes/providers.                                                        |
 | `browserProfile` / `osProfile` | Optional browser/fingerprint profile hints.                                                          |
+| `cacheTtlSeconds`              | Opt-in fetch cache TTL in seconds. Omit for always-fresh behavior.                                   |
+| `refresh`                      | Bypass cache lookup while still recording a fresh fetch when caching is enabled.                     |
 
 ### Diff snapshots
 
@@ -122,7 +127,7 @@ Diff details include content and normalized hashes, scrape metadata, added/remov
 | `sameOrigin`                     | Defaults to same-origin crawling.                                                             |
 | `include` / `exclude`            | URL pattern filters.                                                                          |
 | `concurrency` / per-host options | Bound crawl work while HTTP politeness also enforces host limits.                             |
-| `crawlId`                        | Resume/persist crawl state under `~/.pi/scraper/crawl/<crawlId>/` where supported.                    |
+| `crawlId`                        | Resume/persist crawl state under `~/.pi/scraper/crawl/<crawlId>/` where supported.            |
 | `resume`                         | For `web_crawl`, resume existing `crawlId` state; defaults to true when a saved crawl exists. |
 
 ## Scrape modes
@@ -179,16 +184,19 @@ Pi inline truncation defaults are preserved:
 - 50KB
 - 2000 lines
 
-Large crawl, batch, diff, and optionally scrape outputs are stored locally and returned with a compact summary plus `responseId`. Retrieve full content later with `web_get_result`. For long crawls, call `web_get_result` with `{ "crawlId": "..." }` to inspect persisted crawl status metadata, including status, counts, frontier size, last error, and the final `responseId` when available. For diff workflows, `web_get_result` can also list or retrieve snapshot metadata by URL and optional `snapshotName`.
+Large crawl, batch, diff, and scrape outputs are stored locally and returned with a compact summary plus `responseId`. Retrieve full content later with `web_get_result`. For long crawls, call `web_get_result` with `{ "crawlId": "..." }` to inspect persisted crawl status metadata, including status, counts, frontier size, last error, and the final `responseId` when available. For diff workflows, `web_get_result` can also list or retrieve snapshot metadata by URL and optional `snapshotName`.
+
+The storage backend now uses a local SQLite metadata index plus content-addressed blob files. Cache reuse is opt-in with `cacheTtlSeconds`; default behavior remains fresh network fetches. Cached results include `cache.cached`, `fetchedAt`, `ageSeconds`, `ttlSeconds`, and `staleness` metadata when returned from the fetch cache. Use `web_history` + `web_get_result` only when content age is acceptable; use `refresh: true` for time-sensitive questions. The fetch cache currently records in-memory text/buffer responses; streamed binary downloads are still saved as normal result blobs but are not reused as raw HTTP cache hits.
 
 Persistent paths:
 
-| Data         | Path                    |
-| ------------ | ----------------------- |
-| Config       | `~/.pi/scraper/config/web.json` |
-| Full results | `~/.pi/scraper/results/`        |
-| Crawl state  | `~/.pi/scraper/crawl/`          |
-| Snapshots    | `~/.pi/scraper/snapshots/`      |
+| Data             | Path                                                                     |
+| ---------------- | ------------------------------------------------------------------------ |
+| Config           | `~/.pi/scraper/config/web.json`                                          |
+| SQLite index     | `~/.pi/scraper/index.db`                                                 |
+| Payload blobs    | `~/.pi/scraper/blobs/<aa>/...`                                           |
+| Legacy snapshots | `~/.pi/scraper/snapshots/`                                               |
+| Legacy backups   | `~/.pi/scraper/results.bak/`, `~/.pi/scraper/crawl.bak/` after migration |
 
 ## Safety and anti-bot scope
 

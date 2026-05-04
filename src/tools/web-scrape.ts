@@ -1,6 +1,7 @@
 import { Type, type Static } from "@mariozechner/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
 import { scrapeUrl } from "../scrape/pipeline.js";
+import { storeResult } from "../storage/results.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
 import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
@@ -25,8 +26,9 @@ export const webScrapeTool = defineWebTool({
     await emitProgress(onUpdate, { state: "loading", url: params.url, message: `scraping ${scrapeOptions.mode}` });
     const result = await scrapeUrl(params.url, scrapeOptions, {}, signal);
     await emitProgress(onUpdate, { state: result.error ? "error" : "done", url: result.finalUrl ?? params.url, message: result.error?.message });
+    const stored = await storeResult(result);
     return toolResult({
-      text: result.error ? `Scrape failed: ${result.error.message}` : summarizeScrape(result),
+      text: result.error ? `Scrape failed: ${result.error.message}` : `${summarizeScrape(result)}\nresponseId: ${stored.responseId}`,
       data: result.data,
       url: result.url,
       finalUrl: result.finalUrl,
@@ -37,6 +39,9 @@ export const webScrapeTool = defineWebTool({
       truncated: result.truncated,
       contentType: result.contentType,
       downloadedBytes: result.downloadedBytes,
+      cache: result.cache,
+      responseId: stored.responseId,
+      fullOutputPath: stored.fullOutputPath,
       error: result.error,
     });
   },

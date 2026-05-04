@@ -1,5 +1,5 @@
 import { createHttpClient, type HttpClient } from "../http/client.js";
-import type { ExtractorCapability } from "../types.js";
+import type { CommonRequestOptions, ExtractorCapability } from "../types.js";
 import type {
 	VerticalExtractionResult,
 	VerticalExtractor,
@@ -40,6 +40,7 @@ export const verticalExtractors = [
 export interface VerticalRegistryDeps {
 	context?: VerticalExtractorContext;
 	httpClient?: Pick<HttpClient, "fetchUrl">;
+	requestOptions?: Pick<CommonRequestOptions, "cacheTtlSeconds" | "maxAgeSeconds" | "refresh">;
 }
 
 export function listExtractorCapabilities(): ExtractorCapability[] {
@@ -81,7 +82,7 @@ export async function runVerticalExtractor<T = unknown>(
 		const data = await extractor.extract(
 			url,
 			match,
-			deps.context ?? httpContext(deps.httpClient),
+			deps.context ?? httpContext(deps.httpClient, deps.requestOptions),
 			signal,
 		);
 		return { extractor: name, url: url.toString(), data: data as T };
@@ -101,6 +102,7 @@ export async function runVerticalExtractor<T = unknown>(
 
 function httpContext(
 	client: Pick<HttpClient, "fetchUrl"> = createHttpClient(),
+	requestOptions: Pick<CommonRequestOptions, "cacheTtlSeconds" | "maxAgeSeconds" | "refresh"> = {},
 ): VerticalExtractorContext {
 	return {
 		fetchJson: async <T>(url: string, signal?: AbortSignal) => {
@@ -110,6 +112,7 @@ function httpContext(
 					forceText: true,
 					respectRobots: false,
 					headers: { accept: "application/json" },
+					...requestOptions,
 				},
 				signal,
 			);
@@ -118,7 +121,7 @@ function httpContext(
 		fetchText: async (url: string, signal?: AbortSignal) => {
 			const response = await client.fetchUrl(
 				url,
-				{ forceText: true, respectRobots: false },
+				{ forceText: true, respectRobots: false, ...requestOptions },
 				signal,
 			);
 			return response.text ?? "";

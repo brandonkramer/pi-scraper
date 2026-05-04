@@ -209,6 +209,9 @@ function fetchOptions(options: CommonScrapeOptions): FetchUrlOptions {
 		headers: options.headers,
 		proxy: options.proxy,
 		respectRobots: options.respectRobots,
+		cacheTtlSeconds: options.cacheTtlSeconds,
+		maxAgeSeconds: options.maxAgeSeconds,
+		refresh: options.refresh,
 	};
 }
 
@@ -228,6 +231,7 @@ async function responseScrape(
 		format,
 		response.contentType,
 		response.downloadedBytes,
+		response.cache,
 	);
 	if (route.kind === "binary")
 		return {
@@ -420,6 +424,7 @@ function resultBase(
 	format: OutputFormat,
 	contentType?: string,
 	downloadedBytes?: number,
+	cache?: ScrapeResult["cache"],
 ): ScrapeResult {
 	return {
 		url,
@@ -431,6 +436,7 @@ function resultBase(
 		truncated: false,
 		contentType,
 		downloadedBytes,
+		cache,
 		data: { route: "binary", extractionPath: [mode] },
 	};
 }

@@ -1,13 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { PI_TRUNCATION_LIMITS } from "../defaults.js";
 import type { ResponseStorageMetadata } from "../types.js";
-import {
-	ensureDir,
-	type ResolveStorageOptions,
-	resolvePiStoragePaths,
-} from "./paths.js";
+import { normalizeUrl } from "../url/normalize.js";
+import { readBlob, writeBlob } from "./blobs.js";
+import { openStorageDb } from "./db.js";
+import type { ResolveStorageOptions } from "./paths.js";
+import { recordStoredSearchText } from "./search.js";
 
 export interface StoredResult<T = unknown> {
 	metadata: ResponseStorageMetadata;
@@ -17,6 +15,8 @@ export interface StoredResult<T = unknown> {
 export interface StoreResultOptions extends ResolveStorageOptions {
 	responseId?: string;
 	contentType?: string;
+	expiresAt?: string;
+	ttlSeconds?: number;
 }
 
 export interface TruncatedOutput {
@@ -25,24 +25,46 @@ export interface TruncatedOutput {
 	metadata?: ResponseStorageMetadata;
 }
 
+interface ResponseRow {
+	metadata_json: string;
+	content_hash: string;
+	content_type: string | null;
+}
+
 export async function storeResult<T>(
 	value: T,
 	options: StoreResultOptions = {},
 ): Promise<ResponseStorageMetadata> {
 	const responseId = options.responseId ?? randomUUID();
-	const dir = await ensureDir(resolvePiStoragePaths(options).results);
-	const fullOutputPath = path.join(dir, `${safeId(responseId)}.json`);
 	const storedAt = new Date().toISOString();
 	const valueJson = JSON.stringify(value) ?? "null";
+	const contentType = options.contentType ?? "application/json";
+	const blob = await writeBlob(valueJson, contentType, options);
 	const metadata: ResponseStorageMetadata = {
 		responseId,
-		fullOutputPath,
+		fullOutputPath: blob.blobPath,
 		storedAt,
-		byteLength: Buffer.byteLength(valueJson),
-		contentType: options.contentType ?? "application/json",
+		byteLength: blob.byteLength,
+		contentType,
 	};
-	const storedJson = `{"metadata":${JSON.stringify(metadata)},"value":${valueJson}}\n`;
-	await writeFile(fullOutputPath, storedJson, { mode: 0o600 });
+	const fields = responseFields(value, responseId);
+	const db = await openStorageDb(options);
+	db.prepare(UPSERT_RESPONSE).run(
+		responseId,
+		fields.url,
+		fields.urlNormalized,
+		fields.finalUrl ?? null,
+		blob.contentHash,
+		contentType,
+		fields.status ?? null,
+		fields.mode ?? null,
+		fields.format ?? null,
+		blob.byteLength,
+		storedAt,
+		expiresAt(storedAt, options) ?? null,
+		JSON.stringify(metadata),
+	);
+	await recordStoredSearchText(responseId, value, options);
 	return metadata;
 }
 
@@ -50,14 +72,20 @@ export async function getStoredResult<T = unknown>(
 	responseId: string,
 	options: ResolveStorageOptions = {},
 ): Promise<StoredResult<T>> {
-	const fullOutputPath = path.join(
-		resolvePiStoragePaths(options).results,
-		`${safeId(responseId)}.json`,
-	);
-	const parsed = JSON.parse(
-		await readFile(fullOutputPath, "utf8"),
-	) as StoredResult<T>;
-	return parsed;
+	const db = await openStorageDb(options);
+	const row = db
+		.prepare(
+			"SELECT metadata_json, content_hash, content_type FROM responses WHERE response_id = ?",
+		)
+		.get(responseId) as ResponseRow | undefined;
+	if (!row) throw new Error(`Stored result not found: ${responseId}`);
+	const metadata = JSON.parse(row.metadata_json) as ResponseStorageMetadata;
+	const value = JSON.parse(
+		(
+			await readBlob(row.content_hash, row.content_type ?? undefined, options)
+		).toString("utf8"),
+	) as T;
+	return { metadata, value };
 }
 
 export async function truncateAndStore(
@@ -78,6 +106,63 @@ export async function truncateAndStore(
 		truncated: true,
 		metadata,
 	};
+}
+
+export async function listStoredResponses(
+	url: string,
+	options: ResolveStorageOptions & { since?: Date; limit?: number } = {},
+): Promise<Array<Record<string, unknown>>> {
+	const db = await openStorageDb(options);
+	const normalized = normalizeUrl(url);
+	const rows = db
+		.prepare(LIST_RESPONSES)
+		.all(
+			normalized,
+			options.since?.toISOString() ?? "0000-01-01T00:00:00.000Z",
+			options.limit ?? 10,
+		) as Array<Record<string, unknown>>;
+	return rows;
+}
+
+function responseFields(value: unknown, responseId: string) {
+	const source =
+		typeof value === "object" && value !== null
+			? (value as Record<string, unknown>)
+			: {};
+	const url =
+		stringField(source.url) ??
+		stringField(source.finalUrl) ??
+		`urn:response:${responseId}`;
+	const finalUrl = stringField(source.finalUrl);
+	return {
+		url,
+		urlNormalized: normalizeMaybe(url),
+		finalUrl,
+		status: numberField(source.status),
+		mode: stringField(source.mode),
+		format: stringField(source.format),
+	};
+}
+
+function normalizeMaybe(url: string): string {
+	try {
+		return normalizeUrl(url);
+	} catch {
+		return url;
+	}
+}
+
+function expiresAt(
+	storedAt: string,
+	options: StoreResultOptions,
+): string | undefined {
+	if (options.expiresAt) return options.expiresAt;
+	if (options.ttlSeconds && options.ttlSeconds > 0) {
+		return new Date(
+			Date.parse(storedAt) + options.ttlSeconds * 1_000,
+		).toISOString();
+	}
+	return undefined;
 }
 
 function firstLines(text: string, maxLines: number): string {
@@ -102,6 +187,18 @@ function trimToBytes(text: string, maxBytes: number): string {
 	return text.slice(0, low);
 }
 
-function safeId(responseId: string): string {
-	return responseId.replace(/[^a-zA-Z0-9._-]/gu, "_");
+function stringField(value: unknown): string | undefined {
+	return typeof value === "string" ? value : undefined;
 }
+
+function numberField(value: unknown): number | undefined {
+	return typeof value === "number" ? value : undefined;
+}
+
+const UPSERT_RESPONSE = `INSERT OR REPLACE INTO responses
+(response_id, url, url_normalized, final_url, content_hash, content_type, status, mode, format, byte_length, stored_at, expires_at, metadata_json)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+const LIST_RESPONSES = `SELECT response_id AS responseId, stored_at AS storedAt, status, content_type AS contentType,
+byte_length AS byteLength, mode, format, expires_at AS expiresAt FROM responses
+WHERE url_normalized = ? AND stored_at >= ? ORDER BY stored_at DESC LIMIT ?`;

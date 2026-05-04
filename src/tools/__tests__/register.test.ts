@@ -14,6 +14,9 @@ const expectedNames = [
 	"web_extract",
 	"web_summarize",
 	"web_get_result",
+	"web_history",
+	"web_crawls",
+	"web_search_scrapes",
 ];
 
 describe("web tool registration", () => {

@@ -22,6 +22,9 @@ export interface SiteMapResult {
 
 export interface SiteMapOptions {
   maxSitemaps?: number;
+  cacheTtlSeconds?: number;
+  maxAgeSeconds?: number;
+  refresh?: boolean;
 }
 
 export interface SiteMapDeps {
@@ -35,7 +38,7 @@ export async function discoverSiteUrls(seed: string, options: SiteMapOptions = {
   const sitemaps = new Set<string>();
 
   const robotsUrl = robotsUrlForSite(seedUrl);
-  const robots = await fetchText(client, robotsUrl, signal);
+  const robots = await fetchText(client, robotsUrl, options, signal);
   if (robots) for (const sitemap of parseRobotsSitemaps(robots, robotsUrl).sitemaps) sitemaps.add(sitemap);
   sitemaps.add(defaultSitemapUrl(seedUrl));
 
@@ -43,7 +46,7 @@ export async function discoverSiteUrls(seed: string, options: SiteMapOptions = {
   const maxSitemaps = options.maxSitemaps ?? 20;
   for (let index = 0; index < queue.length && index < maxSitemaps; index += 1) {
     const sitemapUrl = queue[index]!;
-    const body = await fetchSitemap(client, sitemapUrl, signal);
+    const body = await fetchSitemap(client, sitemapUrl, options, signal);
     if (!body) continue;
     const parsed = parseSitemapXml(body, sitemapUrl);
     for (const nested of parsed.sitemaps) if (!sitemaps.has(nested)) { sitemaps.add(nested); queue.push(nested); }
@@ -51,7 +54,7 @@ export async function discoverSiteUrls(seed: string, options: SiteMapOptions = {
   }
 
   const llmsUrl = llmsUrlForSite(seedUrl);
-  const llms = await fetchText(client, llmsUrl, signal);
+  const llms = await fetchText(client, llmsUrl, options, signal);
   if (llms) for (const entry of parseLlmsLinks(llms, llmsUrl)) found.set(entry.url, { url: entry.url, source: "llms", sourceUrl: entry.source, title: entry.title });
 
   return { seedUrl, urls: [...found.values()].sort((a, b) => a.url.localeCompare(b.url)), tree: buildTree([...found.keys()]), sitemaps: [...sitemaps] };
@@ -67,13 +70,13 @@ function buildTree(urls: string[]): Record<string, string[]> {
   return tree;
 }
 
-async function fetchText(client: Pick<HttpClient, "fetchUrl">, url: string, signal?: AbortSignal): Promise<string | undefined> {
-  const result = await client.fetchUrl(url, { respectRobots: false, forceText: true, maxBytes: 2 * 1024 * 1024 }, signal).catch(() => undefined);
+async function fetchText(client: Pick<HttpClient, "fetchUrl">, url: string, options: SiteMapOptions, signal?: AbortSignal): Promise<string | undefined> {
+  const result = await client.fetchUrl(url, { respectRobots: false, forceText: true, maxBytes: 2 * 1024 * 1024, cacheTtlSeconds: options.cacheTtlSeconds, maxAgeSeconds: options.maxAgeSeconds, refresh: options.refresh }, signal).catch(() => undefined);
   return result?.text;
 }
 
-async function fetchSitemap(client: Pick<HttpClient, "fetchUrl">, url: string, signal?: AbortSignal): Promise<string | Buffer | undefined> {
-  const result = await client.fetchUrl(url, { respectRobots: false, forceText: true, maxBytes: 2 * 1024 * 1024 }, signal).catch(() => undefined);
+async function fetchSitemap(client: Pick<HttpClient, "fetchUrl">, url: string, options: SiteMapOptions, signal?: AbortSignal): Promise<string | Buffer | undefined> {
+  const result = await client.fetchUrl(url, { respectRobots: false, forceText: true, maxBytes: 2 * 1024 * 1024, cacheTtlSeconds: options.cacheTtlSeconds, maxAgeSeconds: options.maxAgeSeconds, refresh: options.refresh }, signal).catch(() => undefined);
   if (!result) return undefined;
   if (url.endsWith(".gz") && result.body) return result.body;
   return result.text ?? result.body;
