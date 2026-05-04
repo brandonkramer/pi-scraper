@@ -26,10 +26,15 @@ export function renderWebToolCall(
 	parts: Array<string | undefined>,
 	theme?: RenderTheme,
 	context?: ToolRenderContext,
+	options: { donePrefix?: string | false; animate?: boolean } = {},
 ): RenderComponent {
 	const label = `${name} ${parts.filter(Boolean).join(" ")}`.trim();
-	if (context?.isPartial) return renderSpinner(label, theme, context);
-	return renderText(accent(`✓ ${label}`, theme));
+	if (context?.isPartial) {
+		if (options.animate !== false) return renderSpinner(label, theme, context);
+		return renderText(accent(label, theme));
+	}
+	const prefix = options.donePrefix === undefined ? "✓" : options.donePrefix;
+	return renderText(accent(prefix ? `${prefix} ${label}` : label, theme));
 }
 
 export function renderWebScrapeResult(
@@ -44,7 +49,7 @@ export function renderWebScrapeResult(
 	const title = envelope.error
 		? errorTitle("web_scrape", envelope.error)
 		: [
-				`✓ web_scrape ${envelope.status ?? "ok"}`,
+				envelope.status ?? "ok",
 				envelope.mode,
 				envelope.format,
 				cacheLabel(envelope),
@@ -158,12 +163,7 @@ export function renderWebHistoryResult(
 	const envelope = result.details as Partial<
 		ResultEnvelope<{ entries?: HistoryEntry[] }>
 	>;
-	const entries = envelope.data?.entries ?? [];
-	const hasResponse = entries.some((entry) => Boolean(entry.responseId));
-	const stale = envelope.qualitySignals?.freshness === "stale_possible";
-	const title =
-		hasResponse && !stale ? "✓ reusable result found" : "↻ refresh recommended";
-	return renderLookupResult(title, result, envelope, expanded);
+	return renderPlainLookupResult(result, envelope, expanded);
 }
 
 export function renderWebCrawlsResult(
@@ -216,6 +216,21 @@ function renderLookupResult(
 		preview: envelope.answerContext ?? result.content[0]?.text,
 		responseId: envelope.responseId,
 	});
+}
+
+function renderPlainLookupResult(
+	result: PiToolShell,
+	envelope: Partial<ResultEnvelope<unknown>>,
+	expanded: boolean,
+): RenderComponent {
+	return renderChecklistResult(
+		envelope.summary ?? result.content[0]?.text ?? "done",
+		expanded,
+		{
+			preview: envelope.answerContext ?? result.content[0]?.text,
+			responseId: envelope.responseId,
+		},
+	);
 }
 
 function renderChecklistResult(
@@ -352,10 +367,10 @@ function diffTitle(
 	diff: DiffData | undefined,
 	summary: string | undefined,
 ): string {
-	if (!diff?.previous) return "✓ saved baseline";
+	if (!diff?.previous) return "saved baseline";
 	if (summary?.includes("No meaningful") || summary?.includes("No content"))
-		return "✓ no content changes";
-	return `⚠ changed: ${diff.diff?.changedCount ?? 0} changed, ${diff.diff?.addedCount ?? 0} added, ${diff.diff?.removedCount ?? 0} removed`;
+		return "no content changes";
+	return `changed: ${diff.diff?.changedCount ?? 0} changed, ${diff.diff?.addedCount ?? 0} added, ${diff.diff?.removedCount ?? 0} removed`;
 }
 
 function accent(text: string, theme?: RenderTheme): string {

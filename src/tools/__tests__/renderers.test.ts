@@ -71,7 +71,10 @@ describe("web tool renderers", () => {
 
 		expect(
 			text(webScrapeTool.renderResult?.(result, { expanded: false })),
-		).toContain("✓ web_scrape 200");
+		).toContain("200 · fast · markdown");
+		expect(
+			text(webScrapeTool.renderResult?.(result, { expanded: false })),
+		).not.toContain("✓ web_scrape");
 		const expanded = text(
 			webScrapeTool.renderResult?.(result, { expanded: true }),
 		);
@@ -136,9 +139,18 @@ describe("web tool renderers", () => {
 			],
 			responseId: "r-batch",
 		});
+		const doneTitle = text(
+			webBatchTool.renderCall?.(
+				{ urls: ["https://a.test", "https://b.test"] },
+				undefined,
+				{ isPartial: false },
+			),
+		);
 		const collapsed = text(
 			webBatchTool.renderResult?.(result, { expanded: false }),
 		);
+		expect(doneTitle).toContain("web_batch 2 urls");
+		expect(doneTitle).not.toContain("✓ web_batch");
 		expect(collapsed).toContain("✓ 1 succeeded");
 		expect(collapsed).toContain("✕ 1 failed");
 		expect(collapsed).toContain("↻ 1 cache hits");
@@ -168,13 +180,13 @@ describe("web tool renderers", () => {
 
 		expect(
 			text(webDiffTool.renderResult?.(baseline, { expanded: false })),
-		).toContain("✓ saved baseline");
+		).toContain("saved baseline");
 		expect(
 			text(webDiffTool.renderResult?.(unchanged, { expanded: false })),
-		).toContain("✓ no content changes");
+		).toContain("no content changes");
 		expect(
 			text(webDiffTool.renderResult?.(changed, { expanded: false })),
-		).toContain("⚠ changed: 2 changed, 1 added, 0 removed");
+		).toContain("changed: 2 changed, 1 added, 0 removed");
 	});
 
 	it("renders DB lookup interpretation without loaders", () => {
@@ -196,8 +208,15 @@ describe("web tool renderers", () => {
 		});
 
 		expect(
+			text(
+				webHistoryTool.renderCall?.({ url: "https://example.com" }, undefined, {
+					isPartial: false,
+				}),
+			),
+		).toContain("✓ web_history");
+		expect(
 			text(webHistoryTool.renderResult?.(history, { expanded: false })),
-		).toContain("✓ reusable result found");
+		).not.toContain("✓ reusable result found");
 		expect(
 			text(webCrawlsTool.renderResult?.(crawls, { expanded: false })),
 		).toContain("⚠ recrawl recommended");

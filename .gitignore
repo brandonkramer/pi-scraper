@@ -3,9 +3,12 @@ node_modules/
 
 # bench artifacts (dev-only)
 bench/.build/
-bench/results/**/history/*
-!bench/results/**/history/
-!bench/results/**/history/.gitkeep
+bench/decisions/**
+bench/results/**
+!bench/results/
+!bench/results/README.md
+!bench/results/**/
+!bench/results/**/.gitkeep
 
 # env / secrets
 .env

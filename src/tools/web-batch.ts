@@ -82,6 +82,7 @@ export const webBatchTool = defineWebTool({
 			[`${args.urls.length} urls`, `(${args.mode ?? "auto"})`],
 			theme,
 			context,
+			{ donePrefix: false },
 		),
 	renderResult: (result, { expanded }) =>
 		renderWebBatchResult(result, expanded),
