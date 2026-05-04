@@ -6,7 +6,7 @@ import {
 	DEFAULT_TIMEOUT_SECONDS,
 	DEFAULT_USER_AGENT,
 } from "../defaults.js";
-import type { CommonRequestOptions } from "../types.js";
+import type { CacheMetadata, CommonRequestOptions } from "../types.js";
 import {
 	BodySizeLimitError,
 	collectBody,
@@ -32,6 +32,8 @@ import {
 import { RobotsCache, RobotsDeniedError } from "./robots.js";
 import { decodeText } from "./text-decode.js";
 import { withTimeout } from "./timeout.js";
+import { findFreshFetch, recordFetch } from "../storage/cache.js";
+import type { ResolveStorageOptions } from "../storage/paths.js";
 import {
 	assertSafeFetchUrl,
 	type SafeUrlResult,
@@ -47,6 +49,7 @@ export interface HttpClientOptions extends UrlSafetyOptions {
 	perHostConcurrency?: number;
 	retryAttempts?: number;
 	maxRedirects?: number;
+	storage?: ResolveStorageOptions;
 }
 
 export interface FetchUrlOptions extends CommonRequestOptions {
@@ -69,6 +72,7 @@ export interface FetchUrlResult {
 	text?: string;
 	file?: BinaryDownloadMetadata;
 	downloadedBytes: number;
+	cache?: CacheMetadata;
 }
 
 export class HttpClient {
@@ -97,7 +101,29 @@ export class HttpClient {
 	): Promise<FetchUrlResult> {
 		const safe = await assertSafeFetchUrl(input, this.options);
 		try {
-			return await this.fetchWithRetries(safe, fetchOptions, signal, true);
+			const ttl = fetchOptions.cacheTtlSeconds;
+			if (
+				fetchOptions.method !== "HEAD" &&
+				ttl &&
+				ttl > 0 &&
+				fetchOptions.refresh !== true
+			) {
+				const hit = await findFreshFetch(safe.normalizedUrl, ttl, {
+					...this.options.storage,
+					maxAgeSeconds: fetchOptions.maxAgeSeconds,
+				});
+				if (hit) return hit;
+			}
+			const result = await this.fetchWithRetries(
+				safe,
+				fetchOptions,
+				signal,
+				true,
+			);
+			if (fetchOptions.method !== "HEAD" && ttl && ttl > 0) {
+				await recordFetch(result, { ...this.options.storage, ttlSeconds: ttl });
+			}
+			return { ...result, cache: { cached: false } };
 		} catch (error) {
 			if (error instanceof HttpClientError) {
 				throw error;

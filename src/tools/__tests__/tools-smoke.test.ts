@@ -109,6 +109,12 @@ function smokeParams(name: string): unknown {
 			return { content: "summarize this local text", sentences: 1 };
 		case "web_get_result":
 			return { responseId: "missing-smoke-result" };
+		case "web_history":
+			return { url: "https://example.com", limit: 5 };
+		case "web_crawls":
+			return { limit: 5 };
+		case "web_search_scrapes":
+			return { query: "example", limit: 5 };
 		default:
 			throw new Error("Missing smoke params");
 	}

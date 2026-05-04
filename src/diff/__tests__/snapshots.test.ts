@@ -3,9 +3,16 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ScrapeResult } from "../../scrape/pipeline.js";
+import { openStorageDb, closeStorageDbs } from "../../storage/db.js";
+import { storeResult } from "../../storage/results.js";
 import { compareSnapshotText } from "../compare.js";
 import { normalizeVolatileSnapshotText } from "../normalize.js";
-import { diffScrapeResult, listSnapshots, loadSnapshot } from "../snapshots.js";
+import {
+	diffScrapeResult,
+	listSnapshots,
+	loadSnapshot,
+	updateSnapshotReference,
+} from "../snapshots.js";
 
 let rootDir: string;
 
@@ -14,6 +21,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+	closeStorageDbs();
 	await rm(rootDir, { recursive: true, force: true });
 });
 
@@ -58,6 +66,46 @@ describe("snapshot diffing", () => {
 		});
 		expect(homepage?.content.text).toBe("Baseline A");
 		expect(docs?.content.text).toBe("Baseline B");
+	});
+
+	it("upserts named snapshot references transactionally in SQLite", async () => {
+		const first = await diffScrapeResult(
+			result("https://example.com", "Baseline A"),
+			{
+				rootDir,
+				snapshotName: "homepage",
+			},
+		);
+		await updateSnapshotReference(
+			"https://example.com",
+			await storeResult(first, { rootDir, responseId: "diff-1" }),
+			{ rootDir, snapshotName: "homepage" },
+		);
+		const second = await diffScrapeResult(
+			result("https://example.com", "Baseline B"),
+			{
+				rootDir,
+				snapshotName: "homepage",
+			},
+		);
+		await updateSnapshotReference(
+			"https://example.com",
+			await storeResult(second, { rootDir, responseId: "diff-2" }),
+			{ rootDir, snapshotName: "homepage" },
+		);
+		const db = await openStorageDb({ rootDir });
+		const count = db
+			.prepare(
+				"SELECT COUNT(*) AS count FROM snapshots WHERE snapshot_name = ?",
+			)
+			.get("homepage") as { count: number };
+		const loaded = await loadSnapshot("https://example.com", {
+			rootDir,
+			snapshotName: "homepage",
+		});
+
+		expect(count.count).toBe(1);
+		expect(loaded?.content.text).toBe("Baseline B");
 	});
 
 	it("persists snapshot metadata and lists snapshots by URL/name", async () => {

@@ -22,6 +22,9 @@ Use this skill when deciding which `pi-scraper` tool to call.
 - Use `web_extract` for ad hoc schema/prompt extraction from an arbitrary page; this needs a model-backed adapter.
 - Use `web_summarize` for one-page summaries.
 - Use `web_get_result` when a previous scraper/crawl/batch/diff tool returned a `responseId`; use `crawlId` for persisted crawl status metadata, or `snapshotUrl`, `snapshotName`, and `listSnapshots` for diff snapshot metadata.
+- Use `web_history` to find prior scrapes for a URL before deciding whether to refetch; follow returned `responseId` values with `web_get_result`.
+- Use `web_crawls` to find prior crawls; `recommendedAction` is `resume` for fresh running/paused crawls, `reuse_results` for fresh or aging done crawls, `recrawl` for stale/expired done crawls, `discard` for old error crawls, and `inspect` otherwise.
+- Use `web_search_scrapes` for full-text recall across stored markdown when available; handle `{ supported: false }` as a clean negative result.
 
 ## Defaults
 
@@ -30,8 +33,13 @@ Prefer local-first paths:
 1. Try `web_scrape` with `mode: "auto"`.
 2. Use `web_map` before `web_crawl` when the user asks for site structure or URL inventory.
 3. For long crawls, pass a stable `crawlId`; call `web_crawl` again with the same `crawlId` to resume, or call `web_get_result` with that `crawlId` to check counts, frontier size, status, last error, and final `responseId`.
-4. Use browser mode only when requested or when static/data-island/readable recovery is insufficient.
-5. Use a dedicated search/research extension such as `pi-gemini-acp` for broad source discovery or multi-source synthesis, then call `web_scrape` or `web_batch` for deeper reading of selected URLs.
+4. Cache is opt-in via `cacheTtlSeconds`; omit it for always-fresh behavior. Pass `cacheTtlSeconds: 3600` to reuse recent text/HTML/API fetches when age is acceptable; streamed binary downloads are stored as result blobs but are not raw fetch-cache hits yet.
+5. When using `web_history` or `web_get_result`, check `ageSeconds` and `staleness`; treat `stale` or `expired` rows as candidates for refresh, not authoritative current facts.
+6. Use `refresh: true` for time-sensitive content such as prices, news, stock, availability, weather, status pages, or anything the user asks about now/today.
+7. Treat `web_crawls` results with `recommendedAction: recrawl` as a seed for a new crawl, not as current data.
+8. Prefer `web_history` + `web_get_result` over a fresh `web_scrape` only when the question is not time-sensitive.
+9. Use browser mode only when requested or when static/data-island/readable recovery is insufficient.
+10. Use a dedicated search/research extension such as `pi-gemini-acp` for broad source discovery or multi-source synthesis, then call `web_scrape` or `web_batch` for deeper reading of selected URLs.
 
 ## Provider cautions
 

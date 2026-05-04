@@ -6,11 +6,13 @@ import {
 	type ScrapeResult,
 	scrapeUrl,
 } from "../scrape/pipeline.js";
+import { openStorageDb } from "../storage/db.js";
 import {
 	ensureDir,
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
 } from "../storage/paths.js";
+import { getStoredResult } from "../storage/results.js";
 import type { ResponseStorageMetadata } from "../types.js";
 import { normalizeUrl } from "../url/normalize.js";
 import { compareSnapshotText, type TextDiffSummary } from "./compare.js";
@@ -91,14 +93,9 @@ export async function loadSnapshot(
 	url: string,
 	options: SnapshotOptions = {},
 ): Promise<PageSnapshot | undefined> {
-	const filePath = await snapshotPath(url, options);
-	try {
-		return normalizeLoadedSnapshot(
-			JSON.parse(await readFile(filePath, "utf8")) as PageSnapshot,
-		);
-	} catch {
-		return undefined;
-	}
+	const indexed = await loadIndexedSnapshot(url, options);
+	if (indexed) return indexed;
+	return loadFileSnapshot(url, options);
 }
 
 export async function getSnapshot(
@@ -257,12 +254,64 @@ export async function updateSnapshotReference(
 	response: ResponseStorageMetadata,
 	options: SnapshotOptions = {},
 ): Promise<{ snapshot: PageSnapshot; path: string } | undefined> {
-	const snapshot = await loadSnapshot(url, options);
+	const snapshot = await loadFileSnapshot(url, options);
 	if (!snapshot) return undefined;
 	const updated = attachSnapshotResponse(snapshot, response);
 	const filePath = await snapshotPath(url, options);
 	await writeFile(filePath, JSON.stringify(updated, null, 2), { mode: 0o600 });
+	await upsertSnapshotRow(url, updated, response, options);
 	return { snapshot: updated, path: filePath };
+}
+
+async function loadFileSnapshot(
+	url: string,
+	options: SnapshotOptions,
+): Promise<PageSnapshot | undefined> {
+	const filePath = await snapshotPath(url, options);
+	try {
+		return normalizeLoadedSnapshot(
+			JSON.parse(await readFile(filePath, "utf8")) as PageSnapshot,
+		);
+	} catch {
+		return undefined;
+	}
+}
+
+async function loadIndexedSnapshot(
+	url: string,
+	options: SnapshotOptions,
+): Promise<PageSnapshot | undefined> {
+	try {
+		const db = await openStorageDb(options);
+		const row = db
+			.prepare(SELECT_SNAPSHOT)
+			.get(normalizeUrl(url), options.snapshotName ?? "") as
+			| { response_id: string }
+			| undefined;
+		if (!row) return undefined;
+		const stored = await getStoredResult<SnapshotDiffResult>(
+			row.response_id,
+			options,
+		);
+		return normalizeLoadedSnapshot(stored.value.current);
+	} catch {
+		return undefined;
+	}
+}
+
+async function upsertSnapshotRow(
+	url: string,
+	snapshot: PageSnapshot,
+	response: ResponseStorageMetadata,
+	options: SnapshotOptions,
+): Promise<void> {
+	const db = await openStorageDb(options);
+	db.prepare(UPSERT_SNAPSHOT).run(
+		normalizeUrl(url),
+		options.snapshotName ?? "",
+		response.responseId,
+		snapshot.timestamp,
+	);
 }
 
 export function attachSnapshotResponse(
@@ -373,3 +422,9 @@ function safeSnapshotName(input: string): string {
 function hash(input: string): string {
 	return createHash("sha256").update(input).digest("hex");
 }
+
+const SELECT_SNAPSHOT = `SELECT response_id FROM snapshots
+WHERE url = ? AND snapshot_name = ? ORDER BY taken_at DESC LIMIT 1`;
+
+const UPSERT_SNAPSHOT = `INSERT OR REPLACE INTO snapshots
+(url, snapshot_name, response_id, taken_at) VALUES (?, ?, ?, ?)`;

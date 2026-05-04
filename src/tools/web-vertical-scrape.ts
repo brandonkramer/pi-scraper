@@ -26,6 +26,9 @@ export const webVerticalScrapeSchema = Type.Object({
 		description: "Named deterministic vertical extractor.",
 	}),
 	url: urlProperty("URL supported by the selected extractor."),
+	cacheTtlSeconds: Type.Optional(Type.Number({ minimum: 1, description: "Opt-in fetch cache TTL in seconds for extractor API/page fetches." })),
+	maxAgeSeconds: Type.Optional(Type.Number({ minimum: 1 })),
+	refresh: Type.Optional(Type.Boolean()),
 });
 
 type Params = Static<typeof webVerticalScrapeSchema>;
@@ -45,7 +48,7 @@ export const webVerticalScrapeTool = defineWebTool({
 		const result = await runVerticalExtractor(
 			params.extractor,
 			params.url,
-			{},
+			{ requestOptions: { cacheTtlSeconds: params.cacheTtlSeconds, maxAgeSeconds: params.maxAgeSeconds, refresh: params.refresh } },
 			signal,
 		);
 		return toolResult({
