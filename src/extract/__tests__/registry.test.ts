@@ -183,6 +183,10 @@ describe("vertical extractor registry", () => {
 				"hackernews",
 				"arxiv",
 				"deepwiki",
+				"ossinsight_collections",
+				"ossinsight_collection_ranking",
+				"ossinsight_trending_repos",
+				"ossinsight_repo_analytics",
 			]),
 		);
 		expect(listExtractorCapabilities()[0]).toMatchObject({
