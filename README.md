@@ -45,7 +45,7 @@ Normal installs include the optional Playwright package but do **not** bundle Ch
 npx playwright install chromium
 ```
 
-If optional dependencies were omitted, first run `npm install playwright` in the `pi-scraper` checkout/install directory. 
+If optional dependencies were omitted, first run `npm install playwright` in the `pi-scraper` checkout/install directory.
 
 Managed environments that install browsers separately can set:
 
@@ -262,6 +262,8 @@ npm run smoke:install
 npm run audit:strict
 PI_SCRAPER_LIVE=1 npm run smoke:live
 ```
+
+Benchmark suites live under `bench/suites/`; generated summaries and ignored JSON history live under `bench/results/`. See [`bench/README.md`](bench/README.md) for the current layout and output paths.
 
 Optional browser smoke:
 
