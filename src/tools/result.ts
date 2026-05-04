@@ -22,6 +22,13 @@ export interface ResultShellOptions<TData> {
 	truncated?: boolean;
 	sources?: ResultEnvelope<TData>["sources"];
 	citations?: ResultEnvelope<TData>["citations"];
+	summary?: string;
+	answerContext?: string;
+	sourceNotes?: ResultEnvelope<TData>["sourceNotes"];
+	qualitySignals?: ResultEnvelope<TData>["qualitySignals"];
+	nextActions?: ResultEnvelope<TData>["nextActions"];
+	assistantGuidance?: string;
+	diagnostics?: Record<string, unknown>;
 	error?: StructuredError;
 	timing?: Partial<TimingInfo>;
 }
@@ -47,6 +54,13 @@ export function toolResult<TData>(
 			cache: options.cache,
 			sources: options.sources,
 			citations: options.citations,
+			summary: options.summary,
+			answerContext: options.answerContext,
+			sourceNotes: options.sourceNotes,
+			qualitySignals: options.qualitySignals,
+			nextActions: options.nextActions,
+			assistantGuidance: options.assistantGuidance,
+			diagnostics: options.diagnostics,
 			error: options.error,
 		},
 	};

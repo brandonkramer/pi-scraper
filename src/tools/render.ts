@@ -78,10 +78,38 @@ export function renderEnvelopeResult(
 	const id = details?.responseId ? ` · responseId: ${details.responseId}` : "";
 	const url = details?.finalUrl ?? details?.url;
 	const preview = result.content[0]?.text ?? "";
-	const summary = `${status}${url ? ` · ${url}` : ""}${id}`;
+	const summary = details?.summary ?? `${status}${url ? ` · ${url}` : ""}${id}`;
 	return renderText(
-		expanded ? `${summary}\n${preview.slice(0, 500)}` : summary,
+		expanded
+			? expandedEnvelopeText(summary, preview, details)
+			: summary.slice(0, 220),
 	);
+}
+
+function expandedEnvelopeText(
+	summary: string,
+	preview: string,
+	details: Partial<ResultEnvelope<unknown>> | undefined,
+): string {
+	const lines = [summary];
+	if (details?.answerContext) {
+		lines.push("", details.answerContext.slice(0, 500));
+	} else if (preview) {
+		lines.push("", preview.slice(0, 500));
+	}
+	if (details?.nextActions?.length) {
+		lines.push(
+			"",
+			"Next actions:",
+			...details.nextActions
+				.slice(0, 3)
+				.map(
+					(action) =>
+						`- ${action.action}${action.tool ? ` via ${action.tool}` : ""}: ${action.description}`,
+				),
+		);
+	}
+	return lines.join("\n");
 }
 
 export function summarizeData(value: unknown): string {

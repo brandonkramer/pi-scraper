@@ -2,6 +2,7 @@ import { type Static, Type } from "@mariozechner/pi-ai";
 import { extractAdHoc, MissingExtractInputError } from "../extract/ad-hoc.js";
 import type { ModelAdapter } from "../extract/model.js";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.js";
+import { qualityFromCache, storedResultGuidance } from "./agentic-context.js";
 import { defineWebTool, type WebTool } from "./define.js";
 import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
 import {
@@ -59,6 +60,7 @@ export function createWebExtractTool(
 					signal,
 				);
 				const scrape = result.input.scrape;
+				const summary = `Extracted structured data from ${result.input.source}${scrape?.cache?.cached ? " using cached scrape input" : scrape ? " using fresh scrape input" : " input"}.`;
 				return toolResult({
 					text: summarizeExtraction(result.data),
 					data: result,
@@ -71,6 +73,11 @@ export function createWebExtractTool(
 					truncated: scrape?.truncated,
 					contentType: scrape?.contentType,
 					downloadedBytes: scrape?.downloadedBytes,
+					cache: scrape?.cache,
+					summary,
+					answerContext: `${summary} Refresh the source page before extraction when the requested facts are time-sensitive.`,
+					qualitySignals: qualityFromCache(scrape?.cache),
+					assistantGuidance: storedResultGuidance(),
 				});
 			} catch (error) {
 				return errorResult(
