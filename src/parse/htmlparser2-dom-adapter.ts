@@ -3,14 +3,15 @@ import renderDom from "dom-serializer";
 import type { AnyNode, Document } from "domhandler";
 import * as domutils from "domutils";
 import { parseDocument } from "htmlparser2";
-import type { DomAdapter, DomNode, DomSelection } from "../dom-adapter.js";
+import type { DomAdapter, DomNode, DomSelection } from "./dom-adapter.js";
 
-class Htmlparser2Selection implements DomSelection {
+class Htmlparser2DomSelection implements DomSelection {
 	readonly adapterKind = "dom-selection" as const;
 
 	constructor(readonly selection: AnyNode[]) {}
 }
 
+/** Loads HTML into the htmlparser2-backed DOM adapter. */
 export function loadHtmlparser2Dom(html: string): DomAdapter {
 	return new Htmlparser2DomAdapter(
 		parseDocument(html, {
@@ -49,7 +50,7 @@ class Htmlparser2DomAdapter implements DomAdapter {
 
 	text(target: DomSelection | DomNode): string {
 		if (target === undefined || target === null) return "";
-		if (target instanceof Htmlparser2Selection) {
+		if (target instanceof Htmlparser2DomSelection) {
 			return domutils.textContent(target.selection);
 		}
 		return domutils.textContent(target as AnyNode);
@@ -64,7 +65,7 @@ class Htmlparser2DomAdapter implements DomAdapter {
 	attr(target: DomSelection | DomNode, name: string): string | undefined {
 		if (target === undefined || target === null) return undefined;
 		const node =
-			target instanceof Htmlparser2Selection
+			target instanceof Htmlparser2DomSelection
 				? target.selection[0]
 				: (target as AnyNode);
 		return node && domutils.isTag(node)
@@ -85,8 +86,9 @@ class Htmlparser2DomAdapter implements DomAdapter {
 	}
 
 	removeSelection(selection: DomSelection): void {
-		for (const node of this.asSelection(selection))
+		for (const node of this.asSelection(selection)) {
 			domutils.removeElement(node);
+		}
 	}
 
 	private roots(scope: DomSelection | undefined): AnyNode[] {
@@ -96,11 +98,11 @@ class Htmlparser2DomAdapter implements DomAdapter {
 	}
 
 	private wrap(selection: AnyNode[]): DomSelection {
-		return new Htmlparser2Selection(selection);
+		return new Htmlparser2DomSelection(selection);
 	}
 
 	private asSelection(selection: DomSelection): AnyNode[] {
-		if (!(selection instanceof Htmlparser2Selection)) {
+		if (!(selection instanceof Htmlparser2DomSelection)) {
 			throw new TypeError(
 				"DOM selection belongs to a different adapter backend",
 			);

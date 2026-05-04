@@ -7,13 +7,13 @@ import {
 } from "../../brand/extract.js";
 import { htmlToMarkdown } from "../../serialize/markdown.js";
 import { discoverAlternateLinksFromDom } from "../alternates.js";
-import { loadDom } from "../dom-adapter.js";
+import { loadCheerioDom, loadDom } from "../dom-adapter.js";
 import {
 	extractFastPage,
 	extractFastPageFromDom,
 	type FastExtractOptions,
 } from "../fast.js";
-import { loadHtmlparser2Dom } from "./htmlparser2-dom-adapter.js";
+import { loadHtmlparser2Dom } from "../htmlparser2-dom-adapter.js";
 
 const baseUrl = "https://example.com/docs/page";
 
@@ -58,7 +58,7 @@ describe("DOM adapter production parity", () => {
 		const html = fixture(file);
 		const production = projectFast(extractFastPage(html, baseUrl, options));
 		const cheerioDom = projectFast(
-			extractFastPageFromDom(loadDom(html), baseUrl, options),
+			extractFastPageFromDom(loadCheerioDom(html), baseUrl, options),
 		);
 		const htmlparser2Dom = projectFast(
 			extractFastPageFromDom(loadHtmlparser2Dom(html), baseUrl, options),
@@ -73,14 +73,14 @@ describe("DOM adapter production parity", () => {
 
 		expect(
 			discoverAlternateLinksFromDom(loadHtmlparser2Dom(html), baseUrl),
-		).toEqual(discoverAlternateLinksFromDom(loadDom(html), baseUrl));
+		).toEqual(discoverAlternateLinksFromDom(loadCheerioDom(html), baseUrl));
 	});
 
 	it("preserves brand identity signals with both adapter backends", () => {
 		const html = fixture("github-data-island-parity.html");
 		const production = projectBrand(extractBrandIdentity(html, baseUrl));
 		const cheerioDom = projectBrand(
-			extractBrandIdentityFromDom(loadDom(html), baseUrl),
+			extractBrandIdentityFromDom(loadCheerioDom(html), baseUrl),
 		);
 		const htmlparser2Dom = projectBrand(
 			extractBrandIdentityFromDom(loadHtmlparser2Dom(html), baseUrl),
