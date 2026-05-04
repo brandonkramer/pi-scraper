@@ -2,6 +2,7 @@ import { type Static, Type } from "@mariozechner/pi-ai";
 import type { ModelAdapter } from "../extract/model.js";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.js";
 import { summarizePage } from "../summarize/page.js";
+import { qualityFromCache, storedResultGuidance } from "./agentic-context.js";
 import { defineWebTool, type WebTool } from "./define.js";
 import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
 import {
@@ -55,6 +56,7 @@ export function createWebSummarizeTool(
 					signal,
 				);
 				const scrape = result.input.scrape;
+				const summary = `Summarized ${result.input.source}${scrape?.cache?.cached ? " from cached scrape input" : scrape ? " from fresh scrape input" : " input"}.`;
 				return toolResult({
 					text: result.summary,
 					data: result,
@@ -67,6 +69,11 @@ export function createWebSummarizeTool(
 					truncated: scrape?.truncated,
 					contentType: scrape?.contentType,
 					downloadedBytes: scrape?.downloadedBytes,
+					cache: scrape?.cache,
+					summary,
+					answerContext: `${summary} Refresh the source page before summarizing when the user's question is time-sensitive.`,
+					qualitySignals: qualityFromCache(scrape?.cache),
+					assistantGuidance: storedResultGuidance(),
 				});
 			} catch (error) {
 				return errorResult(

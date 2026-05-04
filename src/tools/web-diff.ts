@@ -7,6 +7,11 @@ import {
 } from "../diff/snapshots.js";
 import { scrapeUrl } from "../scrape/pipeline.js";
 import { storeResult } from "../storage/results.js";
+import {
+	retrieveResultAction,
+	sourceNote,
+	storedResultGuidance,
+} from "./agentic-context.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
 import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
@@ -59,6 +64,7 @@ export const webDiffTool = defineWebTool({
 			contentType: "application/json",
 		});
 		const text = renderDiffSummary(diff, stored.responseId);
+		const shaped = shapeDiffResult(diff, stored.responseId);
 		return toolResult({
 			text,
 			data: diff,
@@ -69,6 +75,7 @@ export const webDiffTool = defineWebTool({
 			responseId: stored.responseId,
 			fullOutputPath: stored.fullOutputPath,
 			contentType: "application/json",
+			...shaped,
 		});
 	},
 	renderCall: (args, theme) =>
@@ -82,6 +89,74 @@ export const webDiffTool = defineWebTool({
 	renderResult: (result, { expanded }) =>
 		renderEnvelopeResult(result, expanded),
 });
+
+function shapeDiffResult(diff: SnapshotDiffResult, responseId: string) {
+	const interpretation = diffInterpretation(diff);
+	const sourceUrl = diff.current.finalUrl ?? diff.current.url;
+	return {
+		summary: interpretation,
+		answerContext: [
+			interpretation,
+			diff.previous
+				? `Compared current content against ${diff.snapshotName ? `snapshot '${diff.snapshotName}'` : "the previous unnamed snapshot"}.`
+				: "No previous snapshot existed; this run established the baseline.",
+			`Use responseId ${responseId} to inspect the full diff, hashes, headings, links, metadata changes, and snapshot metadata.`,
+		].join("\n"),
+		sourceNotes: [
+			sourceNote({
+				id: "current",
+				uri: sourceUrl,
+				excerpt: diff.current.content.text.slice(0, 240),
+				relevance: "Current scraped page used for snapshot comparison.",
+				retrievedAt: diff.current.metadata.timestamp,
+				sourceType: "docs",
+			}),
+		],
+		qualitySignals: {
+			confidence: "high" as const,
+			freshness: "current" as const,
+			coverage: "complete" as const,
+			knownGaps: diff.previous
+				? undefined
+				: [
+						"This was the first snapshot, so no previous content was available for comparison.",
+					],
+		},
+		nextActions: [
+			retrieveResultAction(responseId, "Inspect the full stored diff result."),
+		],
+		assistantGuidance: `${storedResultGuidance()} For changed diffs, inspect added/removed sections before answering from an older snapshot.`,
+	};
+}
+
+export function diffInterpretation(diff: SnapshotDiffResult): string {
+	const name = diff.snapshotName
+		? ` snapshot '${diff.snapshotName}'`
+		: " snapshot";
+	if (!diff.previous)
+		return `No previous${name}; saved a baseline for future comparisons.`;
+	if (diff.summary?.unchangedAfterNormalization)
+		return `No meaningful content changes after normalization for${name}; prior content is effectively equivalent.`;
+	const changed = diff.diff?.changedCount ?? 0;
+	const added = diff.diff?.addedCount ?? 0;
+	const removed = diff.diff?.removedCount ?? 0;
+	const headingChanges =
+		(diff.summary?.addedHeadings.length ?? 0) +
+		(diff.summary?.removedHeadings.length ?? 0);
+	const linkChanges =
+		(diff.summary?.addedLinks.length ?? 0) +
+		(diff.summary?.removedLinks.length ?? 0);
+	if (
+		changed === 0 &&
+		added === 0 &&
+		removed === 0 &&
+		headingChanges === 0 &&
+		linkChanges === 0
+	) {
+		return `No content changes detected for${name}; current and previous snapshots match.`;
+	}
+	return `Content changed for${name}: ${changed} changed, ${added} added, ${removed} removed line(s), ${headingChanges} heading change(s), ${linkChanges} link change(s).`;
+}
 
 function renderDiffSummary(
 	diff: SnapshotDiffResult,
