@@ -20,6 +20,17 @@ export interface RenderOptions {
 	isPartial?: boolean;
 }
 
+/** Pi renderer lifecycle context passed to custom tool renderers when available. */
+export interface ToolRenderContext<TParams = unknown> {
+	args?: TParams;
+	expanded?: boolean;
+	isPartial?: boolean;
+	executionStarted?: boolean;
+	invalidate?: () => void;
+	lastComponent?: RenderComponent;
+	state?: Record<string, unknown>;
+}
+
 /**
  * Minimal pi-tui-compatible component returned by custom tool renderers.
  *
@@ -42,11 +53,13 @@ export interface WebTool<TParameters extends TSchema = TSchema> {
 	renderCall?: (
 		args: Static<TParameters>,
 		theme?: RenderTheme,
+		context?: ToolRenderContext<Static<TParameters>>,
 	) => RenderComponent;
 	renderResult?: (
 		result: PiToolShell,
 		options: RenderOptions,
 		theme?: RenderTheme,
+		context?: ToolRenderContext,
 	) => RenderComponent;
 }
 

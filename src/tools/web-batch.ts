@@ -6,7 +6,7 @@ import {
 } from "./agentic-context.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
+import { renderWebBatchResult, renderWebToolCall } from "./web-renderers.js";
 import { toolResult } from "./result.js";
 import { scrapeOptionSchema, urlProperty } from "./schemas.js";
 
@@ -76,12 +76,13 @@ export const webBatchTool = defineWebTool({
 			assistantGuidance: storedResultGuidance(),
 		});
 	},
-	renderCall: (args, theme) =>
-		renderSimpleCall(
+	renderCall: (args, theme, context) =>
+		renderWebToolCall(
 			"web_batch",
 			[`${args.urls.length} urls`, `(${args.mode ?? "auto"})`],
 			theme,
+			context,
 		),
 	renderResult: (result, { expanded }) =>
-		renderEnvelopeResult(result, expanded),
+		renderWebBatchResult(result, expanded),
 });

@@ -12,7 +12,7 @@ import {
 } from "./agentic-context.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
+import { renderWebScrapeResult, renderWebToolCall } from "./web-renderers.js";
 import { toolResult } from "./result.js";
 import { scrapeOptionSchema, urlProperty } from "./schemas.js";
 
@@ -40,12 +40,34 @@ export const webScrapeTool = defineWebTool({
 			state: "loading",
 			url: params.url,
 			message: `scraping ${scrapeOptions.mode}`,
+			checklist: [
+				{ id: "validated", label: "URL validated", state: "done" },
+				{ id: "robots", label: "robots checked", state: "pending" },
+				{ id: "fetch", label: "fetching page", state: "pending" },
+				{ id: "parse", label: "parsing content", state: "pending" },
+				{ id: "store", label: "storing result", state: "pending" },
+			],
 		});
 		const result = await scrapeUrl(params.url, scrapeOptions, {}, signal);
 		await emitProgress(onUpdate, {
 			state: result.error ? "error" : "done",
 			url: result.finalUrl ?? params.url,
 			message: result.error?.message,
+			checklist: [
+				{ id: "validated", label: "URL validated", state: "done" },
+				{ id: "robots", label: "robots checked", state: "done" },
+				{
+					id: "fetch",
+					label: result.cache?.cached ? "cache hit" : "fetched page",
+					state: result.error ? "failed" : "done",
+				},
+				{
+					id: "parse",
+					label: "parsed content",
+					state: result.error ? "failed" : "done",
+				},
+				{ id: "store", label: "storing result", state: "pending" },
+			],
 		});
 		const stored = await storeResult(result);
 		const shaped = shapeScrapeResult(result, stored.responseId);
@@ -70,14 +92,15 @@ export const webScrapeTool = defineWebTool({
 			...shaped,
 		});
 	},
-	renderCall: (args, theme) =>
-		renderSimpleCall(
+	renderCall: (args, theme, context) =>
+		renderWebToolCall(
 			"web_scrape",
 			[args.url, `(${args.mode ?? "auto"} → ${args.format ?? "markdown"})`],
 			theme,
+			context,
 		),
 	renderResult: (result, { expanded }) =>
-		renderEnvelopeResult(result, expanded),
+		renderWebScrapeResult(result, expanded),
 });
 
 function summarizeScrape(

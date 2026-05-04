@@ -14,7 +14,7 @@ import {
 } from "./agentic-context.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
+import { renderWebDiffResult, renderWebToolCall } from "./web-renderers.js";
 import { toolResult } from "./result.js";
 import { scrapeOptionSchema, urlProperty } from "./schemas.js";
 
@@ -78,16 +78,17 @@ export const webDiffTool = defineWebTool({
 			...shaped,
 		});
 	},
-	renderCall: (args, theme) =>
-		renderSimpleCall(
+	renderCall: (args, theme, context) =>
+		renderWebToolCall(
 			"web_diff",
 			args.snapshotName
 				? [args.url, `snapshot:${args.snapshotName}`]
 				: [args.url],
 			theme,
+			context,
 		),
 	renderResult: (result, { expanded }) =>
-		renderEnvelopeResult(result, expanded),
+		renderWebDiffResult(result, expanded),
 });
 
 function shapeDiffResult(diff: SnapshotDiffResult, responseId: string) {
