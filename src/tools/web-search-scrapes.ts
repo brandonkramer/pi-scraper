@@ -9,7 +9,8 @@ import {
 	truncateInline,
 } from "./agentic-context.js";
 import { defineWebTool } from "./define.js";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
+import { renderSimpleCall } from "./render.js";
+import { renderWebSearchScrapesResult } from "./web-renderers.js";
 import { toolResult } from "./result.js";
 
 export const webSearchScrapesSchema = Type.Object({
@@ -50,7 +51,7 @@ export const webSearchScrapesTool = defineWebTool({
 	renderCall: (args, theme) =>
 		renderSimpleCall("web_search_scrapes", [args.query], theme),
 	renderResult: (result, { expanded }) =>
-		renderEnvelopeResult(result, expanded),
+		renderWebSearchScrapesResult(result, expanded),
 });
 
 function shapeSearchResult(query: string, result: SearchResult, limit: number) {

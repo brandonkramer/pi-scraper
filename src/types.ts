@@ -152,6 +152,20 @@ export interface ResultEnvelope<TData = unknown> {
 	error?: StructuredError;
 }
 
+export interface ProgressChecklistItem {
+	id: string;
+	label: string;
+	state: "done" | "pending" | "failed" | "warning" | "info";
+	detail?: string;
+}
+
+export interface ProgressCounts {
+	succeeded?: number;
+	failed?: number;
+	cacheHits?: number;
+	total?: number;
+}
+
 export interface ProgressDetails<TData = unknown> {
 	_progress: true;
 	state: ProgressState;
@@ -161,6 +175,8 @@ export interface ProgressDetails<TData = unknown> {
 	total?: number;
 	timing?: Partial<TimingInfo>;
 	data?: TData;
+	checklist?: ProgressChecklistItem[];
+	counts?: ProgressCounts;
 }
 
 export interface CommonRequestOptions {

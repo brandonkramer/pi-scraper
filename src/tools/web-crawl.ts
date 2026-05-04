@@ -4,7 +4,7 @@ import { updateCrawlMetadata } from "../crawl/state.js";
 import { storeResult } from "../storage/results.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
+import { renderWebCrawlResult, renderWebToolCall } from "./web-renderers.js";
 import { toolResult } from "./result.js";
 import { scrapeOptionSchema, urlProperty } from "./schemas.js";
 
@@ -81,8 +81,8 @@ export const webCrawlTool = defineWebTool({
 			truncated: true,
 		});
 	},
-	renderCall: (args, theme) =>
-		renderSimpleCall(
+	renderCall: (args, theme, context) =>
+		renderWebToolCall(
 			"web_crawl",
 			[
 				args.url,
@@ -90,7 +90,8 @@ export const webCrawlTool = defineWebTool({
 				args.crawlId ? `crawlId ${args.crawlId}` : undefined,
 			].filter(Boolean) as string[],
 			theme,
+			context,
 		),
 	renderResult: (result, { expanded }) =>
-		renderEnvelopeResult(result, expanded),
+		renderWebCrawlResult(result, expanded),
 });

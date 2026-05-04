@@ -13,7 +13,8 @@ import {
 	storedResultGuidance,
 } from "./agentic-context.js";
 import { defineWebTool } from "./define.js";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
+import { renderSimpleCall } from "./render.js";
+import { renderWebCrawlsResult } from "./web-renderers.js";
 import { toolResult } from "./result.js";
 
 const crawlStatuses = ["queued", "running", "paused", "done", "error"] as const;
@@ -74,7 +75,7 @@ export const webCrawlsTool = defineWebTool({
 			theme,
 		),
 	renderResult: (result, { expanded }) =>
-		renderEnvelopeResult(result, expanded),
+		renderWebCrawlsResult(result, expanded),
 });
 
 function shapeCrawls(entries: CrawlEntry[], params: Params) {

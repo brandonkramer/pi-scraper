@@ -12,7 +12,8 @@ import {
 	storedResultGuidance,
 } from "./agentic-context.js";
 import { defineWebTool } from "./define.js";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
+import { renderSimpleCall } from "./render.js";
+import { renderWebHistoryResult } from "./web-renderers.js";
 import { toolResult } from "./result.js";
 import { urlProperty } from "./schemas.js";
 
@@ -62,7 +63,7 @@ export const webHistoryTool = defineWebTool({
 	renderCall: (args, theme) =>
 		renderSimpleCall("web_history", [args.url], theme),
 	renderResult: (result, { expanded }) =>
-		renderEnvelopeResult(result, expanded),
+		renderWebHistoryResult(result, expanded),
 });
 
 function shapeHistory(url: string, entries: HistoryEntry[], limit: number) {
