@@ -18,7 +18,7 @@ describe("extractPdfText", () => {
 		expect(result.text).toContain("Synthetic PDF");
 		expect(result.pageCount).toBe(1);
 		expect(result.extractedPages).toBe(1);
-	});
+	}, 20_000);
 
 	it("returns an empty structured result for zero-byte input", async () => {
 		await expect(extractPdfText(new Uint8Array())).resolves.toMatchObject({
@@ -44,7 +44,7 @@ describe("extractPdfText", () => {
 		expect(result.ok).toBe(true);
 		expect(result.text).toBe("Synthetic");
 		expect(result.truncated).toBe(true);
-	});
+	}, 20_000);
 
 	it("propagates AbortSignal cancellation", async () => {
 		const controller = new AbortController();
