@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="windows-1252">
+  <title>Malformed Parser Stress Fixture
+  <meta name="description" content="Malformed fixture with broken nesting and tables">
+  <meta property="og:title" content="Malformed OG Title">
+</head>
+<body>
+  <header><nav><a href="/home">Home<a href="/nested">Nested anchor</nav></header>
+  <main id="main">
+    <h1>Malformed Fixture
+    <article class="content">
+      <p>Paragraph one starts <strong>bold text<p>Paragraph two without closing tags
+      <div id="duplicate">First duplicate id
+      <section id="duplicate">Second duplicate id<section>
+      <table><tr><td>One<td>Two<tr><td colspan="2">Broken table footer</table>
+      <!-- broken comment -- with double dash -->
+      <ul><li>First<li>Second<li><a href="/list">List link</ul>
+      <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Malformed Fixture"}</script>
+    </article>
+  </main>
+  <footer>Footer text<a href="/footer">Footer link</footer>
+</body>
+</html>

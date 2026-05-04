@@ -3,12 +3,15 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { buildAndImport } from "./build-pipeline.mjs";
-import { intFlag } from "./cli-args.mjs";
+import { intFlag, stringFlag } from "./cli-args.mjs";
 import { timedRepeats } from "./stats.mjs";
 
 export async function runCompareCli({ scriptUrl, defaults, build }) {
-	const rootDir = path.resolve(path.dirname(fileURLToPath(scriptUrl)), "..");
 	const args = process.argv.slice(2);
+	const rootDir = path.resolve(
+		path.dirname(fileURLToPath(scriptUrl)),
+		stringFlag(args, "root", "../.."),
+	);
 	const warmup = intFlag(args, "warmup", defaults.warmup);
 	const repeats = intFlag(args, "repeats", defaults.repeats);
 	const compiled = await buildAndImport(rootDir);

@@ -2,7 +2,7 @@
 import { Readability } from "@mozilla/readability";
 import { Defuddle } from "defuddle/node";
 import { parseHTML } from "linkedom";
-import { runCompareCli } from "./harness/compare-runner.mjs";
+import { runCompareCli } from "../harness/compare-runner.mjs";
 
 await runCompareCli({
 	scriptUrl: import.meta.url,

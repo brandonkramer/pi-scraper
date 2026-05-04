@@ -3,7 +3,7 @@ import { htmlToText } from "html-to-text";
 import { NodeHtmlMarkdown } from "node-html-markdown";
 import TurndownService from "turndown";
 import turndownPluginGfm from "turndown-plugin-gfm";
-import { runCompareCli } from "./harness/compare-runner.mjs";
+import { runCompareCli } from "../harness/compare-runner.mjs";
 
 // Configure raw turndown to match pi-scraper's wrapper defaults (atx headings, fenced code, dash bullets)
 // so the heading_count quality metric is not skewed by Turndown's setext default.

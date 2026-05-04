@@ -5,13 +5,13 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import TurndownService from "turndown";
 import turndownPluginGfm from "turndown-plugin-gfm";
-import { buildAndImport } from "./harness/build-pipeline.mjs";
-import { intFlag } from "./harness/cli-args.mjs";
-import { timedRepeats } from "./harness/stats.mjs";
+import { buildAndImport } from "../harness/build-pipeline.mjs";
+import { intFlag } from "../harness/cli-args.mjs";
+import { timedRepeats } from "../harness/stats.mjs";
 
 const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
-	"..",
+	"../..",
 );
 const args = process.argv.slice(2);
 const warmup = intFlag(args, "warmup", 5);

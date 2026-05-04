@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>example/repo: Example repository</title>
+    <meta
+      name="description"
+      content="GitHub-style repository page with JSON data islands"
+    />
+    <meta property="og:title" content="example/repo" />
+    <meta
+      property="og:image"
+      content="https://opengraph.githubassets.com/hash/example/repo"
+    />
+    <link
+      rel="alternate"
+      type="application/json"
+      href="/example/repo/payload.json"
+      title="Repository JSON"
+    />
+  </head>
+  <body>
+    <div id="repository-container-header">
+      <strong><a href="/example/repo">example/repo</a></strong>
+    </div>
+    <main>
+      <h1>Example repository</h1>
+      <p>Repository page visible text for parity.</p>
+    </main>
+    <script type="application/json" data-target="react-app.embeddedData">
+      { "props": {} }
+    </script>
+    <script type="application/json" data-target="react-app.embeddedData">
+      {
+        "payload": {
+          "title": "Repository payload",
+          "description": "Repository payload description with enough words for useful extraction."
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "GitHub",
+        "url": "https://github.com"
+      }
+    </script>
+  </body>
+</html>

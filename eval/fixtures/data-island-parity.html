@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Data Island Parity Fixture</title>
+    <meta
+      name="description"
+      content="Next, Nuxt, Svelte, JSON-LD, and escaped payload coverage"
+    />
+  </head>
+  <body>
+    <div id="__next"></div>
+    <script id="__NEXT_DATA__" type="application/json">
+      {
+        "props": {
+          "pageProps": { "title": "Next Payload", "items": ["alpha", "beta"] }
+        }
+      }
+    </script>
+    <script id="__NUXT_DATA__" type="application/json">
+      [{ "state": 1 }, { "title": "Nuxt Payload", "body": "Nuxt body text" }]
+    </script>
+    <script data-sveltekit-fetched type="application/json">
+      {
+        "status": 200,
+        "body": "{\"title\":\"Svelte Payload\",\"copy\":\"Escaped body text\"}"
+      }
+    </script>
+    <script type="application/ld+json">
+      [
+        {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Data Island Page"
+        },
+        { "@type": "BreadcrumbList", "itemListElement": [] }
+      ]
+    </script>
+    <script type="application/json" data-cms-payload>
+      { "richText": { "children": [{ "text": "CMS rich text payload" }] } }
+    </script>
+  </body>
+</html>

@@ -4,17 +4,15 @@ Benchmark/eval scaffolding for source checkouts. This directory is dev-only and 
 
 Layout:
 
-- `run-extraction-eval.mjs` — fixture-backed eval entrypoint used by `npm run bench`.
-- `compare-extractors.mjs` — extractor comparison entrypoint.
-- `compare-serializers.mjs` — serializer comparison entrypoint.
-- `profile-linkedom-parse.mjs` — isolates `linkedom.parseHTML()` cost on large fixtures and compares it with `cheerio.load()`.
-- `prototype-dom-adapters.mjs` — Cheerio-ectomy spike benchmark comparing current Cheerio usage with benchmark-only `linkedom` and `htmlparser2`/`css-select`/`domutils` adapter prototypes.
-- `cheerio-ectomy-decision.md` — decision note for the parser replacement spike.
-- `profile-turndown-rules.mjs` — profiles incremental Turndown/GFM/stable-link/normalization costs on large cleaned HTML fixtures.
-- `bench-tool-registration.mjs` — cold-process Pi tool registration benchmark for the compiled extension.
+- `bench.mjs` — primary fixture-backed extraction eval entrypoint used by `npm run bench`.
+- `extract/` — extraction quality/performance comparisons.
+- `serialize/` — HTML→Markdown/text serializer comparisons and profiles.
+- `parse/` — parser-specific profiles that are not part of the DOM migration gate.
+- `dom/` — DOM parser migration evidence: speed spike, quality comparison, memory comparison, diff stability, in-memory batch timing, real-world capture, and the Cheerio-ectomy decision note.
+- `tools/` — cold-process Pi tool registration benchmark.
 - `harness/` — shared build, timing, reporting, and signal-evaluation code.
 - `scripts/` — release-validation smoke scripts such as packed-tarball install checks.
-- `results/` and `.eval-runner-build/` — generated locally and ignored by git.
+- `results/` and `.eval-runner-build` / `.tool-registration-build` — generated locally and ignored by git.
 
 ## Extraction eval runner
 
@@ -23,7 +21,7 @@ Run the fixture-backed extraction eval and benchmark with:
 ```bash
 npm run bench
 # or
-node bench/run-extraction-eval.mjs eval/corpus.json [--warmup=N] [--repeats=N]
+node bench/bench.mjs eval/corpus.json [--warmup=N] [--repeats=N]
 ```
 
 `--warmup` (default `3`) and `--repeats` (default `20`) control the per-fixture timing loop on top of the single-shot signal evaluation.
@@ -56,6 +54,11 @@ Head-to-head dev-only benchmarks against external libraries. They run against th
 ```bash
 npm run compare:extract       # pi-scraper(fast) vs Readability+linkedom vs defuddle
 npm run compare:serialize     # pi-scraper(htmlToMarkdown) vs Turndown, Turndown+GFM, node-html-markdown, html-to-text
+npm run compare:dom           # Cheerio vs htmlparser2 stack quality/timing parity, including selector scenarios
+npm run compare:dom:memory    # Cheerio vs htmlparser2 stack post-GC memory deltas
+npm run compare:dom:diff      # normalized text/markdown diff-stability signal
+npm run compare:dom:batch     # in-memory DOM adapter batch timing
+npm run capture:dom:real      # opt-in capture of public real-world snapshots under ignored bench/results/
 ```
 
 Both accept `--warmup=N` and `--repeats=N` (defaults: 3 / 20 for extract, 3 / 50 for serialize). The serializer comparison includes simple pages plus richer synthetic docs/product/article fixtures with lists, code blocks, tables, links, and image/figure markup, plus 10× and 50× repeated-document stress cases.
@@ -64,6 +67,10 @@ Reports are written to `bench/results/`:
 
 - `compare-extract-<ISO>.json` + `compare-extract-latest.md` — Quality (title found, text length, heading/link count) and Performance (min/median/mean/p95/max/stddev ms) per fixture.
 - `compare-serialize-<ISO>.json` + `compare-serialize-latest.md` — same shape, isolated to the HTML→Markdown/text step on cleaned HTML produced by `extractFastPage`. Quality metrics include an aggregate structure-preservation score plus character count, heading/link/list markers, code fences, table rows, and leaked HTML tags.
+- `dom-adapter-quality-<ISO>.json` + `dom-adapter-quality-latest.md` — compares Cheerio with the direct `htmlparser2`/`domhandler`/`css-select`/`dom-serializer` stack for metadata, headings, links, meaningful data islands, text similarity, markdown similarity, informational HTML serialization deltas, and per-fixture timing. HTML serialization deltas are expected because serializers differ; they do not affect pass/review status when text, markdown, metadata, and data islands are stable.
+- `dom-adapter-memory-<ISO>.json` + `dom-adapter-memory-latest.md` — compares post-GC heap/RSS deltas for the same DOM adapter surface; run with `node --expose-gc` via `npm run compare:dom:memory`.
+- `dom-adapter-diff-stability-<ISO>.json` + `dom-adapter-diff-stability-latest.md` — compares normalized text and markdown hashes/similarity to flag likely snapshot-diff noise from parser changes.
+- `dom-adapter-batch-timing-<ISO>.json` + `dom-adapter-batch-timing-latest.md` — preloads fixture HTML and compares Cheerio with the direct htmlparser2 stack over the same DOM adapter batch surface. This intentionally excludes network, SSRF guards, `scrapeUrl`, and markdown serialization; end-to-end parser-switch timing should be added only after a runtime adapter switch exists.
 
 Raw Turndown is configured with the same base options as pi-scraper's wrapper (atx headings, fenced code) so the heading-count quality metric isn't skewed by Turndown's setext default. The `turndown+gfm` comparator mirrors pi-scraper's runtime table/task-list/strikethrough support.
 
@@ -81,7 +88,7 @@ npm run bench:tool-registration       # cold Node process import + Pi registrati
 
 `profile:markdown` writes `turndown-rules-<ISO>.json` and `turndown-rules-latest.md`; it compares base Turndown, normalization, GFM, stable-link rules, image removal, and the runtime `htmlToMarkdown` wrapper on the cleaned HTML that `extractFastPage` returns.
 
-`spike:cheerio` writes `cheerio-ectomy-<ISO>.json` and `cheerio-ectomy-latest.md`; it is benchmark-only evidence for parser migration decisions and does not change runtime extraction behavior. The lower-level parser prototype intentionally imports `htmlparser2`, `css-select`, and `domutils` from the installed dependency graph; production source must declare direct dependencies before using those packages.
+`spike:cheerio` runs `bench/dom/prototype-adapters.mjs`, writes `cheerio-ectomy-<ISO>.json` and `cheerio-ectomy-latest.md`, and remains benchmark-only evidence for parser migration decisions. The lower-level parser prototype uses direct dev dependencies (`htmlparser2`, `domhandler`, `css-select`, `dom-serializer`, and `domutils`); production source must promote them to runtime dependencies before using those packages.
 
 `bench:tool-registration` compiles `src/index.ts` into `bench/.tool-registration-build/`, then measures a fresh Node process importing the compiled extension and registering tools, commands, and session handlers against a stub Pi registrar. Reports are written to `tool-registration-<ISO>.json` and `tool-registration-latest.md`.
 

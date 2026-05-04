@@ -5,12 +5,12 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import * as cheerio from "cheerio";
 import { parseHTML } from "linkedom";
-import { intFlag } from "./harness/cli-args.mjs";
-import { timedRepeats } from "./harness/stats.mjs";
+import { intFlag } from "../harness/cli-args.mjs";
+import { timedRepeats } from "../harness/stats.mjs";
 
 const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
-	"..",
+	"../..",
 );
 const args = process.argv.slice(2);
 const warmup = intFlag(args, "warmup", 5);

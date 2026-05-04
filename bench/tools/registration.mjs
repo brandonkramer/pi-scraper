@@ -4,12 +4,12 @@ import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { intFlag } from "./harness/cli-args.mjs";
-import { timedRepeats } from "./harness/stats.mjs";
+import { intFlag } from "../harness/cli-args.mjs";
+import { timedRepeats } from "../harness/stats.mjs";
 
 const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
-	"..",
+	"../..",
 );
 const args = process.argv.slice(2);
 const warmup = intFlag(args, "warmup", 3);
@@ -77,7 +77,7 @@ async function writeRunner({ outDir, runnerPath }) {
 	const entryUrl = pathToFileURL(path.join(outDir, "index.js")).toString();
 	await writeFile(
 		runnerPath,
-		`const started = performance.now();\nconst mod = await import(${JSON.stringify(entryUrl)});\nlet tools = 0;\nlet commands = 0;\nlet handlers = 0;\nconst pi = {\n  registerTool(tool) { if (!tool?.name) throw new Error('missing tool name'); tools += 1; },\n  registerCommand(command) { if (!command?.name) throw new Error('missing command name'); commands += 1; },\n  on(event, handler) { if (!event || typeof handler !== 'function') throw new Error('invalid handler'); handlers += 1; },\n};\nmod.default(pi);\nconsole.log(JSON.stringify({ tools, commands, handlers, durationMs: Math.round((performance.now() - started) * 100) / 100 }));\n`,
+		`const started = performance.now();\nconst mod = await import(${JSON.stringify(entryUrl)});\nlet tools = 0;\nlet commands = 0;\nlet handlers = 0;\nconst pi = {\n  registerTool(tool) { if (!tool?.name) throw new Error('missing tool name'); tools += 1; },\n  registerCommand(name, command) { if (!name || !command) throw new Error('missing command registration'); commands += 1; },\n  on(event, handler) { if (!event || typeof handler !== 'function') throw new Error('invalid handler'); handlers += 1; },\n};\nmod.default(pi);\nconsole.log(JSON.stringify({ tools, commands, handlers, durationMs: Math.round((performance.now() - started) * 100) / 100 }));\n`,
 	);
 }
 
