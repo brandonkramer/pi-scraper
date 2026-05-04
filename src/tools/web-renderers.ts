@@ -19,22 +19,15 @@ export interface ChecklistItem {
 	detail?: string;
 }
 
-const spinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-
 export function renderWebToolCall(
 	name: `web_${string}`,
 	parts: Array<string | undefined>,
 	theme?: RenderTheme,
-	context?: ToolRenderContext,
-	options: { donePrefix?: string | false; animate?: boolean } = {},
+	_context?: ToolRenderContext,
+	_options: { donePrefix?: string | false; animate?: boolean } = {},
 ): RenderComponent {
 	const label = `${name} ${parts.filter(Boolean).join(" ")}`.trim();
-	if (context?.isPartial) {
-		if (options.animate !== false) return renderSpinner(label, theme, context);
-		return renderText(accent(label, theme));
-	}
-	const prefix = options.donePrefix === undefined ? "✓" : options.donePrefix;
-	return renderText(accent(prefix ? `${prefix} ${label}` : label, theme));
+	return renderText(accent(label, theme));
 }
 
 export function renderWebScrapeResult(
@@ -49,7 +42,7 @@ export function renderWebScrapeResult(
 	const title = envelope.error
 		? errorTitle("web_scrape", envelope.error)
 		: [
-				envelope.status ?? "ok",
+				`web_scrape ${envelope.status ?? "ok"}`,
 				envelope.mode,
 				envelope.format,
 				cacheLabel(envelope),
@@ -66,6 +59,7 @@ export function renderWebScrapeResult(
 		],
 		preview: previewText(result, envelope),
 		responseId: envelope.responseId,
+		icons: false,
 	});
 }
 
@@ -82,7 +76,7 @@ export function renderWebCrawlResult(
 	const failed = metadata?.failedCount ?? 0;
 	const title = envelope.error
 		? errorTitle("web_crawl", envelope.error)
-		: `✓ web_crawl ${metadata?.succeededCount ?? 0} succeeded · ${failed} failed · ${metadata?.visitedCount ?? 0} visited · frontier ${metadata?.frontierCount ?? 0}`;
+		: `✓ ${metadata?.succeededCount ?? 0} succeeded · ✕ ${failed} failed · ◉ ${metadata?.visitedCount ?? 0} visited · → frontier ${metadata?.frontierCount ?? 0}`;
 	return renderChecklistResult(title, expanded, {
 		items: [
 			{ label: "robots checked", state: "done" },
@@ -153,6 +147,7 @@ export function renderWebDiffResult(
 		],
 		preview: envelope.answerContext ?? result.content[0]?.text,
 		responseId: envelope.responseId,
+		icons: false,
 	});
 }
 
@@ -163,7 +158,12 @@ export function renderWebHistoryResult(
 	const envelope = result.details as Partial<
 		ResultEnvelope<{ entries?: HistoryEntry[] }>
 	>;
-	return renderPlainLookupResult(result, envelope, expanded);
+	const entries = envelope.data?.entries ?? [];
+	const hasResponse = entries.some((entry) => Boolean(entry.responseId));
+	const stale = envelope.qualitySignals?.freshness === "stale_possible";
+	const title =
+		hasResponse && !stale ? "reusable result found" : "refresh recommended";
+	return renderLookupResult(title, result, envelope, expanded);
 }
 
 export function renderWebCrawlsResult(
@@ -187,7 +187,7 @@ export function renderWebCrawlsResult(
 					: crawls.length
 						? "⚠ inspect crawl history"
 						: "↻ crawl first";
-	return renderLookupResult(title, result, envelope, expanded);
+	return renderLookupResult(title, result, envelope, expanded, { icons: true });
 }
 
 export function renderWebSearchScrapesResult(
@@ -198,10 +198,10 @@ export function renderWebSearchScrapesResult(
 	const data = envelope.data;
 	const title =
 		data?.supported === false
-			? "⚠ search unavailable"
+			? "search unavailable"
 			: data?.hits?.length
-				? `✓ ${data.hits.length} stored hits`
-				: "↻ scrape/search first";
+				? `${data.hits.length} stored hits`
+				: "scrape/search first";
 	return renderLookupResult(title, result, envelope, expanded);
 }
 
@@ -210,33 +210,25 @@ function renderLookupResult(
 	result: PiToolShell,
 	envelope: Partial<ResultEnvelope<unknown>>,
 	expanded: boolean,
+	options: { icons?: boolean } = {},
 ): RenderComponent {
 	const summary = envelope.summary ? `${title} · ${envelope.summary}` : title;
 	return renderChecklistResult(summary, expanded, {
 		preview: envelope.answerContext ?? result.content[0]?.text,
 		responseId: envelope.responseId,
+		icons: options.icons ?? false,
 	});
-}
-
-function renderPlainLookupResult(
-	result: PiToolShell,
-	envelope: Partial<ResultEnvelope<unknown>>,
-	expanded: boolean,
-): RenderComponent {
-	return renderChecklistResult(
-		envelope.summary ?? result.content[0]?.text ?? "done",
-		expanded,
-		{
-			preview: envelope.answerContext ?? result.content[0]?.text,
-			responseId: envelope.responseId,
-		},
-	);
 }
 
 function renderChecklistResult(
 	title: string,
 	expanded: boolean,
-	options: { items?: ChecklistItem[]; preview?: string; responseId?: string },
+	options: {
+		items?: ChecklistItem[];
+		preview?: string;
+		responseId?: string;
+		icons?: boolean;
+	},
 ): RenderComponent {
 	if (!expanded) {
 		const id = options.responseId ? ` · responseId: ${options.responseId}` : "";
@@ -244,11 +236,21 @@ function renderChecklistResult(
 	}
 	const lines = [title];
 	if (options.items?.length) {
-		lines.push("", ...options.items.map(formatChecklistItem));
+		const formatter =
+			options.icons === false ? formatChecklistText : formatChecklistItem;
+		lines.push("", ...options.items.map(formatter));
 	}
 	if (options.preview) lines.push("", options.preview.slice(0, 500));
 	if (options.responseId) lines.push("", `responseId: ${options.responseId}`);
 	return renderText(lines.join("\n"));
+}
+
+function toolAllowsIcons(toolName: `web_${string}`): boolean {
+	return (
+		toolName === "web_batch" ||
+		toolName === "web_crawl" ||
+		toolName === "web_crawls"
+	);
 }
 
 function renderProgress(
@@ -260,43 +262,46 @@ function renderProgress(
 		: "";
 	const message = details.message ? ` · ${details.message}` : "";
 	const url = details.url ? ` · ${details.url}` : "";
-	const icon =
-		details.state === "error" ? "✕" : details.state === "done" ? "✓" : "⠋";
+	const icons = toolAllowsIcons(toolName);
+	const prefix = icons
+		? details.state === "error"
+			? "✕ "
+			: details.state === "done"
+				? "✓ "
+				: ""
+		: "";
 	const lines = [
-		`${icon} ${toolName} ${details.state}${count}${url}${message}`,
+		`${prefix}${toolName} ${details.state}${count}${url}${message}`,
 	];
-	if (details.checklist?.length)
-		lines.push(...details.checklist.map(formatChecklistItem));
+	if (details.checklist?.length) {
+		const formatter = icons ? formatChecklistItem : formatChecklistText;
+		lines.push(...details.checklist.map(formatter));
+	}
 	if (details.counts) {
 		const counts = details.counts;
 		lines.push(
 			[
 				counts.succeeded === undefined
 					? undefined
-					: `✓ ${counts.succeeded} succeeded`,
-				counts.failed === undefined ? undefined : `✕ ${counts.failed} failed`,
+					: icons
+						? `✓ ${counts.succeeded} succeeded`
+						: `${counts.succeeded} succeeded`,
+				counts.failed === undefined
+					? undefined
+					: icons
+						? `✕ ${counts.failed} failed`
+						: `${counts.failed} failed`,
 				counts.cacheHits === undefined
 					? undefined
-					: `↻ ${counts.cacheHits} cache hits`,
+					: icons
+						? `↻ ${counts.cacheHits} cache hits`
+						: `${counts.cacheHits} cache hits`,
 			]
 				.filter(Boolean)
 				.join(" · "),
 		);
 	}
 	return renderText(lines.filter(Boolean).join("\n"));
-}
-
-function renderSpinner(
-	label: string,
-	theme: RenderTheme | undefined,
-	context: ToolRenderContext,
-): RenderComponent {
-	const key = `${label}:spinner`;
-	const existing = context.state?.[key];
-	if (existing instanceof SpinnerComponent) return existing;
-	const component = new SpinnerComponent(label, theme, context.invalidate);
-	if (context.state) context.state[key] = component;
-	return component;
 }
 
 function formatChecklistItem(item: ChecklistItem): string {
@@ -311,6 +316,10 @@ function formatChecklistItem(item: ChecklistItem): string {
 						? "☐"
 						: "•";
 	return `${icon} ${item.label}${item.detail ? ` — ${item.detail}` : ""}`;
+}
+
+function formatChecklistText(item: ChecklistItem): string {
+	return `${item.label}${item.detail ? ` — ${item.detail}` : ""}`;
 }
 
 function fetchChecklistItem(
@@ -334,7 +343,8 @@ function cacheLabel(
 }
 
 function errorTitle(tool: `web_${string}`, error: StructuredError): string {
-	return `✕ ${tool} ${error.code}: ${error.message}`;
+	const prefix = toolAllowsIcons(tool) ? "✕ " : "";
+	return `${prefix}${tool} ${error.code}: ${error.message}`;
 }
 
 function previewText(
@@ -384,44 +394,6 @@ function isProgress(value: unknown): value is ProgressDetails {
 			"_progress" in value &&
 			(value as ProgressDetails)._progress,
 	);
-}
-
-class SpinnerComponent implements RenderComponent {
-	private frameIndex = 0;
-	private timer: ReturnType<typeof setInterval> | undefined;
-
-	constructor(
-		private readonly label: string,
-		private readonly theme: RenderTheme | undefined,
-		private readonly requestRender: (() => void) | undefined,
-	) {
-		this.start();
-	}
-
-	render(width: number): string[] {
-		return renderText(
-			accent(`${spinnerFrames[this.frameIndex]} ${this.label}`, this.theme),
-		).render(width);
-	}
-
-	invalidate(): void {
-		this.stop();
-	}
-
-	private start(): void {
-		if (!this.requestRender || this.timer) return;
-		this.timer = setInterval(() => {
-			this.frameIndex = (this.frameIndex + 1) % spinnerFrames.length;
-			this.requestRender?.();
-		}, 120);
-		this.timer.unref?.();
-	}
-
-	private stop(): void {
-		if (!this.timer) return;
-		clearInterval(this.timer);
-		this.timer = undefined;
-	}
 }
 
 interface CrawlMeta {

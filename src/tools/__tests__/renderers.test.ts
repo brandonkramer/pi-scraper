@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { RenderComponent, ToolRenderContext } from "../define.js";
 import { progressShell } from "../progress.js";
+import { renderEnvelopeResult } from "../render.js";
 import { toolResult } from "../result.js";
 import { webBatchTool } from "../web-batch.js";
 import { webCrawlTool } from "../web-crawl.js";
@@ -17,12 +18,8 @@ const partialContext = {
 	invalidate: () => undefined,
 } satisfies ToolRenderContext<never>;
 
-afterEach(() => {
-	vi.useRealTimers();
-});
-
 describe("web tool renderers", () => {
-	it("shows loader and completion check for web_scrape calls", () => {
+	it("renders web_scrape calls without loader or title check", () => {
 		const params = { url: "https://example.com", mode: "fast" as const };
 		const loading = text(
 			webScrapeTool.renderCall?.(params, undefined, partialContext as never),
@@ -32,30 +29,9 @@ describe("web tool renderers", () => {
 		);
 
 		expect(loading).toContain("web_scrape");
-		expect(loading).toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/u);
-		expect(done).toContain("✓ web_scrape");
-	});
-
-	it("stops spinner animation when invalidated", () => {
-		vi.useFakeTimers();
-		const requestRender = vi.fn();
-		const component = webScrapeTool.renderCall?.(
-			{ url: "https://example.com" },
-			undefined,
-			{
-				expanded: false,
-				isPartial: true,
-				state: {},
-				invalidate: requestRender,
-			},
-		);
-
-		vi.advanceTimersByTime(240);
-		expect(requestRender).toHaveBeenCalledTimes(2);
-
-		component?.invalidate();
-		vi.advanceTimersByTime(480);
-		expect(requestRender).toHaveBeenCalledTimes(2);
+		expect(loading).not.toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/u);
+		expect(done).toContain("web_scrape");
+		expect(done).not.toContain("✓ web_scrape");
 	});
 
 	it("renders web_scrape result checklists and width-safe lines", () => {
@@ -71,15 +47,16 @@ describe("web tool renderers", () => {
 
 		expect(
 			text(webScrapeTool.renderResult?.(result, { expanded: false })),
-		).toContain("200 · fast · markdown");
+		).toContain("web_scrape 200");
 		expect(
 			text(webScrapeTool.renderResult?.(result, { expanded: false })),
 		).not.toContain("✓ web_scrape");
 		const expanded = text(
 			webScrapeTool.renderResult?.(result, { expanded: true }),
 		);
-		expect(expanded).toContain("✓ URL validated");
-		expect(expanded).toContain("✓ stored result");
+		expect(expanded).toContain("URL validated");
+		expect(expanded).toContain("stored result");
+		expect(expanded).not.toContain("✓ URL validated");
 		expect(
 			widthSafe(webScrapeTool.renderResult?.(result, { expanded: true }), 32),
 		).toBe(true);
@@ -97,9 +74,11 @@ describe("web tool renderers", () => {
 		const rendered = text(
 			webScrapeTool.renderResult?.(progress, { expanded: false }),
 		);
-		expect(rendered).toContain("⠋ web_scrape loading");
-		expect(rendered).toContain("✓ URL validated");
-		expect(rendered).toContain("☐ fetching page");
+		expect(rendered).toContain("web_scrape loading");
+		expect(rendered).not.toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/u);
+		expect(rendered).toContain("URL validated");
+		expect(rendered).toContain("fetching page");
+		expect(rendered).not.toContain("✓ URL validated");
 	});
 
 	it("renders crawl checklist and counts", () => {
@@ -115,13 +94,25 @@ describe("web tool renderers", () => {
 			},
 			responseId: "r-crawl",
 		});
+		const doneTitle = text(
+			webCrawlTool.renderCall?.(
+				{ url: "https://example.com", maxPages: 1 },
+				undefined,
+				{ isPartial: false },
+			),
+		);
 		const collapsed = text(
 			webCrawlTool.renderResult?.(result, { expanded: false }),
 		);
 		const expanded = text(
 			webCrawlTool.renderResult?.(result, { expanded: true }),
 		);
-		expect(collapsed).toContain("✓ web_crawl 2 succeeded");
+		expect(doneTitle).toContain("web_crawl https://example.com max 1");
+		expect(doneTitle).not.toContain("✓ web_crawl");
+		expect(collapsed).toContain(
+			"✓ 2 succeeded · ✕ 1 failed · ◉ 3 visited · → frontier 0",
+		);
+		expect(collapsed).not.toContain("✓ web_crawl");
 		expect(expanded).toContain("✓ robots checked");
 		expect(expanded).toContain("✓ crawl state saved");
 	});
@@ -187,6 +178,22 @@ describe("web tool renderers", () => {
 		expect(
 			text(webDiffTool.renderResult?.(changed, { expanded: false })),
 		).toContain("changed: 2 changed, 1 added, 0 removed");
+		expect(
+			text(webDiffTool.renderResult?.(changed, { expanded: false })),
+		).not.toContain("⚠ changed");
+	});
+
+	it("keeps generic done descriptions icon-free", () => {
+		const result = toolResult({
+			text: "ok",
+			data: {},
+			url: "https://example.com",
+		});
+
+		expect(text(renderEnvelopeResult(result, false))).toContain(
+			"done · https://example.com",
+		);
+		expect(text(renderEnvelopeResult(result, false))).not.toContain("✓ done");
 	});
 
 	it("renders DB lookup interpretation without loaders", () => {
@@ -213,7 +220,10 @@ describe("web tool renderers", () => {
 					isPartial: false,
 				}),
 			),
-		).toContain("✓ web_history");
+		).not.toContain("✓ web_history");
+		expect(
+			text(webHistoryTool.renderResult?.(history, { expanded: false })),
+		).toContain("reusable result found");
 		expect(
 			text(webHistoryTool.renderResult?.(history, { expanded: false })),
 		).not.toContain("✓ reusable result found");
@@ -222,7 +232,10 @@ describe("web tool renderers", () => {
 		).toContain("⚠ recrawl recommended");
 		expect(
 			text(webSearchScrapesTool.renderResult?.(search, { expanded: false })),
-		).toContain("✓ 2 stored hits");
+		).toContain("2 stored hits");
+		expect(
+			text(webSearchScrapesTool.renderResult?.(search, { expanded: false })),
+		).not.toContain("✓ 2 stored hits");
 	});
 });
 
