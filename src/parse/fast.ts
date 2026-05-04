@@ -1,6 +1,5 @@
-import type { CheerioAPI } from "cheerio";
-import * as cheerio from "cheerio";
 import { type DataIslandContent, recoverDataIslands } from "./data-islands.js";
+import { type DomAdapter, type DomSelection, loadDom } from "./dom-adapter.js";
 import {
 	extractHeadings,
 	extractLinks,
@@ -47,23 +46,30 @@ export function extractFastPage(
 	url: string,
 	options: FastExtractOptions = {},
 ): FastPageExtraction {
-	const $ = cheerio.load(html);
-	const dataIslands = recoverDataIslands($);
-	prepareDocument($, options);
-	const metadata = extractMetadata($, url);
+	return extractFastPageFromDom(loadDom(html), url, options);
+}
+
+export function extractFastPageFromDom(
+	dom: DomAdapter,
+	url: string,
+	options: FastExtractOptions = {},
+): FastPageExtraction {
+	const dataIslands = recoverDataIslands(dom);
+	prepareDocument(dom, options);
+	const metadata = extractMetadata(dom, url);
 	const mainCandidates =
 		options.onlyMainContent || options.includeMainCandidates
-			? rankMainCandidates($)
+			? rankMainCandidates(dom)
 			: [];
 	const root = options.onlyMainContent
-		? mainContentRoot($, mainCandidates)
-		: selectedRoots($, options);
-	return buildExtraction($, root, url, metadata, dataIslands, mainCandidates);
+		? mainContentRoot(dom, mainCandidates)
+		: selectedRoots(dom, options);
+	return buildExtraction(dom, root, url, metadata, dataIslands, mainCandidates);
 }
 
 function buildExtraction(
-	$: CheerioAPI,
-	root: ReturnType<typeof selectedRoots>,
+	dom: DomAdapter,
+	root: DomSelection,
 	url: string,
 	metadata: PageMetadata,
 	dataIslands: DataIslandContent[],
@@ -74,12 +80,12 @@ function buildExtraction(
 		title: metadata.title,
 		description: metadata.description,
 		metadata,
-		headings: extractHeadings($),
-		links: extractLinks($, url),
-		text: visibleText($, root),
-		html: outerHtml($, root),
+		headings: extractHeadings(dom),
+		links: extractLinks(dom, url),
+		text: visibleText(dom, root),
+		html: outerHtml(dom, root),
 		dataIslands,
-		recovered: recoverUsefulContent($, url),
+		recovered: recoverUsefulContent(dom, url),
 		mainCandidates,
 	};
 }

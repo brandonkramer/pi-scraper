@@ -1,5 +1,4 @@
-import type { Cheerio, CheerioAPI } from "cheerio";
-import type { AnyNode } from "domhandler";
+import type { DomAdapter, DomNode, DomSelection } from "./dom-adapter.js";
 import { visibleText } from "./selectors.js";
 
 export interface MainContentCandidate {
@@ -7,6 +6,10 @@ export interface MainContentCandidate {
 	textLength: number;
 	linkDensity: number;
 	score: number;
+}
+
+interface ScoredMainContentCandidate extends MainContentCandidate {
+	node: DomNode;
 }
 
 const MAIN_SELECTORS = [
@@ -20,49 +23,62 @@ const MAIN_SELECTORS = [
 	"body",
 ] as const;
 
+const candidateNodes = new WeakMap<MainContentCandidate, DomNode>();
+
 export function mainContentRoot(
-	$: CheerioAPI,
-	candidates = rankMainCandidates($),
-): Cheerio<AnyNode> {
-	const selector = candidates[0]?.selector ?? "body";
-	return $(selector).first();
+	dom: DomAdapter,
+	candidates = rankMainCandidates(dom),
+): DomSelection {
+	const node = candidates[0] ? candidateNodes.get(candidates[0]) : undefined;
+	if (node) return dom.selection([node]);
+	return dom.first(dom.select("body"));
 }
 
-export function rankMainCandidates($: CheerioAPI): MainContentCandidate[] {
-	return MAIN_SELECTORS.flatMap((selector) =>
-		$(selector)
-			.toArray()
-			.map((node, index) => scoreCandidate($, $(node), selector, index)),
-	)
+export function rankMainCandidates(dom: DomAdapter): MainContentCandidate[] {
+	return MAIN_SELECTORS.flatMap((selector) => {
+		const nodes = dom.nodes(dom.select(selector));
+		return nodes.map((node, index) =>
+			scoreCandidate(dom, dom.selection([node]), node, selector, index),
+		);
+	})
 		.filter((candidate) => candidate.textLength > 0)
-		.sort((left, right) => right.score - left.score);
+		.sort((left, right) => right.score - left.score)
+		.map((candidate) => {
+			const { node, ...publicCandidate } = candidate;
+			candidateNodes.set(publicCandidate, node);
+			return publicCandidate;
+		});
 }
 
 export function linkDensity(
-	$: CheerioAPI,
-	root: Cheerio<AnyNode>,
-	textLength = visibleText($, root).length,
+	dom: DomAdapter,
+	root: DomSelection,
+	textLength = visibleText(dom, root).length,
 ): number {
 	if (textLength === 0) return 0;
-	const linkTextLength = root
-		.find("a")
-		.toArray()
-		.reduce((sum, node) => sum + visibleText($, $(node)).length, 0);
+	const linkTextLength = dom
+		.nodes(dom.select("a", root))
+		.reduce<number>(
+			(sum, node) => sum + visibleText(dom, dom.selection([node])).length,
+			0,
+		);
 	return Math.min(1, linkTextLength / textLength);
 }
 
 function scoreCandidate(
-	$: CheerioAPI,
-	root: Cheerio<AnyNode>,
+	dom: DomAdapter,
+	root: DomSelection,
+	node: DomNode,
 	selector: string,
 	index: number,
-): MainContentCandidate {
-	const textLength = visibleText($, root).length;
-	const density = linkDensity($, root, textLength);
+): ScoredMainContentCandidate {
+	const textLength = visibleText(dom, root).length;
+	const density = linkDensity(dom, root, textLength);
 	const semanticBoost = ["main", "article", '[role="main"]'].includes(selector)
 		? 500
 		: 0;
 	return {
+		node,
 		selector: index === 0 ? selector : `${selector}:eq(${index})`,
 		textLength,
 		linkDensity: density,

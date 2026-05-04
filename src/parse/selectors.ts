@@ -1,45 +1,60 @@
-import type { Cheerio, CheerioAPI } from "cheerio";
-import type { AnyNode } from "domhandler";
 import { normalizeWhitespace } from "../serialize/text.js";
+import type { DomAdapter, DomNode, DomSelection } from "./dom-adapter.js";
 
 export interface SelectorOptions {
-  include?: string[];
-  exclude?: string[];
-  removeImages?: boolean;
+	include?: string[];
+	exclude?: string[];
+	removeImages?: boolean;
 }
 
 const DEFAULT_REMOVE = "script,style,noscript,template,iframe,canvas";
 
-export function prepareDocument($: CheerioAPI, options: SelectorOptions = {}): void {
-  $(DEFAULT_REMOVE).remove();
-  if (options.removeImages) $("img,picture,source").remove();
-  for (const selector of options.exclude ?? []) $(selector).remove();
+export function prepareDocument(
+	dom: DomAdapter,
+	options: SelectorOptions = {},
+): void {
+	dom.remove(DEFAULT_REMOVE);
+	if (options.removeImages) dom.remove("img,picture,source");
+	for (const selector of options.exclude ?? []) dom.remove(selector);
 }
 
-export function selectedRoots($: CheerioAPI, options: SelectorOptions = {}): Cheerio<AnyNode> {
-  const include = options.include?.filter(Boolean) ?? [];
-  if (include.length === 0) return $("body").length ? $("body") : $.root();
-  const roots = include.map((selector) => $(selector).toArray()).flat();
-  return $(dedupeElements(roots));
+export function selectedRoots(
+	dom: DomAdapter,
+	options: SelectorOptions = {},
+): DomSelection {
+	const include = options.include?.filter(Boolean) ?? [];
+	if (include.length > 0) {
+		return dom.selection(
+			dedupeNodes(
+				include.flatMap((selector) => dom.nodes(dom.select(selector))),
+			),
+		);
+	}
+	if (dom.count(dom.select("body")) > 0) return dom.select("body");
+	if (dom.count(dom.select("html")) > 0) return dom.selection([]);
+	return dom.root();
 }
 
-export function visibleText($: CheerioAPI, root: Cheerio<AnyNode> = $("body")): string {
-  return normalizeWhitespace(root.text());
+export function visibleText(dom: DomAdapter, root: DomSelection): string {
+	return normalizeWhitespace(dom.text(root));
 }
 
-export function outerHtml($: CheerioAPI, root: Cheerio<AnyNode>): string {
-  return root.toArray().map((node) => $.html(node)).join("\n");
+export function outerHtml(dom: DomAdapter, root: DomSelection): string {
+	return dom.html(root);
 }
 
-export function absoluteUrl(href: string | undefined, baseUrl: string): string | undefined {
-  if (!href) return undefined;
-  try {
-    return new URL(href, baseUrl).toString();
-  } catch {
-    return undefined;
-  }
+export function absoluteUrl(
+	href: string | undefined,
+	baseUrl: string,
+): string | undefined {
+	if (!href) return undefined;
+	try {
+		return new URL(href, baseUrl).toString();
+	} catch {
+		return undefined;
+	}
 }
 
-function dedupeElements(elements: AnyNode[]): AnyNode[] {
-  return [...new Set(elements)];
+function dedupeNodes(nodes: DomNode[]): DomNode[] {
+	return [...new Set(nodes)];
 }
