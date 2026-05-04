@@ -149,7 +149,7 @@ async function renderWithLoader(
 		let response: { status(): number } | null;
 		try {
 			response = await page.goto(url, {
-				waitUntil: options.waitUntil ?? "networkidle",
+				waitUntil: options.waitUntil ?? "domcontentloaded",
 				timeout: (options.timeoutSeconds ?? 20) * 1_000,
 			});
 		} catch (error) {
