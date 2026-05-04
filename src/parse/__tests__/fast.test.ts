@@ -1,7 +1,7 @@
-import * as cheerio from "cheerio";
 import { describe, expect, it } from "vitest";
 import { discoverAlternateLinks } from "../alternates.js";
 import { recoverDataIslands } from "../data-islands.js";
+import { loadDom } from "../dom-adapter.js";
 import { extractFastPage } from "../fast.js";
 import { likelyAgentReadableUrls, parseLlmsTxt } from "../llms.js";
 import { routeContentType } from "../passthrough.js";
@@ -93,10 +93,10 @@ describe("alternates and llms helpers", () => {
 
 describe("data islands and content routing", () => {
 	it("recovers JSON-LD and hydration text", () => {
-		const $ =
-			cheerio.load(`<script type="application/ld+json">{"headline":"Structured Title","articleBody":"Structured body text with useful content."}</script>
+		const dom =
+			loadDom(`<script type="application/ld+json">{"headline":"Structured Title","articleBody":"Structured body text with useful content."}</script>
 <script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"title":"Next Title","description":"Next description with enough words."}}}</script>`);
-		const islands = recoverDataIslands($);
+		const islands = recoverDataIslands(dom);
 		expect(islands.map((island) => island.title)).toContain("Structured Title");
 		expect(islands.map((island) => island.text).join("\n")).toContain(
 			"Next description",
