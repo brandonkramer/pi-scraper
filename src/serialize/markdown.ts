@@ -38,7 +38,10 @@ function stripLargeElements(html: string): string {
 		result = result.replace(/<table[\s\S]*?<\/table>/gi, "\n\n");
 	}
 	if (liCount >= 100) {
-		result = result.replace(/<(ul|ol)[\s\S]*?<\/(ul|ol)>/gi, "\n\n[Long list]\n\n");
+		result = result.replace(
+			/<(ul|ol)[\s\S]*?<\/(ul|ol)>/gi,
+			"\n\n[Long list]\n\n",
+		);
 	}
 	return result;
 }
