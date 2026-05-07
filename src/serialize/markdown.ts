@@ -63,8 +63,10 @@ function createMarkdownService(removeImages: boolean): TurndownService {
 		filter: "a",
 		replacement: (content, node) => {
 			const href = (node as HTMLElement).getAttribute("href");
-			const label = normalizeWhitespace(content);
-			if (!href) return label;
+			// Fast path: no href, return content as-is
+			if (!href) return content;
+			// Simple trim instead of full normalizeWhitespace for link labels
+			const label = content.trim().replace(/\s+/gu, " ");
 			return label ? `[${label}](${href})` : href;
 		},
 	});
