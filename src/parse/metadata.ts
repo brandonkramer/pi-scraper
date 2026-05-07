@@ -49,7 +49,7 @@ export function extractMetadata(
 			meta.description ?? openGraph.description ?? twitter.description,
 		language: dom.attr(dom.first(dom.select("html")), "lang"),
 		canonicalUrl: absoluteUrl(
-			dom.attr(dom.first(dom.select('link[rel~="canonical"]')), "href"),
+			dom.attr(dom.first(dom.select('link[rel="canonical"]')), "href"),
 			baseUrl,
 		),
 		meta,
