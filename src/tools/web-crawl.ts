@@ -29,17 +29,17 @@ const crawlActions = ["run", "status", "list"] as const;
 export const webCrawlSchema = Type.Object({
 	action: Type.Optional(Type.String()),
 	url: Type.Optional(urlProperty()),
-	maxPages: Type.Optional(Type.Number()),
-	maxDepth: Type.Optional(Type.Number()),
+	maxPages: Type.Optional(Type.Any()),
+	maxDepth: Type.Optional(Type.Any()),
 	sameOrigin: Type.Optional(Type.Boolean()),
 	seedSitemap: Type.Optional(Type.Boolean()),
 	crawlId: Type.Optional(Type.String()),
 	resume: Type.Optional(Type.Boolean()),
 	seed: Type.Optional(Type.String()),
 	status: Type.Optional(Type.String()),
-	limit: Type.Optional(Type.Number()),
-	concurrency: Type.Optional(Type.Number()),
-	perHostConcurrency: Type.Optional(Type.Number()),
+	limit: Type.Optional(Type.Any()),
+	concurrency: Type.Optional(Type.Any()),
+	perHostConcurrency: Type.Optional(Type.Any()),
 	...crawlScrapeOptionSchema,
 });
 
