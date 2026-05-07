@@ -63,7 +63,9 @@ export function extractHeadings(dom: DomAdapter): PageHeading[] {
 	for (const node of dom.nodes(dom.select("h1,h2,h3,h4,h5,h6"))) {
 		const tag = dom.tagName(node);
 		if (!tag) continue;
-		const level = Number.parseInt(tag.slice(1), 10);
+		// Level is tag[1] as number: h1->1, h2->2, etc.
+		const level = tag.charCodeAt(1) - 48; // '0' is 48
+		if (level < 1 || level > 6) continue;
 		const text = clean(dom.text(node));
 		if (text) headings.push({ level, text });
 	}
