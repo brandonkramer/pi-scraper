@@ -22,7 +22,7 @@ import { emitProgress } from "./progress.js";
 import { renderEnvelopeResult } from "./render.js";
 import { renderWebCrawlResult, renderWebToolCall } from "./web-renderers.js";
 import { toolResult } from "./result.js";
-import { crawlScrapeOptionSchema, urlProperty } from "./schemas.js";
+import { urlProperty } from "./schemas.js";
 
 const crawlActions = ["run", "status", "list"] as const;
 
@@ -40,7 +40,9 @@ export const webCrawlSchema = Type.Object({
 	limit: Type.Optional(Type.Any()),
 	concurrency: Type.Optional(Type.Any()),
 	perHostConcurrency: Type.Optional(Type.Any()),
-	...crawlScrapeOptionSchema,
+	mode: Type.Optional(Type.Any()),
+	include: Type.Optional(Type.Array(Type.Any())),
+	exclude: Type.Optional(Type.Array(Type.Any())),
 });
 
 type Params = Static<typeof webCrawlSchema>;
