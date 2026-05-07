@@ -107,7 +107,7 @@ describe("web tool renderers", () => {
 		expect(doneTitle).toContain("web_crawl https://example.com max 1");
 		expect(doneTitle).not.toContain("✓ web_crawl");
 		expect(collapsed).toContain(
-			"✅ 2 succeeded\u001B[0m · ✕ 1 failed · ◉ 3 visited · → frontier 0",
+			"✅ 2 succeeded\u001B[0m · \u001B[38;2;239;118;122m❌ 1 failed\u001B[0m · ◉ 3 visited · → frontier 0",
 		);
 		expect(collapsed).not.toContain("✓ web_crawl");
 		expect(expanded).toContain("✓ robots checked");
@@ -140,8 +140,21 @@ describe("web tool renderers", () => {
 		expect(doneTitle).toContain("web_batch 2 urls");
 		expect(doneTitle).not.toContain("✓ web_batch");
 		expect(collapsed).toContain("✅ 1 succeeded");
-		expect(collapsed).toContain("✕ 1 failed");
+		expect(collapsed).toContain("❌ 1 failed");
 		expect(collapsed).toContain("↻ 1 cache hits");
+	});
+
+	it("uses failed icon and color even when failed count is zero", () => {
+		const result = toolResult({
+			text: "Batch scrape complete",
+			data: [{ ok: true, url: "https://a.test" }],
+		});
+		const collapsed = text(
+			webBatchTool.renderResult?.(result, { expanded: false }),
+		);
+
+		expect(collapsed).toContain("❌ 0 failed");
+		expect(collapsed).toContain("\u001B[38;2;239;118;122m❌ 0 failed\u001B[0m");
 	});
 
 	it("omits success icons when batch and crawl succeeded counts are zero", () => {
@@ -161,12 +174,12 @@ describe("web tool renderers", () => {
 			},
 		});
 
-		expect(text(webBatchTool.renderResult?.(batch, { expanded: false }))).toContain(
-			"0 succeeded · ✕ 1 failed",
-		);
-		expect(text(webCrawlTool.renderResult?.(crawl, { expanded: false }))).toContain(
-			"0 succeeded · ✕ 1 failed",
-		);
+		expect(
+			text(webBatchTool.renderResult?.(batch, { expanded: false })),
+		).toContain("0 succeeded · \u001B[38;2;239;118;122m❌ 1 failed\u001B[0m");
+		expect(
+			text(webCrawlTool.renderResult?.(crawl, { expanded: false })),
+		).toContain("0 succeeded · \u001B[38;2;239;118;122m❌ 1 failed\u001B[0m");
 	});
 
 	it("renders diff baseline, unchanged, and changed states", () => {

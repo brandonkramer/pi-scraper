@@ -77,7 +77,7 @@ export function renderWebCrawlResult(
 	const failed = metadata?.failedCount ?? 0;
 	const title = envelope.error
 		? errorTitle("web_crawl", envelope.error)
-		: `${successCountSegment(metadata?.succeededCount ?? 0, "succeeded", theme)} · ${failureCountSegment(failed, "failed")} · ◉ ${metadata?.visitedCount ?? 0} visited · → frontier ${metadata?.frontierCount ?? 0}`;
+		: `${successCountSegment(metadata?.succeededCount ?? 0, "succeeded", theme)} · ${failureCountSegment(failed, "failed", theme)} · ◉ ${metadata?.visitedCount ?? 0} visited · → frontier ${metadata?.frontierCount ?? 0}`;
 	return renderChecklistResult(title, expanded, {
 		items: [
 			{ label: "robots checked", state: "done" },
@@ -109,7 +109,7 @@ export function renderWebBatchResult(
 	).length;
 	const title = envelope.error
 		? errorTitle("web_batch", envelope.error)
-		: `${successCountSegment(succeeded, "succeeded", theme)} · ${failureCountSegment(failed, "failed")} · ↻ ${cacheHits} cache hits`;
+		: `${successCountSegment(succeeded, "succeeded", theme)} · ${failureCountSegment(failed, "failed", theme)} · ↻ ${cacheHits} cache hits`;
 	return renderChecklistResult(title, expanded, {
 		items: [
 			{ label: `${succeeded} succeeded`, state: succeeded ? "done" : "info" },
@@ -282,7 +282,7 @@ function renderProgress(
 				counts.failed === undefined
 					? undefined
 					: icons
-						? failureCountSegment(counts.failed, "failed")
+						? failureCountSegment(counts.failed, "failed", theme)
 						: `${counts.failed} failed`,
 				counts.cacheHits === undefined
 					? undefined
@@ -307,15 +307,24 @@ function successCountSegment(
 	return successText(`✅ ${text}`, theme);
 }
 
-function failureCountSegment(count: number, label: string): string {
-	const text = `${count} ${label}`;
-	return count > 0 ? `✕ ${text}` : text;
+function failureCountSegment(
+	count: number,
+	label: string,
+	theme?: RenderTheme,
+): string {
+	return failureText(`❌ ${count} ${label}`, theme);
 }
 
 function successText(text: string, theme?: RenderTheme): string {
 	const themed = theme?.fg?.("success", text);
 	if (themed) return themed;
 	return `\u001B[38;2;148;226;213m${text}\u001B[0m`;
+}
+
+function failureText(text: string, theme?: RenderTheme): string {
+	const themed = theme?.fg?.("error", text) ?? theme?.fg?.("danger", text);
+	if (themed) return themed;
+	return `\u001B[38;2;239;118;122m${text}\u001B[0m`;
 }
 
 function formatChecklistItem(item: ChecklistItem): string {
