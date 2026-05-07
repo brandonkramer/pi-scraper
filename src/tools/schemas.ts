@@ -10,8 +10,8 @@ export const commonRequestSchema = {
 	timeoutSeconds: Type.Optional(Type.Number()),
 	maxChars: Type.Optional(Type.Number()),
 	proxy: Type.Optional(Type.String()),
-	respectRobots: Type.Optional(Type.Boolean()),
-	refresh: Type.Optional(Type.Boolean()),
+	respectRobots: Type.Optional(Type.Any()),
+	refresh: Type.Optional(Type.Any()),
 } as const;
 
 export const scrapeModeOptionSchema = {
@@ -27,7 +27,7 @@ export const scrapeOptionSchema = {
 	...scrapeOutputOptionSchema,
 	include: Type.Optional(Type.Array(Type.Any())),
 	exclude: Type.Optional(Type.Array(Type.Any())),
-	onlyMainContent: Type.Optional(Type.Boolean()),
+	onlyMainContent: Type.Optional(Type.Any()),
 	...commonRequestSchema,
 } as const;
 
