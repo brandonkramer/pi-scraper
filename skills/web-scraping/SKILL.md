@@ -3,7 +3,7 @@ name: web-scraping
 description: web
 ---
 
-URLs/content only; no search/research, multi-source summaries/citations/reports.
+URLs/content only; no search/research/multi-source/citations/reports.
 
 web_scrape read URL markdown/text/llm/html/json; web_summarize summarize URL/content; web_map robots/sitemaps/llms inventory/no bodies; web_crawl links/read pages/run/status/list/crawlId; web_batch independent URLs/per-URL; web_diff URL snapshot diff; web_extract verticals/markers/regex/excerpts/LLM JSON/schema.
 
