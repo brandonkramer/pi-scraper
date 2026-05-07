@@ -48,7 +48,7 @@ export function createWebScrapeTool(
 	return defineWebTool({
 		name: "web_scrape",
 		label: "Scrape",
-		description: "Read URL/content",
+		description: "Read URL",
 		parameters: webScrapeSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
 			const task = inferScrapeTask(params);

@@ -83,7 +83,7 @@ export function createWebExtractTool(
 	return defineWebTool({
 		name: "web_extract",
 		label: "Extract",
-		description: "Verticals regex JSON/schema",
+		description: "Vertical regex JSON/schema",
 		parameters: webExtractSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
 			const action = inferExtractAction(params);
