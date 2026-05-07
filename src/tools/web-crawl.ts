@@ -37,7 +37,7 @@ export const webCrawlSchema = Type.Object({
 	crawlId: Type.Optional(Type.String()),
 	resume: Type.Optional(Type.Boolean()),
 	seed: Type.Optional(Type.String()),
-	status: Type.Optional(StringEnum(crawlStatuses)),
+	status: Type.Optional(Type.String()),
 	limit: Type.Optional(Type.Number()),
 	concurrency: Type.Optional(Type.Number()),
 	perHostConcurrency: Type.Optional(Type.Number()),
