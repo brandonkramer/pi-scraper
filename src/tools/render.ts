@@ -2,13 +2,19 @@ import type { PiToolShell, ResultEnvelope } from "../types.js";
 import type { RenderComponent, RenderTheme } from "./define.js";
 
 class TextRenderComponent implements RenderComponent {
-	constructor(private readonly text: string) {}
+	constructor(
+		private readonly text: string,
+		private readonly options: { padToWidth?: boolean } = {},
+	) {}
 
 	render(width: number): string[] {
 		const safeWidth = Math.max(1, Math.floor(width || 80));
-		return this.text
+		const lines = this.text
 			.split("\n")
 			.flatMap((line) => wrapAnsiAwareLine(line, safeWidth));
+		return this.options.padToWidth
+			? lines.map((line) => padAnsiAwareLine(line, safeWidth))
+			: lines;
 	}
 
 	invalidate(): void {
@@ -29,6 +35,11 @@ function wrapAnsiAwareLine(line: string, width: number): string[] {
 	}
 	if (remaining) chunks.push(remaining);
 	return chunks;
+}
+
+function padAnsiAwareLine(line: string, width: number): string {
+	const padding = Math.max(0, width - visibleWidth(line));
+	return padding ? `${line}${" ".repeat(padding)}` : line;
 }
 
 function visibleWidth(text: string): number {
@@ -54,8 +65,11 @@ function truncateToWidth(text: string, width: number): string {
 	return output;
 }
 
-export function renderText(text: string): RenderComponent {
-	return new TextRenderComponent(text);
+export function renderText(
+	text: string,
+	options: { padToWidth?: boolean } = {},
+): RenderComponent {
+	return new TextRenderComponent(text, options);
 }
 
 export function renderSimpleCall(
@@ -83,6 +97,7 @@ export function renderEnvelopeResult(
 		expanded
 			? expandedEnvelopeText(summary, preview, details)
 			: summary.slice(0, 220),
+		{ padToWidth: true },
 	);
 }
 

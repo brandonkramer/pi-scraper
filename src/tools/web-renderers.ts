@@ -250,7 +250,7 @@ function renderChecklistResult(
 		const id = options.responseId
 			? `${separator()}${neutralText(`responseId: ${options.responseId}`)}`
 			: "";
-		return renderText(`${title}${id}`.slice(0, 240));
+		return renderText(`${title}${id}`.slice(0, 240), { padToWidth: true });
 	}
 	const lines = [title];
 	if (options.items?.length) {
@@ -260,7 +260,7 @@ function renderChecklistResult(
 	}
 	if (options.preview) lines.push("", options.preview.slice(0, 500));
 	if (options.responseId) lines.push("", `responseId: ${options.responseId}`);
-	return renderText(lines.join("\n"));
+	return renderText(lines.join("\n"), { padToWidth: true });
 }
 
 function toolAllowsIcons(toolName: `web_${string}`): boolean {
@@ -310,7 +310,7 @@ function renderProgress(
 				.join(" · "),
 		);
 	}
-	return renderText(lines.filter(Boolean).join("\n"));
+	return renderText(lines.filter(Boolean).join("\n"), { padToWidth: true });
 }
 
 function successCountSegment(
