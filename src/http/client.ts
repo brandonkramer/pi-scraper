@@ -132,7 +132,7 @@ export class HttpClient {
 			if (fetchOptions.method !== "HEAD" && ttl && ttl > 0) {
 				await recordFetch(result, { ...this.options.storage, ttlSeconds: ttl });
 			}
-			return { ...result, cache: { cached: false } };
+			return { ...result, cache: { cached: false, stale: false } };
 		} catch (error) {
 			if (error instanceof HttpClientError) {
 				throw error;

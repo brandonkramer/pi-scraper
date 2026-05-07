@@ -3,7 +3,10 @@ import { isTextLikeContentType } from "../http/download.js";
 import { normalizeUrl } from "../url/normalize.js";
 import { readBlob, writeBlob } from "./blobs.js";
 import { openStorageDb } from "./db.js";
-import { freshnessMetadata } from "./freshness.js";
+import {
+	DEFAULT_MAX_FRESHNESS_AGE_SECONDS,
+	freshnessMetadata,
+} from "./freshness.js";
 import type { ResolveStorageOptions } from "./paths.js";
 
 export interface FetchCacheOptions extends ResolveStorageOptions {
@@ -23,11 +26,6 @@ interface FetchRow {
 	expires_at: string | null;
 }
 
-const DEFAULT_MAX_CACHE_AGE_SECONDS = Number.parseInt(
-	process.env.PI_SCRAPER_MAX_CACHE_AGE ?? "604800",
-	10,
-);
-
 export async function findFreshFetch(
 	url: string,
 	ttlSeconds: number,
@@ -40,8 +38,11 @@ export async function findFreshFetch(
 	if (!row) return null;
 	const fetchedMs = Date.parse(row.fetched_at);
 	const ageSeconds = Math.max(0, Math.floor((Date.now() - fetchedMs) / 1_000));
-	const maxAge = options.maxAgeSeconds ?? DEFAULT_MAX_CACHE_AGE_SECONDS;
-	if (ageSeconds > ttlSeconds || ageSeconds > maxAge) return null;
+	const freshnessMaxAgeSeconds =
+		options.maxAgeSeconds ?? DEFAULT_MAX_FRESHNESS_AGE_SECONDS;
+	// Freshness max age is advisory, not a cache-reuse guard: a cached hit can be
+	// useful and still stale when callers set maxAgeSeconds stricter than TTL.
+	if (ageSeconds > ttlSeconds) return null;
 	const body = await readBlob(
 		row.content_hash,
 		row.content_type ?? undefined,
@@ -59,7 +60,9 @@ export async function findFreshFetch(
 			? body.toString("utf8")
 			: undefined,
 		downloadedBytes: row.byte_length,
-		cache: freshnessMetadata(row.fetched_at, ttlSeconds),
+		cache: freshnessMetadata(row.fetched_at, ttlSeconds, {
+			maxAgeSeconds: freshnessMaxAgeSeconds,
+		}),
 	};
 }
 

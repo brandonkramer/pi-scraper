@@ -47,6 +47,29 @@ describe("tool result helpers", () => {
 		expect(result.details.diagnostics?.storage).toBe("sqlite");
 	});
 
+	it("derives freshness metadata and stale guidance from cached inputs", () => {
+		const result = toolResult({
+			text: "cached",
+			data: { value: 1 },
+			cache: {
+				cached: true,
+				cachedAt: "2024-01-01T00:00:00.000Z",
+				fetchedAt: "2024-01-01T00:00:00.000Z",
+				ageSeconds: 120,
+				maxAgeSeconds: 60,
+				stale: true,
+			},
+			assistantGuidance: "Use answerContext first.",
+		});
+
+		expect(result.details.freshness).toMatchObject({
+			cachedAt: "2024-01-01T00:00:00.000Z",
+			maxAgeSeconds: 60,
+			stale: true,
+		});
+		expect(result.details.assistantGuidance).toContain("may be stale");
+	});
+
 	it("builds structured error shells", () => {
 		const result = errorResult({
 			code: "NOPE",

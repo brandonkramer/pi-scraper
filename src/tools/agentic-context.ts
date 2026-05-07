@@ -63,7 +63,9 @@ export function qualityFromCache(
 		confidence: "high",
 		freshness:
 			cache.cached &&
-			(cache.staleness === "stale" || cache.staleness === "expired")
+			(cache.stale ||
+				cache.staleness === "stale" ||
+				cache.staleness === "expired")
 				? "stale_possible"
 				: "current",
 		knownGaps: cache.cached

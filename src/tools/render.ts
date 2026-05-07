@@ -92,7 +92,9 @@ export function renderEnvelopeResult(
 	const id = details?.responseId ? ` · responseId: ${details.responseId}` : "";
 	const url = details?.finalUrl ?? details?.url;
 	const preview = result.content[0]?.text ?? "";
-	const summary = details?.summary ?? `${status}${url ? ` · ${url}` : ""}${id}`;
+	const freshness = details?.freshness?.stale ? " · stale" : "";
+	const summary =
+		details?.summary ?? `${status}${url ? ` · ${url}` : ""}${id}${freshness}`;
 	return renderText(
 		expanded
 			? expandedEnvelopeText(summary, preview, details)
@@ -111,6 +113,9 @@ function expandedEnvelopeText(
 		lines.push("", details.answerContext.slice(0, 500));
 	} else if (preview) {
 		lines.push("", preview.slice(0, 500));
+	}
+	if (details?.freshness?.stale) {
+		lines.push("", "Freshness: stale; refresh source if time-sensitive.");
 	}
 	if (details?.nextActions?.length) {
 		lines.push(

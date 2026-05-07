@@ -1,4 +1,5 @@
 import { type Static, Type } from "@mariozechner/pi-ai";
+import { listSnapshots } from "../diff/snapshots.js";
 import { getJobManifest } from "../storage/jobs.js";
 import { getStoredResult } from "../storage/results.js";
 import { defineWebTool } from "./define.js";
@@ -12,6 +13,9 @@ import { errorResult, structuredToolError, toolResult } from "./result.js";
 export const webGetResultSchema = Type.Object({
 	responseId: Type.Optional(Type.String()),
 	jobId: Type.Optional(Type.String()),
+	snapshotUrl: Type.Optional(Type.String()),
+	snapshotName: Type.Optional(Type.String()),
+	snapshotTag: Type.Optional(Type.String()),
 });
 
 type Params = Static<typeof webGetResultSchema>;
@@ -19,22 +23,31 @@ type Params = Static<typeof webGetResultSchema>;
 export const webGetResultTool = defineWebTool({
 	name: "web_get_result",
 	label: "Get",
-	description: "Retrieve stored response or job manifest",
+	description: "Retrieve stored response, job manifest, or snapshot listing",
 	parameters: webGetResultSchema,
 	async execute(_toolCallId, params: Params) {
 		if (params.jobId) return getJob(params.jobId);
 		if (params.responseId) return getResponse(params.responseId);
+		if (params.snapshotUrl)
+			return getSnapshotList(
+				params.snapshotUrl,
+				params.snapshotName,
+				params.snapshotTag,
+			);
 		return errorResult({
 			code: "GET_RESULT_INPUT_MISSING",
 			phase: "retrieve",
-			message: "Provide responseId or jobId.",
+			message: "Provide responseId, jobId, or snapshotUrl.",
 			retryable: false,
 		});
 	},
 	renderCall: (args, theme) =>
 		renderSimpleCall(
 			"web_get_result",
-			[args.jobId ? `job:${args.jobId}` : args.responseId],
+			[
+				args.jobId ? `job:${args.jobId}` : args.responseId,
+				args.snapshotUrl ? `snapshots:${args.snapshotUrl}` : undefined,
+			],
 			theme,
 		),
 	renderResult: (result, { expanded }) =>
@@ -57,6 +70,37 @@ async function getJob(jobId: string) {
 	} catch (error) {
 		return errorResult(
 			structuredToolError(error, "JOB_MANIFEST_NOT_FOUND", "retrieve"),
+		);
+	}
+}
+
+async function getSnapshotList(
+	snapshotUrl: string,
+	snapshotName?: string,
+	snapshotTag?: string,
+) {
+	try {
+		const entries = await listSnapshots({
+			url: snapshotUrl,
+			snapshotName,
+			snapshotTag,
+		});
+		return toolResult({
+			text: `Found ${entries.length} snapshot(s) for ${snapshotUrl}`,
+			data: entries,
+			format: "json",
+			summary: `Listed ${entries.length} snapshot(s) for ${snapshotUrl}.`,
+			answerContext:
+				"Snapshot listings include local paths plus metadata such as timestamp, mode, snapshotName, and snapshotTag for selecting web_diff compareTag baselines.",
+		});
+	} catch (error) {
+		return errorResult(
+			structuredToolError(
+				error,
+				"SNAPSHOT_LIST_FAILED",
+				"retrieve",
+				snapshotUrl,
+			),
 		);
 	}
 }

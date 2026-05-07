@@ -2,6 +2,10 @@ import { Type, type Static } from "@mariozechner/pi-ai";
 import { runBatchScrape } from "../batch/run.js";
 import { loadEffectiveConfig } from "../config/settings.js";
 import {
+	aggregateFreshness,
+	freshnessFromCache,
+} from "../storage/freshness.js";
+import {
 	retrieveResultAction,
 	storedResultGuidance,
 } from "./agentic-context.js";
@@ -54,12 +58,20 @@ export const webBatchTool = defineWebTool({
 		const cacheHits = result.items.filter(
 			(item) => item.ok && item.result.cache?.cached,
 		).length;
+		const freshness = aggregateFreshness(
+			result.items.map((item) =>
+				item.ok
+					? (item.result.freshness ?? freshnessFromCache(item.result.cache))
+					: undefined,
+			),
+		);
 		return toolResult({
 			text: result.summary,
 			data: result.items,
 			responseId: result.responseId,
 			fullOutputPath: result.fullOutputPath,
 			truncated: result.truncated,
+			freshness,
 			diagnostics: {
 				jobId: result.jobId,
 				jobManifestPath: result.jobManifestPath,
@@ -69,8 +81,8 @@ export const webBatchTool = defineWebTool({
 			summary: `${succeeded} succeeded, ${failed} failed, ${cacheHits} cache hit(s) across ${result.items.length} URL(s).`,
 			answerContext: `Batch scrape completed with ${succeeded} succeeded and ${failed} failed out of ${result.items.length}. ${cacheHits} successful item(s) came from cache. Use responseId for full per-URL details or jobId ${result.jobId} for the structured job manifest.`,
 			qualitySignals: {
-				confidence: failed ? "medium" : "high",
-				freshness: cacheHits ? "stale_possible" : "current",
+				confidence: failed || freshness?.stale ? "medium" : "high",
+				freshness: freshness?.stale ? "stale_possible" : "current",
 				coverage: failed ? "partial" : "complete",
 				partialFailures: failed ? [`${failed} URL(s) failed.`] : undefined,
 			},

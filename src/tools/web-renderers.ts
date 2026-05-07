@@ -10,6 +10,14 @@ import type {
 	ToolRenderContext,
 } from "./define.js";
 import { renderText } from "./render.js";
+import type {
+	BatchItem,
+	CrawlEntry,
+	CrawlMeta,
+	DiffData,
+	HistoryEntry,
+	SearchData,
+} from "./web-renderer-types.js";
 
 export type ChecklistState = "done" | "pending" | "failed" | "warning" | "info";
 
@@ -46,6 +54,7 @@ export function renderWebScrapeResult(
 				envelope.mode,
 				envelope.format,
 				cacheLabel(envelope),
+				freshnessLabel(envelope),
 			]
 				.filter(Boolean)
 				.join(" · ");
@@ -123,7 +132,10 @@ export function renderWebBatchResult(
 				successCountSegment(succeeded, "succeeded", theme),
 				failureCountSegment(failed, "failed", theme),
 				activityCountSegment(cacheHits, "cache hits", "🔄", theme),
-			].join(separator(theme));
+				freshnessLabel(envelope),
+			]
+				.filter(Boolean)
+				.join(separator(theme));
 	return renderChecklistResult(title, expanded, {
 		items: [
 			{ label: `${succeeded} succeeded`, state: succeeded ? "done" : "info" },
@@ -150,7 +162,9 @@ export function renderWebDiffResult(
 	const diff = envelope.data;
 	const title = envelope.error
 		? errorTitle("web_diff", envelope.error)
-		: diffTitle(diff, envelope.summary);
+		: [diffTitle(diff, envelope.summary), freshnessLabel(envelope)]
+				.filter(Boolean)
+				.join(separator());
 	return renderChecklistResult(title, expanded, {
 		items: [
 			{ label: "fetched current page", state: diff?.current ? "done" : "info" },
@@ -405,7 +419,7 @@ function fetchChecklistItem(
 	if (envelope.cache?.cached) {
 		return {
 			label: "cache hit",
-			state: "done",
+			state: envelope.freshness?.stale ? "warning" : "done",
 			detail: envelope.cache.staleness,
 		};
 	}
@@ -417,6 +431,12 @@ function cacheLabel(
 ): string | undefined {
 	if (!envelope.cache?.cached) return undefined;
 	return `↻ cache hit${envelope.cache.staleness ? ` ${envelope.cache.staleness}` : ""}`;
+}
+
+function freshnessLabel(
+	envelope: Partial<ResultEnvelope<unknown>>,
+): string | undefined {
+	return envelope.freshness?.stale ? "⚠ stale" : undefined;
 }
 
 function errorTitle(tool: `web_${string}`, error: StructuredError): string {
@@ -471,37 +491,4 @@ function isProgress(value: unknown): value is ProgressDetails {
 			"_progress" in value &&
 			(value as ProgressDetails)._progress,
 	);
-}
-
-interface CrawlMeta {
-	succeededCount: number;
-	failedCount: number;
-	visitedCount: number;
-	frontierCount: number;
-}
-
-interface BatchItem {
-	ok?: boolean;
-	url?: string;
-	result?: { cache?: { cached?: boolean } };
-	error?: { message?: string };
-}
-
-interface DiffData {
-	previous?: unknown;
-	current?: unknown;
-	diff?: { changedCount?: number; addedCount?: number; removedCount?: number };
-}
-
-interface HistoryEntry {
-	responseId?: string;
-}
-
-interface CrawlEntry {
-	recommendedAction?: string;
-}
-
-interface SearchData {
-	supported?: boolean;
-	hits?: unknown[];
 }

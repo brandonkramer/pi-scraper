@@ -77,9 +77,9 @@ The package declares its extension entrypoint and packaged skills in `package.js
 | `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, or list prior crawl metadata.                                 |
 | `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.   |
 | `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results.                                                         |
-| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed or named snapshots, and store deterministic diff metadata.                           |
+| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                  |
 | `web_extract`    | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text patterns, or run ad hoc schema/prompt extraction from one page/content. |
-| `web_get_result` | Local                                           | Retrieve a stored response by `responseId` or structured job manifest by `jobId`.                                                  |
+| `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.              |
 
 Capability labels:
 
@@ -131,7 +131,22 @@ Used by `web_scrape`, `web_summarize`, `web_batch`, `web_crawl`, `web_diff`, and
 { "url": "https://example.com", "snapshotName": "homepage" }
 ```
 
-Reusing the same `snapshotName` compares against and then replaces that named baseline.
+Reusing the same `snapshotName` compares against and then replaces that named baseline. Pass `snapshotTag` to save release/date baselines, `compareTag` to compare current content against a tagged baseline, and `maxSnapshotAgeSeconds` to warn when the baseline snapshot is too old for time-sensitive comparisons:
+
+```json
+{
+  "url": "https://example.com/docs",
+  "snapshotName": "docs",
+  "snapshotTag": "v2.0.0",
+  "compareTag": "v1.0.0"
+}
+```
+
+List available per-URL snapshot tags with `web_get_result`:
+
+```json
+{ "snapshotUrl": "https://example.com/docs", "snapshotName": "docs" }
+```
 
 ## Scrape modes
 
@@ -200,11 +215,12 @@ Inline truncation follows Pi defaults:
 - 50KB
 - 2000 lines
 
-The storage backend uses a local SQLite metadata index plus content-addressed blob files. Cache reuse is opt-in with `cacheTtlSeconds`; default behavior remains fresh network fetches. Cached results include `cache.cached`, `fetchedAt`, `ageSeconds`, `ttlSeconds`, and `staleness` metadata when returned from the fetch cache.
+The storage backend uses a local SQLite metadata index plus content-addressed blob files. Cache reuse is opt-in with `cacheTtlSeconds`; default behavior remains fresh network fetches. Cached results include `cache.cached`, `fetchedAt`, `ageSeconds`, `ttlSeconds`, and `staleness` metadata plus standard `freshness.cachedAt`, `freshness.maxAgeSeconds`, `freshness.ageSeconds`, and `freshness.stale` fields when returned from the fetch cache.
 
 Use freshness controls deliberately:
 
 - `web_crawl` with `action: "list"` or `action: "status"` to inspect prior crawls and decide whether to resume, reuse, or recrawl.
+- `web_diff` with `maxSnapshotAgeSeconds` when an old snapshot baseline should be treated as stale.
 - `refresh: true` for time-sensitive questions such as prices, news, status pages, availability, or anything the user asks about “now”.
 
 The fetch cache currently records in-memory text/buffer responses. Streamed binary downloads are saved as normal result blobs but are not reused as raw HTTP cache hits.

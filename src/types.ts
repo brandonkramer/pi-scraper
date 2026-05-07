@@ -79,10 +79,16 @@ export interface ResponseStorageMetadata {
 	contentType?: string;
 }
 
-export interface CacheMetadata {
+export interface FreshnessMetadata {
+	cachedAt?: string;
+	maxAgeSeconds?: number;
+	stale: boolean;
+	ageSeconds?: number;
+}
+
+export interface CacheMetadata extends FreshnessMetadata {
 	cached: boolean;
 	fetchedAt?: string;
-	ageSeconds?: number;
 	ttlSeconds?: number;
 	staleness?: string;
 }
@@ -140,6 +146,7 @@ export interface ResultEnvelope<TData = unknown> {
 	contentType?: string;
 	downloadedBytes?: number;
 	cache?: CacheMetadata;
+	freshness?: FreshnessMetadata;
 	sources?: SourceReference[];
 	citations?: Citation[];
 	summary?: string;

@@ -8,10 +8,18 @@ import {
 	type CrawlStatus,
 	updateCrawlMetadata,
 } from "../crawl/state.js";
-import { crawlStaleness } from "../storage/freshness.js";
+import {
+	aggregateFreshness,
+	crawlStaleness,
+	freshnessFromTimestamp,
+} from "../storage/freshness.js";
 import { updateJobManifest } from "../storage/jobs.js";
 import { storeResult } from "../storage/results.js";
-import type { AgenticNextAction, AgenticQualitySignals } from "../types.js";
+import type {
+	AgenticNextAction,
+	AgenticQualitySignals,
+	FreshnessMetadata,
+} from "../types.js";
 import {
 	crawlAction,
 	formatAge,
@@ -50,6 +58,7 @@ type CrawlAction = (typeof crawlActions)[number];
 type CrawlEntry = CrawlMetadata & {
 	ageSeconds: number;
 	staleness: string;
+	freshness: FreshnessMetadata;
 	recommendedAction: string;
 };
 
@@ -145,6 +154,10 @@ async function crawlRun(
 	const manifest = await updateJobManifest(crawl.crawlId, {
 		responseIds: [finalStored.responseId],
 	});
+	const freshness = crawlFreshness(
+		crawl.metadata,
+		config.scrapeDefaults.maxAgeSeconds,
+	);
 	const text = `Crawl ${crawl.crawlId}: ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}. responseId: ${finalStored.responseId}`;
 	return toolResult({
 		text,
@@ -159,6 +172,7 @@ async function crawlRun(
 		responseId: finalStored.responseId,
 		fullOutputPath: finalStored.fullOutputPath,
 		truncated: true,
+		freshness,
 		diagnostics: { jobId: crawl.crawlId, jobManifestPath: manifest.path },
 		assistantGuidance: storedResultGuidance(),
 	});
@@ -199,6 +213,7 @@ async function crawlStatus(params: Params) {
 			responseId: entry.responseId,
 			format: "json",
 			contentType: "application/json",
+			freshness: entry.freshness,
 			summary: `Crawl ${entry.crawlId} is ${entry.status}; ${entry.recommendedAction}.`,
 			answerContext: crawlAnswerContext([entry]),
 			qualitySignals: crawlQuality([entry], 1),
@@ -227,7 +242,7 @@ async function crawlList(params: Params) {
 		status: params.status as CrawlStatus | undefined,
 		limit,
 	});
-	const entries = crawls.map(enrichCrawl);
+	const entries = crawls.map((crawl) => enrichCrawl(crawl));
 	const scope = params.seed ? ` for ${params.seed}` : "";
 	if (entries.length === 0) {
 		return toolResult({
@@ -252,6 +267,7 @@ async function crawlList(params: Params) {
 		data: { crawls: entries },
 		format: "json",
 		contentType: "application/json",
+		freshness: aggregateFreshness(entries.map((entry) => entry.freshness)),
 		summary: text,
 		answerContext: crawlAnswerContext(entries),
 		qualitySignals: crawlQuality(entries, limit),
@@ -261,13 +277,27 @@ async function crawlList(params: Params) {
 	});
 }
 
-function enrichCrawl(crawl: CrawlMetadata): CrawlEntry {
-	const freshness = crawlStaleness(crawl.updatedAt);
+function enrichCrawl(crawl: CrawlMetadata, maxAgeSeconds?: number): CrawlEntry {
+	const staleness = crawlStaleness(crawl.updatedAt);
+	const freshness = crawlFreshness(crawl, maxAgeSeconds);
 	return {
 		...crawl,
-		...freshness,
-		recommendedAction: recommendedAction(crawl.status, freshness.staleness),
+		...staleness,
+		freshness,
+		recommendedAction: recommendedAction(crawl.status, staleness.staleness),
 	};
+}
+
+function crawlFreshness(
+	crawl: CrawlMetadata,
+	maxAgeSeconds?: number,
+): FreshnessMetadata {
+	return (
+		freshnessFromTimestamp(crawl.updatedAt, maxAgeSeconds) ?? {
+			cachedAt: crawl.updatedAt,
+			stale: false,
+		}
+	);
 }
 
 function recommendedAction(status: CrawlStatus, staleness: string): string {
@@ -332,7 +362,10 @@ function crawlQuality(
 	limit: number,
 ): AgenticQualitySignals {
 	const stale = entries.filter(
-		(entry) => entry.staleness === "stale" || entry.staleness === "expired",
+		(entry) =>
+			entry.freshness.stale ||
+			entry.staleness === "stale" ||
+			entry.staleness === "expired",
 	);
 	return {
 		confidence: stale.length ? "medium" : "high",

@@ -7,6 +7,7 @@ import {
 	updateSnapshotReference,
 } from "../diff/snapshots.js";
 import { scrapeUrl } from "../scrape/pipeline.js";
+import { freshnessFromTimestamp } from "../storage/freshness.js";
 import {
 	appendJobError,
 	createJobManifest,
@@ -18,6 +19,7 @@ import {
 } from "../storage/jobs.js";
 import { storeResult } from "../storage/results.js";
 import {
+	formatAge,
 	retrieveResultAction,
 	sourceNote,
 	storedResultGuidance,
@@ -25,12 +27,15 @@ import {
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
 import { renderWebDiffResult, renderWebToolCall } from "./web-renderers.js";
-import { toolResult } from "./result.js";
+import { errorResult, structuredToolError, toolResult } from "./result.js";
 import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
 
 export const webDiffSchema = Type.Object({
 	url: urlProperty(),
 	snapshotName: Type.Optional(Type.String()),
+	snapshotTag: Type.Optional(Type.String()),
+	compareTag: Type.Optional(Type.String()),
+	maxSnapshotAgeSeconds: Type.Optional(Type.Any()),
 	...scrapeModeOptionSchema,
 });
 
@@ -57,9 +62,7 @@ export const webDiffTool = defineWebTool({
 		await emitProgress(onUpdate, {
 			state: "loading",
 			url: params.url,
-			message: params.snapshotName
-				? `diffing against snapshot '${params.snapshotName}'`
-				: "diffing against snapshot",
+			message: diffProgressMessage(params),
 		});
 		await updateJobManifest(jobId, {
 			status: "running",
@@ -84,6 +87,8 @@ export const webDiffTool = defineWebTool({
 				);
 			const diff = await diffScrapeResult(scrape, {
 				snapshotName: params.snapshotName,
+				snapshotTag: params.snapshotTag,
+				compareTag: params.compareTag,
 			});
 			const responseId = randomUUID();
 			diff.current.metadata.responseId = responseId;
@@ -94,6 +99,7 @@ export const webDiffTool = defineWebTool({
 			diff.current.metadata.fullOutputPath = stored.fullOutputPath;
 			await updateSnapshotReference(diff.current.url, stored, {
 				snapshotName: params.snapshotName,
+				snapshotTag: params.snapshotTag,
 			});
 			stored = await storeResult(diff, {
 				responseId,
@@ -114,10 +120,20 @@ export const webDiffTool = defineWebTool({
 					current: diff.current.metadata,
 					path: diff.snapshotPath,
 					snapshotName: diff.snapshotName,
+					snapshotTag: diff.snapshotTag,
+					compareTag: diff.compareTag,
 				},
 			});
+			const baselineFreshness = baselineFreshnessFor(
+				diff,
+				params.maxSnapshotAgeSeconds,
+			);
 			const text = renderDiffSummary(diff, stored.responseId);
-			const shaped = shapeDiffResult(diff, stored.responseId);
+			const shaped = shapeDiffResult(
+				diff,
+				stored.responseId,
+				baselineFreshness,
+			);
 			return toolResult({
 				text,
 				data: diff,
@@ -128,6 +144,7 @@ export const webDiffTool = defineWebTool({
 				responseId: stored.responseId,
 				fullOutputPath: stored.fullOutputPath,
 				contentType: "application/json",
+				freshness: baselineFreshness,
 				diagnostics: { jobId, jobManifestPath: manifestPath },
 				...shaped,
 			});
@@ -143,33 +160,65 @@ export const webDiffTool = defineWebTool({
 				urlsFailed: 1,
 				errors,
 			});
+			if (typeof error === "object" && error !== null && "structured" in error)
+				return errorResult(
+					structuredToolError(
+						error,
+						"SNAPSHOT_DIFF_FAILED",
+						"diff",
+						params.url,
+					),
+				);
 			throw error;
 		}
 	},
 	renderCall: (args, theme, context) =>
 		renderWebToolCall(
 			"web_diff",
-			args.snapshotName
-				? [args.url, `snapshot:${args.snapshotName}`]
-				: [args.url],
+			[
+				args.url,
+				args.snapshotName ? `snapshot:${args.snapshotName}` : undefined,
+				args.snapshotTag ? `tag:${args.snapshotTag}` : undefined,
+				args.compareTag ? `compare:${args.compareTag}` : undefined,
+			],
 			theme,
 			context,
 		),
 	renderResult: (result, { expanded }) => renderWebDiffResult(result, expanded),
 });
 
-function shapeDiffResult(diff: SnapshotDiffResult, responseId: string) {
+function diffProgressMessage(params: Params): string {
+	const labels = [
+		params.snapshotName ? `snapshot '${params.snapshotName}'` : undefined,
+		params.compareTag ? `tag '${params.compareTag}'` : undefined,
+	].filter(Boolean);
+	return labels.length
+		? `diffing against ${labels.join(" ")}`
+		: "diffing against snapshot";
+}
+
+function shapeDiffResult(
+	diff: SnapshotDiffResult,
+	responseId: string,
+	baselineFreshness?: ReturnType<typeof baselineFreshnessFor>,
+) {
 	const interpretation = diffInterpretation(diff);
 	const sourceUrl = diff.current.finalUrl ?? diff.current.url;
+	const baselineWarning = baselineFreshness?.stale
+		? `Baseline snapshot is ${formatAge(baselineFreshness.ageSeconds)} old; refresh or save a newer snapshot before relying on time-sensitive comparisons.`
+		: undefined;
 	return {
 		summary: interpretation,
 		answerContext: [
 			interpretation,
 			diff.previous
-				? `Compared current content against ${diff.snapshotName ? `snapshot '${diff.snapshotName}'` : "the previous unnamed snapshot"}.`
+				? `Compared current content against ${baselineLabel(diff)}.`
 				: "No previous snapshot existed; this run established the baseline.",
+			baselineWarning,
 			`Use responseId ${responseId} to inspect the full diff, hashes, headings, links, metadata changes, and snapshot metadata.`,
-		].join("\n"),
+		]
+			.filter(Boolean)
+			.join("\n"),
 		sourceNotes: [
 			sourceNote({
 				id: "current",
@@ -181,14 +230,19 @@ function shapeDiffResult(diff: SnapshotDiffResult, responseId: string) {
 			}),
 		],
 		qualitySignals: {
-			confidence: "high" as const,
-			freshness: "current" as const,
+			confidence: baselineFreshness?.stale
+				? ("medium" as const)
+				: ("high" as const),
+			freshness: baselineFreshness?.stale
+				? ("stale_possible" as const)
+				: ("current" as const),
 			coverage: "complete" as const,
-			knownGaps: diff.previous
-				? undefined
-				: [
-						"This was the first snapshot, so no previous content was available for comparison.",
-					],
+			knownGaps: [
+				!diff.previous
+					? "This was the first snapshot, so no previous content was available for comparison."
+					: undefined,
+				baselineWarning,
+			].filter(Boolean) as string[],
 		},
 		nextActions: [
 			retrieveResultAction(responseId, "Inspect the full stored diff result."),
@@ -197,10 +251,24 @@ function shapeDiffResult(diff: SnapshotDiffResult, responseId: string) {
 	};
 }
 
+function baselineFreshnessFor(
+	diff: SnapshotDiffResult,
+	maxSnapshotAgeSeconds: unknown,
+) {
+	if (!diff.previous || maxSnapshotAgeSeconds === undefined) return undefined;
+	return freshnessFromTimestamp(
+		diff.previous.metadata.timestamp,
+		toPositiveNumber(maxSnapshotAgeSeconds),
+	);
+}
+
+function toPositiveNumber(value: unknown): number | undefined {
+	const number = typeof value === "number" ? value : Number(value);
+	return Number.isFinite(number) && number > 0 ? number : undefined;
+}
+
 export function diffInterpretation(diff: SnapshotDiffResult): string {
-	const name = diff.snapshotName
-		? ` snapshot '${diff.snapshotName}'`
-		: " snapshot";
+	const name = diffLabel(diff);
 	if (!diff.previous)
 		return `No previous${name}; saved a baseline for future comparisons.`;
 	if (diff.summary?.unchangedAfterNormalization)
@@ -230,9 +298,7 @@ function renderDiffSummary(
 	diff: SnapshotDiffResult,
 	responseId: string,
 ): string {
-	const name = diff.snapshotName
-		? ` snapshot '${diff.snapshotName}'`
-		: " snapshot";
+	const name = diffLabel(diff);
 	if (!diff.previous)
 		return `No previous${name}; saved baseline. responseId: ${responseId}`;
 	if (diff.summary?.unchangedAfterNormalization)
@@ -250,4 +316,19 @@ function renderDiffSummary(
 		`responseId: ${responseId}`,
 	];
 	return parts.join(" · ");
+}
+
+function diffLabel(diff: SnapshotDiffResult): string {
+	return ` ${baselineLabel(diff)}`;
+}
+
+function baselineLabel(diff: SnapshotDiffResult): string {
+	const snapshot = diff.snapshotName
+		? `snapshot '${diff.snapshotName}'`
+		: "snapshot";
+	const tag = diff.snapshotTag ? ` tag '${diff.snapshotTag}'` : "";
+	const baseline = diff.compareTag
+		? ` compared to tag '${diff.compareTag}'`
+		: "";
+	return `${snapshot}${tag}${baseline}`;
 }

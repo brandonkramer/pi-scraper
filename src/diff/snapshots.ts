@@ -13,7 +13,7 @@ import {
 	resolvePiStoragePaths,
 } from "../storage/paths.js";
 import { getStoredResult } from "../storage/results.js";
-import type { ResponseStorageMetadata } from "../types.js";
+import type { ResponseStorageMetadata, StructuredError } from "../types.js";
 import { normalizeUrl } from "../url/normalize.js";
 import { compareSnapshotText, type TextDiffSummary } from "./compare.js";
 import {
@@ -24,6 +24,8 @@ import {
 
 export interface SnapshotOptions extends ResolveStorageOptions {
 	snapshotName?: string;
+	snapshotTag?: string;
+	compareTag?: string;
 }
 
 export interface PageSnapshotMetadata {
@@ -38,6 +40,7 @@ export interface PageSnapshotMetadata {
 	contentHash: string;
 	normalizedHash: string;
 	snapshotName?: string;
+	snapshotTag?: string;
 	responseId?: string;
 	fullOutputPath?: string;
 }
@@ -50,6 +53,7 @@ export interface PageSnapshot {
 	contentHash: string;
 	normalizedHash: string;
 	snapshotName?: string;
+	snapshotTag?: string;
 	metadata: PageSnapshotMetadata;
 	content: NormalizedSnapshotContent;
 }
@@ -72,6 +76,8 @@ export interface SnapshotDiffResult {
 	summary?: SnapshotChangeSummary;
 	snapshotPath: string;
 	snapshotName?: string;
+	snapshotTag?: string;
+	compareTag?: string;
 }
 
 export interface SnapshotListingEntry {
@@ -93,6 +99,11 @@ export async function loadSnapshot(
 	url: string,
 	options: SnapshotOptions = {},
 ): Promise<PageSnapshot | undefined> {
+	if (options.snapshotTag) {
+		const indexed = await loadIndexedSnapshot(url, options);
+		if (indexed) return indexed;
+		return loadFileSnapshot(url, options);
+	}
 	const indexed = await loadIndexedSnapshot(url, options);
 	if (indexed) return indexed;
 	return loadFileSnapshot(url, options);
@@ -134,6 +145,13 @@ export async function listSnapshots(
 						safeSnapshotName(options.snapshotName))
 			)
 				continue;
+			if (
+				options.snapshotTag &&
+				(!snapshot.snapshotTag ||
+					safeSnapshotName(snapshot.snapshotTag) !==
+						safeSnapshotName(options.snapshotTag))
+			)
+				continue;
 			entries.push({ snapshotPath, metadata: snapshot.metadata });
 		} catch {
 			/* Ignore corrupt/partial snapshot files during listing. */
@@ -148,7 +166,13 @@ export async function diffScrapeResult(
 	result: ScrapeResult,
 	options: SnapshotOptions = {},
 ): Promise<SnapshotDiffResult> {
-	const previous = await loadSnapshot(result.url ?? "", options);
+	const url = result.url ?? "";
+	const baselineOptions = options.compareTag
+		? { ...options, snapshotTag: options.compareTag, compareTag: undefined }
+		: { ...options, snapshotTag: undefined, compareTag: undefined };
+	const previous = await loadSnapshot(url, baselineOptions);
+	if (options.compareTag && !previous)
+		throw missingSnapshotTagError(url, options);
 	const saved = await saveSnapshot(result, options);
 	const diff = previous
 		? compareSnapshotText(previous.content.text, saved.snapshot.content.text)
@@ -163,6 +187,8 @@ export async function diffScrapeResult(
 		summary,
 		snapshotPath: saved.path,
 		snapshotName: options.snapshotName,
+		snapshotTag: options.snapshotTag,
+		compareTag: options.compareTag,
 	};
 }
 
@@ -195,6 +221,7 @@ export function snapshotFromResult(
 		contentHash,
 		normalizedHash,
 		snapshotName: options.snapshotName,
+		snapshotTag: options.snapshotTag,
 		responseId: result.responseId,
 		fullOutputPath: result.fullOutputPath,
 	};
@@ -206,6 +233,7 @@ export function snapshotFromResult(
 		contentHash,
 		normalizedHash,
 		snapshotName: options.snapshotName,
+		snapshotTag: options.snapshotTag,
 		metadata,
 		content,
 	};
@@ -267,7 +295,12 @@ async function loadFileSnapshot(
 	url: string,
 	options: SnapshotOptions,
 ): Promise<PageSnapshot | undefined> {
-	const filePath = await snapshotPath(url, options);
+	return readSnapshotFile(await snapshotPath(url, options));
+}
+
+async function readSnapshotFile(
+	filePath: string,
+): Promise<PageSnapshot | undefined> {
 	try {
 		return normalizeLoadedSnapshot(
 			JSON.parse(await readFile(filePath, "utf8")) as PageSnapshot,
@@ -285,7 +318,7 @@ async function loadIndexedSnapshot(
 		const db = await openStorageDb(options);
 		const row = db
 			.prepare(SELECT_SNAPSHOT)
-			.get(normalizeUrl(url), options.snapshotName ?? "") as
+			.get(normalizeUrl(url), snapshotStorageKey(options)) as
 			| { response_id: string }
 			| undefined;
 		if (!row) return undefined;
@@ -308,7 +341,7 @@ async function upsertSnapshotRow(
 	const db = await openStorageDb(options);
 	db.prepare(UPSERT_SNAPSHOT).run(
 		normalizeUrl(url),
-		options.snapshotName ?? "",
+		snapshotStorageKey(options),
 		response.responseId,
 		snapshot.timestamp,
 	);
@@ -336,26 +369,37 @@ async function snapshotPath(
 	const name = options.snapshotName
 		? `--${safeSnapshotName(options.snapshotName)}`
 		: "";
-	return path.join(dir, `${hash(normalizeUrl(url))}${name}.json`);
+	const tag = options.snapshotTag
+		? `--tag-${safeSnapshotName(options.snapshotTag)}`
+		: "";
+	return path.join(dir, `${hash(normalizeUrl(url))}${name}${tag}.json`);
 }
 
 function normalizeLoadedSnapshot(snapshot: PageSnapshot): PageSnapshot {
 	const content = normalizeLoadedContent(snapshot.content);
 	const normalizedHash = snapshot.normalizedHash ?? snapshot.textHash;
 	const contentHash = snapshot.contentHash ?? hash(content.rawText);
+	const metadata = snapshot.metadata ?? {
+		url: snapshot.url,
+		finalUrl: snapshot.finalUrl,
+		timestamp: snapshot.timestamp,
+		contentHash,
+		normalizedHash,
+		snapshotName: snapshot.snapshotName,
+		snapshotTag: snapshot.snapshotTag,
+	};
 	return {
 		...snapshot,
 		content,
 		contentHash,
 		normalizedHash,
 		textHash: normalizedHash,
-		metadata: snapshot.metadata ?? {
-			url: snapshot.url,
-			finalUrl: snapshot.finalUrl,
-			timestamp: snapshot.timestamp,
-			contentHash,
-			normalizedHash,
-			snapshotName: snapshot.snapshotName,
+		snapshotName: metadata.snapshotName ?? snapshot.snapshotName,
+		snapshotTag: metadata.snapshotTag ?? snapshot.snapshotTag,
+		metadata: {
+			...metadata,
+			snapshotName: metadata.snapshotName ?? snapshot.snapshotName,
+			snapshotTag: metadata.snapshotTag ?? snapshot.snapshotTag,
 		},
 	};
 }
@@ -405,6 +449,28 @@ function missingLinks(
 ): SnapshotLink[] {
 	const rightSet = new Set(right.map((link) => link.url));
 	return left.filter((link) => !rightSet.has(link.url)).slice(0, 25);
+}
+
+function snapshotStorageKey(options: SnapshotOptions): string {
+	if (!options.snapshotTag) return options.snapshotName ?? "";
+	return `${options.snapshotName ?? ""}#tag:${safeSnapshotName(options.snapshotTag)}`;
+}
+
+function missingSnapshotTagError(
+	url: string,
+	options: SnapshotOptions,
+): Error & { structured: StructuredError } {
+	const tag = options.compareTag ?? options.snapshotTag ?? "";
+	const message = `No snapshot tag '${tag}' exists for ${url}. Use web_get_result with snapshotUrl to list available tags.`;
+	return Object.assign(new Error(message), {
+		structured: {
+			code: "SNAPSHOT_TAG_NOT_FOUND",
+			phase: "diff",
+			message,
+			retryable: false,
+			url,
+		},
+	});
 }
 
 function safeSnapshotName(input: string): string {

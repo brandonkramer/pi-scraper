@@ -5,6 +5,10 @@ import type {
 	StructuredError,
 	TimingInfo,
 } from "../types.js";
+import {
+	freshnessFromCache,
+	guidanceWithFreshness,
+} from "../storage/freshness.js";
 
 export interface ResultShellOptions<TData> {
 	text: string;
@@ -17,6 +21,7 @@ export interface ResultShellOptions<TData> {
 	contentType?: string;
 	downloadedBytes?: number;
 	cache?: ResultEnvelope<TData>["cache"];
+	freshness?: ResultEnvelope<TData>["freshness"];
 	responseId?: string;
 	fullOutputPath?: string;
 	truncated?: boolean;
@@ -36,6 +41,7 @@ export interface ResultShellOptions<TData> {
 export function toolResult<TData>(
 	options: ResultShellOptions<TData>,
 ): PiToolShell<ResultEnvelope<TData>> {
+	const freshness = options.freshness ?? freshnessFromCache(options.cache);
 	return {
 		content: [{ type: "text", text: options.text }],
 		details: {
@@ -52,6 +58,7 @@ export function toolResult<TData>(
 			contentType: options.contentType,
 			downloadedBytes: options.downloadedBytes,
 			cache: options.cache,
+			freshness,
 			sources: options.sources,
 			citations: options.citations,
 			summary: options.summary,
@@ -59,7 +66,10 @@ export function toolResult<TData>(
 			sourceNotes: options.sourceNotes,
 			qualitySignals: options.qualitySignals,
 			nextActions: options.nextActions,
-			assistantGuidance: options.assistantGuidance,
+			assistantGuidance: guidanceWithFreshness(
+				options.assistantGuidance,
+				freshness,
+			),
 			diagnostics: options.diagnostics,
 			error: options.error,
 		},

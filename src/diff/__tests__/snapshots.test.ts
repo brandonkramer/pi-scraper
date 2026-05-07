@@ -68,6 +68,108 @@ describe("snapshot diffing", () => {
 		expect(docs?.content.text).toBe("Baseline B");
 	});
 
+	it("keeps untagged named snapshots isolated from tagged snapshots", async () => {
+		await diffScrapeResult(
+			result("https://example.com/docs", "Untagged docs"),
+			{ rootDir, snapshotName: "docs" },
+		);
+		await diffScrapeResult(result("https://example.com/docs", "Tagged docs"), {
+			rootDir,
+			snapshotName: "docs",
+			snapshotTag: "v1.0.0",
+		});
+
+		const untagged = await loadSnapshot("https://example.com/docs", {
+			rootDir,
+			snapshotName: "docs",
+		});
+		const tagged = await loadSnapshot("https://example.com/docs", {
+			rootDir,
+			snapshotName: "docs",
+			snapshotTag: "v1.0.0",
+		});
+		const current = await diffScrapeResult(
+			result("https://example.com/docs", "Current untagged docs"),
+			{ rootDir, snapshotName: "docs" },
+		);
+
+		expect(untagged?.content.text).toBe("Untagged docs");
+		expect(tagged?.content.text).toBe("Tagged docs");
+		expect(current.previous?.content.text).toBe("Untagged docs");
+	});
+
+	it("keeps unnamed snapshots isolated from named snapshots for the same URL", async () => {
+		await diffScrapeResult(result("https://example.com", "Unnamed baseline"), {
+			rootDir,
+		});
+		await diffScrapeResult(result("https://example.com", "Named baseline"), {
+			rootDir,
+			snapshotName: "homepage",
+		});
+
+		const unnamed = await loadSnapshot("https://example.com", { rootDir });
+		const named = await loadSnapshot("https://example.com", {
+			rootDir,
+			snapshotName: "homepage",
+		});
+		const current = await diffScrapeResult(
+			result("https://example.com", "Current unnamed"),
+			{ rootDir },
+		);
+
+		expect(unnamed?.content.text).toBe("Unnamed baseline");
+		expect(named?.content.text).toBe("Named baseline");
+		expect(current.previous?.content.text).toBe("Unnamed baseline");
+	});
+
+	it("stores tagged snapshots and diffs against a tagged baseline", async () => {
+		const first = await diffScrapeResult(
+			result("https://example.com/docs", "Version one docs"),
+			{ rootDir, snapshotName: "docs", snapshotTag: "v1.0.0" },
+		);
+		const second = await diffScrapeResult(
+			result("https://example.com/docs", "Version two docs"),
+			{
+				rootDir,
+				snapshotName: "docs",
+				snapshotTag: "v2.0.0",
+				compareTag: "v1.0.0",
+			},
+		);
+		const tagged = await loadSnapshot("https://example.com/docs", {
+			rootDir,
+			snapshotName: "docs",
+			snapshotTag: "v1.0.0",
+		});
+		const entries = await listSnapshots({
+			rootDir,
+			url: "https://example.com/docs",
+			snapshotName: "docs",
+		});
+
+		expect(first.current.snapshotTag).toBe("v1.0.0");
+		expect(second.previous?.content.text).toBe("Version one docs");
+		expect(second.current.snapshotTag).toBe("v2.0.0");
+		expect(second.compareTag).toBe("v1.0.0");
+		expect(tagged?.content.text).toBe("Version one docs");
+		expect(entries.map((entry) => entry.metadata.snapshotTag).sort()).toEqual([
+			"v1.0.0",
+			"v2.0.0",
+		]);
+	});
+
+	it("returns a structured error when a compare tag is missing", async () => {
+		await expect(
+			diffScrapeResult(result("https://example.com/docs", "Current docs"), {
+				rootDir,
+				snapshotTag: "v2.0.0",
+				compareTag: "v1.0.0",
+			}),
+		).rejects.toMatchObject({
+			structured: { code: "SNAPSHOT_TAG_NOT_FOUND", phase: "diff" },
+		});
+	});
+
 	it("upserts named snapshot references transactionally in SQLite", async () => {
 		const first = await diffScrapeResult(
 			result("https://example.com", "Baseline A"),

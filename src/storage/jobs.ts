@@ -39,6 +39,8 @@ export interface JobManifest {
 		current?: unknown;
 		path?: string;
 		snapshotName?: string;
+		snapshotTag?: string;
+		compareTag?: string;
 	};
 }
 
