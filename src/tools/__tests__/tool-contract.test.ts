@@ -4,6 +4,7 @@ import { webTools } from "../register.js";
 
 const expectedNames = [
 	"web_scrape",
+	"web_summarize",
 	"web_crawl",
 	"web_map",
 	"web_batch",
@@ -18,6 +19,7 @@ const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
 	web_batch: 180,
 	web_diff: 180,
 	web_extract: 560,
+	web_summarize: 230,
 };
 
 const scrapeOnlyFields = [
@@ -41,6 +43,11 @@ const configOnlyFields = [
 
 const discriminatorChecks: Record<string, RegExp[]> = {
 	web_scrape: [/read|fetch|extract/iu, /summarize/iu, /one URL|content/iu],
+	web_summarize: [
+		/summarize/iu,
+		/one URL|provided content/iu,
+		/multi-source/iu,
+	],
 	web_crawl: [/crawl/iu, /status|list/iu, /pages|linked-page/iu],
 	web_map: [/robots\/sitemaps\/llms/iu, /does not fetch page content/iu],
 	web_batch: [/independent URLs/iu, /per-URL/iu],
@@ -63,7 +70,7 @@ describe("web tool contracts", () => {
 			0,
 		);
 
-		expect(totalTokens).toBeLessThanOrEqual(1600);
+		expect(totalTokens).toBeLessThanOrEqual(1800);
 		for (const stat of contractStats) {
 			const name = stat.name as (typeof expectedNames)[number];
 			expect(stat.tokens, stat.name).toBeLessThanOrEqual(

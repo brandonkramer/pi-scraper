@@ -15,7 +15,8 @@
 			"one-url",
 			"url",
 			"markdown",
-			"contrast:web_batch"
+			"contrast:web_batch",
+			"contrast:web_summarize"
 		]
 	},
 	{
@@ -232,19 +233,19 @@
 	{
 		"id": "summarize-single-page",
 		"prompt": "Summarize this single page in five bullets.",
-		"expectedTool": "web_scrape",
+		"expectedTool": "web_summarize",
 		"expectedArgs": {
-			"task": "summarize",
 			"bullets": 5
 		},
-		"rationale": "A one-page or provided-content summary uses web_scrape task=summarize, not multi-source research.",
+		"rationale": "A one-page or provided-content summary uses web_summarize, not multi-source research.",
 		"tags": [
 			"summarize",
 			"one-page",
 			"provided-content",
 			"bullets",
 			"content",
-			"contrast:web_extract"
+			"contrast:web_extract",
+			"contrast:web_scrape"
 		]
 	},
 	{
@@ -305,18 +306,18 @@
 	{
 		"id": "ambiguous-summarize-url",
 		"prompt": "Summarize https://example.com.",
-		"expectedTool": "web_scrape",
+		"expectedTool": "web_summarize",
 		"expectedArgs": {
-			"task": "summarize",
 			"url": "https://example.com"
 		},
-		"rationale": "One concrete URL with a page-scoped summary request should use web_scrape task=summarize, not multi-source research.",
+		"rationale": "One concrete URL with a page-scoped summary request should use web_summarize, not multi-source research.",
 		"tags": [
 			"ambiguous",
 			"summarize",
 			"one-page",
 			"url",
-			"contrast:web_extract"
+			"contrast:web_extract",
+			"contrast:web_scrape"
 		]
 	},
 	{
@@ -410,14 +411,15 @@
 		"id": "negative-multisource-summary",
 		"prompt": "Summarize these five sources into a report with citations.",
 		"expectedTool": null,
-		"rationale": "Multi-source synthesis with citations is research/reporting, not page-scoped web_scrape task=summarize.",
+		"rationale": "Multi-source synthesis with citations is research/reporting, not page-scoped web_summarize.",
 		"tags": [
 			"negative",
 			"multi-source",
 			"citations",
 			"report",
 			"contrast:web_scrape",
-			"contrast:web_batch"
+			"contrast:web_batch",
+			"contrast:web_summarize"
 		]
 	},
 	{

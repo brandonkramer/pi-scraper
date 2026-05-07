@@ -177,12 +177,12 @@ function isCriticalConfusion(row) {
 	const prompt = row.prompt.toLowerCase();
 	const tags = row.tags.join(" ");
 	if (
-		row.actualTool === "web_scrape" &&
+		["web_scrape", "web_summarize"].includes(row.actualTool) &&
 		/multi-source|citations/.test(`${prompt} ${tags}`)
 	)
 		return true;
 	if (
-		["web_scrape", "web_crawl"].includes(row.actualTool) &&
+		["web_scrape", "web_summarize", "web_crawl"].includes(row.actualTool) &&
 		/research|recent articles|open-ended/.test(`${prompt} ${tags}`) &&
 		!/https?:\/\//.test(prompt)
 	)

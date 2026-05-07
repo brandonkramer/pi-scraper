@@ -4,6 +4,7 @@ import { registerWebTools, webTools } from "../register.js";
 
 const expectedNames = [
 	"web_scrape",
+	"web_summarize",
 	"web_crawl",
 	"web_map",
 	"web_batch",

@@ -6,9 +6,11 @@ import { webDiffTool } from "./web-diff.js";
 import { createWebExtractTool, webExtractTool } from "./web-extract.js";
 import { webMapTool } from "./web-map.js";
 import { createWebScrapeTool, webScrapeTool } from "./web-scrape.js";
+import { createWebSummarizeTool, webSummarizeTool } from "./web-summarize.js";
 
 export const webTools: readonly WebTool[] = [
 	webScrapeTool,
+	webSummarizeTool,
 	webCrawlTool,
 	webMapTool,
 	webBatchTool,
@@ -24,6 +26,8 @@ export function registerWebTools(pi: PiToolRegistrar): void {
 					return createWebScrapeTool({ modelAdapter });
 				if (tool.name === "web_extract")
 					return createWebExtractTool({ modelAdapter });
+				if (tool.name === "web_summarize")
+					return createWebSummarizeTool({ modelAdapter });
 				return tool;
 			})
 		: webTools;

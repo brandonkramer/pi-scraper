@@ -7,6 +7,7 @@ import { registerWebTools } from "../register.js";
 import { renderText } from "../render.js";
 import { createWebExtractTool, webExtractTool } from "../web-extract.js";
 import { createWebScrapeTool } from "../web-scrape.js";
+import { createWebSummarizeTool } from "../web-summarize.js";
 
 const signal = new AbortController().signal;
 
@@ -189,6 +190,7 @@ describe("selected web tool handlers", () => {
 		registerWebTools(registrar);
 		const scrape = registered.find((tool) => tool.name === "web_scrape");
 		const extract = registered.find((tool) => tool.name === "web_extract");
+		const summarize = registered.find((tool) => tool.name === "web_summarize");
 
 		const extracted = await extract?.execute(
 			"call",
@@ -206,6 +208,13 @@ describe("selected web tool handlers", () => {
 			signal,
 		);
 		expect(summarized?.content[0]?.text).toBe("registered summary");
+
+		const summarizedDirectly = await summarize?.execute(
+			"call",
+			{ content: "content", sentences: 1 },
+			signal,
+		);
+		expect(summarizedDirectly?.content[0]?.text).toBe("registered summary");
 	});
 
 	it("runs provided-content and URL-backed summarization with an injected model adapter", async () => {
@@ -229,6 +238,41 @@ describe("selected web tool handlers", () => {
 			"call",
 			{
 				task: "summarize",
+				url: "https://example.com/page",
+				bullets: 2,
+				mode: "fast",
+			},
+			signal,
+		);
+		const envelope = scraped.details as ResultEnvelope<{
+			summary: string;
+			input: { source: string };
+		}>;
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.data?.summary).toBe("Summary from scraped page.");
+		expect(envelope.data?.input.source).toBe("scrape");
+	});
+
+	it("runs dedicated provided-content and URL-backed summarization", async () => {
+		const tool = createWebSummarizeTool({
+			modelAdapter: fakeModelAdapter((request) =>
+				request.input.includes("Fixture Heading")
+					? "Summary from scraped page."
+					: "Summary from provided content.",
+			),
+			scrapeDeps: fakeScrapeDeps(),
+		});
+
+		const provided = await tool.execute(
+			"call",
+			{ content: "Provided content", sentences: 1 },
+			signal,
+		);
+		expect(provided.content[0]?.text).toBe("Summary from provided content.");
+
+		const scraped = await tool.execute(
+			"call",
+			{
 				url: "https://example.com/page",
 				bullets: 2,
 				mode: "fast",

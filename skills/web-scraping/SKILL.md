@@ -9,7 +9,8 @@ Use for `pi-scraper` tool choice. Companion tools handle open-ended search/resea
 
 ## Dispatch
 
-- `web_scrape` — one URL read as markdown/text/llm/html/json; `task:"summarize"` summarizes one URL or provided content.
+- `web_scrape` — one URL read as markdown/text/llm/html/json; legacy `task:"summarize"` remains supported.
+- `web_summarize` — one URL or provided-content summary; page-scoped only, not multi-source research.
 - `web_batch` — many known independent URLs; per-URL results.
 - `web_map` — robots/sitemaps/llms URL inventory only; no page bodies.
 - `web_crawl` — follow links/read pages; `action:run|status|list`; stable `crawlId` resumes.
@@ -20,6 +21,7 @@ Use for `pi-scraper` tool choice. Companion tools handle open-ended search/resea
 
 - Map before crawl for inventory; crawl only when pages should be read.
 - Prefer `web_extract action:vertical` for supported known sites, `pattern` for deterministic text inspection, and `adhoc` only for semantic/schema extraction.
+- Use `web_summarize` for page-scoped summaries; companion research tools handle multi-source summaries with citations.
 - Use `refresh` for time-sensitive prices/news/status/availability.
 - Browser/fingerprint/proxy only by request or when static extraction fails.
 - No public brand tool, CAPTCHA solving, proxy rotation, stealth, or guaranteed protected-site access.

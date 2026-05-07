@@ -70,14 +70,15 @@ The package declares its extension entrypoint and packaged skills in `package.js
 
 ## Public tools
 
-| Tool          | Capability                                      | Use it for                                                                                                                         |
-| ------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `web_scrape`  | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, or summarize one page/provided content.                                          |
-| `web_crawl`   | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, or list prior crawl metadata.                                 |
-| `web_map`     | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.   |
-| `web_batch`   | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results.                                                         |
-| `web_diff`    | Local                                           | Re-scrape, normalize, compare against unnamed or named snapshots, and store deterministic diff metadata.                           |
-| `web_extract` | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text patterns, or run ad hoc schema/prompt extraction from one page/content. |
+| Tool            | Capability                                      | Use it for                                                                                                                         |
+| --------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `web_scrape`    | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON; legacy `task: "summarize"` remains supported.                                    |
+| `web_summarize` | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                |
+| `web_crawl`     | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, or list prior crawl metadata.                                 |
+| `web_map`       | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.   |
+| `web_batch`     | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results.                                                         |
+| `web_diff`      | Local                                           | Re-scrape, normalize, compare against unnamed or named snapshots, and store deterministic diff metadata.                           |
+| `web_extract`   | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text patterns, or run ad hoc schema/prompt extraction from one page/content. |
 
 Capability labels:
 
@@ -91,15 +92,15 @@ Capability labels:
 
 ### Scrape-like tools
 
-Used by `web_scrape`, `web_batch`, `web_crawl`, `web_diff`, and `web_extract`.
+Used by `web_scrape`, `web_summarize`, `web_batch`, `web_crawl`, `web_diff`, and `web_extract`.
 
 | Parameter                           | Description                                                                                                                               |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `url` / `urls`                      | HTTP(S) URL or URLs. Private-network and unsupported schemes are blocked by default.                                                      |
 | `mode`                              | `auto`, `fast`, `fingerprint`, `readable`, or `browser`. Use `auto` unless the user requests a path.                                      |
 | `format`                            | `markdown`, `text`, `llm`, `html`, or `json`.                                                                                             |
-| `task`                              | For `web_scrape`: `read` or `summarize`; omitted means `read` unless only `content` is provided.                                          |
-| `content` / `sentences` / `bullets` | Summary input and length controls for `web_scrape task: "summarize"`.                                                                     |
+| `task`                              | For `web_scrape`: `read` or legacy `summarize`; omitted means `read` unless only `content` is provided.                                   |
+| `content` / `sentences` / `bullets` | Summary input and length controls for `web_summarize` and `web_scrape task: "summarize"`.                                                 |
 | `include` / `exclude`               | Optional CSS selectors or URL patterns where supported.                                                                                   |
 | `onlyMainContent`                   | Prefer main/article-like content.                                                                                                         |
 | `timeoutSeconds` / `maxChars`       | Direct timeout/output bounds; rarer `headers`, `maxBytes`, cache TTL, retry/backoff, and profile knobs live in persisted scrape defaults. |

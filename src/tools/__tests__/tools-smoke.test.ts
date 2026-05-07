@@ -97,6 +97,8 @@ function smokeParams(name: string): unknown {
 			};
 		case "web_extract":
 			return { action: "list" };
+		case "web_summarize":
+			return { content: "A short local text to summarize.", sentences: 1 };
 		default:
 			throw new Error("Missing smoke params");
 	}
