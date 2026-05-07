@@ -35,7 +35,8 @@ export function createWebSummarizeTool(
 	return defineWebTool({
 		name: "web_summarize",
 		label: "Summarize",
-		description: "Summarize one URL/provided content; no multi-source research.",
+		description:
+			"Summarize one URL/provided content; no multi-source research.",
 		parameters: webSummarizeSchema,
 		async execute(_toolCallId, params: Params, signal) {
 			const config = await loadEffectiveConfig();
