@@ -1,9 +1,6 @@
 import { StringEnum, Type, type Static } from "@mariozechner/pi-ai";
-import { loadEffectiveConfig } from "../config/settings.js";
 import type { ModelAdapter } from "../extract/model.js";
-import { scrapeUrl, type ScrapePipelineDeps } from "../scrape/pipeline.js";
-import { storeResult } from "../storage/results.js";
-import { summarizePage } from "../summarize/page.js";
+import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.js";
 import {
 	formatAge,
 	qualityFromCache,
@@ -111,6 +108,7 @@ async function readScrape(
 			},
 		});
 	}
+	const { loadEffectiveConfig } = await import("../config/settings.js");
 	const config = await loadEffectiveConfig();
 	const scrapeOptions = {
 		...config.scrapeDefaults,
@@ -130,6 +128,7 @@ async function readScrape(
 			{ id: "store", label: "storing result", state: "pending" },
 		],
 	});
+	const { scrapeUrl } = await import("../scrape/pipeline.js");
 	const result = await scrapeUrl(params.url, scrapeOptions, {}, signal);
 	await emitProgress(onUpdate, {
 		state: result.error ? "error" : "done",
@@ -151,6 +150,7 @@ async function readScrape(
 			{ id: "store", label: "storing result", state: "pending" },
 		],
 	});
+	const { storeResult } = await import("../storage/results.js");
 	const stored = await storeResult(result);
 	const shaped = shapeScrapeResult(result, stored.responseId);
 	return toolResult({
@@ -180,7 +180,6 @@ async function summarizeScrape(
 	options: WebScrapeToolOptions,
 	signal: AbortSignal,
 ) {
-	const config = await loadEffectiveConfig();
 	if (!options.modelAdapter) {
 		return errorResult(
 			missingModelError("summarize", params.url),
@@ -188,6 +187,9 @@ async function summarizeScrape(
 		);
 	}
 	try {
+		const { loadEffectiveConfig } = await import("../config/settings.js");
+		const { summarizePage } = await import("../summarize/page.js");
+		const config = await loadEffectiveConfig();
 		const result = await summarizePage(
 			{
 				...config.scrapeDefaults,
@@ -226,9 +228,7 @@ async function summarizeScrape(
 	}
 }
 
-function summarizeReadResult(
-	result: Awaited<ReturnType<typeof scrapeUrl>>,
-): string {
+function summarizeReadResult(result: ScrapeResult): string {
 	const text =
 		result.data.markdown ??
 		result.data.text ??
@@ -240,10 +240,7 @@ function summarizeReadResult(
 	return `${result.status ?? "ok"} · ${result.mode ?? "auto"} · ${result.format ?? "markdown"} · ${source}\n${String(text).slice(0, 1200)}`;
 }
 
-function shapeScrapeResult(
-	result: Awaited<ReturnType<typeof scrapeUrl>>,
-	responseId: string,
-) {
+function shapeScrapeResult(result: ScrapeResult, responseId: string) {
 	const url = result.finalUrl ?? result.url ?? "about:blank";
 	const source = result.cache?.cached
 		? `from cache fetched ${formatAge(result.cache.ageSeconds)} with staleness ${result.cache.staleness ?? "fresh"}`
