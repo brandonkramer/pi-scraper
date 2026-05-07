@@ -19,7 +19,7 @@ import {
 	structuredToolError,
 	toolResult,
 } from "./result.js";
-import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
+import { urlProperty } from "./schemas.js";
 
 const extractActions = ["list", "vertical", "adhoc", "pattern"] as const;
 const sourceFormats = ["text", "markdown", "html"] as const;
@@ -63,7 +63,7 @@ export const webExtractSchema = Type.Object({
 			}),
 		),
 	),
-	...scrapeModeOptionSchema,
+	mode: Type.Optional(Type.Any()),
 });
 
 type Params = Static<typeof webExtractSchema>;
