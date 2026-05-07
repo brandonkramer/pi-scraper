@@ -48,6 +48,7 @@ const tools = mod.webTools;
 const approxTokens = (chars) => Math.ceil(chars / 4);
 
 let total = 0;
+const perTool = new Map();
 for (const tool of tools) {
 	const json = JSON.stringify({
 		name: tool.name,
@@ -55,7 +56,18 @@ for (const tool of tools) {
 		description: tool.description,
 		parameters: tool.parameters,
 	});
-	total += approxTokens(json.length);
+	const tokens = approxTokens(json.length);
+	perTool.set(tool.name, tokens);
+	total += tokens;
 }
+const focused = ["web_scrape", "web_crawl", "web_extract"];
+const focusTotal = focused.reduce(
+	(sum, name) => sum + (perTool.get(name) ?? 0),
+	0,
+);
+console.log(`METRIC focus_contract_tokens=${focusTotal}`);
 console.log(`METRIC contract_tokens=${total}`);
+for (const name of focused) {
+	console.log(`METRIC ${name.slice(4)}_tokens=${perTool.get(name) ?? 0}`);
+}
 console.log(`METRIC tool_count=${tools.length}`);
