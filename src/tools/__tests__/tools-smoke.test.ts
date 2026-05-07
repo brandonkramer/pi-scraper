@@ -76,7 +76,6 @@ function renderComponentText(component: RenderComponent | undefined): string {
 function smokeParams(name: string): unknown {
 	switch (name) {
 		case "web_scrape":
-		case "web_brand":
 		case "web_diff":
 			return { url: "http://127.0.0.1/", mode: "fast", timeoutSeconds: 1 };
 		case "web_crawl":
@@ -96,25 +95,8 @@ function smokeParams(name: string): unknown {
 				concurrency: 1,
 				timeoutSeconds: 1,
 			};
-		case "web_list_extractors":
-			return {};
-		case "web_vertical_scrape":
-			return {
-				extractor: "npm",
-				url: "https://www.npmjs.com/package/pi-scraper",
-			};
 		case "web_extract":
-			return { content: "extract this local text", prompt: "Return a title." };
-		case "web_summarize":
-			return { content: "summarize this local text", sentences: 1 };
-		case "web_get_result":
-			return { responseId: "missing-smoke-result" };
-		case "web_history":
-			return { url: "https://example.com", limit: 5 };
-		case "web_crawls":
-			return { limit: 5 };
-		case "web_search_scrapes":
-			return { query: "example", limit: 5 };
+			return { action: "list" };
 		default:
 			throw new Error("Missing smoke params");
 	}

@@ -11,11 +11,10 @@ const DAY_SECONDS = 24 * HOUR_SECONDS;
 
 export function retrieveResultAction(
 	responseId: string,
-	description = "Retrieve the full stored result.",
+	description = "Use the stored responseId as a local trace handle.",
 ): AgenticNextAction {
 	return {
 		action: "retrieve",
-		tool: "web_get_result",
 		params: { responseId },
 		description,
 	};
@@ -49,7 +48,7 @@ export function crawlAction(
 export function narrowSearchAction(
 	description = "Rerun with a narrower query or URL scope.",
 ): AgenticNextAction {
-	return { action: "narrow", tool: "web_search_scrapes", description };
+	return { action: "narrow", description };
 }
 
 export function sourceNote(options: AgenticSourceNote): AgenticSourceNote {
@@ -120,5 +119,5 @@ export function truncateInline(value: string | undefined, max = 180): string {
 }
 
 export function storedResultGuidance(): string {
-	return "Use answerContext first. Treat responseId values as continuation handles for web_get_result, not as the answer itself. Refresh before relying on stored data for time-sensitive claims.";
+	return "Use answerContext first. Treat responseId values as local trace handles, not as answers. Refresh before relying on stored data for time-sensitive claims.";
 }

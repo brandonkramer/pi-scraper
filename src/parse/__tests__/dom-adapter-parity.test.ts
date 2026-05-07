@@ -7,7 +7,7 @@ import {
 } from "../../brand/extract.js";
 import { htmlToMarkdown } from "../../serialize/markdown.js";
 import { discoverAlternateLinksFromDom } from "../alternates.js";
-import { loadCheerioDom, loadDom } from "../dom-adapter.js";
+import { loadDom } from "../dom-adapter.js";
 import {
 	extractFastPage,
 	extractFastPageFromDom,
@@ -57,36 +57,28 @@ describe("DOM adapter production parity", () => {
 	}) => {
 		const html = fixture(file);
 		const production = projectFast(extractFastPage(html, baseUrl, options));
-		const cheerioDom = projectFast(
-			extractFastPageFromDom(loadCheerioDom(html), baseUrl, options),
-		);
 		const htmlparser2Dom = projectFast(
 			extractFastPageFromDom(loadHtmlparser2Dom(html), baseUrl, options),
 		);
 
-		expect(cheerioDom).toEqual(production);
 		expect(htmlparser2Dom).toEqual(production);
 	});
 
-	it("runs alternate-link discovery through both adapter backends", () => {
+	it("runs alternate-link discovery through the htmlparser2 adapter", () => {
 		const html = fixture("github-data-island-parity.html");
 
 		expect(
 			discoverAlternateLinksFromDom(loadHtmlparser2Dom(html), baseUrl),
-		).toEqual(discoverAlternateLinksFromDom(loadCheerioDom(html), baseUrl));
+		).toEqual(discoverAlternateLinksFromDom(loadDom(html), baseUrl));
 	});
 
 	it("preserves brand identity signals with both adapter backends", () => {
 		const html = fixture("github-data-island-parity.html");
 		const production = projectBrand(extractBrandIdentity(html, baseUrl));
-		const cheerioDom = projectBrand(
-			extractBrandIdentityFromDom(loadCheerioDom(html), baseUrl),
-		);
 		const htmlparser2Dom = projectBrand(
 			extractBrandIdentityFromDom(loadHtmlparser2Dom(html), baseUrl),
 		);
 
-		expect(cheerioDom).toEqual(production);
 		expect(htmlparser2Dom).toEqual(production);
 	});
 });

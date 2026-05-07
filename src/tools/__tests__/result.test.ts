@@ -29,10 +29,10 @@ describe("tool result helpers", () => {
 			qualitySignals: { confidence: "high", freshness: "current" },
 			nextActions: [
 				{
-					action: "retrieve",
-					tool: "web_get_result",
-					params: { responseId: "r1" },
-					description: "Retrieve full result.",
+					action: "inspect",
+					tool: "web_crawl",
+					params: { action: "status", crawlId: "c1" },
+					description: "Inspect crawl status.",
 				},
 			],
 			assistantGuidance: "Answer from answerContext first.",
@@ -42,7 +42,7 @@ describe("tool result helpers", () => {
 		expect(result.details.answerContext).toContain("stored content");
 		expect(result.details.sourceNotes?.[0]?.id).toBe("s1");
 		expect(result.details.qualitySignals?.confidence).toBe("high");
-		expect(result.details.nextActions?.[0]?.tool).toBe("web_get_result");
+		expect(result.details.nextActions?.[0]?.tool).toBe("web_crawl");
 		expect(result.details.assistantGuidance).toContain("answerContext");
 		expect(result.details.diagnostics?.storage).toBe("sqlite");
 	});

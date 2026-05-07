@@ -58,6 +58,7 @@ export const DEFAULT_RETRY = {
 	attempts: 2,
 	baseDelayMs: 250,
 	maxDelayMs: 5_000,
+	jitterMs: 250,
 } as const;
 
 export const DEFAULT_STORAGE_PATHS = {

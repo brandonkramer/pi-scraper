@@ -3,9 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { PI_TRUNCATION_LIMITS } from "../../defaults.js";
-import { truncateAndStore } from "../../storage/results.js";
-import type { ResultEnvelope } from "../../types.js";
-import { webGetResultTool } from "../web-get-result.js";
+import { getStoredResult, truncateAndStore } from "../../storage/results.js";
 
 let homeDir: string;
 let originalHome: string | undefined;
@@ -22,8 +20,8 @@ afterEach(async () => {
 	await rm(homeDir, { recursive: true, force: true });
 });
 
-describe("tool retrieval for truncated full output", () => {
-	it("stores byte-limited output and retrieves the full payload by responseId", async () => {
+describe("truncated full output storage", () => {
+	it("stores byte-limited output and preserves the full payload by responseId", async () => {
 		const fullText = `${"x".repeat(PI_TRUNCATION_LIMITS.maxBytes + 1024)}\n${Array.from({ length: PI_TRUNCATION_LIMITS.maxLines + 10 }, (_, index) => `line ${index}`).join("\n")}`;
 		const payload = { kind: "large-output", text: fullText };
 
@@ -36,15 +34,11 @@ describe("tool retrieval for truncated full output", () => {
 			path.join(homeDir, ".pi", "scraper", "blobs"),
 		);
 
-		const retrieved = await webGetResultTool.execute(
-			"get-truncated",
-			{ responseId: truncated.metadata?.responseId ?? "" },
-			new AbortController().signal,
+		const retrieved = await getStoredResult<typeof payload>(
+			truncated.metadata?.responseId ?? "",
 		);
-		const envelope = retrieved.details as ResultEnvelope<typeof payload>;
 
-		expect(envelope.error).toBeUndefined();
-		expect(envelope.data?.kind).toBe("large-output");
-		expect(envelope.data?.text.length).toBe(fullText.length);
+		expect(retrieved.value.kind).toBe("large-output");
+		expect(retrieved.value.text.length).toBe(fullText.length);
 	});
 });

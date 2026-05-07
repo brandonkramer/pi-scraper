@@ -20,8 +20,8 @@ export interface ToolModelAdapterOptions {
  * @remarks
  * Pi has evolved its model APIs over time, so this boundary intentionally uses
  * narrow duck typing. When a host exposes a selected-model runner, the tools can
- * call it; otherwise `web_extract` and `web_summarize` keep returning the stable
- * `MODEL_ADAPTER_MISSING` error instead of throwing.
+ * call it; otherwise model-backed `web_scrape` and `web_extract` paths return
+ * the stable `MODEL_ADAPTER_MISSING` error instead of throwing.
  */
 export function resolveToolModelAdapter(
 	source: unknown,

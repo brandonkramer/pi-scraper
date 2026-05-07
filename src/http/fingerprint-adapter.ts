@@ -156,7 +156,7 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 			const response = await backend.fetchOnce(
 				safe.normalizedUrl,
 				{
-					method: options.method ?? "GET",
+					method: options.method === "HEAD" ? "HEAD" : "GET",
 					headers: browserHeaders(
 						this.clientOptions.userAgent ?? DEFAULT_USER_AGENT,
 						options.headers,

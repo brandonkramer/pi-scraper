@@ -246,11 +246,7 @@ function renderChecklistResult(
 }
 
 function toolAllowsIcons(toolName: `web_${string}`): boolean {
-	return (
-		toolName === "web_batch" ||
-		toolName === "web_crawl" ||
-		toolName === "web_crawls"
-	);
+	return toolName === "web_batch" || toolName === "web_crawl";
 }
 
 function renderProgress(

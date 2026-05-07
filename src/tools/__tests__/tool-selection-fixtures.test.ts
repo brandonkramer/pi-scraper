@@ -22,21 +22,15 @@ const fixtures = JSON.parse(
 const toolsByName = new Map(webTools.map((tool) => [tool.name, tool]));
 
 const inputCuePatterns: Record<string, RegExp> = {
-	web_scrape: /https?:\/\/|\bURL\b|\bone-url\b|\bmarkdown\b/iu,
-	web_crawl: /https?:\/\/|\bsite\b|\bseed\b|\bdepth\b|\blinked pages\b/iu,
+	web_scrape:
+		/https?:\/\/|\bURL\b|\bone-url\b|\bmarkdown\b|\bsummarize\b|\bbullets\b/iu,
+	web_crawl:
+		/https?:\/\/|\bsite\b|\bseed\b|\bdepth\b|\blinked pages\b|\bcrawlId\b|\bstatus\b|\bresume\b/iu,
 	web_map: /https?:\/\/|\bsite\b|\bseed\b|\brobots\b|\bsitemaps?\b|\bllms\b/iu,
 	web_batch: /\bURLs\b|\bper-URL\b|\bindependent\b/iu,
-	web_brand: /https?:\/\/|\bsite\b|\blogo\b|\bcolors\b|\bfonts\b/iu,
 	web_diff: /https?:\/\/|\bhomepage\b|\bsnapshot\b|\bdiff\b|\bcompare\b/iu,
-	web_list_extractors: /\bavailable\b|\blist\b|\bextractors\b|\bno-input\b/iu,
-	web_vertical_scrape:
-		/https?:\/\/|\bnpm\b|\bgithub\b|\bknown-site\b|\btyped\b/iu,
-	web_extract: /https?:\/\/|\bpage\b|\bcontent\b|\bJSON\b|\bschema\b/iu,
-	web_summarize: /https?:\/\/|\bpage\b|\bcontent\b|\bbullets\b|\bsummarize\b/iu,
-	web_get_result: /\bresponseId\b|\bcrawlId\b|\bsnapshot\b|\bresult-handle\b/iu,
-	web_history: /https?:\/\/|\bURL\b|\bprior\b|\bhistory\b|\bscrapes\b/iu,
-	web_crawls: /\bseed\b|\bprior\b|\bcrawls\b|\bstatus\b/iu,
-	web_search_scrapes: /\bquery\b|\bstored\b|\bscrapes\b|\bFTS5\b|\bsearch\b/iu,
+	web_extract:
+		/https?:\/\/|\bpage\b|\bcontent\b|\bJSON\b|\bschema\b|\bextractors\b|\bnpm\b|\bgithub\b|\bdeepwiki\b|\bregex\b|\bmarkers\b/iu,
 };
 
 const scrapeIntentWithUrl =
@@ -74,7 +68,7 @@ describe("tool-selection fixtures", () => {
 		)) {
 			if (scrapeIntentWithUrl.test(fixture.prompt)) {
 				expect(fixture.rationale).toMatch(
-					/companion|not pi-scraper|not a single|unrelated/iu,
+					/companion|not pi-scraper|not a single|unrelated|not public|unsupported/iu,
 				);
 			}
 			expect(fixture.tags).toContain("negative");

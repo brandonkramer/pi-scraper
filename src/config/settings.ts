@@ -126,6 +126,10 @@ function normalizeScrapeDefaults(
 		cacheTtlSeconds: raw.cacheTtlSeconds,
 		maxAgeSeconds: raw.maxAgeSeconds,
 		refresh: raw.refresh,
+		retryAttempts: boundedNumber(raw.retryAttempts, 0, 10),
+		retryBaseDelayMs: boundedNumber(raw.retryBaseDelayMs, 0, 60_000),
+		retryMaxDelayMs: boundedNumber(raw.retryMaxDelayMs, 0, 300_000),
+		retryJitterMs: boundedNumber(raw.retryJitterMs, 0, 60_000),
 		include: raw.include,
 		exclude: raw.exclude,
 		onlyMainContent: raw.onlyMainContent,
@@ -134,6 +138,15 @@ function normalizeScrapeDefaults(
 		browserProfile: raw.browserProfile,
 		osProfile: raw.osProfile,
 	}) as PersistedScrapeDefaults;
+}
+
+function boundedNumber(
+	value: unknown,
+	minimum: number,
+	maximum: number,
+): number | undefined {
+	if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+	return Math.max(minimum, Math.min(maximum, value));
 }
 
 function normalizeHeaders(

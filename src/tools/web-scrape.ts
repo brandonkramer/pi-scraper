@@ -1,7 +1,9 @@
-import { Type, type Static } from "@mariozechner/pi-ai";
+import { StringEnum, Type, type Static } from "@mariozechner/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
-import { scrapeUrl } from "../scrape/pipeline.js";
+import type { ModelAdapter } from "../extract/model.js";
+import { scrapeUrl, type ScrapePipelineDeps } from "../scrape/pipeline.js";
 import { storeResult } from "../storage/results.js";
+import { summarizePage } from "../summarize/page.js";
 import {
 	formatAge,
 	qualityFromCache,
@@ -10,101 +12,226 @@ import {
 	sourceNote,
 	storedResultGuidance,
 } from "./agentic-context.js";
-import { defineWebTool } from "./define.js";
+import { defineWebTool, type WebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
-import { renderWebScrapeResult, renderWebToolCall } from "./web-renderers.js";
-import { toolResult } from "./result.js";
+import {
+	errorResult,
+	missingModelError,
+	structuredToolError,
+	toolResult,
+} from "./result.js";
 import { scrapeOptionSchema, urlProperty } from "./schemas.js";
+import { renderWebScrapeResult, renderWebToolCall } from "./web-renderers.js";
+
+const scrapeTasks = ["read", "summarize"] as const;
 
 export const webScrapeSchema = Type.Object({
-	url: urlProperty(),
+	task: Type.Optional(
+		StringEnum(scrapeTasks, { description: "read or summarize" }),
+	),
+	url: Type.Optional(
+		urlProperty("URL; required except summarize with content."),
+	),
+	content: Type.Optional(Type.String({ description: "Text to summarize." })),
+	sentences: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
+	bullets: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
 	...scrapeOptionSchema,
 });
 
 type Params = Static<typeof webScrapeSchema>;
+type ScrapeTask = (typeof scrapeTasks)[number];
 
-export const webScrapeTool = defineWebTool({
-	name: "web_scrape",
-	label: "Web Scrape",
-	description:
-		"Fetch/extract one URL; auto is local-first, browser/fingerprint only on demand.",
-	parameters: webScrapeSchema,
-	async execute(_toolCallId, params: Params, signal, onUpdate) {
-		const config = await loadEffectiveConfig();
-		const scrapeOptions = {
-			...config.scrapeDefaults,
-			...params,
-			mode: params.mode ?? config.scrapeMode,
-			format: params.format ?? config.outputFormat,
-		};
-		await emitProgress(onUpdate, {
-			state: "loading",
-			url: params.url,
-			message: `scraping ${scrapeOptions.mode}`,
-			checklist: [
-				{ id: "validated", label: "URL validated", state: "done" },
-				{ id: "robots", label: "robots checked", state: "pending" },
-				{ id: "fetch", label: "fetching page", state: "pending" },
-				{ id: "parse", label: "parsing content", state: "pending" },
-				{ id: "store", label: "storing result", state: "pending" },
-			],
-		});
-		const result = await scrapeUrl(params.url, scrapeOptions, {}, signal);
-		await emitProgress(onUpdate, {
-			state: result.error ? "error" : "done",
-			url: result.finalUrl ?? params.url,
-			message: result.error?.message,
-			checklist: [
-				{ id: "validated", label: "URL validated", state: "done" },
-				{ id: "robots", label: "robots checked", state: "done" },
-				{
-					id: "fetch",
-					label: result.cache?.cached ? "cache hit" : "fetched page",
-					state: result.error ? "failed" : "done",
-				},
-				{
-					id: "parse",
-					label: "parsed content",
-					state: result.error ? "failed" : "done",
-				},
-				{ id: "store", label: "storing result", state: "pending" },
-			],
-		});
-		const stored = await storeResult(result);
-		const shaped = shapeScrapeResult(result, stored.responseId);
+export interface WebScrapeToolOptions {
+	modelAdapter?: ModelAdapter;
+	scrapeDeps?: ScrapePipelineDeps;
+}
+
+export function createWebScrapeTool(
+	options: WebScrapeToolOptions = {},
+): WebTool<typeof webScrapeSchema> {
+	return defineWebTool({
+		name: "web_scrape",
+		label: "Web Scrape",
+		description:
+			"Read or summarize one URL/content; local-first, browser/fingerprint only when requested.",
+		parameters: webScrapeSchema,
+		async execute(_toolCallId, params: Params, signal, onUpdate) {
+			const task = inferScrapeTask(params);
+			if (task === "summarize") return summarizeScrape(params, options, signal);
+			return readScrape(params, signal, onUpdate);
+		},
+		renderCall: (args, theme, context) =>
+			renderWebToolCall(
+				"web_scrape",
+				renderScrapeCallParts(args),
+				theme,
+				context,
+			),
+		renderResult: (result, { expanded }) =>
+			renderWebScrapeResult(result, expanded),
+	});
+}
+
+export const webScrapeTool = createWebScrapeTool();
+
+function inferScrapeTask(params: Params): ScrapeTask {
+	if (params.task) return params.task as ScrapeTask;
+	if (params.content && !params.url) return "summarize";
+	return "read";
+}
+
+function renderScrapeCallParts(params: Params): string[] {
+	const task = inferScrapeTask(params);
+	if (task === "summarize") {
+		return [
+			"summarize",
+			params.url ?? "provided content",
+			params.bullets
+				? `${params.bullets} bullets`
+				: params.sentences
+					? `${params.sentences} sentences`
+					: undefined,
+		].filter(Boolean) as string[];
+	}
+	return [
+		params.url,
+		`(${params.mode ?? "auto"} → ${params.format ?? "markdown"})`,
+	].filter(Boolean) as string[];
+}
+
+async function readScrape(
+	params: Params,
+	signal: AbortSignal,
+	onUpdate?: Parameters<WebTool<typeof webScrapeSchema>["execute"]>[3],
+) {
+	if (!params.url) {
 		return toolResult({
-			text: result.error
-				? `Scrape failed: ${result.error.message}`
-				: `${summarizeScrape(result)}\nresponseId: ${stored.responseId}`,
-			data: result.data,
-			url: result.url,
-			finalUrl: result.finalUrl,
-			status: result.status,
-			mode: result.mode,
-			format: result.format,
-			timing: result.timing,
-			truncated: result.truncated,
-			contentType: result.contentType,
-			downloadedBytes: result.downloadedBytes,
-			cache: result.cache,
-			responseId: stored.responseId,
-			fullOutputPath: stored.fullOutputPath,
-			error: result.error,
-			...shaped,
+			text: "Provide url for web_scrape task=read.",
+			data: undefined,
+			error: {
+				code: "SCRAPE_URL_MISSING",
+				phase: "scrape",
+				message: "web_scrape task=read requires url.",
+				retryable: false,
+			},
 		});
-	},
-	renderCall: (args, theme, context) =>
-		renderWebToolCall(
-			"web_scrape",
-			[args.url, `(${args.mode ?? "auto"} → ${args.format ?? "markdown"})`],
-			theme,
-			context,
-		),
-	renderResult: (result, { expanded }) =>
-		renderWebScrapeResult(result, expanded),
-});
+	}
+	const config = await loadEffectiveConfig();
+	const scrapeOptions = {
+		...config.scrapeDefaults,
+		...params,
+		mode: params.mode ?? config.scrapeMode,
+		format: params.format ?? config.outputFormat,
+	};
+	await emitProgress(onUpdate, {
+		state: "loading",
+		url: params.url,
+		message: `scraping ${scrapeOptions.mode}`,
+		checklist: [
+			{ id: "validated", label: "URL validated", state: "done" },
+			{ id: "robots", label: "robots checked", state: "pending" },
+			{ id: "fetch", label: "fetching page", state: "pending" },
+			{ id: "parse", label: "parsing content", state: "pending" },
+			{ id: "store", label: "storing result", state: "pending" },
+		],
+	});
+	const result = await scrapeUrl(params.url, scrapeOptions, {}, signal);
+	await emitProgress(onUpdate, {
+		state: result.error ? "error" : "done",
+		url: result.finalUrl ?? params.url,
+		message: result.error?.message,
+		checklist: [
+			{ id: "validated", label: "URL validated", state: "done" },
+			{ id: "robots", label: "robots checked", state: "done" },
+			{
+				id: "fetch",
+				label: result.cache?.cached ? "cache hit" : "fetched page",
+				state: result.error ? "failed" : "done",
+			},
+			{
+				id: "parse",
+				label: "parsed content",
+				state: result.error ? "failed" : "done",
+			},
+			{ id: "store", label: "storing result", state: "pending" },
+		],
+	});
+	const stored = await storeResult(result);
+	const shaped = shapeScrapeResult(result, stored.responseId);
+	return toolResult({
+		text: result.error
+			? `Scrape failed: ${result.error.message}`
+			: `${summarizeReadResult(result)}\nresponseId: ${stored.responseId}`,
+		data: result.data,
+		url: result.url,
+		finalUrl: result.finalUrl,
+		status: result.status,
+		mode: result.mode,
+		format: result.format,
+		timing: result.timing,
+		truncated: result.truncated,
+		contentType: result.contentType,
+		downloadedBytes: result.downloadedBytes,
+		cache: result.cache,
+		responseId: stored.responseId,
+		fullOutputPath: stored.fullOutputPath,
+		error: result.error,
+		...shaped,
+	});
+}
 
-function summarizeScrape(
+async function summarizeScrape(
+	params: Params,
+	options: WebScrapeToolOptions,
+	signal: AbortSignal,
+) {
+	const config = await loadEffectiveConfig();
+	if (!options.modelAdapter) {
+		return errorResult(
+			missingModelError("summarize", params.url),
+			"web_scrape task=summarize requires a model-backed adapter; use task=read for source text.",
+		);
+	}
+	try {
+		const result = await summarizePage(
+			{
+				...config.scrapeDefaults,
+				...params,
+				mode: params.mode ?? config.scrapeMode,
+				format: params.format ?? config.outputFormat,
+			},
+			options.modelAdapter,
+			options.scrapeDeps ?? {},
+			signal,
+		);
+		const scrape = result.input.scrape;
+		const summary = `Summarized ${result.input.source}${scrape?.cache?.cached ? " from cached scrape input" : scrape ? " from fresh scrape input" : " input"}.`;
+		return toolResult({
+			text: result.summary,
+			data: result,
+			url: result.input.url ?? params.url,
+			finalUrl: scrape?.finalUrl,
+			status: scrape?.status,
+			mode: scrape?.mode,
+			format: scrape?.format ?? "markdown",
+			timing: scrape?.timing,
+			truncated: scrape?.truncated,
+			contentType: scrape?.contentType,
+			downloadedBytes: scrape?.downloadedBytes,
+			cache: scrape?.cache,
+			summary,
+			answerContext: `${summary} Refresh the source page before summarizing time-sensitive facts.`,
+			qualitySignals: qualityFromCache(scrape?.cache),
+			assistantGuidance: storedResultGuidance(),
+		});
+	} catch (error) {
+		return errorResult(
+			structuredToolError(error, "SUMMARIZE_FAILED", "summarize", params.url),
+		);
+	}
+}
+
+function summarizeReadResult(
 	result: Awaited<ReturnType<typeof scrapeUrl>>,
 ): string {
 	const text =
@@ -133,7 +260,7 @@ function shapeScrapeResult(
 		summary,
 		answerContext: result.error
 			? `The scrape failed during ${result.error.phase}: ${result.error.message}`
-			: `Scrape result for ${url}: status ${result.status ?? "unknown"}, mode ${result.mode ?? "auto"}, format ${result.format ?? "markdown"}, ${source}. Use responseId ${responseId} to retrieve the full stored content if the inline preview is insufficient.`,
+			: `Scrape result for ${url}: status ${result.status ?? "unknown"}, mode ${result.mode ?? "auto"}, format ${result.format ?? "markdown"}, ${source}. responseId ${responseId} is a local trace handle if inline preview is insufficient.`,
 		sourceNotes: [
 			sourceNote({
 				id: "page",

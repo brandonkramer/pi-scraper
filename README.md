@@ -70,22 +70,14 @@ The package declares its extension entrypoint and packaged skills in `package.js
 
 ## Public tools
 
-| Tool                  | Capability                                      | Use it for                                                                                                                       |
-| --------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `web_scrape`          | Local; browser/fingerprint optional             | Fetch and extract one URL to markdown, text, LLM text, HTML, or JSON.                                                            |
-| `web_crawl`           | Local; browser optional through scrape pipeline | Breadth-first crawl with depth/page limits, robots, resume state, and compact stored results.                                    |
-| `web_map`             | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction. |
-| `web_batch`           | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results.                                                       |
-| `web_brand`           | Local; browser optional via mode                | Extract colors, fonts, logos, favicons, manifests, JSON-LD, Open Graph, and Twitter assets.                                      |
-| `web_diff`            | Local                                           | Re-scrape, normalize, compare against unnamed or named snapshots, and store deterministic diff metadata.                         |
-| `web_list_extractors` | Local                                           | List deterministic vertical extractors and their browser/cloud/LLM capability declarations.                                      |
-| `web_vertical_scrape` | Local/API depending on extractor                | Run known-site extractors that prefer public APIs/feeds over HTML scraping.                                                      |
-| `web_extract`         | Model/LLM                                       | Ad hoc schema or prompt extraction from one page after scraping clean text.                                                      |
-| `web_summarize`       | Model/LLM                                       | Page-scoped summary after scraping clean page text.                                                                              |
-| `web_get_result`      | Local storage                                   | Retrieve full stored output by `responseId`, crawl status by `crawlId`, or diff snapshot metadata by URL/name.                   |
-| `web_history`         | Local storage                                   | List prior local scrapes/fetches for a URL so recent stored content can be reused deliberately.                                  |
-| `web_crawls`          | Local storage                                   | List prior crawls with staleness and recommended resume/reuse/recrawl guidance.                                                  |
-| `web_search_scrapes`  | Local storage                                   | Full-text stored scrape recall when runtime SQLite has FTS5; otherwise returns a clean unsupported response.                     |
+| Tool          | Capability                                      | Use it for                                                                                                                         |
+| ------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `web_scrape`  | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, or summarize one page/provided content.                                          |
+| `web_crawl`   | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, or list prior crawl metadata.                                 |
+| `web_map`     | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.   |
+| `web_batch`   | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results.                                                         |
+| `web_diff`    | Local                                           | Re-scrape, normalize, compare against unnamed or named snapshots, and store deterministic diff metadata.                           |
+| `web_extract` | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text patterns, or run ad hoc schema/prompt extraction from one page/content. |
 
 Capability labels:
 
@@ -99,36 +91,35 @@ Capability labels:
 
 ### Scrape-like tools
 
-Used by `web_scrape`, `web_batch`, `web_crawl`, `web_brand`, `web_diff`, `web_extract`, and `web_summarize`.
+Used by `web_scrape`, `web_batch`, `web_crawl`, `web_diff`, and `web_extract`.
 
-| Parameter                      | Description                                                                                          |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `url` / `urls`                 | HTTP(S) URL or URLs. Private-network and unsupported schemes are blocked by default.                 |
-| `mode`                         | `auto`, `fast`, `fingerprint`, `readable`, or `browser`. Use `auto` unless the user requests a path. |
-| `format`                       | `markdown`, `text`, `llm`, `html`, or `json`.                                                        |
-| `include` / `exclude`          | Optional CSS selectors for content inclusion/exclusion where supported.                              |
-| `onlyMainContent`              | Prefer main/article-like content.                                                                    |
-| `timeoutSeconds`               | Per-request timeout.                                                                                 |
-| `maxBytes` / `maxChars`        | Response/output bounds.                                                                              |
-| `respectRobots`                | Defaults to `true`; disabling must be explicit.                                                      |
-| `headers`                      | Optional HTTP headers.                                                                               |
-| `proxy`                        | Optional proxy for supported modes/providers.                                                        |
-| `browserProfile` / `osProfile` | Optional browser/fingerprint profile hints.                                                          |
-| `cacheTtlSeconds`              | Opt-in fetch cache TTL in seconds. Omit for always-fresh behavior.                                   |
-| `maxAgeSeconds`                | Hard maximum cache age before forcing a network fetch.                                               |
-| `refresh`                      | Bypass cache lookup while still recording a fresh fetch when caching is enabled.                     |
+| Parameter                           | Description                                                                                                                               |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `url` / `urls`                      | HTTP(S) URL or URLs. Private-network and unsupported schemes are blocked by default.                                                      |
+| `mode`                              | `auto`, `fast`, `fingerprint`, `readable`, or `browser`. Use `auto` unless the user requests a path.                                      |
+| `format`                            | `markdown`, `text`, `llm`, `html`, or `json`.                                                                                             |
+| `task`                              | For `web_scrape`: `read` or `summarize`; omitted means `read` unless only `content` is provided.                                          |
+| `content` / `sentences` / `bullets` | Summary input and length controls for `web_scrape task: "summarize"`.                                                                     |
+| `include` / `exclude`               | Optional CSS selectors or URL patterns where supported.                                                                                   |
+| `onlyMainContent`                   | Prefer main/article-like content.                                                                                                         |
+| `timeoutSeconds` / `maxChars`       | Direct timeout/output bounds; rarer `headers`, `maxBytes`, cache TTL, retry/backoff, and profile knobs live in persisted scrape defaults. |
+| `respectRobots`                     | Defaults to `true`; disabling must be explicit.                                                                                           |
+| `proxy`                             | Optional proxy for supported modes/providers.                                                                                             |
+| `refresh`                           | Bypass cache for fresh time-sensitive facts.                                                                                              |
 
 ### Crawl and map
 
-| Parameter                        | Description                                                                        |
-| -------------------------------- | ---------------------------------------------------------------------------------- |
-| `maxPages`                       | Maximum pages to crawl or discover.                                                |
-| `maxDepth`                       | Maximum link depth from the seed URL.                                              |
-| `sameOrigin`                     | Defaults to same-origin crawling.                                                  |
-| `include` / `exclude`            | URL pattern filters.                                                               |
-| `concurrency` / per-host options | Bound crawl work while HTTP politeness also enforces host limits.                  |
-| `crawlId`                        | Resume/persist crawl state under the local SQLite crawl index.                     |
-| `resume`                         | For `web_crawl`, resume existing `crawlId` state; defaults to true when available. |
+| Parameter                            | Description                                                                                        |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `action`                             | For `web_crawl`: `run`, `status`, or `list`; omitted values are inferred from args.                |
+| `maxPages`                           | Maximum pages to crawl or discover.                                                                |
+| `maxDepth`                           | Maximum link depth from the seed URL.                                                              |
+| `sameOrigin`                         | Defaults to same-origin crawling.                                                                  |
+| `include` / `exclude`                | URL pattern filters.                                                                               |
+| `concurrency` / `perHostConcurrency` | Bound batch/crawl work while HTTP politeness enforces host limits and reacts to 429/`Retry-After`. |
+| `crawlId`                            | Resume/persist crawl state and inspect crawl status.                                               |
+| `resume`                             | Resume existing `crawlId` state; defaults to true when available.                                  |
+| `seed` / `status` / `limit`          | Filters for `web_crawl` `action: "list"`.                                                          |
 
 ### Diff snapshots
 
@@ -138,7 +129,7 @@ Used by `web_scrape`, `web_batch`, `web_crawl`, `web_brand`, `web_diff`, `web_ex
 { "url": "https://example.com", "snapshotName": "homepage" }
 ```
 
-Reusing the same `snapshotName` compares against and then replaces that named baseline. Use `web_get_result({ "responseId": "..." })` to retrieve full diff details, or `web_get_result({ "snapshotUrl": url, "snapshotName": "homepage" })` to inspect snapshot metadata.
+Reusing the same `snapshotName` compares against and then replaces that named baseline.
 
 ## Scrape modes
 
@@ -154,25 +145,29 @@ Reusing the same `snapshotName` compares against and then replaces that named ba
 
 Vertical extractors return typed JSON for known sites. They prefer public APIs and feeds over browser or LLM extraction.
 
-| Extractor             | Input patterns                | Primary strategy                | Browser/cloud/LLM requirement                                      |
-| --------------------- | ----------------------------- | ------------------------------- | ------------------------------------------------------------------ |
-| `github_repo`         | GitHub repository URLs        | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access. |
-| `github_issue`        | GitHub issue URLs             | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access. |
-| `github_pr`           | GitHub pull request URLs      | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access. |
-| `github_release`      | GitHub release tag URLs       | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access. |
-| `npm`                 | npm package URLs              | npm registry JSON               | No browser; no LLM.                                                |
-| `pypi`                | PyPI package URLs             | PyPI JSON API                   | No browser; no LLM.                                                |
-| `crates_io`           | crates.io crate URLs          | crates.io API                   | No browser; no LLM.                                                |
-| `docker_hub`          | Docker Hub repository URLs    | Docker Hub repository API       | No browser; no LLM.                                                |
-| `huggingface_model`   | Hugging Face model URLs       | Hugging Face public model API   | No browser; no LLM.                                                |
-| `huggingface_dataset` | Hugging Face dataset URLs     | Hugging Face public dataset API | No browser; no LLM.                                                |
-| `hackernews`          | Hacker News item URLs         | Hacker News Firebase item API   | No browser; no LLM.                                                |
-| `arxiv`               | arXiv abstract/PDF entry URLs | arXiv Atom export feed          | No browser; no LLM.                                                |
-| `deepwiki`            | DeepWiki URLs                 | Static HTML metadata parsing    | No browser; no LLM.                                                |
+| Extractor             | Input patterns                                    | Primary strategy                | Browser/cloud/LLM requirement                                                            |
+| --------------------- | ------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------- |
+| `github_repo`         | GitHub repository URLs                            | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access.                       |
+| `github_issue`        | GitHub issue URLs                                 | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access.                       |
+| `github_pr`           | GitHub pull request URLs                          | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access.                       |
+| `github_release`      | GitHub release tag URLs                           | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access.                       |
+| `npm`                 | npm package URLs                                  | npm registry JSON               | No browser; no LLM.                                                                      |
+| `pypi`                | PyPI package URLs                                 | PyPI JSON API                   | No browser; no LLM.                                                                      |
+| `crates_io`           | crates.io crate URLs                              | crates.io API                   | No browser; no LLM.                                                                      |
+| `docker_hub`          | Docker Hub repository URLs                        | Docker Hub repository API       | No browser; no LLM.                                                                      |
+| `huggingface_model`   | Hugging Face model URLs                           | Hugging Face public model API   | No browser; no LLM.                                                                      |
+| `huggingface_dataset` | Hugging Face dataset URLs                         | Hugging Face public dataset API | No browser; no LLM.                                                                      |
+| `hackernews`          | Hacker News item URLs                             | Hacker News Firebase item API   | No browser; no LLM.                                                                      |
+| `reddit`              | Public Reddit post URLs                           | Reddit structured JSON endpoint | No browser; no LLM; returns blocked/rate-limit errors instead of bot-like HTML scraping. |
+| `arxiv`               | arXiv abstract/PDF entry URLs                     | arXiv Atom export feed          | No browser; no LLM.                                                                      |
+| `deepwiki`            | DeepWiki URLs                                     | Static HTML metadata parsing    | No browser; no LLM.                                                                      |
+| `docsite`             | Docs sites, MDN, GitBook, ReadTheDocs, Docusaurus | Static HTML section parsing     | No browser; no LLM; returns `platform` with `unknown` fallback.                          |
 
-Use `web_list_extractors` to inspect exact runtime declarations. Use `web_extract` for arbitrary pages that need a custom schema or prompt and model-backed extraction.
+Use `web_extract` with `action: "list"` to inspect exact runtime declarations, `action: "vertical"` for known-site typed JSON, `action: "pattern"` for deterministic length/markers/contains/regex/excerpts over a URL or provided content, and `action: "adhoc"` for arbitrary pages that need a custom schema or prompt and model-backed extraction.
 
-Reddit, Substack, and Shopify candidates are intentionally not listed as built-ins yet because their reliable machine-readable surfaces vary by community, publication, or storefront.
+Reddit support is limited to public post URLs and available structured JSON endpoints. If Reddit blocks access, requires auth, or rate-limits the request, the extractor returns a structured error instead of using browser automation, CAPTCHA solving, proxy rotation, or bot-like HTML scraping.
+
+Substack and Shopify candidates are intentionally not listed as built-ins yet because their reliable machine-readable surfaces vary by publication or storefront.
 
 ## Storage, cache, and history
 
@@ -196,7 +191,7 @@ Tool results use Pi's standard shell:
 }
 ```
 
-Large crawl, batch, diff, and scrape outputs are stored locally and returned with a compact summary plus `responseId`. Retrieve full content later with `web_get_result`.
+Large crawl, batch, diff, and scrape outputs are stored locally and returned with a compact summary plus local trace metadata such as `responseId` and `fullOutputPath`.
 
 Inline truncation follows Pi defaults:
 
@@ -205,11 +200,9 @@ Inline truncation follows Pi defaults:
 
 The storage backend uses a local SQLite metadata index plus content-addressed blob files. Cache reuse is opt-in with `cacheTtlSeconds`; default behavior remains fresh network fetches. Cached results include `cache.cached`, `fetchedAt`, `ageSeconds`, `ttlSeconds`, and `staleness` metadata when returned from the fetch cache.
 
-Use history tools deliberately:
+Use freshness controls deliberately:
 
-- `web_history` + `web_get_result` when existing content is recent enough.
-- `web_crawls` to find prior crawls and decide whether to resume, reuse, or recrawl.
-- `web_search_scrapes` to recall stored markdown/text when SQLite FTS5 is available.
+- `web_crawl` with `action: "list"` or `action: "status"` to inspect prior crawls and decide whether to resume, reuse, or recrawl.
 - `refresh: true` for time-sensitive questions such as prices, news, status pages, availability, or anything the user asks about “now”.
 
 The fetch cache currently records in-memory text/buffer responses. Streamed binary downloads are saved as normal result blobs but are not reused as raw HTTP cache hits.
@@ -235,7 +228,7 @@ Persistent paths:
 
 ## Packaged skill
 
-This package includes a small Pi skill, `web-scraping`, with guidance for choosing between scrape, map, crawl, batch, brand, diff, vertical extraction, history, and page-scoped extraction tools.
+This package includes a small Pi skill, `web-scraping`, with guidance for choosing between scrape/summarize, map, crawl, batch, diff, and merged extraction tools.
 
 ## Development and release checks
 

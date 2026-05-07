@@ -177,8 +177,8 @@ function isCriticalConfusion(row) {
 	const prompt = row.prompt.toLowerCase();
 	const tags = row.tags.join(" ");
 	if (
-		row.actualTool === "web_summarize" &&
-		/multi-source|research|citations/.test(`${prompt} ${tags}`)
+		row.actualTool === "web_scrape" &&
+		/multi-source|citations/.test(`${prompt} ${tags}`)
 	)
 		return true;
 	if (
@@ -188,8 +188,9 @@ function isCriticalConfusion(row) {
 	)
 		return true;
 	if (
-		row.expectedTool === "web_vertical_scrape" &&
-		row.actualTool === "web_extract"
+		row.expectedTool === "web_extract" &&
+		/vertical|known-site|typed|github|npm|deepwiki/.test(`${prompt} ${tags}`) &&
+		row.actualArgs?.action === "adhoc"
 	)
 		return true;
 	if (

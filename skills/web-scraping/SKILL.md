@@ -1,40 +1,32 @@
 ---
 name: web-scraping
-description: Choose pi-scraper web_* tools for scraping, mapping, crawling, extraction, stored results, and page-scoped workflows.
+description: Choose pi-scraper web_* tools.
 ---
 
 # Web Scraping
 
-Use when selecting a `pi-scraper` tool. pi-scraper is local-first and does not own broad search/research.
+Use for `pi-scraper` tool choice. Companion tools handle open-ended search/research and multi-source synthesis.
 
 ## Dispatch
 
-- one URL read/extract as markdown/html/text/json → `web_scrape`
-- many independent URLs; per-URL success/failure → `web_batch`
-- robots/sitemaps/llms URL inventory only; do not read page bodies → `web_map`
-- follow links and read pages recursively; depth/page limits; resume via `crawlId` → `web_crawl`
-- brand assets: colors, fonts, logos, favicons, manifest, JSON-LD, Open Graph/Twitter → `web_brand`
-- compare current URL with saved/named snapshot; use stable `snapshotName` → `web_diff`
-- list deterministic extractor names, URL patterns, schemas, capabilities → `web_list_extractors`
-- known-site typed JSON via deterministic API/feed extractor → `web_vertical_scrape`
-- arbitrary page/content JSON/schema extraction; LLM/model-backed; no deterministic vertical applies → `web_extract`
-- one page/content summary; not multi-source research → `web_summarize`
-- retrieve `responseId`, crawl status by `crawlId`, or diff snapshot metadata → `web_get_result`
-- prior local scrapes/fetches for one URL; follow `responseId` with `web_get_result` → `web_history`
-- prior crawls/status/staleness/recommended action → `web_crawls`
-- search stored scrape text with SQLite FTS5; `{ supported: false }` is a clean negative → `web_search_scrapes`
+- `web_scrape` — one URL read as markdown/text/llm/html/json; `task:"summarize"` summarizes one URL or provided content.
+- `web_batch` — many known independent URLs; per-URL results.
+- `web_map` — robots/sitemaps/llms URL inventory only; no page bodies.
+- `web_crawl` — follow links/read pages; `action:run|status|list`; stable `crawlId` resumes.
+- `web_extract` — `list` extractors, `vertical` known-site typed JSON, `pattern` markers/regex/excerpts, `adhoc` LLM JSON/schema.
+- `web_diff` — compare URL with saved/named snapshot.
 
 ## Rules
 
-- Use search/research companion tools for source discovery, recent/open-ended search, or multi-source synthesis; then scrape selected URLs with `web_scrape`/`web_batch`.
-- Prefer `web_map` before `web_crawl` for site structure or URL inventory; use `web_crawl` when the user wants linked pages read.
-- For long crawls use stable `crawlId`; repeat same `crawlId` to resume.
-- Prefer deterministic `web_vertical_scrape` over ad hoc `web_extract` for supported known sites.
-- Use `web_history`/`web_get_result` only when stale data is acceptable. Scrape fresh or set `refresh` for time-sensitive prices/news/status/availability facts.
-- Browser/fingerprint/proxy are escalation paths only when requested or static/readable/data-island extraction is insufficient.
-- Do not promise CAPTCHA solving, residential proxy rotation, stealth, or guaranteed protected-site access; return structured blocked/error results.
+- Map before crawl for inventory; crawl only when pages should be read.
+- Prefer `web_extract action:vertical` for supported known sites, `pattern` for deterministic text inspection, and `adhoc` only for semantic/schema extraction.
+- Use `refresh` for time-sensitive prices/news/status/availability.
+- Browser/fingerprint/proxy only by request or when static extraction fails.
+- No public brand tool, CAPTCHA solving, proxy rotation, stealth, or guaranteed protected-site access.
 
-## Special cases
+## Special
 
-- npm metadata → `web_vertical_scrape` with `.extractor: "npm"`; if only package name given, URL is `https://npmx.dev/package/<name>`. npm page reading (not metadata) → `web_scrape` on that URL.
-- DeepWiki URL or sparse GitHub README with DeepWiki coverage → `web_vertical_scrape` with `.extractor: "deepwiki"` on `https://deepwiki.com/owner/repo`.
+- npm metadata → `web_extract action:vertical extractor:npm url:https://npmx.dev/package/<name>`; npm page reading → `web_scrape`.
+- Docs-site sections/API refs → `web_extract action:vertical extractor:docsite` for Docusaurus, ReadTheDocs, GitBook, MDN, or unknown docs pages.
+- Reddit public posts → `web_extract action:vertical extractor:reddit`; returns structured blocked/rate-limit errors rather than bypassing robots, auth, CAPTCHA, or anti-bot controls.
+- DeepWiki/GitHub docs fallback → `web_extract action:vertical extractor:deepwiki` on `https://deepwiki.com/owner/repo`.

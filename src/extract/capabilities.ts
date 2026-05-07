@@ -1,8 +1,16 @@
 import type { ExtractorCapability, SourceReference } from "../types.js";
 
+export interface VerticalExtractorPage {
+	text: string;
+	finalUrl: string;
+	status: number;
+	contentType?: string;
+}
+
 export interface VerticalExtractorContext {
 	fetchJson<T = unknown>(url: string, signal?: AbortSignal): Promise<T>;
 	fetchText?(url: string, signal?: AbortSignal): Promise<string>;
+	fetchPage?(url: string, signal?: AbortSignal): Promise<VerticalExtractorPage>;
 }
 
 export interface VerticalExtractionResult<T = unknown> {

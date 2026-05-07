@@ -7,67 +7,45 @@ const expectedNames = [
 	"web_crawl",
 	"web_map",
 	"web_batch",
-	"web_brand",
 	"web_diff",
-	"web_list_extractors",
-	"web_vertical_scrape",
 	"web_extract",
-	"web_summarize",
-	"web_get_result",
-	"web_history",
-	"web_crawls",
-	"web_search_scrapes",
 ] as const;
 
 const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
-	web_scrape: 360,
-	web_crawl: 280,
+	web_scrape: 420,
+	web_crawl: 290,
 	web_map: 180,
 	web_batch: 180,
-	web_brand: 180,
 	web_diff: 180,
-	web_list_extractors: 180,
-	web_vertical_scrape: 190,
-	web_extract: 180,
-	web_summarize: 180,
-	web_get_result: 180,
-	web_history: 180,
-	web_crawls: 180,
-	web_search_scrapes: 180,
+	web_extract: 560,
 };
 
 const scrapeOnlyFields = [
-	"headers",
 	"proxy",
 	"respectRobots",
-	"maxBytes",
 	"maxChars",
-	"browserProfile",
-	"osProfile",
 	"onlyMainContent",
-	"removeImages",
-] as const;
-
-const configOnlyCacheFields = [
-	"cacheTtlSeconds",
-	"maxAgeSeconds",
+	"timeoutSeconds",
 	"refresh",
 ] as const;
 
+const configOnlyFields = [
+	"headers",
+	"maxBytes",
+	"browserProfile",
+	"osProfile",
+	"removeImages",
+	"cacheTtlSeconds",
+	"maxAgeSeconds",
+] as const;
+
 const discriminatorChecks: Record<string, RegExp[]> = {
-	web_scrape: [/fetch|extract/iu, /one URL/iu],
-	web_crawl: [/crawl/iu, /linked pages/iu],
+	web_scrape: [/read|fetch|extract/iu, /summarize/iu, /one URL|content/iu],
+	web_crawl: [/crawl/iu, /status|list/iu, /pages|linked-page/iu],
 	web_map: [/robots\/sitemaps\/llms/iu, /does not fetch page content/iu],
 	web_batch: [/independent URLs/iu, /per-URL/iu],
-	web_brand: [/colors/iu, /fonts/iu, /logos/iu],
 	web_diff: [/compare/iu, /snapshot/iu],
-	web_vertical_scrape: [/deterministic|known-site/iu],
-	web_extract: [/JSON\/schema/iu, /LLM/iu, /web_vertical_scrape|known-site/iu],
-	web_summarize: [/one page|provided content/iu, /not multi-source research/iu],
-	web_get_result: [/responseId/iu, /crawlId|snapshot/iu],
-	web_history: [/prior local scrapes\/fetches/iu],
-	web_crawls: [/prior local crawls/iu],
-	web_search_scrapes: [/stored scrapes/iu, /FTS5/iu],
+	web_extract: [/deterministic/iu, /patterns|regex/iu, /JSON\/schema/iu],
 };
 
 describe("web tool contracts", () => {
@@ -85,7 +63,7 @@ describe("web tool contracts", () => {
 			0,
 		);
 
-		expect(totalTokens).toBeLessThanOrEqual(2100);
+		expect(totalTokens).toBeLessThanOrEqual(1600);
 		for (const stat of contractStats) {
 			const name = stat.name as (typeof expectedNames)[number];
 			expect(stat.tokens, stat.name).toBeLessThanOrEqual(
@@ -103,10 +81,10 @@ describe("web tool contracts", () => {
 			}
 		}
 
-		for (const toolName of ["web_map", "web_vertical_scrape"] as const) {
-			const fields = schemaProperties(toolByName(toolName));
-			for (const field of configOnlyCacheFields) {
-				expect(fields, `${toolName}.${field}`).not.toContain(field);
+		for (const tool of webTools) {
+			const fields = schemaProperties(tool);
+			for (const field of configOnlyFields) {
+				expect(fields, `${tool.name}.${field}`).not.toContain(field);
 			}
 		}
 	});

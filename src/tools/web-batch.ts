@@ -14,6 +14,7 @@ import { scrapeOutputOptionSchema, urlProperty } from "./schemas.js";
 export const webBatchSchema = Type.Object({
 	urls: Type.Array(urlProperty(), { minItems: 1 }),
 	concurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 32 })),
+	perHostConcurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 16 })),
 	...scrapeOutputOptionSchema,
 });
 

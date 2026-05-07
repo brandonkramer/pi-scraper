@@ -5,11 +5,8 @@ import { renderEnvelopeResult } from "../render.js";
 import { toolResult } from "../result.js";
 import { webBatchTool } from "../web-batch.js";
 import { webCrawlTool } from "../web-crawl.js";
-import { webCrawlsTool } from "../web-crawls.js";
 import { webDiffTool } from "../web-diff.js";
-import { webHistoryTool } from "../web-history.js";
 import { webScrapeTool } from "../web-scrape.js";
-import { webSearchScrapesTool } from "../web-search-scrapes.js";
 
 const partialContext = {
 	expanded: false,
@@ -194,48 +191,6 @@ describe("web tool renderers", () => {
 			"done · https://example.com",
 		);
 		expect(text(renderEnvelopeResult(result, false))).not.toContain("✓ done");
-	});
-
-	it("renders DB lookup interpretation without loaders", () => {
-		const history = toolResult({
-			text: "Found records",
-			data: { entries: [{ responseId: "r1" }] },
-			qualitySignals: { freshness: "current" },
-		});
-		const crawls = toolResult({
-			text: "Found crawls",
-			data: { crawls: [{ recommendedAction: "recrawl" }] },
-		});
-		const search = toolResult({
-			text: "hits",
-			data: {
-				supported: true,
-				hits: [{ responseId: "r1" }, { responseId: "r2" }],
-			},
-		});
-
-		expect(
-			text(
-				webHistoryTool.renderCall?.({ url: "https://example.com" }, undefined, {
-					isPartial: false,
-				}),
-			),
-		).not.toContain("✓ web_history");
-		expect(
-			text(webHistoryTool.renderResult?.(history, { expanded: false })),
-		).toContain("reusable result found");
-		expect(
-			text(webHistoryTool.renderResult?.(history, { expanded: false })),
-		).not.toContain("✓ reusable result found");
-		expect(
-			text(webCrawlsTool.renderResult?.(crawls, { expanded: false })),
-		).toContain("⚠ recrawl recommended");
-		expect(
-			text(webSearchScrapesTool.renderResult?.(search, { expanded: false })),
-		).toContain("2 stored hits");
-		expect(
-			text(webSearchScrapesTool.renderResult?.(search, { expanded: false })),
-		).not.toContain("✓ 2 stored hits");
 	});
 });
 

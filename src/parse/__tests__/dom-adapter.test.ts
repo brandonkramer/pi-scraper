@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadDom, loadDomWithBackend } from "../dom-adapter.js";
+import { loadDom } from "../dom-adapter.js";
 
 const staticHtml = `<!doctype html><html><head>
 <title>Adapter Fixture</title>
@@ -50,19 +50,11 @@ describe("DOM adapter", () => {
 
 	it("keeps malformed full-document parsing scoped to selected elements", () => {
 		const html = fixture("malformed-html-corpus.html");
-		const cheerio = loadDomWithBackend(html, "cheerio");
-		const htmlparser2 = loadDomWithBackend(html, "htmlparser2");
 		const dom = loadDom(html);
 
-		expect(cheerio.count(cheerio.select("body"))).toBe(1);
-		expect(cheerio.count(cheerio.select("main"))).toBe(0);
-		expect(cheerio.text(cheerio.select("body"))).toBe("");
-		expect(htmlparser2.count(htmlparser2.select("body"))).toBe(0);
-		expect(htmlparser2.count(htmlparser2.select("main"))).toBe(0);
-		expect(htmlparser2.text(htmlparser2.root())).toContain(
-			"Malformed Parser Stress Fixture",
-		);
 		expect(dom.count(dom.select("body"))).toBe(0);
+		expect(dom.count(dom.select("main"))).toBe(0);
+		expect(dom.text(dom.root())).toContain("Malformed Parser Stress Fixture");
 	});
 
 	it("reads raw JSON text from data-island scripts", () => {

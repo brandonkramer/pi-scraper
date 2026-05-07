@@ -14,16 +14,8 @@ const expectedTools = [
 	"web_crawl",
 	"web_map",
 	"web_batch",
-	"web_brand",
 	"web_diff",
-	"web_list_extractors",
-	"web_vertical_scrape",
 	"web_extract",
-	"web_summarize",
-	"web_get_result",
-	"web_history",
-	"web_crawls",
-	"web_search_scrapes",
 ];
 
 const tempDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-install-"));

@@ -6,16 +6,33 @@ import type { RenderComponent, WebTool } from "../define.js";
 import { registerWebTools } from "../register.js";
 import { renderText } from "../render.js";
 import { createWebExtractTool, webExtractTool } from "../web-extract.js";
-import { webListExtractorsTool } from "../web-list-extractors.js";
-import { createWebSummarizeTool } from "../web-summarize.js";
+import { createWebScrapeTool } from "../web-scrape.js";
 
 const signal = new AbortController().signal;
 
 describe("selected web tool handlers", () => {
-	it("lists vertical extractor capabilities", async () => {
-		const result = await webListExtractorsTool.execute("call", {}, signal);
+	it("lists vertical extractor capabilities through web_extract", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{ action: "list" },
+			signal,
+		);
 		expect(result.content[0]?.text).toContain("extractor");
 		expect(Array.isArray((result.details as ResultEnvelope).data)).toBe(true);
+	});
+
+	it("runs deterministic vertical extraction through web_extract without a model", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				action: "vertical",
+				extractor: "npm",
+				url: "https://example.com/package/pi-scraper",
+			},
+			signal,
+		);
+		expect(result.content[0]?.text).toContain("npm");
+		expect((result.details as ResultEnvelope).format).toBe("json");
 	});
 
 	it("returns structured missing-model errors for ad hoc extraction", async () => {
@@ -28,6 +45,79 @@ describe("selected web tool handlers", () => {
 			"MODEL_ADAPTER_MISSING",
 		);
 		expect(result.content[0]?.text).toContain("model-backed");
+	});
+
+	it("runs deterministic pattern inspection without a model", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				action: "pattern",
+				content: "# Tools\nweb_scrape reads pages\nweb_crawl follows links",
+				length: true,
+				markers: ["# Tools", "missing"],
+				contains: ["web_scrape"],
+				excerpts: [{ needle: "web_crawl", before: 4, after: 13 }],
+				regexes: [
+					{
+						name: "tool_names",
+						pattern: "web_[a-z_]+",
+						dedupe: true,
+						sort: true,
+					},
+				],
+			},
+			signal,
+		);
+		const envelope = result.details as ResultEnvelope<{
+			source: { source: string; length: number };
+			markers: Array<{ found: boolean; index: number }>;
+			contains: Array<{ found: boolean }>;
+			excerpts: Array<{ found: boolean; text?: string }>;
+			regexes: Array<{ matches: Array<{ value: string }> }>;
+		}>;
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.data?.source.source).toBe("provided");
+		expect(envelope.data?.source.length).toBeGreaterThan(20);
+		expect(envelope.data?.markers[0]?.found).toBe(true);
+		expect(envelope.data?.markers[1]?.index).toBe(-1);
+		expect(envelope.data?.contains[0]?.found).toBe(true);
+		expect(envelope.data?.excerpts[0]?.text).toContain("web_crawl");
+		expect(
+			envelope.data?.regexes[0]?.matches.map((item) => item.value),
+		).toEqual(["web_crawl", "web_scrape"]);
+	});
+
+	it("scrapes URL text before pattern inspection", async () => {
+		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const result = await tool.execute(
+			"call",
+			{
+				action: "pattern",
+				url: "https://example.com/page",
+				sourceFormat: "text",
+				contains: ["Fixture Heading"],
+			},
+			signal,
+		);
+		const envelope = result.details as ResultEnvelope<{
+			source: { source: string; status?: number };
+			contains: Array<{ found: boolean }>;
+		}>;
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.data?.source.source).toBe("scrape");
+		expect(envelope.data?.source.status).toBe(200);
+		expect(envelope.data?.contains[0]?.found).toBe(true);
+	});
+
+	it("returns structured errors for invalid pattern regexes", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{ action: "pattern", content: "abc", regexes: [{ pattern: "[" }] },
+			signal,
+		);
+		expect((result.details as ResultEnvelope).error?.code).toBe(
+			"PATTERN_INPUT_INVALID",
+		);
 	});
 
 	it("runs provided-content extraction with an injected model adapter", async () => {
@@ -86,7 +176,7 @@ describe("selected web tool handlers", () => {
 		expect(requests[0]?.input).toContain("Fixture Heading");
 	});
 
-	it("registers model-backed extract/summarize tools when a host adapter is available", async () => {
+	it("registers model-backed extract and scrape-summary paths", async () => {
 		const registered: WebTool[] = [];
 		const registrar = {
 			modelAdapter: fakeModelAdapter((request) =>
@@ -97,8 +187,8 @@ describe("selected web tool handlers", () => {
 			},
 		};
 		registerWebTools(registrar);
+		const scrape = registered.find((tool) => tool.name === "web_scrape");
 		const extract = registered.find((tool) => tool.name === "web_extract");
-		const summarize = registered.find((tool) => tool.name === "web_summarize");
 
 		const extracted = await extract?.execute(
 			"call",
@@ -110,16 +200,16 @@ describe("selected web tool handlers", () => {
 				?.data.ok,
 		).toBe(true);
 
-		const summarized = await summarize?.execute(
+		const summarized = await scrape?.execute(
 			"call",
-			{ content: "content", sentences: 1 },
+			{ task: "summarize", content: "content", sentences: 1 },
 			signal,
 		);
 		expect(summarized?.content[0]?.text).toBe("registered summary");
 	});
 
 	it("runs provided-content and URL-backed summarization with an injected model adapter", async () => {
-		const tool = createWebSummarizeTool({
+		const tool = createWebScrapeTool({
 			modelAdapter: fakeModelAdapter((request) =>
 				request.input.includes("Fixture Heading")
 					? "Summary from scraped page."
@@ -130,14 +220,19 @@ describe("selected web tool handlers", () => {
 
 		const provided = await tool.execute(
 			"call",
-			{ content: "Provided content", sentences: 1 },
+			{ task: "summarize", content: "Provided content", sentences: 1 },
 			signal,
 		);
 		expect(provided.content[0]?.text).toBe("Summary from provided content.");
 
 		const scraped = await tool.execute(
 			"call",
-			{ url: "https://example.com/page", bullets: 2, mode: "fast" },
+			{
+				task: "summarize",
+				url: "https://example.com/page",
+				bullets: 2,
+				mode: "fast",
+			},
 			signal,
 		);
 		const envelope = scraped.details as ResultEnvelope<{
@@ -150,17 +245,19 @@ describe("selected web tool handlers", () => {
 	});
 
 	it("renders compact calls and expanded results", async () => {
-		const result = await webListExtractorsTool.execute("call", {}, signal);
-		expect(
-			renderComponentText(webListExtractorsTool.renderCall?.({}, undefined)),
-		).toBe("web_list_extractors");
+		const result = await webExtractTool.execute(
+			"call",
+			{ action: "list" },
+			signal,
+		);
 		expect(
 			renderComponentText(
-				webListExtractorsTool.renderResult?.(
-					result,
-					{ expanded: true },
-					undefined,
-				),
+				webExtractTool.renderCall?.({ action: "list" }, undefined),
+			),
+		).toBe("web_extract list");
+		expect(
+			renderComponentText(
+				webExtractTool.renderResult?.(result, { expanded: true }, undefined),
 			),
 		).toContain("extractor");
 	});

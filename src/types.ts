@@ -189,6 +189,10 @@ export interface CommonRequestOptions {
 	cacheTtlSeconds?: number;
 	maxAgeSeconds?: number;
 	refresh?: boolean;
+	retryAttempts?: number;
+	retryBaseDelayMs?: number;
+	retryMaxDelayMs?: number;
+	retryJitterMs?: number;
 }
 
 export interface CommonScrapeOptions extends CommonRequestOptions {

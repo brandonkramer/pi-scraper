@@ -13,7 +13,12 @@ class Semaphore {
 	private readonly queue: Array<() => void> = [];
 	private queueHead = 0;
 
-	constructor(private readonly limit: number) {}
+	constructor(private limit: number) {}
+
+	setLimit(limit: number): void {
+		this.limit = Math.max(1, Math.floor(limit));
+		this.drain();
+	}
 
 	async acquire(signal?: AbortSignal): Promise<Release> {
 		if (signal?.aborted) {
@@ -30,7 +35,6 @@ class Semaphore {
 		return new Promise<Release>((resolve, reject) => {
 			const run = () => {
 				cleanup();
-				this.active += 1;
 				resolve(() => this.release());
 			};
 			const onAbort = () => {
@@ -52,8 +56,14 @@ class Semaphore {
 
 	private release(): void {
 		this.active = Math.max(0, this.active - 1);
-		const next = this.queue[this.queueHead];
-		if (next) {
+		this.drain();
+	}
+
+	private drain(): void {
+		while (this.active < this.limit) {
+			const next = this.queue[this.queueHead];
+			if (!next) return;
+			this.active += 1;
 			this.queueHead += 1;
 			this.compactQueue();
 			queueMicrotask(next);
@@ -68,9 +78,17 @@ class Semaphore {
 	}
 }
 
+interface HostState {
+	semaphore: Semaphore;
+	limit: number;
+	baseLimit: number;
+	retryAfterUntil?: number;
+	last429?: number;
+}
+
 export class PolitenessController {
 	private readonly globalSemaphore: Semaphore;
-	private readonly hostSemaphores = new Map<string, Semaphore>();
+	private readonly hostStates = new Map<string, HostState>();
 	private readonly hostAvailableAt = new Map<string, number>();
 
 	constructor(private readonly options: PolitenessOptions = {}) {
@@ -96,15 +114,41 @@ export class PolitenessController {
 		}
 	}
 
-	private hostSemaphore(host: string): Semaphore {
-		const existing = this.hostSemaphores.get(host);
-		if (existing) {
-			return existing;
+	noteResponse(host: string, status: number, retryAfterMs?: number): void {
+		const state = this.hostState(host);
+		if (status === 429) {
+			state.last429 = Date.now();
+			if (retryAfterMs !== undefined) {
+				state.retryAfterUntil = Math.max(
+					state.retryAfterUntil ?? 0,
+					Date.now() + retryAfterMs,
+				);
+			}
+			state.limit = Math.max(1, Math.floor(state.limit / 2));
+			state.semaphore.setLimit(state.limit);
+			return;
 		}
-		const created = new Semaphore(
-			this.options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
-		);
-		this.hostSemaphores.set(host, created);
+		if (status >= 200 && status < 400 && state.limit < state.baseLimit) {
+			state.limit += 1;
+			state.semaphore.setLimit(state.limit);
+		}
+	}
+
+	private hostSemaphore(host: string): Semaphore {
+		return this.hostState(host).semaphore;
+	}
+
+	private hostState(host: string): HostState {
+		const existing = this.hostStates.get(host);
+		if (existing) return existing;
+		const baseLimit =
+			this.options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost;
+		const created: HostState = {
+			baseLimit,
+			limit: baseLimit,
+			semaphore: new Semaphore(baseLimit),
+		};
+		this.hostStates.set(host, created);
 		return created;
 	}
 
@@ -114,14 +158,15 @@ export class PolitenessController {
 		signal?: AbortSignal,
 	): Promise<void> {
 		const delayMs = Math.max(this.options.minDelayMs ?? 0, crawlDelayMs ?? 0);
-		if (delayMs <= 0) {
-			return;
-		}
-
 		const now = Date.now();
-		const availableAt = this.hostAvailableAt.get(host) ?? now;
+		const availableAt = Math.max(
+			this.hostAvailableAt.get(host) ?? now,
+			this.hostState(host).retryAfterUntil ?? now,
+		);
 		const waitMs = Math.max(0, availableAt - now);
-		this.hostAvailableAt.set(host, Math.max(now, availableAt) + delayMs);
+		if (delayMs > 0) {
+			this.hostAvailableAt.set(host, Math.max(now, availableAt) + delayMs);
+		}
 		if (waitMs > 0) {
 			await abortableSleep(waitMs, signal);
 		}

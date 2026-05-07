@@ -62,6 +62,7 @@
     "@sinclair/typebox": "latest",
     "@types/node": "latest",
     "@types/turndown": "^5.0.6",
+    "cheerio": "^1.2.0",
     "defuddle": "^0.18.1",
     "github-actionlint": "^1.7.12",
     "html-to-text": "^10.0.0",
@@ -75,7 +76,6 @@
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
-    "cheerio": "^1.2.0",
     "css-select": "^6.0.0",
     "dom-serializer": "^2.0.0",
     "domhandler": "^5.0.3",

@@ -26,6 +26,8 @@ import {
 import {
 	hasStructuredError,
 	isRetryableStatus,
+	isIdempotentMethod,
+	parseRetryAfterMs,
 	retryDelayMs,
 	shouldStopRetrying,
 } from "./retry.js";
@@ -53,7 +55,7 @@ export interface HttpClientOptions extends UrlSafetyOptions {
 }
 
 export interface FetchUrlOptions extends CommonRequestOptions {
-	method?: "GET" | "HEAD";
+	method?: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
 	downloadBinary?: boolean;
 	forceText?: boolean;
 	maxRedirects?: number;
@@ -94,12 +96,19 @@ export class HttpClient {
 		});
 	}
 
+	private async safeFetchUrl(input: string | URL): Promise<SafeUrlResult> {
+		return await assertSafeFetchUrl(input, {
+			...this.options,
+			trimTrailingSlash: false,
+		});
+	}
+
 	async fetchUrl(
 		input: string | URL,
 		fetchOptions: FetchUrlOptions = {},
 		signal?: AbortSignal,
 	): Promise<FetchUrlResult> {
-		const safe = await assertSafeFetchUrl(input, this.options);
+		const safe = await this.safeFetchUrl(input);
 		try {
 			const ttl = fetchOptions.cacheTtlSeconds;
 			if (
@@ -136,7 +145,7 @@ export class HttpClient {
 		url: string,
 		signal?: AbortSignal,
 	): Promise<{ status: number; text: string }> {
-		const safe = await assertSafeFetchUrl(url, this.options);
+		const safe = await this.safeFetchUrl(url);
 		const result = await this.fetchWithRetries(
 			safe,
 			{
@@ -161,10 +170,11 @@ export class HttpClient {
 		signal: AbortSignal | undefined,
 		applyPolicy: boolean,
 	): Promise<FetchUrlResult> {
-		const attempts =
-			options.method === "HEAD"
-				? 1
-				: (this.options.retryAttempts ?? DEFAULT_RETRY.attempts);
+		const attempts = isIdempotentMethod(options.method)
+			? (options.retryAttempts ??
+				this.options.retryAttempts ??
+				DEFAULT_RETRY.attempts)
+			: 1;
 		let lastError: unknown;
 
 		for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -175,9 +185,14 @@ export class HttpClient {
 					signal,
 					applyPolicy,
 				);
+				this.politeness.noteResponse(
+					new URL(result.finalUrl).host,
+					result.status,
+					parseRetryAfterMs(result.headers["retry-after"]),
+				);
 				if (attempt < attempts && isRetryableStatus(result.status)) {
 					await abortableSleep(
-						retryDelayMs(attempt, result.headers["retry-after"]),
+						retryDelayMs(attempt, result.headers["retry-after"], options),
 						signal,
 					);
 					continue;
@@ -196,7 +211,7 @@ export class HttpClient {
 				) {
 					throw this.toClientError(error, initialSafe.normalizedUrl, options);
 				}
-				await abortableSleep(retryDelayMs(attempt), signal);
+				await abortableSleep(retryDelayMs(attempt, undefined, options), signal);
 			}
 		}
 
@@ -238,9 +253,8 @@ export class HttpClient {
 				);
 			}
 
-			const next = await assertSafeFetchUrl(
+			const next = await this.safeFetchUrl(
 				resolveRedirectUrl(result.headers.location, currentSafe.normalizedUrl),
-				this.options,
 			);
 			if (visited.has(next.normalizedUrl)) {
 				throw redirectError(

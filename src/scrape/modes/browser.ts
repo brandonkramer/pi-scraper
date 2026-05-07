@@ -1,0 +1,80 @@
+import type { BrowserRenderer } from "../../browser/playwright.js";
+import {
+	BrowserRenderError,
+	createPlaywrightRenderer,
+} from "../../browser/playwright.js";
+import type { FetchUrlResult } from "../../http/client.js";
+import type { CommonScrapeOptions, OutputFormat } from "../../types.js";
+import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.js";
+import { responseScrape } from "./fast.js";
+import { errorResult, structuredError } from "./shared.js";
+
+export async function browserScrape(
+	input: string | URL,
+	format: OutputFormat,
+	options: CommonScrapeOptions,
+	deps: ScrapePipelineDeps,
+	signal?: AbortSignal,
+): Promise<ScrapeResult> {
+	try {
+		return await browserResponseScrape(input, format, options, deps, signal);
+	} catch (error) {
+		return errorResult(
+			input.toString(),
+			"browser",
+			format,
+			browserStructuredError(error, input.toString()),
+		);
+	}
+}
+
+export async function tryBrowser(
+	input: string | URL,
+	format: OutputFormat,
+	options: CommonScrapeOptions,
+	deps: ScrapePipelineDeps,
+	fallback: ScrapeResult,
+	signal?: AbortSignal,
+): Promise<ScrapeResult> {
+	try {
+		return await browserResponseScrape(input, format, options, deps, signal);
+	} catch (error) {
+		return {
+			...fallback,
+			error: browserStructuredError(error, input.toString()),
+			data: {
+				...fallback.data,
+				extractionPath: [...fallback.data.extractionPath, "browser_failed"],
+			},
+		};
+	}
+}
+
+async function browserResponseScrape(
+	input: string | URL,
+	format: OutputFormat,
+	options: CommonScrapeOptions,
+	deps: ScrapePipelineDeps,
+	signal?: AbortSignal,
+): Promise<ScrapeResult> {
+	const rendered = await (
+		deps.browserRenderer ?? createPlaywrightRenderer()
+	).fetchRendered(input, options, signal);
+	const response: FetchUrlResult = {
+		url: rendered.url,
+		finalUrl: rendered.finalUrl,
+		status: rendered.status ?? 200,
+		headers: { "content-type": "text/html" },
+		contentType: "text/html",
+		text: rendered.html,
+		downloadedBytes: Buffer.byteLength(rendered.html),
+	};
+	return responseScrape(response, "browser", format, options, signal);
+}
+
+function browserStructuredError(error: unknown, url: string) {
+	if (error instanceof BrowserRenderError) return { url, ...error.structured };
+	return structuredError(error, url);
+}
+
+export type { BrowserRenderer };

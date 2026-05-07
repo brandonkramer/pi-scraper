@@ -1,4 +1,5 @@
 import { DEFAULT_CONCURRENCY, DEFAULT_CRAWL_LIMITS } from "../defaults.js";
+import { createHttpClient } from "../http/client.js";
 import { discoverSiteUrls, type SiteMapDeps } from "../map/discover.js";
 import {
 	type ScrapePipelineDeps,
@@ -86,10 +87,22 @@ export async function runCrawl(
 		1,
 		options.concurrency ?? DEFAULT_CONCURRENCY.global,
 	);
-	const perHostConcurrency = Math.max(
-		1,
-		options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
-	);
+	const sharedDeps = deps.httpClient
+		? deps
+		: {
+				...deps,
+				httpClient: createHttpClient({
+					globalConcurrency: concurrency,
+					perHostConcurrency:
+						options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
+					retryAttempts: options.retryAttempts,
+				}),
+			};
+	const injectedHostLimits = deps.httpClient
+		? new HostLimitPool(
+				options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
+			)
+		: undefined;
 	const counts = {
 		succeeded: state.metadata?.succeededCount ?? state.results.length,
 		failed: state.metadata?.failedCount ?? 0,
@@ -102,7 +115,6 @@ export async function runCrawl(
 	let persistChain: Promise<CrawlMetadata | undefined> =
 		Promise.resolve(undefined);
 
-	const hostLimits = new HostLimitPool(perHostConcurrency);
 	const coordinator = new CrawlCoordinator(frontier, maxPages, signal);
 	const queuedMetadata = await persist("queued");
 	options.onProgress?.({
@@ -166,13 +178,13 @@ export async function runCrawl(
 				message: progressSummary(processingMetadata, progressTotal),
 				metadata: processingMetadata,
 			});
-			const releaseHost = await hostLimits.acquire(
+			const releaseHost = await injectedHostLimits?.acquire(
 				new URL(item.url).host,
 				signal,
 			);
 			let completed = false;
 			try {
-				const result = await scrapeUrl(item.url, options, deps, signal);
+				const result = await scrapeUrl(item.url, options, sharedDeps, signal);
 				pages.push(result);
 				if (result.error) counts.failed += 1;
 				else counts.succeeded += 1;
@@ -193,7 +205,7 @@ export async function runCrawl(
 					metadata: doneMetadata,
 				});
 			} finally {
-				releaseHost();
+				releaseHost?.();
 				if (completed) activeItems.delete(item.url);
 				coordinator.done();
 			}
@@ -349,7 +361,6 @@ class HostLimitPool {
 			this.active.set(host, (this.active.get(host) ?? 0) + 1);
 			return () => this.release(host);
 		}
-
 		return new Promise<Release>((resolve, reject) => {
 			const run = () => {
 				cleanup();

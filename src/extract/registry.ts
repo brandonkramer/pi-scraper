@@ -12,6 +12,7 @@ import type {
 import { arxivExtractor } from "./verticals/arxiv.js";
 import { cratesIoExtractor } from "./verticals/crates-io.js";
 import { deepWikiExtractor } from "./verticals/deepwiki.js";
+import { docsiteExtractor } from "./verticals/docs-site.js";
 import { dockerHubExtractor } from "./verticals/docker-hub.js";
 import { githubIssueExtractor } from "./verticals/github-issue.js";
 import { githubPrExtractor } from "./verticals/github-pr.js";
@@ -28,6 +29,7 @@ import { ossInsightCollectionsExtractor } from "./verticals/ossinsight-collectio
 import { ossInsightRepoAnalyticsExtractor } from "./verticals/ossinsight-repo-analytics.js";
 import { ossInsightTrendingReposExtractor } from "./verticals/ossinsight-trending-repos.js";
 import { pypiPackageExtractor } from "./verticals/pypi.js";
+import { redditExtractor } from "./verticals/reddit.js";
 
 export const verticalExtractors = [
 	githubRepoExtractor,
@@ -41,8 +43,10 @@ export const verticalExtractors = [
 	huggingFaceModelExtractor,
 	huggingFaceDatasetExtractor,
 	hackerNewsItemExtractor,
+	redditExtractor,
 	arxivExtractor,
 	deepWikiExtractor,
+	docsiteExtractor,
 	ossInsightCollectionsExtractor,
 	ossInsightCollectionRankingExtractor,
 	ossInsightTrendingReposExtractor,
@@ -113,14 +117,40 @@ export async function runVerticalExtractor<T = unknown>(
 			extractor: name,
 			url: url.toString(),
 			sources: sources.length ? sources : undefined,
-			error: {
-				code: "EXTRACTION_FAILED",
-				message:
-					error instanceof Error ? error.message : "Vertical extraction failed",
-				retryable: false,
-			},
+			error: verticalError(error),
 		};
 	}
+}
+
+function verticalError(error: unknown): {
+	code: string;
+	message: string;
+	retryable: boolean;
+} {
+	const structured = structuredError(error);
+	if (structured) return structured;
+	return {
+		code: "EXTRACTION_FAILED",
+		message:
+			error instanceof Error ? error.message : "Vertical extraction failed",
+		retryable: false,
+	};
+}
+
+function structuredError(
+	error: unknown,
+): { code: string; message: string; retryable: boolean } | undefined {
+	if (!error || typeof error !== "object") return undefined;
+	const structured = (error as { structured?: unknown }).structured;
+	if (!structured || typeof structured !== "object") return undefined;
+	const code = (structured as { code?: unknown }).code;
+	const message = (structured as { message?: unknown }).message;
+	if (typeof code !== "string" || typeof message !== "string") return undefined;
+	return {
+		code,
+		message,
+		retryable: Boolean((structured as { retryable?: unknown }).retryable),
+	};
 }
 
 function httpContext(
@@ -154,6 +184,20 @@ function httpContext(
 				signal,
 			);
 			return response.text ?? "";
+		},
+		fetchPage: async (url: string, signal?: AbortSignal) => {
+			recordVerticalSource(sources, url, "page");
+			const response = await client.fetchUrl(
+				url,
+				{ forceText: true, respectRobots: true, ...requestOptions },
+				signal,
+			);
+			return {
+				text: response.text ?? response.body?.toString("utf8") ?? "",
+				finalUrl: response.finalUrl,
+				status: response.status,
+				contentType: response.contentType,
+			};
 		},
 	};
 }
