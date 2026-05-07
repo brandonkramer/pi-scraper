@@ -57,9 +57,7 @@ class Htmlparser2DomAdapter implements DomAdapter {
 	}
 
 	html(selection: DomSelection): string {
-		return this.asSelection(selection)
-			.map((node) => renderDom(node))
-			.join("\n");
+		return renderDom(this.asSelection(selection));
 	}
 
 	attr(target: DomSelection | DomNode, name: string): string | undefined {

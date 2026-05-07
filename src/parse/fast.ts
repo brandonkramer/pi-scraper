@@ -76,8 +76,7 @@ function buildExtraction(
 	mainCandidates: MainContentCandidate[],
 ): FastPageExtraction {
 	const text = visibleText(dom, root);
-	const recovered =
-		text.length < 1000 ? recoverUsefulContent(dom, url) : [];
+	const recovered = text.length < 1000 ? recoverUsefulContent(dom, url) : [];
 	return {
 		url,
 		title: metadata.title,
