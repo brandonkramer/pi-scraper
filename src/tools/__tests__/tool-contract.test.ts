@@ -42,7 +42,7 @@ const configOnlyFields = [
 ] as const;
 
 const discriminatorChecks: Record<string, RegExp[]> = {
-	web_scrape: [/read|fetch|extract/iu, /summarize/iu, /URL|content/iu],
+	web_scrape: [/read|fetch|extract/iu, /URL|content/iu],
 	web_summarize: [/summarize/iu, /URL|content/iu, /multi-source/iu],
 	web_crawl: [/crawl/iu, /status|list/iu, /pages|linked-page/iu],
 	web_map: [
