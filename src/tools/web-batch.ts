@@ -23,7 +23,7 @@ type Params = Static<typeof webBatchSchema>;
 export const webBatchTool = defineWebTool({
 	name: "web_batch",
 	label: "Batch",
-	description: "Independent URLs; per-URL.",
+	description: "Independent URLs per-URL",
 	parameters: webBatchSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();

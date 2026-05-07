@@ -54,7 +54,7 @@ type CrawlEntry = CrawlMetadata & {
 export const webCrawlTool = defineWebTool({
 	name: "web_crawl",
 	label: "Crawl",
-	description: "Crawl/read pages; status/list.",
+	description: "Crawl/read pages status/list",
 	parameters: webCrawlSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const action = inferCrawlAction(params);
