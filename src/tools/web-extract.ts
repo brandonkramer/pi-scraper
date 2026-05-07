@@ -25,7 +25,7 @@ const extractActions = ["list", "vertical", "adhoc", "pattern"] as const;
 const sourceFormats = ["text", "markdown", "html"] as const;
 
 export const webExtractSchema = Type.Object({
-	action: Type.Optional(StringEnum(extractActions)),
+	action: Type.Optional(Type.String()),
 	extractor: Type.Optional(Type.String()),
 	url: Type.Optional(urlProperty()),
 	content: Type.Optional(Type.String()),
@@ -80,7 +80,7 @@ export function createWebExtractTool(
 	return defineWebTool({
 		name: "web_extract",
 		label: "Extract",
-		description: "Vertical regex JSON/schema",
+		description: "Vertical/list/pattern regex JSON/schema",
 		parameters: webExtractSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
 			const action = inferExtractAction(params);
