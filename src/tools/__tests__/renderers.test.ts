@@ -107,9 +107,13 @@ describe("web tool renderers", () => {
 		expect(doneTitle).toContain("web_crawl https://example.com max 1");
 		expect(doneTitle).not.toContain("✓ web_crawl");
 		expect(collapsed).toContain("✅ 2 succeeded");
-		expect(collapsed).toContain("\u001B[38;2;239;118;122m❌ 1 failed\u001B[0m");
-		expect(collapsed).toContain("\u001B[38;2;199;211;111m🌐 3 visited\u001B[0m");
-		expect(collapsed).toContain("\u001B[38;2;139;145;134m→ frontier 0\u001B[0m");
+		expect(collapsed).toContain("\u001B[38;2;239;118;122m❌ 1 failed\u001B[39m");
+		expect(collapsed).toContain(
+			"\u001B[38;2;199;211;111m🌐 3 visited\u001B[39m",
+		);
+		expect(collapsed).toContain(
+			"\u001B[38;2;139;145;134m→ frontier 0\u001B[39m",
+		);
 		expect(collapsed).not.toContain("✓ web_crawl");
 		expect(expanded).toContain("✓ robots checked");
 		expect(expanded).toContain("✓ crawl state saved");
@@ -144,7 +148,7 @@ describe("web tool renderers", () => {
 		expect(collapsed).toContain("❌ 1 failed");
 		expect(collapsed).toContain("🔄 1 cache hits");
 		expect(collapsed).toContain(
-			"\u001B[38;2;199;211;111m🔄 1 cache hits\u001B[0m",
+			"\u001B[38;2;199;211;111m🔄 1 cache hits\u001B[39m",
 		);
 	});
 
@@ -158,10 +162,10 @@ describe("web tool renderers", () => {
 		);
 
 		expect(collapsed).toContain("❌ 0 failed");
-		expect(collapsed).toContain("\u001B[38;2;239;118;122m❌ 0 failed\u001B[0m");
+		expect(collapsed).toContain("\u001B[38;2;239;118;122m❌ 0 failed\u001B[39m");
 		expect(collapsed).toContain("🔄 0 cache hits");
 		expect(collapsed).toContain(
-			"\u001B[38;2;199;211;111m🔄 0 cache hits\u001B[0m",
+			"\u001B[38;2;199;211;111m🔄 0 cache hits\u001B[39m",
 		);
 	});
 
@@ -184,10 +188,10 @@ describe("web tool renderers", () => {
 
 		expect(
 			text(webBatchTool.renderResult?.(batch, { expanded: false })),
-		).toContain("\u001B[38;2;139;145;134m0 succeeded\u001B[0m");
+		).toContain("\u001B[38;2;139;145;134m0 succeeded\u001B[39m");
 		expect(
 			text(webCrawlTool.renderResult?.(crawl, { expanded: false })),
-		).toContain("\u001B[38;2;139;145;134m0 succeeded\u001B[0m");
+		).toContain("\u001B[38;2;139;145;134m0 succeeded\u001B[39m");
 	});
 
 	it("renders diff baseline, unchanged, and changed states", () => {

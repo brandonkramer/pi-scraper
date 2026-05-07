@@ -87,8 +87,7 @@ export function renderWebCrawlResult(
 					theme,
 				),
 				neutralText(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
-			]
-				.join(separator(theme));
+			].join(separator(theme));
 	return renderChecklistResult(title, expanded, {
 		items: [
 			{ label: "robots checked", state: "done" },
@@ -124,8 +123,7 @@ export function renderWebBatchResult(
 				successCountSegment(succeeded, "succeeded", theme),
 				failureCountSegment(failed, "failed", theme),
 				activityCountSegment(cacheHits, "cache hits", "🔄", theme),
-			]
-				.join(separator(theme));
+			].join(separator(theme));
 	return renderChecklistResult(title, expanded, {
 		items: [
 			{ label: `${succeeded} succeeded`, state: succeeded ? "done" : "info" },
@@ -336,7 +334,7 @@ function failureCountSegment(
 function successText(text: string, theme?: RenderTheme): string {
 	const themed = theme?.fg?.("success", text);
 	if (themed) return themed;
-	return `\u001B[38;2;148;226;213m${text}\u001B[0m`;
+	return `\u001B[38;2;148;226;213m${text}\u001B[39m`;
 }
 
 function activityCountSegment(
@@ -351,19 +349,19 @@ function activityCountSegment(
 function failureText(text: string, theme?: RenderTheme): string {
 	const themed = theme?.fg?.("error", text) ?? theme?.fg?.("danger", text);
 	if (themed) return themed;
-	return `\u001B[38;2;239;118;122m${text}\u001B[0m`;
+	return `\u001B[38;2;239;118;122m${text}\u001B[39m`;
 }
 
 function activityText(text: string, theme?: RenderTheme): string {
 	const themed = theme?.fg?.("warning", text) ?? theme?.fg?.("accent", text);
 	if (themed) return themed;
-	return `\u001B[38;2;199;211;111m${text}\u001B[0m`;
+	return `\u001B[38;2;199;211;111m${text}\u001B[39m`;
 }
 
 function neutralText(text: string, theme?: RenderTheme): string {
 	const themed = theme?.fg?.("muted", text);
 	if (themed) return themed;
-	return `\u001B[38;2;139;145;134m${text}\u001B[0m`;
+	return `\u001B[38;2;139;145;134m${text}\u001B[39m`;
 }
 
 function separator(theme?: RenderTheme): string {
