@@ -51,7 +51,7 @@ const discriminatorChecks: Record<string, RegExp[]> = {
 	],
 	web_batch: [/independent URLs/iu, /per-URL/iu],
 	web_diff: [/compare/iu, /snapshot/iu],
-	web_extract: [/deterministic/iu, /patterns|regex/iu, /JSON\/schema/iu],
+	web_extract: [/verticals?|extractors?/iu, /patterns|regex/iu, /JSON\/schema/iu],
 };
 
 describe("web tool contracts", () => {
