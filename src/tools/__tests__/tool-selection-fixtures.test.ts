@@ -32,6 +32,7 @@ const inputCuePatterns: Record<string, RegExp> = {
 	web_diff: /https?:\/\/|\bhomepage\b|\bsnapshot\b|\bdiff\b|\bcompare\b/iu,
 	web_extract:
 		/https?:\/\/|\bpage\b|\bcontent\b|\bJSON\b|\bschema\b|\bextractors\b|\bnpm\b|\bgithub\b|\bdeepwiki\b|\bregex\b|\bmarkers\b/iu,
+	web_get_result: /\bresponseId\b|\bjobId\b|\bmanifest\b|\bstored result\b/iu,
 };
 
 const scrapeIntentWithUrl =

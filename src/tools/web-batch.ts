@@ -60,10 +60,14 @@ export const webBatchTool = defineWebTool({
 			responseId: result.responseId,
 			fullOutputPath: result.fullOutputPath,
 			truncated: result.truncated,
+			diagnostics: {
+				jobId: result.jobId,
+				jobManifestPath: result.jobManifestPath,
+			},
 			mode: params.mode ?? "auto",
 			format: params.format ?? "markdown",
 			summary: `${succeeded} succeeded, ${failed} failed, ${cacheHits} cache hit(s) across ${result.items.length} URL(s).`,
-			answerContext: `Batch scrape completed with ${succeeded} succeeded and ${failed} failed out of ${result.items.length}. ${cacheHits} successful item(s) came from cache. Use the responseId to retrieve all per-URL details when needed.`,
+			answerContext: `Batch scrape completed with ${succeeded} succeeded and ${failed} failed out of ${result.items.length}. ${cacheHits} successful item(s) came from cache. Use responseId for full per-URL details or jobId ${result.jobId} for the structured job manifest.`,
 			qualitySignals: {
 				confidence: failed ? "medium" : "high",
 				freshness: cacheHits ? "stale_possible" : "current",

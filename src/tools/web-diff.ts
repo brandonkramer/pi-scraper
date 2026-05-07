@@ -7,6 +7,15 @@ import {
 	updateSnapshotReference,
 } from "../diff/snapshots.js";
 import { scrapeUrl } from "../scrape/pipeline.js";
+import {
+	appendJobError,
+	createJobManifest,
+	structuredErrorToJobError,
+	unknownToJobError,
+	updateJobManifest,
+	writeJobManifest,
+	type JobError,
+} from "../storage/jobs.js";
 import { storeResult } from "../storage/results.js";
 import {
 	retrieveResultAction,
@@ -34,6 +43,17 @@ export const webDiffTool = defineWebTool({
 	parameters: webDiffSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();
+		const jobId = randomUUID();
+		let errors: JobError[] = [];
+		const manifestPath = await writeJobManifest(
+			createJobManifest({
+				jobId,
+				jobType: "diff",
+				params,
+				mode: params.mode ?? config.scrapeMode,
+				format: "json",
+			}),
+		);
 		await emitProgress(onUpdate, {
 			state: "loading",
 			url: params.url,
@@ -41,8 +61,12 @@ export const webDiffTool = defineWebTool({
 				? `diffing against snapshot '${params.snapshotName}'`
 				: "diffing against snapshot",
 		});
-		const diff = await diffScrapeResult(
-			await scrapeUrl(
+		await updateJobManifest(jobId, {
+			status: "running",
+			startedAt: new Date().toISOString(),
+		});
+		try {
+			const scrape = await scrapeUrl(
 				params.url,
 				{
 					...config.scrapeDefaults,
@@ -52,37 +76,75 @@ export const webDiffTool = defineWebTool({
 				},
 				{},
 				signal,
-			),
-			{ snapshotName: params.snapshotName },
-		);
-		const responseId = randomUUID();
-		diff.current.metadata.responseId = responseId;
-		let stored = await storeResult(diff, {
-			responseId,
-			contentType: "application/json",
-		});
-		diff.current.metadata.fullOutputPath = stored.fullOutputPath;
-		await updateSnapshotReference(diff.current.url, stored, {
-			snapshotName: params.snapshotName,
-		});
-		stored = await storeResult(diff, {
-			responseId,
-			contentType: "application/json",
-		});
-		const text = renderDiffSummary(diff, stored.responseId);
-		const shaped = shapeDiffResult(diff, stored.responseId);
-		return toolResult({
-			text,
-			data: diff,
-			url: params.url,
-			finalUrl: diff.current.finalUrl,
-			mode: diff.current.metadata.mode,
-			format: "json",
-			responseId: stored.responseId,
-			fullOutputPath: stored.fullOutputPath,
-			contentType: "application/json",
-			...shaped,
-		});
+			);
+			if (scrape.error)
+				errors = appendJobError(
+					errors,
+					structuredErrorToJobError(scrape.error),
+				);
+			const diff = await diffScrapeResult(scrape, {
+				snapshotName: params.snapshotName,
+			});
+			const responseId = randomUUID();
+			diff.current.metadata.responseId = responseId;
+			let stored = await storeResult(diff, {
+				responseId,
+				contentType: "application/json",
+			});
+			diff.current.metadata.fullOutputPath = stored.fullOutputPath;
+			await updateSnapshotReference(diff.current.url, stored, {
+				snapshotName: params.snapshotName,
+			});
+			stored = await storeResult(diff, {
+				responseId,
+				contentType: "application/json",
+			});
+			await updateJobManifest(jobId, {
+				status: errors.length ? "error" : "done",
+				completedAt: new Date().toISOString(),
+				urlsProcessed: 1,
+				urlsFailed: errors.length ? 1 : 0,
+				errors,
+				totalBytes: diff.current.metadata.contentLength,
+				totalChars: diff.current.content.text.length,
+				truncatedPages: scrape.truncated ? 1 : 0,
+				responseIds: [stored.responseId],
+				snapshots: {
+					previous: diff.previous?.metadata,
+					current: diff.current.metadata,
+					path: diff.snapshotPath,
+					snapshotName: diff.snapshotName,
+				},
+			});
+			const text = renderDiffSummary(diff, stored.responseId);
+			const shaped = shapeDiffResult(diff, stored.responseId);
+			return toolResult({
+				text,
+				data: diff,
+				url: params.url,
+				finalUrl: diff.current.finalUrl,
+				mode: diff.current.metadata.mode,
+				format: "json",
+				responseId: stored.responseId,
+				fullOutputPath: stored.fullOutputPath,
+				contentType: "application/json",
+				diagnostics: { jobId, jobManifestPath: manifestPath },
+				...shaped,
+			});
+		} catch (error) {
+			errors = appendJobError(
+				errors,
+				unknownToJobError(error, "diff", params.url),
+			);
+			await updateJobManifest(jobId, {
+				status: signal.aborted ? "paused" : "error",
+				completedAt: new Date().toISOString(),
+				urlsProcessed: 1,
+				urlsFailed: 1,
+				errors,
+			});
+			throw error;
+		}
 	},
 	renderCall: (args, theme, context) =>
 		renderWebToolCall(

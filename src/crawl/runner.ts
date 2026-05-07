@@ -7,6 +7,15 @@ import {
 	scrapeUrl,
 } from "../scrape/pipeline.js";
 import type { CommonScrapeOptions, StructuredError } from "../types.js";
+import {
+	appendJobError,
+	createJobManifest,
+	structuredErrorToJobError,
+	unknownToJobError,
+	updateJobManifest,
+	writeJobManifest,
+	type JobError,
+} from "../storage/jobs.js";
 import { CrawlFrontier, type FrontierItem } from "./frontier.js";
 import {
 	type CrawlMetadata,
@@ -46,6 +55,7 @@ export interface CrawlRunResult {
 	visited: string[];
 	statePath: string;
 	metadata: CrawlMetadata;
+	jobManifestPath?: string;
 }
 
 export async function runCrawl(
@@ -107,6 +117,23 @@ export async function runCrawl(
 		succeeded: state.metadata?.succeededCount ?? state.results.length,
 		failed: state.metadata?.failedCount ?? 0,
 	};
+	let jobErrors: JobError[] = state.metadata?.lastError
+		? [state.metadata.lastError]
+		: [];
+	let totalBytes = 0;
+	let totalChars = 0;
+	let truncatedPages = 0;
+	let jobManifestPath = await writeJobManifest(
+		createJobManifest({
+			jobId: state.crawlId,
+			jobType: "crawl",
+			createdAt: state.createdAt,
+			params: { seedUrl, ...options },
+			mode: options.mode,
+			format: options.format,
+		}),
+		options,
+	);
 	const progressTotal = counts.succeeded + counts.failed + maxPages;
 	const activeItems = new Map<string, FrontierItem>();
 	let currentDepth = state.metadata?.currentDepth;
@@ -157,6 +184,25 @@ export async function runCrawl(
 					lastError: lastError ?? state.metadata?.lastError,
 				};
 				statePath = await saveCrawlState(state, options);
+				const manifest = await updateJobManifest(
+					state.crawlId,
+					{
+						status: status === "running" ? "running" : status,
+						startedAt: new Date().toISOString(),
+						completedAt:
+							status === "running" || status === "queued"
+								? undefined
+								: new Date().toISOString(),
+						urlsProcessed: counts.succeeded + counts.failed,
+						urlsFailed: counts.failed,
+						errors: jobErrors,
+						totalBytes,
+						totalChars,
+						truncatedPages,
+					},
+					options,
+				);
+				jobManifestPath = manifest.path;
 				return state.metadata;
 			});
 		return (await persistChain) as CrawlMetadata;
@@ -186,8 +232,16 @@ export async function runCrawl(
 			try {
 				const result = await scrapeUrl(item.url, options, sharedDeps, signal);
 				pages.push(result);
-				if (result.error) counts.failed += 1;
-				else counts.succeeded += 1;
+				if (result.error) {
+					counts.failed += 1;
+					jobErrors = appendJobError(
+						jobErrors,
+						structuredErrorToJobError(result.error),
+					);
+				} else counts.succeeded += 1;
+				totalBytes += result.downloadedBytes ?? 0;
+				totalChars += resultChars(result);
+				if (result.truncated) truncatedPages += 1;
 				for (const link of extractLinks(result))
 					frontier.enqueue(link, item.depth + 1, item.url);
 				completed = true;
@@ -228,10 +282,13 @@ export async function runCrawl(
 			visited: state.visited,
 			statePath,
 			metadata,
+			jobManifestPath,
 		};
 	} catch (error) {
 		const status = isAbortError(error, signal) ? "paused" : "error";
-		await persist(status, unknownErrorSummary(error));
+		const summary = unknownErrorSummary(error);
+		jobErrors = appendJobError(jobErrors, unknownToJobError(error, "crawl"));
+		await persist(status, summary);
 		throw error;
 	}
 }
@@ -243,6 +300,15 @@ function extractLinks(result: ScrapeResult): string[] {
 			typeof link === "string" ? link : (link as { url?: string }).url,
 		)
 		.filter(Boolean) as string[];
+}
+
+function resultChars(result: ScrapeResult): number {
+	return (
+		result.data.markdown?.length ??
+		result.data.text?.length ??
+		result.data.html?.length ??
+		0
+	);
 }
 
 function progressSummary(metadata: CrawlMetadata, maxPages: number): string {

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { DEFAULT_CONCURRENCY } from "../defaults.js";
 import { createHttpClient } from "../http/client.js";
 import {
@@ -6,6 +7,15 @@ import {
 	type ScrapeResult,
 } from "../scrape/pipeline.js";
 import type { CommonScrapeOptions, StructuredError } from "../types.js";
+import {
+	appendJobError,
+	createJobManifest,
+	structuredErrorToJobError,
+	unknownToJobError,
+	updateJobManifest,
+	writeJobManifest,
+	type JobError,
+} from "../storage/jobs.js";
 import {
 	storeResult,
 	truncateAndStore,
@@ -49,6 +59,8 @@ export interface BatchScrapeResult {
 	items: BatchItemResult[];
 	responseId?: string;
 	fullOutputPath?: string;
+	jobId: string;
+	jobManifestPath?: string;
 	truncated: boolean;
 	summary: string;
 }
@@ -60,6 +72,22 @@ export async function runBatchScrape(
 	signal?: AbortSignal,
 ): Promise<BatchScrapeResult> {
 	const items = new Array<BatchItemResult>(urls.length);
+	const jobId = randomUUID();
+	let errors: JobError[] = [];
+	let totalBytes = 0;
+	let totalChars = 0;
+	let truncatedPages = 0;
+	let jobManifestPath = await writeJobManifest(
+		createJobManifest({
+			jobId,
+			jobType: "batch",
+			params: { urls, ...options },
+			mode: options.mode,
+			format: options.format,
+		}),
+		options,
+	);
+	let manifestChain: Promise<void> = Promise.resolve();
 	const cache = new Map<
 		string,
 		Promise<
@@ -87,6 +115,7 @@ export async function runBatchScrape(
 			};
 
 	options.onProgress?.({ state: "queued", current: 0, total: urls.length });
+	await updateBatchJob("running", 0, 0);
 	async function worker(): Promise<void> {
 		while (next < urls.length) {
 			if (signal?.aborted)
@@ -103,6 +132,18 @@ export async function runBatchScrape(
 			items[index] = item.ok
 				? { ok: true, index, url, result: item.result }
 				: { ok: false, index, url, error: item.error };
+			if (item.ok) {
+				totalBytes += item.result.downloadedBytes ?? 0;
+				totalChars += resultChars(item.result);
+				if (item.result.truncated) truncatedPages += 1;
+			} else {
+				errors = appendJobError(errors, structuredErrorToJobError(item.error));
+			}
+			await updateBatchJob(
+				"running",
+				items.filter(Boolean).length,
+				errors.length,
+			);
 			options.onProgress?.({
 				state: item.ok ? "done" : "error",
 				current: index + 1,
@@ -140,27 +181,83 @@ export async function runBatchScrape(
 		}
 	}
 
-	await Promise.all(Array.from({ length: concurrency }, () => worker()));
+	try {
+		await Promise.all(Array.from({ length: concurrency }, () => worker()));
+	} catch (error) {
+		errors = appendJobError(errors, unknownToJobError(error, "batch"));
+		await updateBatchJob(
+			isAbortError(error, signal) ? "paused" : "error",
+			items.filter(Boolean).length,
+			errors.length,
+		);
+		throw error;
+	}
 	const completed = items.filter(Boolean) as BatchItemResult[];
 	const summary = summarize(completed);
 	if (options.storeFullResults === true) {
 		const metadata = await storeResult(completed, options);
+		await updateBatchJob("done", completed.length, errors.length, [
+			metadata.responseId,
+		]);
 		return {
 			items: completed,
 			responseId: metadata.responseId,
 			fullOutputPath: metadata.fullOutputPath,
+			jobId,
+			jobManifestPath,
 			truncated: false,
 			summary,
 		};
 	}
 	const truncated = await truncateAndStore(summary, completed, options);
+	await updateBatchJob(
+		"done",
+		completed.length,
+		errors.length,
+		truncated.metadata?.responseId
+			? [truncated.metadata.responseId]
+			: undefined,
+	);
 	return {
 		items: completed,
 		responseId: truncated.metadata?.responseId,
 		fullOutputPath: truncated.metadata?.fullOutputPath,
+		jobId,
+		jobManifestPath,
 		truncated: truncated.truncated,
 		summary: truncated.text,
 	};
+
+	async function updateBatchJob(
+		status: "running" | "done" | "error" | "paused",
+		urlsProcessed: number,
+		urlsFailed: number,
+		responseIds?: string[],
+	): Promise<void> {
+		manifestChain = manifestChain
+			.catch(() => undefined)
+			.then(async () => {
+				const updated = await updateJobManifest(
+					jobId,
+					{
+						status,
+						startedAt: new Date().toISOString(),
+						completedAt:
+							status === "running" ? undefined : new Date().toISOString(),
+						urlsProcessed,
+						urlsFailed,
+						errors,
+						totalBytes,
+						totalChars,
+						truncatedPages,
+						responseIds,
+					},
+					options,
+				);
+				jobManifestPath = updated.path;
+			});
+		await manifestChain;
+	}
 }
 
 function summarize(items: readonly BatchItemResult[]): string {
@@ -175,6 +272,22 @@ function safeCacheKey(url: string): string {
 	} catch {
 		return url;
 	}
+}
+
+function resultChars(result: ScrapeResult): number {
+	return (
+		result.data.markdown?.length ??
+		result.data.text?.length ??
+		result.data.html?.length ??
+		0
+	);
+}
+
+function isAbortError(error: unknown, signal?: AbortSignal): boolean {
+	return (
+		signal?.aborted === true ||
+		(error instanceof Error && error.name === "AbortError")
+	);
 }
 
 function toStructuredError(error: unknown, url: string): StructuredError {

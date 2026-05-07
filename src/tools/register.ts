@@ -4,6 +4,7 @@ import { webBatchTool } from "./web-batch.js";
 import { webCrawlTool } from "./web-crawl.js";
 import { webDiffTool } from "./web-diff.js";
 import { createWebExtractTool, webExtractTool } from "./web-extract.js";
+import { webGetResultTool } from "./web-get-result.js";
 import { webMapTool } from "./web-map.js";
 import { createWebScrapeTool, webScrapeTool } from "./web-scrape.js";
 import { createWebSummarizeTool, webSummarizeTool } from "./web-summarize.js";
@@ -16,6 +17,7 @@ export const webTools: readonly WebTool[] = [
 	webBatchTool,
 	webDiffTool,
 	webExtractTool,
+	webGetResultTool,
 ];
 
 export function registerWebTools(pi: PiToolRegistrar): void {

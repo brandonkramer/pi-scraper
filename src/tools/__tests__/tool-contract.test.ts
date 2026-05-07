@@ -10,6 +10,7 @@ const expectedNames = [
 	"web_batch",
 	"web_diff",
 	"web_extract",
+	"web_get_result",
 ] as const;
 
 const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
@@ -20,6 +21,7 @@ const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
 	web_diff: 180,
 	web_extract: 560,
 	web_summarize: 230,
+	web_get_result: 160,
 };
 
 const scrapeOnlyFields = [
@@ -56,6 +58,7 @@ const discriminatorChecks: Record<string, RegExp[]> = {
 		/patterns|regex/iu,
 		/JSON\/schema/iu,
 	],
+	web_get_result: [/retrieve/iu, /stored response|job manifest/iu],
 };
 
 describe("web tool contracts", () => {
@@ -73,7 +76,7 @@ describe("web tool contracts", () => {
 			0,
 		);
 
-		expect(totalTokens).toBeLessThanOrEqual(1800);
+		expect(totalTokens).toBeLessThanOrEqual(1960);
 		for (const stat of contractStats) {
 			const name = stat.name as (typeof expectedNames)[number];
 			expect(stat.tokens, stat.name).toBeLessThanOrEqual(

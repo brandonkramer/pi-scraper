@@ -9,6 +9,7 @@ import {
 	updateCrawlMetadata,
 } from "../crawl/state.js";
 import { crawlStaleness } from "../storage/freshness.js";
+import { updateJobManifest } from "../storage/jobs.js";
 import { storeResult } from "../storage/results.js";
 import type { AgenticNextAction, AgenticQualitySignals } from "../types.js";
 import {
@@ -140,6 +141,9 @@ async function crawlRun(
 	const finalStored = await storeResult(crawl, {
 		responseId: stored.responseId,
 	});
+	const manifest = await updateJobManifest(crawl.crawlId, {
+		responseIds: [finalStored.responseId],
+	});
 	const text = `Crawl ${crawl.crawlId}: ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}. responseId: ${finalStored.responseId}`;
 	return toolResult({
 		text,
@@ -154,6 +158,7 @@ async function crawlRun(
 		responseId: finalStored.responseId,
 		fullOutputPath: finalStored.fullOutputPath,
 		truncated: true,
+		diagnostics: { jobId: crawl.crawlId, jobManifestPath: manifest.path },
 		assistantGuidance: storedResultGuidance(),
 	});
 }

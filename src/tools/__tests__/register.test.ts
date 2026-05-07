@@ -10,6 +10,7 @@ const expectedNames = [
 	"web_batch",
 	"web_diff",
 	"web_extract",
+	"web_get_result",
 ];
 
 describe("web tool registration", () => {
