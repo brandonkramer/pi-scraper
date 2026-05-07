@@ -77,7 +77,18 @@ export function renderWebCrawlResult(
 	const failed = metadata?.failedCount ?? 0;
 	const title = envelope.error
 		? errorTitle("web_crawl", envelope.error)
-		: `${successCountSegment(metadata?.succeededCount ?? 0, "succeeded", theme)} · ${failureCountSegment(failed, "failed", theme)} · ${activityCountSegment(metadata?.visitedCount ?? 0, "visited", "🌐", theme)} · → frontier ${metadata?.frontierCount ?? 0}`;
+		: [
+				successCountSegment(metadata?.succeededCount ?? 0, "succeeded", theme),
+				failureCountSegment(failed, "failed", theme),
+				activityCountSegment(
+					metadata?.visitedCount ?? 0,
+					"visited",
+					"🌐",
+					theme,
+				),
+				neutralText(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
+			]
+				.join(separator(theme));
 	return renderChecklistResult(title, expanded, {
 		items: [
 			{ label: "robots checked", state: "done" },
@@ -109,7 +120,12 @@ export function renderWebBatchResult(
 	).length;
 	const title = envelope.error
 		? errorTitle("web_batch", envelope.error)
-		: `${successCountSegment(succeeded, "succeeded", theme)} · ${failureCountSegment(failed, "failed", theme)} · ${activityCountSegment(cacheHits, "cache hits", "🔄", theme)}`;
+		: [
+				successCountSegment(succeeded, "succeeded", theme),
+				failureCountSegment(failed, "failed", theme),
+				activityCountSegment(cacheHits, "cache hits", "🔄", theme),
+			]
+				.join(separator(theme));
 	return renderChecklistResult(title, expanded, {
 		items: [
 			{ label: `${succeeded} succeeded`, state: succeeded ? "done" : "info" },
@@ -233,7 +249,9 @@ function renderChecklistResult(
 	},
 ): RenderComponent {
 	if (!expanded) {
-		const id = options.responseId ? ` · responseId: ${options.responseId}` : "";
+		const id = options.responseId
+			? `${separator()}${neutralText(`responseId: ${options.responseId}`)}`
+			: "";
 		return renderText(`${title}${id}`.slice(0, 240));
 	}
 	const lines = [title];
@@ -303,7 +321,7 @@ function successCountSegment(
 	theme?: RenderTheme,
 ): string {
 	const text = `${count} ${label}`;
-	if (count <= 0) return text;
+	if (count <= 0) return neutralText(text, theme);
 	return successText(`✅ ${text}`, theme);
 }
 
@@ -340,6 +358,16 @@ function activityText(text: string, theme?: RenderTheme): string {
 	const themed = theme?.fg?.("warning", text) ?? theme?.fg?.("accent", text);
 	if (themed) return themed;
 	return `\u001B[38;2;199;211;111m${text}\u001B[0m`;
+}
+
+function neutralText(text: string, theme?: RenderTheme): string {
+	const themed = theme?.fg?.("muted", text);
+	if (themed) return themed;
+	return `\u001B[38;2;139;145;134m${text}\u001B[0m`;
+}
+
+function separator(theme?: RenderTheme): string {
+	return `${neutralText(" · ", theme)}`;
 }
 
 function formatChecklistItem(item: ChecklistItem): string {
