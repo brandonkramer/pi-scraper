@@ -18,8 +18,7 @@ type Params = Static<typeof webMapSchema>;
 export const webMapTool = defineWebTool({
 	name: "web_map",
 	label: "Map",
-	description:
-		"URLs from robots/sitemaps/llms.txt; does not fetch page content.",
+	description: "URLs from robots/sitemaps/llms.txt; no page bodies.",
 	parameters: webMapSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();

@@ -30,7 +30,7 @@ type Params = Static<typeof webDiffSchema>;
 export const webDiffTool = defineWebTool({
 	name: "web_diff",
 	label: "Diff",
-	description: "Compare one URL with a stored/named snapshot.",
+	description: "Compare URL with saved/named snapshot.",
 	parameters: webDiffSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();
