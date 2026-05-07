@@ -32,9 +32,17 @@ function stripLargeElements(html: string): string {
 	const hasTable = html.includes('<table');
 	const hasList = html.includes('<ul') || html.includes('<ol');
 	if (!hasTable && !hasList) return html;
-	// Count elements only if present
-	const trCount = hasTable ? (html.match(/<tr/gi) ?? []).length : 0;
-	const liCount = hasList ? (html.match(/<li/gi) ?? []).length : 0;
+	// Count elements only if present - use efficient regex
+	let trCount = 0;
+	let liCount = 0;
+	if (hasTable) {
+		const trMatches = html.match(/<tr[\s>]/gi);
+		trCount = trMatches ? trMatches.length : 0;
+	}
+	if (hasList) {
+		const liMatches = html.match(/<li[\s>]/gi);
+		liCount = liMatches ? liMatches.length : 0;
+	}
 	if (trCount < 20 && liCount < 100) return html;
 	// Strip tables and/or lists if thresholds exceeded
 	let result = html;
