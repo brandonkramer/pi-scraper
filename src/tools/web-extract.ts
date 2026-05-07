@@ -7,10 +7,7 @@ import {
 	PatternInspectError,
 	type PatternInspectOptions,
 } from "../extract/pattern.js";
-import {
-	listExtractorCapabilities,
-	runVerticalExtractor,
-} from "../extract/registry.js";
+import type { VerticalExtractionResult } from "../extract/capabilities.js";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.js";
 import { qualityFromCache, storedResultGuidance } from "./agentic-context.js";
 import { defineWebTool, type WebTool } from "./define.js";
@@ -130,7 +127,8 @@ function hasPatternRequest(params: Params): boolean {
 	);
 }
 
-function listDeterministicExtractors() {
+async function listDeterministicExtractors() {
+	const { listExtractorCapabilities } = await import("../extract/registry.js");
 	const capabilities = listExtractorCapabilities();
 	return toolResult({
 		text: `${capabilities.length} extractor(s): ${capabilities.map((item) => item.name).join(", ")}`,
@@ -165,6 +163,7 @@ async function runDeterministicExtractor(
 		url: params.url,
 		message: `extractor ${params.extractor}`,
 	});
+	const { runVerticalExtractor } = await import("../extract/registry.js");
 	const result = await runVerticalExtractor(
 		params.extractor,
 		params.url,
@@ -198,7 +197,7 @@ async function runDeterministicExtractor(
 
 function verticalExtractorText(
 	extractor: string | undefined,
-	result: Awaited<ReturnType<typeof runVerticalExtractor>>,
+	result: VerticalExtractionResult,
 ): string {
 	const name = extractor ?? result.extractor;
 	const blocked = blockedSource(result.data);
@@ -228,7 +227,7 @@ function verticalExtractorText(
 
 function verticalExtractorGuidance(
 	extractor: string | undefined,
-	result: Awaited<ReturnType<typeof runVerticalExtractor>>,
+	result: VerticalExtractionResult,
 ): string | undefined {
 	const guidance = blockedGuidance(extractor ?? result.extractor);
 	return result.error || blockedSource(result.data) ? guidance : undefined;
