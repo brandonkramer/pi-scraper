@@ -107,7 +107,7 @@ describe("web tool renderers", () => {
 		expect(doneTitle).toContain("web_crawl https://example.com max 1");
 		expect(doneTitle).not.toContain("✓ web_crawl");
 		expect(collapsed).toContain(
-			"✅ 2 succeeded\u001B[0m · \u001B[38;2;239;118;122m❌ 1 failed\u001B[0m · ◉ 3 visited · → frontier 0",
+			"✅ 2 succeeded\u001B[0m · \u001B[38;2;239;118;122m❌ 1 failed\u001B[0m · \u001B[38;2;199;211;111m🌐 3 visited\u001B[0m · → frontier 0",
 		);
 		expect(collapsed).not.toContain("✓ web_crawl");
 		expect(expanded).toContain("✓ robots checked");
@@ -141,7 +141,8 @@ describe("web tool renderers", () => {
 		expect(doneTitle).not.toContain("✓ web_batch");
 		expect(collapsed).toContain("✅ 1 succeeded");
 		expect(collapsed).toContain("❌ 1 failed");
-		expect(collapsed).toContain("↻ 1 cache hits");
+		expect(collapsed).toContain("🔄 1 cache hits");
+		expect(collapsed).toContain("\u001B[38;2;199;211;111m🔄 1 cache hits\u001B[0m");
 	});
 
 	it("uses failed icon and color even when failed count is zero", () => {
@@ -155,6 +156,8 @@ describe("web tool renderers", () => {
 
 		expect(collapsed).toContain("❌ 0 failed");
 		expect(collapsed).toContain("\u001B[38;2;239;118;122m❌ 0 failed\u001B[0m");
+		expect(collapsed).toContain("🔄 0 cache hits");
+		expect(collapsed).toContain("\u001B[38;2;199;211;111m🔄 0 cache hits\u001B[0m");
 	});
 
 	it("omits success icons when batch and crawl succeeded counts are zero", () => {
