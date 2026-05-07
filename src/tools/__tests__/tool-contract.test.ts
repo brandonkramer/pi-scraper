@@ -45,7 +45,10 @@ const discriminatorChecks: Record<string, RegExp[]> = {
 	web_scrape: [/read|fetch|extract/iu, /summarize/iu, /one URL|content/iu],
 	web_summarize: [/summarize/iu, /one URL|content/iu, /multi-source/iu],
 	web_crawl: [/crawl/iu, /status|list/iu, /pages|linked-page/iu],
-	web_map: [/robots\/sitemaps\/llms/iu, /no page bodies|does not fetch page content/iu],
+	web_map: [
+		/robots\/sitemaps\/llms/iu,
+		/no bodies|no page bodies|does not fetch page content/iu,
+	],
 	web_batch: [/independent URLs/iu, /per-URL/iu],
 	web_diff: [/compare/iu, /snapshot/iu],
 	web_extract: [/deterministic/iu, /patterns|regex/iu, /JSON\/schema/iu],
