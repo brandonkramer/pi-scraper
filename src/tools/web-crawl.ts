@@ -1,4 +1,4 @@
-import { type Static, StringEnum, Type } from "@mariozechner/pi-ai";
+import { type Static, Type } from "@mariozechner/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
 import { runCrawl } from "../crawl/runner.js";
 import {
@@ -25,10 +25,9 @@ import { toolResult } from "./result.js";
 import { crawlScrapeOptionSchema, urlProperty } from "./schemas.js";
 
 const crawlActions = ["run", "status", "list"] as const;
-const crawlStatuses = ["queued", "running", "paused", "done", "error"] as const;
 
 export const webCrawlSchema = Type.Object({
-	action: Type.Optional(StringEnum(crawlActions)),
+	action: Type.Optional(Type.String()),
 	url: Type.Optional(urlProperty()),
 	maxPages: Type.Optional(Type.Number()),
 	maxDepth: Type.Optional(Type.Number()),
