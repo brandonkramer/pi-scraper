@@ -43,6 +43,7 @@
     "test:tools": "vitest run src/tools/__tests__/tools-smoke.test.ts --reporter=verbose --exclude '.pi/**' --exclude '**/.pi/**'",
     "test:selection": "vitest run src/tools/__tests__/tool-contract.test.ts src/tools/__tests__/tool-selection-fixtures.test.ts --reporter=verbose --exclude '.pi/**' --exclude '**/.pi/**'",
     "eval:selection": "node eval/tool-selection/run-selection-eval.mjs",
+    "eval:selection:pi": "PI_TOOL_SELECTION_EVAL_COMMAND='node eval/tool-selection/pi-model-command.mjs' node eval/tool-selection/run-selection-eval.mjs",
     "smoke:install": "npm run bench:suite -- install-smoke",
     "smoke:live": "vitest run src/tools/__tests__/tools-smoke.live.test.ts --reporter=verbose",
     "smoke:browser": "vitest run src/browser/__tests__/browser-smoke.test.ts --reporter=verbose",
