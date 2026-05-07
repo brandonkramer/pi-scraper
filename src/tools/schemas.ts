@@ -7,8 +7,8 @@ export const outputFormatSchema = StringEnum(OUTPUT_FORMATS);
 export const headersSchema = Type.Record(Type.String(), Type.String());
 
 export const commonRequestSchema = {
-	timeoutSeconds: Type.Optional(Type.Number()),
-	maxChars: Type.Optional(Type.Number()),
+	timeoutSeconds: Type.Optional(Type.Any()),
+	maxChars: Type.Optional(Type.Any()),
 	proxy: Type.Optional(Type.Any()),
 	respectRobots: Type.Optional(Type.Any()),
 	refresh: Type.Optional(Type.Any()),
