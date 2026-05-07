@@ -23,7 +23,7 @@ import { renderWebScrapeResult, renderWebToolCall } from "./web-renderers.js";
 const scrapeTasks = ["read", "summarize"] as const;
 
 export const webScrapeSchema = Type.Object({
-	task: Type.Optional(Type.String()),
+	task: Type.Optional(Type.Any()),
 	url: Type.Optional(urlProperty()),
 	content: Type.Optional(Type.String()),
 	sentences: Type.Optional(Type.Any()),
