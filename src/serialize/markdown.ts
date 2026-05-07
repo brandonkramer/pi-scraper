@@ -20,7 +20,17 @@ export function htmlToMarkdown(
 ): string {
 	const service =
 		options.removeImages === false ? keepImagesService : removeImagesService;
-	return normalizeWhitespace(service.turndown(html));
+	return normalizeWhitespace(service.turndown(stripLargeTables(html)));
+}
+
+/** Strip tables from very large HTML to avoid expensive Turndown conversion
+ *  on table-heavy pages where the output is likely to be truncated anyway.
+ *  Only applies when HTML exceeds 40 KB and contains 20+ table rows. */
+function stripLargeTables(html: string): string {
+	if (html.length < 40_000) return html;
+	const trCount = (html.match(/<tr/gi) ?? []).length;
+	if (trCount < 20) return html;
+	return html.replace(/<table[\s\S]*?<\/table>/gi, "\n\n");
 }
 
 function createMarkdownService(removeImages: boolean): TurndownService {
