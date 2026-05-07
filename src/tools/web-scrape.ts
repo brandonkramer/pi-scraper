@@ -26,8 +26,8 @@ export const webScrapeSchema = Type.Object({
 	task: Type.Optional(Type.String()),
 	url: Type.Optional(urlProperty()),
 	content: Type.Optional(Type.String()),
-	sentences: Type.Optional(Type.Number()),
-	bullets: Type.Optional(Type.Number()),
+	sentences: Type.Optional(Type.Any()),
+	bullets: Type.Optional(Type.Any()),
 	...scrapeOptionSchema,
 });
 
