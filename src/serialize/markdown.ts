@@ -29,8 +29,8 @@ export function htmlToMarkdown(
 function stripLargeElements(html: string): string {
 	if (html.length < 40_000) return html;
 	// Quick check: does HTML contain tables or lists at all?
-	const hasTable = html.includes('<table');
-	const hasList = html.includes('<ul') || html.includes('<ol');
+	const hasTable = html.includes("<table");
+	const hasList = html.includes("<ul") || html.includes("<ol");
 	if (!hasTable && !hasList) return html;
 	// Count elements only if present - use efficient regex
 	let trCount = 0;
