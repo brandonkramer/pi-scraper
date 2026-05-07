@@ -75,6 +75,9 @@ function buildExtraction(
 	dataIslands: DataIslandContent[],
 	mainCandidates: MainContentCandidate[],
 ): FastPageExtraction {
+	const text = visibleText(dom, root);
+	const recovered =
+		text.length < 1000 ? recoverUsefulContent(dom, url) : [];
 	return {
 		url,
 		title: metadata.title,
@@ -82,10 +85,10 @@ function buildExtraction(
 		metadata,
 		headings: extractHeadings(dom),
 		links: extractLinks(dom, url),
-		text: visibleText(dom, root),
+		text,
 		html: outerHtml(dom, root),
 		dataIslands,
-		recovered: recoverUsefulContent(dom, url),
+		recovered,
 		mainCandidates,
 	};
 }
