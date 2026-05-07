@@ -22,12 +22,10 @@ const crawlStatuses = ["queued", "running", "paused", "done", "error"] as const;
 export const webCrawlsSchema = Type.Object({
 	seed: Type.Optional(
 		Type.String({
-			description: "Optional seed URL prefix to filter prior crawls.",
+			description: "Seed URL prefix filter.",
 		}),
 	),
-	status: Type.Optional(
-		StringEnum(crawlStatuses, { description: "Optional crawl status filter." }),
-	),
+	status: Type.Optional(StringEnum(crawlStatuses)),
 	limit: Type.Optional(Type.Number({ minimum: 1, maximum: 100, default: 20 })),
 });
 
@@ -42,8 +40,7 @@ type CrawlEntry = CrawlMetadata & {
 export const webCrawlsTool = defineWebTool({
 	name: "web_crawls",
 	label: "Web Crawls",
-	description:
-		"List prior local crawls from the SQLite scraper index, including staleness and recommended action.",
+	description: "List prior local crawls with staleness and recommended action.",
 	parameters: webCrawlsSchema,
 	async execute(_toolCallId, params: Params) {
 		const crawls = await listCrawlMetadata({

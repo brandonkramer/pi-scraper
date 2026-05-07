@@ -1,4 +1,5 @@
 import { type Static, Type } from "@mariozechner/pi-ai";
+import { loadEffectiveConfig } from "../config/settings.js";
 import { extractAdHoc, MissingExtractInputError } from "../extract/ad-hoc.js";
 import type { ModelAdapter } from "../extract/model.js";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.js";
@@ -11,22 +12,20 @@ import {
 	structuredToolError,
 	toolResult,
 } from "./result.js";
-import { scrapeOptionSchema, urlProperty } from "./schemas.js";
+import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
 
 export const webExtractSchema = Type.Object({
-	url: Type.Optional(urlProperty("Page URL to scrape before extraction.")),
+	url: Type.Optional(urlProperty()),
 	content: Type.Optional(
 		Type.String({
-			description: "Already scraped/provided content to extract from.",
+			description: "Text input.",
 		}),
 	),
 	prompt: Type.Optional(
-		Type.String({ description: "Natural-language extraction instructions." }),
+		Type.String({ description: "Extraction instructions." }),
 	),
-	schema: Type.Optional(
-		Type.Unknown({ description: "Desired JSON schema for extraction." }),
-	),
-	...scrapeOptionSchema,
+	schema: Type.Optional(Type.Unknown({ description: "Output JSON schema." })),
+	...scrapeModeOptionSchema,
 });
 
 type Params = Static<typeof webExtractSchema>;
@@ -43,9 +42,10 @@ export function createWebExtractTool(
 		name: "web_extract",
 		label: "Web Extract",
 		description:
-			"Ad hoc JSON/schema extraction from one page. Scrapes clean text first, then uses Pi model/LLM execution; use web_vertical_scrape for deterministic known-site extractors.",
+			"Ad hoc LLM JSON/schema extraction from page/content. Use web_vertical_scrape for known-site deterministic data.",
 		parameters: webExtractSchema,
 		async execute(_toolCallId, params: Params, signal) {
+			const config = await loadEffectiveConfig();
 			if (!options.modelAdapter) {
 				return errorResult(
 					missingModelError("extract", params.url),
@@ -54,7 +54,12 @@ export function createWebExtractTool(
 			}
 			try {
 				const result = await extractAdHoc(
-					params,
+					{
+						...config.scrapeDefaults,
+						...params,
+						mode: params.mode ?? config.scrapeMode,
+						format: config.outputFormat,
+					},
 					options.modelAdapter,
 					options.scrapeDeps ?? {},
 					signal,

@@ -1,5 +1,6 @@
 import { Type, type Static } from "@mariozechner/pi-ai";
 import { runBatchScrape } from "../batch/run.js";
+import { loadEffectiveConfig } from "../config/settings.js";
 import {
 	retrieveResultAction,
 	storedResultGuidance,
@@ -8,12 +9,12 @@ import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
 import { renderWebBatchResult, renderWebToolCall } from "./web-renderers.js";
 import { toolResult } from "./result.js";
-import { scrapeOptionSchema, urlProperty } from "./schemas.js";
+import { scrapeOutputOptionSchema, urlProperty } from "./schemas.js";
 
 export const webBatchSchema = Type.Object({
-	urls: Type.Array(urlProperty("URL to scrape."), { minItems: 1 }),
+	urls: Type.Array(urlProperty(), { minItems: 1 }),
 	concurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 32 })),
-	...scrapeOptionSchema,
+	...scrapeOutputOptionSchema,
 });
 
 type Params = Static<typeof webBatchSchema>;
@@ -22,13 +23,17 @@ export const webBatchTool = defineWebTool({
 	name: "web_batch",
 	label: "Web Batch",
 	description:
-		"Scrape many independent URLs with web_scrape semantics. Local-first; failures are returned per URL instead of failing the entire batch.",
+		"Scrape independent URLs with web_scrape semantics; returns per-URL success/failure.",
 	parameters: webBatchSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
+		const config = await loadEffectiveConfig();
 		const result = await runBatchScrape(
 			params.urls,
 			{
+				...config.scrapeDefaults,
 				...params,
+				mode: params.mode ?? config.scrapeMode,
+				format: params.format ?? config.outputFormat,
 				storeFullResults: true,
 				onProgress: (progress) =>
 					void emitProgress(onUpdate, {

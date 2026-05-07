@@ -25,16 +25,27 @@ describe("web config settings", () => {
 		const config = await loadEffectiveConfig({ rootDir });
 		expect(config.scrapeMode).toBe("auto");
 		expect(config.outputFormat).toBe("markdown");
+		expect(config.scrapeDefaults).toEqual({});
 	});
 
 	it("persists and merges scrape settings", async () => {
-		await saveConfig({ scrapeMode: "fast" }, { rootDir });
-		await updateConfig({ outputFormat: "text" }, { rootDir });
+		await saveConfig(
+			{ scrapeMode: "fast", scrapeDefaults: { timeoutSeconds: 5 } },
+			{ rootDir },
+		);
+		await updateConfig(
+			{ outputFormat: "text", scrapeDefaults: { maxBytes: 4096 } },
+			{ rootDir },
+		);
 		const stored = await loadStoredConfig({ rootDir });
 		const effective = await loadEffectiveConfig({ rootDir });
 		expect(configFilePath({ rootDir })).toContain(path.join(rootDir, "config"));
 		expect(stored.scrapeMode).toBe("fast");
 		expect(effective.scrapeMode).toBe("fast");
 		expect(effective.outputFormat).toBe("text");
+		expect(effective.scrapeDefaults).toMatchObject({
+			timeoutSeconds: 5,
+			maxBytes: 4096,
+		});
 	});
 });

@@ -6,21 +6,33 @@ import {
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
 } from "../storage/paths.js";
-import type { OutputFormat, ScrapeMode } from "../types.js";
+import type {
+	CommonScrapeOptions,
+	OutputFormat,
+	ScrapeMode,
+} from "../types.js";
+
+type PersistedScrapeDefaults = Partial<
+	Omit<CommonScrapeOptions, "mode" | "format">
+>;
 
 export interface WebConfig {
 	scrapeMode?: ScrapeMode;
 	outputFormat?: OutputFormat;
+	scrapeDefaults?: PersistedScrapeDefaults;
 }
 
 export interface EffectiveWebConfig
-	extends Required<Pick<WebConfig, "scrapeMode" | "outputFormat">> {}
+	extends Required<Pick<WebConfig, "scrapeMode" | "outputFormat">> {
+	scrapeDefaults: PersistedScrapeDefaults;
+}
 
 export interface ConfigOptions extends ResolveStorageOptions {}
 
 export const DEFAULT_WEB_CONFIG: EffectiveWebConfig = {
 	scrapeMode: DEFAULT_SCRAPE_MODE,
 	outputFormat: DEFAULT_OUTPUT_FORMAT,
+	scrapeDefaults: {},
 };
 
 export function configFilePath(options: ConfigOptions = {}): string {
@@ -64,11 +76,29 @@ export async function updateConfig(
 	options: ConfigOptions = {},
 ): Promise<EffectiveWebConfig> {
 	const current = await loadStoredConfig(options);
-	return saveConfig({ ...current, ...stripUndefined(patch) }, options);
+	const cleaned = stripUndefined(patch);
+	return saveConfig(
+		{
+			...current,
+			...cleaned,
+			scrapeDefaults: {
+				...current.scrapeDefaults,
+				...cleaned.scrapeDefaults,
+			},
+		},
+		options,
+	);
 }
 
 export function mergeConfig(config: WebConfig): EffectiveWebConfig {
-	return { ...DEFAULT_WEB_CONFIG, ...config };
+	return {
+		...DEFAULT_WEB_CONFIG,
+		...config,
+		scrapeDefaults: {
+			...DEFAULT_WEB_CONFIG.scrapeDefaults,
+			...config.scrapeDefaults,
+		},
+	};
 }
 
 function normalizeConfig(input: unknown): WebConfig {
@@ -77,11 +107,48 @@ function normalizeConfig(input: unknown): WebConfig {
 	return {
 		scrapeMode: raw.scrapeMode,
 		outputFormat: raw.outputFormat,
+		scrapeDefaults: normalizeScrapeDefaults(raw.scrapeDefaults),
 	};
 }
 
-function stripUndefined(config: WebConfig): WebConfig {
+function normalizeScrapeDefaults(
+	input: unknown,
+): PersistedScrapeDefaults | undefined {
+	if (typeof input !== "object" || input === null) return undefined;
+	const raw = input as PersistedScrapeDefaults;
+	return stripUndefined({
+		timeoutSeconds: raw.timeoutSeconds,
+		maxBytes: raw.maxBytes,
+		maxChars: raw.maxChars,
+		headers: normalizeHeaders(raw.headers),
+		proxy: raw.proxy,
+		respectRobots: raw.respectRobots,
+		cacheTtlSeconds: raw.cacheTtlSeconds,
+		maxAgeSeconds: raw.maxAgeSeconds,
+		refresh: raw.refresh,
+		include: raw.include,
+		exclude: raw.exclude,
+		onlyMainContent: raw.onlyMainContent,
+		removeImages: raw.removeImages,
+		cookies: raw.cookies,
+		browserProfile: raw.browserProfile,
+		osProfile: raw.osProfile,
+	}) as PersistedScrapeDefaults;
+}
+
+function normalizeHeaders(
+	headers: unknown,
+): Record<string, string> | undefined {
+	if (typeof headers !== "object" || headers === null) return undefined;
+	return Object.fromEntries(
+		Object.entries(headers).filter(
+			(entry): entry is [string, string] => typeof entry[1] === "string",
+		),
+	);
+}
+
+function stripUndefined<T extends object>(config: T): Partial<T> {
 	return Object.fromEntries(
 		Object.entries(config).filter(([, value]) => value !== undefined),
-	) as WebConfig;
+	) as Partial<T>;
 }

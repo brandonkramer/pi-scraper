@@ -17,10 +17,10 @@ import { toolResult } from "./result.js";
 import { urlProperty } from "./schemas.js";
 
 export const webHistorySchema = Type.Object({
-	url: urlProperty("URL whose prior local scrapes/fetches should be listed."),
+	url: urlProperty(),
 	since: Type.Optional(
 		Type.String({
-			description: "Relative duration like 1h, 24h, 7d, or ISO 8601 timestamp.",
+			description: "Since: 1h, 24h, 7d, or ISO time.",
 		}),
 	),
 	limit: Type.Optional(Type.Number({ minimum: 1, maximum: 100, default: 10 })),
@@ -33,8 +33,7 @@ type HistoryEntry = Record<string, unknown> & { kind: "response" | "fetch" };
 export const webHistoryTool = defineWebTool({
 	name: "web_history",
 	label: "Web History",
-	description:
-		"List prior local scrapes and raw fetches for a URL from the SQLite scraper index.",
+	description: "List prior local scrapes/fetches for one URL.",
 	parameters: webHistorySchema,
 	async execute(_toolCallId, params: Params) {
 		const since = parseSince(params.since);

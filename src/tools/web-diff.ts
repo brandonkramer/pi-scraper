@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { type Static, Type } from "@mariozechner/pi-ai";
+import { loadEffectiveConfig } from "../config/settings.js";
 import {
 	diffScrapeResult,
 	type SnapshotDiffResult,
@@ -16,17 +17,16 @@ import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
 import { renderWebDiffResult, renderWebToolCall } from "./web-renderers.js";
 import { toolResult } from "./result.js";
-import { scrapeOptionSchema, urlProperty } from "./schemas.js";
+import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
 
 export const webDiffSchema = Type.Object({
-	url: urlProperty("URL to re-scrape and compare against cached snapshot."),
+	url: urlProperty("URL to diff."),
 	snapshotName: Type.Optional(
 		Type.String({
-			description:
-				"Optional human-readable baseline name, such as homepage or docs-home.",
+			description: "Baseline name, e.g. homepage.",
 		}),
 	),
-	...scrapeOptionSchema,
+	...scrapeModeOptionSchema,
 });
 
 type Params = Static<typeof webDiffSchema>;
@@ -34,10 +34,10 @@ type Params = Static<typeof webDiffSchema>;
 export const webDiffTool = defineWebTool({
 	name: "web_diff",
 	label: "Web Diff",
-	description:
-		"Re-scrape one URL with the shared pipeline, compare to an unnamed or named snapshot, and store deterministic snapshot metadata under ~/.pi/scraper/snapshots/.",
+	description: "Re-scrape one URL and compare with a stored or named snapshot.",
 	parameters: webDiffSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
+		const config = await loadEffectiveConfig();
 		await emitProgress(onUpdate, {
 			state: "loading",
 			url: params.url,
@@ -46,7 +46,17 @@ export const webDiffTool = defineWebTool({
 				: "diffing against snapshot",
 		});
 		const diff = await diffScrapeResult(
-			await scrapeUrl(params.url, params, {}, signal),
+			await scrapeUrl(
+				params.url,
+				{
+					...config.scrapeDefaults,
+					...params,
+					mode: params.mode ?? config.scrapeMode,
+					format: config.outputFormat,
+				},
+				{},
+				signal,
+			),
 			{ snapshotName: params.snapshotName },
 		);
 		const responseId = randomUUID();
@@ -87,8 +97,7 @@ export const webDiffTool = defineWebTool({
 			theme,
 			context,
 		),
-	renderResult: (result, { expanded }) =>
-		renderWebDiffResult(result, expanded),
+	renderResult: (result, { expanded }) => renderWebDiffResult(result, expanded),
 });
 
 function shapeDiffResult(diff: SnapshotDiffResult, responseId: string) {

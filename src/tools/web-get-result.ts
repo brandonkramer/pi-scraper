@@ -10,32 +10,27 @@ import { structuredToolError, toolResult } from "./result.js";
 export const webGetResultSchema = Type.Object({
 	responseId: Type.Optional(
 		Type.String({
-			description:
-				"Stored response id returned by crawl, batch, diff, or large scrape results.",
+			description: "Stored result id from scrape/crawl/batch/diff.",
 		}),
 	),
 	crawlId: Type.Optional(
 		Type.String({
-			description:
-				"Persisted crawl id whose status metadata should be retrieved from local crawl storage.",
+			description: "Crawl id for status metadata.",
 		}),
 	),
 	snapshotUrl: Type.Optional(
 		Type.String({
-			description:
-				"Optional URL whose web_diff snapshot metadata should be retrieved or listed.",
+			description: "URL for diff snapshot metadata/listing.",
 		}),
 	),
 	snapshotName: Type.Optional(
 		Type.String({
-			description:
-				"Optional named web_diff snapshot baseline, such as homepage.",
+			description: "Named diff snapshot baseline.",
 		}),
 	),
 	listSnapshots: Type.Optional(
 		Type.Boolean({
-			description:
-				"List web_diff snapshot metadata instead of retrieving one stored response.",
+			description: "List diff snapshots instead of stored output.",
 		}),
 	),
 });
@@ -51,7 +46,7 @@ export function createWebGetResultTool(deps: WebGetResultDeps = {}) {
 		name: "web_get_result",
 		label: "Web Get Result",
 		description:
-			"Retrieve full locally stored output by responseId, crawl status metadata by crawlId, or web_diff snapshot metadata by URL/name.",
+			"Retrieve stored output by responseId, crawl status by crawlId, or diff snapshots.",
 		parameters: webGetResultSchema,
 		async execute(_toolCallId, params: Params) {
 			if (params.responseId)

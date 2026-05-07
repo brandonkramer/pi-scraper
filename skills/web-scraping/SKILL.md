@@ -1,52 +1,40 @@
 ---
 name: web-scraping
-description: Guidance for choosing pi-scraper web tools for scraping, mapping, crawling, extraction, and page-scoped structured workflows.
+description: Choose pi-scraper web_* tools for scraping, mapping, crawling, extraction, stored results, and page-scoped workflows.
 ---
 
 # Web Scraping
 
-Use this skill when deciding which `pi-scraper` tool to call.
+Use when selecting a `pi-scraper` tool. pi-scraper is local-first and does not own broad search/research.
 
-## Tool choice
+## Dispatch
 
-- Use `web_scrape` to read one URL.
-- Use `web_map` to inventory site URLs without fetching page content.
-- Use `web_crawl` to recursively fetch and extract pages from a site.
-- Use `web_batch` for many independent URLs.
-- Use `web_brand` for colors, fonts, logos, favicons, manifests, Schema.org, Open Graph, and Twitter assets.
-- Use `web_diff` to compare current content to unnamed or named cached snapshots; pass `snapshotName` for repeatable baselines like `homepage` and reuse names to avoid unbounded local snapshot growth.
-- Use `web_list_extractors` before `web_vertical_scrape` to inspect available deterministic extractors and their capabilities.
-- Use `web_vertical_scrape` for known site types with deterministic API/feed parsing.
-- For npm package metadata, construct or accept `npmx.dev/package/<name>` URLs for the `npm` vertical extractor when the user names a package without a URL; it resolves to compact npm registry endpoints internally. If the user asks to scrape/read an npm package page rather than extract typed metadata, prefer `web_scrape` on `https://npmx.dev/package/<name>` over npmjs.com.
-- Use `web_vertical_scrape` with `extractor: deepwiki` for `https://deepwiki.com/owner/repo` URLs. When a GitHub repo README is sparse or when an npm package points to a GitHub repo that has DeepWiki coverage, consider DeepWiki as a fallback for richer generated documentation, architecture diagrams, and section navigation.
-- Use `web_extract` for ad hoc schema/prompt extraction from an arbitrary page; this needs a model-backed adapter.
-- Use `web_summarize` for one-page summaries.
-- Use `web_get_result` when a previous scraper/crawl/batch/diff tool returned a `responseId`; use `crawlId` for persisted crawl status metadata, or `snapshotUrl`, `snapshotName`, and `listSnapshots` for diff snapshot metadata.
-- Use `web_history` to find prior scrapes for a URL before deciding whether to refetch; follow returned `responseId` values with `web_get_result`.
-- Use `web_crawls` to find prior crawls; `recommendedAction` is `resume` for fresh running/paused crawls, `reuse_results` for fresh or aging done crawls, `recrawl` for stale/expired done crawls, `discard` for old error crawls, and `inspect` otherwise.
-- Use `web_search_scrapes` for full-text recall across stored markdown when available; handle `{ supported: false }` as a clean negative result.
+- one URL read/extract as markdown/html/text/json → `web_scrape`
+- many independent URLs; per-URL success/failure → `web_batch`
+- robots/sitemaps/llms URL inventory only; do not read page bodies → `web_map`
+- follow links and read pages recursively; depth/page limits; resume via `crawlId` → `web_crawl`
+- brand assets: colors, fonts, logos, favicons, manifest, JSON-LD, Open Graph/Twitter → `web_brand`
+- compare current URL with saved/named snapshot; use stable `snapshotName` → `web_diff`
+- list deterministic extractor names, URL patterns, schemas, capabilities → `web_list_extractors`
+- known-site typed JSON via deterministic API/feed extractor → `web_vertical_scrape`
+- arbitrary page/content JSON/schema extraction; LLM/model-backed; no deterministic vertical applies → `web_extract`
+- one page/content summary; not multi-source research → `web_summarize`
+- retrieve `responseId`, crawl status by `crawlId`, or diff snapshot metadata → `web_get_result`
+- prior local scrapes/fetches for one URL; follow `responseId` with `web_get_result` → `web_history`
+- prior crawls/status/staleness/recommended action → `web_crawls`
+- search stored scrape text with SQLite FTS5; `{ supported: false }` is a clean negative → `web_search_scrapes`
 
-## Defaults
+## Rules
 
-Prefer local-first paths:
+- Use search/research companion tools for source discovery, recent/open-ended search, or multi-source synthesis; then scrape selected URLs with `web_scrape`/`web_batch`.
+- Prefer `web_map` before `web_crawl` for site structure or URL inventory; use `web_crawl` when the user wants linked pages read.
+- For long crawls use stable `crawlId`; repeat same `crawlId` to resume.
+- Prefer deterministic `web_vertical_scrape` over ad hoc `web_extract` for supported known sites.
+- Use `web_history`/`web_get_result` only when stale data is acceptable. Scrape fresh or set `refresh` for time-sensitive prices/news/status/availability facts.
+- Browser/fingerprint/proxy are escalation paths only when requested or static/readable/data-island extraction is insufficient.
+- Do not promise CAPTCHA solving, residential proxy rotation, stealth, or guaranteed protected-site access; return structured blocked/error results.
 
-1. Try `web_scrape` with `mode: "auto"`.
-2. Use `web_map` before `web_crawl` when the user asks for site structure or URL inventory.
-3. For long crawls, pass a stable `crawlId`; call `web_crawl` again with the same `crawlId` to resume, or call `web_get_result` with that `crawlId` to check counts, frontier size, status, last error, and final `responseId`.
-4. Cache is opt-in via `cacheTtlSeconds`; omit it for always-fresh behavior. Pass `cacheTtlSeconds: 3600` to reuse recent text/HTML/API fetches when age is acceptable; streamed binary downloads are stored as result blobs but are not raw fetch-cache hits yet.
-5. When using `web_history` or `web_get_result`, check `ageSeconds` and `staleness`; treat `stale` or `expired` rows as candidates for refresh, not authoritative current facts.
-6. Use `refresh: true` for time-sensitive content such as prices, news, stock, availability, weather, status pages, or anything the user asks about now/today.
-7. Treat `web_crawls` results with `recommendedAction: recrawl` as a seed for a new crawl, not as current data.
-8. Prefer `web_history` + `web_get_result` over a fresh `web_scrape` only when the question is not time-sensitive.
-9. Use browser mode only when requested or when static/data-island/readable recovery is insufficient.
-10. Use a dedicated search/research extension such as `pi-gemini-acp` for broad source discovery or multi-source synthesis, then call `web_scrape` or `web_batch` for deeper reading of selected URLs.
+## Special cases
 
-## Provider cautions
-
-- `pi-scraper` is local-first and no longer owns search/research providers.
-- If another extension discovers URLs, use `web_scrape` or `web_batch` to read those pages with pi-scraper's URL safety, robots, truncation, and extraction behavior.
-- Missing external search/research providers should not affect local scrape, crawl, map, batch, brand, diff, or vertical extraction tools.
-
-## Anti-bot scope
-
-Do not promise CAPTCHA solving, residential proxy rotation, stealth guarantees, or guaranteed access to protected sites. Prefer structured blocked/error results and explicit browser/fingerprint/proxy escalation only when appropriate.
+- npm metadata → `web_vertical_scrape` with `.extractor: "npm"`; if only package name given, URL is `https://npmx.dev/package/<name>`. npm page reading (not metadata) → `web_scrape` on that URL.
+- DeepWiki URL or sparse GitHub README with DeepWiki coverage → `web_vertical_scrape` with `.extractor: "deepwiki"` on `https://deepwiki.com/owner/repo`.

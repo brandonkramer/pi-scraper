@@ -1,21 +1,22 @@
 import { Type, type Static } from "@mariozechner/pi-ai";
 import { extractBrandIdentity } from "../brand/extract.js";
+import { loadEffectiveConfig } from "../config/settings.js";
 import { scrapeUrl } from "../scrape/pipeline.js";
 import { qualityFromCache, storedResultGuidance } from "./agentic-context.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
 import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
 import { toolResult } from "./result.js";
-import { scrapeOptionSchema, urlProperty } from "./schemas.js";
+import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
 
 export const webBrandSchema = Type.Object({
-	url: urlProperty("Site URL to inspect for brand identity."),
+	url: urlProperty(),
 	manifestJson: Type.Optional(
 		Type.String({
-			description: "Optional Web App Manifest JSON if already available.",
+			description: "Web App Manifest JSON, if fetched.",
 		}),
 	),
-	...scrapeOptionSchema,
+	...scrapeModeOptionSchema,
 });
 
 type Params = Static<typeof webBrandSchema>;
@@ -24,9 +25,10 @@ export const webBrandTool = defineWebTool({
 	name: "web_brand",
 	label: "Web Brand",
 	description:
-		"Extract brand identity from static HTML/CSS: colors, fonts, logos, favicons, manifests, JSON-LD, Open Graph, and Twitter assets. Browser optional only via mode.",
+		"Extract brand colors, fonts, logos, favicons, manifest, JSON-LD, Open Graph/Twitter assets. Browser only via mode.",
 	parameters: webBrandSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
+		const config = await loadEffectiveConfig();
 		await emitProgress(onUpdate, {
 			state: "loading",
 			url: params.url,
@@ -34,7 +36,12 @@ export const webBrandTool = defineWebTool({
 		});
 		const scraped = await scrapeUrl(
 			params.url,
-			{ ...params, format: "html", mode: params.mode ?? "fast" },
+			{
+				...config.scrapeDefaults,
+				...params,
+				format: "html",
+				mode: params.mode ?? config.scrapeMode,
+			},
 			{},
 			signal,
 		);

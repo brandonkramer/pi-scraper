@@ -1,0 +1,173 @@
+[
+  {
+    "id": "scrape-markdown-url",
+    "prompt": "Scrape https://example.com and return markdown.",
+    "expectedTool": "web_scrape",
+    "expectedArgs": { "url": "https://example.com", "format": "markdown" },
+    "rationale": "Single URL fetch/extract request with an explicit output format belongs to web_scrape.",
+    "tags": ["scrape", "fetch", "extract", "one-url", "url", "markdown"]
+  },
+  {
+    "id": "crawl-docs-depth",
+    "prompt": "Crawl this docs site to depth 2 and collect linked pages.",
+    "expectedTool": "web_crawl",
+    "expectedArgs": { "maxDepth": 2 },
+    "rationale": "The user asks to crawl linked pages, not just discover URL inventories.",
+    "tags": ["crawl", "linked", "pages", "depth", "seed-url", "contrast:web_map"]
+  },
+  {
+    "id": "map-discovery-no-content",
+    "prompt": "Find URLs from robots.txt, sitemaps, and llms.txt without reading page content.",
+    "expectedTool": "web_map",
+    "rationale": "Discovery-only robots/sitemaps/llms inventory maps URLs and does not fetch page content.",
+    "tags": ["map", "discover", "robots", "sitemaps", "llms", "no-content", "seed-url", "contrast:web_crawl"]
+  },
+  {
+    "id": "batch-independent-urls",
+    "prompt": "Fetch these 5 independent URLs and report per-URL failures.",
+    "expectedTool": "web_batch",
+    "rationale": "Multiple independent URLs with per-URL success/failure semantics belong to web_batch.",
+    "tags": ["batch", "fetch", "independent", "urls", "per-url", "contrast:web_scrape"]
+  },
+  {
+    "id": "brand-assets",
+    "prompt": "Extract the site logo, brand colors, fonts, favicons, and Open Graph assets.",
+    "expectedTool": "web_brand",
+    "rationale": "Brand colors, fonts, logos, favicons, and Open Graph assets are web_brand signals.",
+    "tags": ["brand", "colors", "fonts", "logos", "favicons", "open-graph", "url", "contrast:web_extract"]
+  },
+  {
+    "id": "diff-homepage-snapshot",
+    "prompt": "Compare the homepage against the saved homepage snapshot.",
+    "expectedTool": "web_diff",
+    "expectedArgs": { "snapshotName": "homepage" },
+    "rationale": "Comparing current content with a named saved snapshot is web_diff.",
+    "tags": ["diff", "compare", "snapshot", "homepage", "url"]
+  },
+  {
+    "id": "list-known-extractors",
+    "prompt": "Which deterministic known-site extractors are available?",
+    "expectedTool": "web_list_extractors",
+    "rationale": "Listing available deterministic known-site extractors is metadata lookup, not extraction execution.",
+    "tags": ["list", "deterministic", "known-site", "extractors", "available", "no-input", "contrast:web_vertical_scrape"]
+  },
+  {
+    "id": "vertical-npm-metadata",
+    "prompt": "Get typed npm metadata for https://www.npmjs.com/package/pi-scraper.",
+    "expectedTool": "web_vertical_scrape",
+    "expectedArgs": { "extractor": "npm", "url": "https://www.npmjs.com/package/pi-scraper" },
+    "rationale": "A known npm package URL should use deterministic typed vertical extraction instead of ad hoc LLM JSON.",
+    "tags": ["vertical", "deterministic", "known-site", "typed", "npm", "url", "contrast:web_extract", "contrast:web_list_extractors"]
+  },
+  {
+    "id": "extract-product-json",
+    "prompt": "From this arbitrary product page, extract name and price as JSON.",
+    "expectedTool": "web_extract",
+    "rationale": "Arbitrary page JSON/schema extraction is LLM-backed web_extract when no deterministic vertical applies.",
+    "tags": ["extract", "json", "schema", "llm", "arbitrary", "content", "url", "contrast:web_vertical_scrape", "contrast:web_brand"]
+  },
+  {
+    "id": "summarize-single-page",
+    "prompt": "Summarize this single page in five bullets.",
+    "expectedTool": "web_summarize",
+    "expectedArgs": { "bullets": 5 },
+    "rationale": "A one-page or provided-content summary is page-scoped and not multi-source research.",
+    "tags": ["summarize", "one-page", "provided-content", "bullets", "content"]
+  },
+  {
+    "id": "get-result-response-id",
+    "prompt": "Retrieve responseId abc123.",
+    "expectedTool": "web_get_result",
+    "expectedArgs": { "responseId": "abc123" },
+    "rationale": "Direct retrieval by responseId is stored-result lookup.",
+    "tags": ["retrieve", "responseid", "result-handle", "stored-output", "contrast:web_history", "contrast:web_crawls"]
+  },
+  {
+    "id": "history-prior-url-scrapes",
+    "prompt": "Show prior local scrapes for https://example.com.",
+    "expectedTool": "web_history",
+    "expectedArgs": { "url": "https://example.com" },
+    "rationale": "Prior local scrapes/fetches for one concrete URL are web_history, not responseId retrieval.",
+    "tags": ["history", "prior", "local", "scrapes", "fetches", "url", "contrast:web_get_result"]
+  },
+  {
+    "id": "crawls-prior-seed",
+    "prompt": "List prior crawls for this docs seed.",
+    "expectedTool": "web_crawls",
+    "rationale": "Listing prior local crawls by seed/status belongs to web_crawls, not crawlId retrieval.",
+    "tags": ["crawls", "prior", "local", "seed", "list", "contrast:web_get_result"]
+  },
+  {
+    "id": "search-stored-scrapes",
+    "prompt": "Search stored scrape text for pricing table.",
+    "expectedTool": "web_search_scrapes",
+    "rationale": "Full-text search over stored scrapes uses SQLite FTS5 when available.",
+    "tags": ["search", "stored", "scrapes", "fts5", "query", "contrast:web_scrape"]
+  },
+  {
+    "id": "negative-research-scrapers",
+    "prompt": "Research the best web scrapers across multiple sources.",
+    "expectedTool": null,
+    "rationale": "Multi-source research should use a companion search/research extension, not pi-scraper scraping tools.",
+    "tags": ["negative", "research", "multi-source", "companion-extension", "contrast:web_scrape", "contrast:web_crawl", "contrast:web_batch", "contrast:web_search_scrapes"]
+  },
+  {
+    "id": "negative-recent-articles",
+    "prompt": "Find recent articles about AI agents.",
+    "expectedTool": null,
+    "rationale": "Open-ended discovery/search without a concrete URL belongs to search/research, not web_map or stored scrape search.",
+    "tags": ["negative", "search", "recent", "articles", "no-url", "contrast:web_map", "contrast:web_search_scrapes"]
+  },
+  {
+    "id": "negative-multisource-summary",
+    "prompt": "Summarize these five sources into a report with citations.",
+    "expectedTool": null,
+    "rationale": "Multi-source synthesis with citations is research/reporting, not page-scoped web_summarize.",
+    "tags": ["negative", "multi-source", "citations", "report", "contrast:web_summarize", "contrast:web_batch"]
+  },
+  {
+    "id": "negative-monitor-future",
+    "prompt": "Monitor the web for future changes.",
+    "expectedTool": null,
+    "rationale": "Future monitoring is not a single scrape/diff action unless the user provides a URL and snapshot target.",
+    "tags": ["negative", "monitor", "future", "no-url", "contrast:web_diff", "contrast:web_crawl"]
+  },
+  {
+    "id": "negative-translate-paragraph",
+    "prompt": "Translate this paragraph.",
+    "expectedTool": null,
+    "rationale": "Translation is unrelated to scraping, extraction, crawling, mapping, or stored-result retrieval.",
+    "tags": ["negative", "unrelated", "translation", "contrast:web_extract", "contrast:web_summarize"]
+  },
+  {
+    "id": "ambiguous-summarize-url",
+    "prompt": "Summarize https://example.com.",
+    "expectedTool": "web_summarize",
+    "expectedArgs": { "url": "https://example.com" },
+    "rationale": "One concrete URL with a page-scoped summary request should use web_summarize, not multi-source research.",
+    "tags": ["ambiguous", "summarize", "one-page", "url", "contrast:web_scrape"]
+  },
+  {
+    "id": "ambiguous-github-json",
+    "prompt": "Extract JSON from GitHub repo URL https://github.com/microsoft/TypeScript.",
+    "expectedTool": "web_vertical_scrape",
+    "expectedArgs": { "extractor": "github_repo", "url": "https://github.com/microsoft/TypeScript" },
+    "rationale": "Known GitHub repository URL should prefer deterministic vertical extraction over ad hoc web_extract.",
+    "tags": ["ambiguous", "github", "repo", "json", "deterministic", "known-site", "url", "contrast:web_extract"]
+  },
+  {
+    "id": "ambiguous-list-pages-discovery",
+    "prompt": "List pages on this site from sitemap files only, without reading page bodies.",
+    "expectedTool": "web_map",
+    "rationale": "Discovery-only listing from sitemap files should map URLs and avoid page-content fetches.",
+    "tags": ["ambiguous", "list", "pages", "sitemap", "discovery", "no-content", "seed-url", "contrast:web_crawl"]
+  },
+  {
+    "id": "ambiguous-list-pages-read",
+    "prompt": "List pages on this site by following links and reading pages to depth 1.",
+    "expectedTool": "web_crawl",
+    "expectedArgs": { "maxDepth": 1 },
+    "rationale": "Following links and reading pages is a crawl, not discovery-only web_map.",
+    "tags": ["ambiguous", "crawl", "linked", "read-pages", "depth", "seed-url", "contrast:web_map"]
+  }
+]

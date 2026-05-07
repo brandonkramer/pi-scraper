@@ -1,4 +1,5 @@
 import { type Static, StringEnum, Type } from "@mariozechner/pi-ai";
+import { loadEffectiveConfig } from "../config/settings.js";
 import { runVerticalExtractor } from "../extract/registry.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
@@ -27,19 +28,8 @@ export const extractorNames = [
 ] as const;
 
 export const webVerticalScrapeSchema = Type.Object({
-	extractor: StringEnum(extractorNames, {
-		description: "Named deterministic vertical extractor.",
-	}),
-	url: urlProperty("URL supported by the selected extractor."),
-	cacheTtlSeconds: Type.Optional(
-		Type.Number({
-			minimum: 1,
-			description:
-				"Opt-in fetch cache TTL in seconds for extractor API/page fetches.",
-		}),
-	),
-	maxAgeSeconds: Type.Optional(Type.Number({ minimum: 1 })),
-	refresh: Type.Optional(Type.Boolean()),
+	extractor: StringEnum(extractorNames),
+	url: urlProperty("Supported URL."),
 });
 
 type Params = Static<typeof webVerticalScrapeSchema>;
@@ -48,9 +38,10 @@ export const webVerticalScrapeTool = defineWebTool({
 	name: "web_vertical_scrape",
 	label: "Web Vertical Scrape",
 	description:
-		"Run a known-site extractor returning typed JSON. Current extractors prefer public APIs/feeds and declare browser/cloud/LLM requirements.",
+		"Run deterministic known-site extractor returning typed JSON from APIs/feeds when available.",
 	parameters: webVerticalScrapeSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
+		const config = await loadEffectiveConfig();
 		await emitProgress(onUpdate, {
 			state: "processing",
 			url: params.url,
@@ -61,9 +52,9 @@ export const webVerticalScrapeTool = defineWebTool({
 			params.url,
 			{
 				requestOptions: {
-					cacheTtlSeconds: params.cacheTtlSeconds,
-					maxAgeSeconds: params.maxAgeSeconds,
-					refresh: params.refresh,
+					cacheTtlSeconds: config.scrapeDefaults.cacheTtlSeconds,
+					maxAgeSeconds: config.scrapeDefaults.maxAgeSeconds,
+					refresh: config.scrapeDefaults.refresh,
 				},
 			},
 			signal,

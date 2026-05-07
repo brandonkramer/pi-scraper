@@ -15,8 +15,7 @@ import { toolResult } from "./result.js";
 
 export const webSearchScrapesSchema = Type.Object({
 	query: Type.String({
-		description:
-			"Full-text query over stored scrape text when FTS5 is available.",
+		description: "FTS query over stored scrape text.",
 	}),
 	limit: Type.Optional(Type.Number({ minimum: 1, maximum: 50, default: 10 })),
 });
@@ -29,7 +28,7 @@ export const webSearchScrapesTool = defineWebTool({
 	name: "web_search_scrapes",
 	label: "Web Search Scrapes",
 	description:
-		"Search stored scrape text when SQLite FTS5 support is available; returns a clean unsupported stub otherwise.",
+		"Search text of stored scrapes; returns unsupported stub if FTS5 unavailable.",
 	parameters: webSearchScrapesSchema,
 	async execute(_toolCallId, params: Params) {
 		const result = await searchStoredScrapes(params.query, {

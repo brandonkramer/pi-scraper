@@ -2,16 +2,11 @@ import { StringEnum, Type } from "@mariozechner/pi-ai";
 import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.js";
 
 export const scrapeModeSchema = StringEnum(SCRAPE_MODES, {
-	description:
-		"Scrape mode. Use auto unless the user requested a specific path.",
+	description: "Default auto.",
 });
-export const outputFormatSchema = StringEnum(OUTPUT_FORMATS, {
-	description: "Output format for extracted content.",
-});
+export const outputFormatSchema = StringEnum(OUTPUT_FORMATS);
 
-export const headersSchema = Type.Record(Type.String(), Type.String(), {
-	description: "Optional HTTP headers.",
-});
+export const headersSchema = Type.Record(Type.String(), Type.String());
 
 export const commonRequestSchema = {
 	timeoutSeconds: Type.Optional(Type.Number({ minimum: 1, maximum: 120 })),
@@ -20,36 +15,40 @@ export const commonRequestSchema = {
 	headers: Type.Optional(headersSchema),
 	proxy: Type.Optional(
 		Type.String({
-			description: "Optional proxy URL for supported modes/providers.",
+			description: "Proxy URL.",
 		}),
 	),
-	respectRobots: Type.Optional(
-		Type.Boolean({ description: "Respect robots.txt; defaults to true." }),
-	),
+	respectRobots: Type.Optional(Type.Boolean({ description: "Default true." })),
 	cacheTtlSeconds: Type.Optional(
 		Type.Number({
 			minimum: 1,
-			description: "Opt-in fetch cache TTL in seconds; omit for always-fresh.",
+			description: "Opt-in cache TTL seconds.",
 		}),
 	),
 	maxAgeSeconds: Type.Optional(
 		Type.Number({
 			minimum: 1,
-			description:
-				"Hard maximum cache age in seconds before forcing a network fetch.",
+			description: "Hard max cache age seconds.",
 		}),
 	),
 	refresh: Type.Optional(
 		Type.Boolean({
-			description:
-				"Bypass cache lookup while still recording a fresh fetch when cacheTtlSeconds is set.",
+			description: "Bypass cache; fetch fresh.",
 		}),
 	),
 } as const;
 
-export const scrapeOptionSchema = {
+export const scrapeModeOptionSchema = {
 	mode: Type.Optional(scrapeModeSchema),
+} as const;
+
+export const scrapeOutputOptionSchema = {
+	...scrapeModeOptionSchema,
 	format: Type.Optional(outputFormatSchema),
+} as const;
+
+export const scrapeOptionSchema = {
+	...scrapeOutputOptionSchema,
 	include: Type.Optional(Type.Array(Type.String())),
 	exclude: Type.Optional(Type.Array(Type.String())),
 	onlyMainContent: Type.Optional(Type.Boolean()),
@@ -59,8 +58,14 @@ export const scrapeOptionSchema = {
 	...commonRequestSchema,
 } as const;
 
+export const crawlScrapeOptionSchema = {
+	...scrapeModeOptionSchema,
+	include: Type.Optional(Type.Array(Type.String())),
+	exclude: Type.Optional(Type.Array(Type.String())),
+} as const;
+
 export function urlProperty(
-	description = "HTTP(S) URL",
+	description = "URL",
 ): ReturnType<typeof Type.String> {
 	return Type.String({ description });
 }

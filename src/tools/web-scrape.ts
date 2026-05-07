@@ -17,7 +17,7 @@ import { toolResult } from "./result.js";
 import { scrapeOptionSchema, urlProperty } from "./schemas.js";
 
 export const webScrapeSchema = Type.Object({
-	url: urlProperty("URL to scrape."),
+	url: urlProperty(),
 	...scrapeOptionSchema,
 });
 
@@ -27,11 +27,12 @@ export const webScrapeTool = defineWebTool({
 	name: "web_scrape",
 	label: "Web Scrape",
 	description:
-		"Local-first single-URL scrape using fast/readable/fingerprint/browser/auto modes. Browser/fingerprint are optional and used only when requested or justified.",
+		"Fetch/extract one URL; auto is local-first, browser/fingerprint only on demand.",
 	parameters: webScrapeSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();
 		const scrapeOptions = {
+			...config.scrapeDefaults,
 			...params,
 			mode: params.mode ?? config.scrapeMode,
 			format: params.format ?? config.outputFormat,

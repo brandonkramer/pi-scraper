@@ -40,4 +40,16 @@ describe("web command registration", () => {
 		expect((modeResult.details as ResultEnvelope).data).toBeTruthy();
 		expect(config.scrapeMode).toBe("fast");
 	});
+
+	it("persists advanced scrape defaults", async () => {
+		await setDefaultMode(
+			{ scrapeDefaults: { timeoutSeconds: 7, refresh: true } },
+			{ rootDir },
+		);
+		const config = await loadEffectiveConfig({ rootDir });
+		expect(config.scrapeDefaults).toMatchObject({
+			timeoutSeconds: 7,
+			refresh: true,
+		});
+	});
 });

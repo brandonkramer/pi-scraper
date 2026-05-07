@@ -1,4 +1,5 @@
 import { type Static, Type } from "@mariozechner/pi-ai";
+import { loadEffectiveConfig } from "../config/settings.js";
 import type { ModelAdapter } from "../extract/model.js";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.js";
 import { summarizePage } from "../summarize/page.js";
@@ -11,18 +12,18 @@ import {
 	structuredToolError,
 	toolResult,
 } from "./result.js";
-import { scrapeOptionSchema, urlProperty } from "./schemas.js";
+import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
 
 export const webSummarizeSchema = Type.Object({
-	url: Type.Optional(urlProperty("Page URL to scrape before summarization.")),
+	url: Type.Optional(urlProperty()),
 	content: Type.Optional(
 		Type.String({
-			description: "Already scraped/provided content to summarize.",
+			description: "Text input.",
 		}),
 	),
 	sentences: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
 	bullets: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
-	...scrapeOptionSchema,
+	...scrapeModeOptionSchema,
 });
 
 type Params = Static<typeof webSummarizeSchema>;
@@ -39,9 +40,10 @@ export function createWebSummarizeTool(
 		name: "web_summarize",
 		label: "Web Summarize",
 		description:
-			"Page-scoped summary after scraping. Uses Pi model/LLM execution; use a dedicated research/search extension for multi-source synthesis.",
+			"Summarize one page or provided content; LLM-backed, not multi-source research.",
 		parameters: webSummarizeSchema,
 		async execute(_toolCallId, params: Params, signal) {
+			const config = await loadEffectiveConfig();
 			if (!options.modelAdapter) {
 				return errorResult(
 					missingModelError("summarize", params.url),
@@ -50,7 +52,12 @@ export function createWebSummarizeTool(
 			}
 			try {
 				const result = await summarizePage(
-					params,
+					{
+						...config.scrapeDefaults,
+						...params,
+						mode: params.mode ?? config.scrapeMode,
+						format: config.outputFormat,
+					},
 					options.modelAdapter,
 					options.scrapeDeps ?? {},
 					signal,
