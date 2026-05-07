@@ -27,13 +27,13 @@ import { crawlScrapeOptionSchema, urlProperty } from "./schemas.js";
 const crawlActions = ["run", "status", "list"] as const;
 
 export const webCrawlSchema = Type.Object({
-	action: Type.Optional(Type.String()),
+	action: Type.Optional(Type.Any()),
 	url: Type.Optional(urlProperty()),
 	maxPages: Type.Optional(Type.Any()),
 	maxDepth: Type.Optional(Type.Any()),
 	sameOrigin: Type.Optional(Type.Any()),
 	seedSitemap: Type.Optional(Type.Any()),
-	crawlId: Type.Optional(Type.String()),
+	crawlId: Type.Optional(Type.Any()),
 	resume: Type.Optional(Type.Any()),
 	seed: Type.Optional(Type.Any()),
 	status: Type.Optional(Type.Any()),
