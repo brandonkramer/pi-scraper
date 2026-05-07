@@ -17,7 +17,7 @@ import {
 	structuredToolError,
 	toolResult,
 } from "./result.js";
-import { scrapeOptionSchema, urlProperty } from "./schemas.js";
+import { outputFormatSchema, urlProperty } from "./schemas.js";
 import { renderWebScrapeResult, renderWebToolCall } from "./web-renderers.js";
 
 const scrapeTasks = ["read", "summarize"] as const;
@@ -28,7 +28,16 @@ export const webScrapeSchema = Type.Object({
 	content: Type.Optional(Type.String()),
 	sentences: Type.Optional(Type.Any()),
 	bullets: Type.Optional(Type.Any()),
-	...scrapeOptionSchema,
+	mode: Type.Optional(Type.Any()),
+	format: Type.Optional(outputFormatSchema),
+	include: Type.Optional(Type.Array(Type.Any())),
+	exclude: Type.Optional(Type.Array(Type.Any())),
+	onlyMainContent: Type.Optional(Type.Any()),
+	timeoutSeconds: Type.Optional(Type.Any()),
+	maxChars: Type.Optional(Type.Any()),
+	proxy: Type.Optional(Type.Any()),
+	respectRobots: Type.Optional(Type.Any()),
+	refresh: Type.Optional(Type.Any()),
 });
 
 type Params = Static<typeof webScrapeSchema>;
