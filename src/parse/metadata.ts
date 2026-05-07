@@ -42,7 +42,7 @@ export function extractMetadata(
 	}
 	return {
 		title:
-			clean(dom.text(dom.first(dom.select("head > title")))) ||
+			clean(dom.text(dom.first(dom.select("title")))) ||
 			meta.title ||
 			openGraph.title,
 		description:
