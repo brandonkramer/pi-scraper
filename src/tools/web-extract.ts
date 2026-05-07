@@ -52,7 +52,7 @@ export const webExtractSchema = Type.Object({
 				name: Type.Optional(Type.String()),
 				pattern: Type.Optional(Type.String()),
 				flags: Type.Optional(Type.String()),
-				capture: Type.Optional(StringEnum(["full", "first", "firstNonEmpty"])),
+				capture: Type.Optional(Type.String()),
 				captureGroup: Type.Optional(Type.Number()),
 				includeContains: Type.Optional(Type.String()),
 				maxMatches: Type.Optional(Type.Number()),
