@@ -20,17 +20,27 @@ export function htmlToMarkdown(
 ): string {
 	const service =
 		options.removeImages === false ? keepImagesService : removeImagesService;
-	return normalizeWhitespace(service.turndown(stripLargeTables(html)));
+	return normalizeWhitespace(service.turndown(stripLargeElements(html)));
 }
 
-/** Strip tables from very large HTML to avoid expensive Turndown conversion
- *  on table-heavy pages where the output is likely to be truncated anyway.
- *  Only applies when HTML exceeds 40 KB and contains 20+ table rows. */
-function stripLargeTables(html: string): string {
+/** Strip large tables and very long lists before Turndown to avoid expensive conversion
+ *  on element-heavy pages where the output is likely to be truncated anyway.
+ *  Only applies when HTML exceeds 40 KB. Tables: > 20 rows. Lists: > 100 items. */
+function stripLargeElements(html: string): string {
 	if (html.length < 40_000) return html;
+	// Count table rows and list items
 	const trCount = (html.match(/<tr/gi) ?? []).length;
-	if (trCount < 20) return html;
-	return html.replace(/<table[\s\S]*?<\/table>/gi, "\n\n");
+	const liCount = (html.match(/<li/gi) ?? []).length;
+	if (trCount < 20 && liCount < 100) return html;
+	// Strip tables and/or lists if thresholds exceeded
+	let result = html;
+	if (trCount >= 20) {
+		result = result.replace(/<table[\s\S]*?<\/table>/gi, "\n\n");
+	}
+	if (liCount >= 100) {
+		result = result.replace(/<(ul|ol)[\s\S]*?<\/(ul|ol)>/gi, "\n\n[Long list]\n\n");
+	}
+	return result;
 }
 
 function createMarkdownService(removeImages: boolean): TurndownService {
