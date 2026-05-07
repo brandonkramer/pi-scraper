@@ -30,17 +30,17 @@ const crawlStatuses = ["queued", "running", "paused", "done", "error"] as const;
 export const webCrawlSchema = Type.Object({
 	action: Type.Optional(StringEnum(crawlActions)),
 	url: Type.Optional(urlProperty()),
-	maxPages: Type.Optional(Type.Number({ minimum: 1, maximum: 1000 })),
-	maxDepth: Type.Optional(Type.Number({ minimum: 0, maximum: 20 })),
+	maxPages: Type.Optional(Type.Number()),
+	maxDepth: Type.Optional(Type.Number()),
 	sameOrigin: Type.Optional(Type.Boolean()),
 	seedSitemap: Type.Optional(Type.Boolean()),
 	crawlId: Type.Optional(Type.String()),
 	resume: Type.Optional(Type.Boolean()),
 	seed: Type.Optional(Type.String()),
 	status: Type.Optional(StringEnum(crawlStatuses)),
-	limit: Type.Optional(Type.Number({ minimum: 1, maximum: 100 })),
-	concurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 32 })),
-	perHostConcurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 16 })),
+	limit: Type.Optional(Type.Number()),
+	concurrency: Type.Optional(Type.Number()),
+	perHostConcurrency: Type.Optional(Type.Number()),
 	...crawlScrapeOptionSchema,
 });
 

@@ -26,8 +26,8 @@ export const webScrapeSchema = Type.Object({
 	task: Type.Optional(StringEnum(scrapeTasks)),
 	url: Type.Optional(urlProperty()),
 	content: Type.Optional(Type.String()),
-	sentences: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
-	bullets: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
+	sentences: Type.Optional(Type.Number()),
+	bullets: Type.Optional(Type.Number()),
 	...scrapeOptionSchema,
 });
 
