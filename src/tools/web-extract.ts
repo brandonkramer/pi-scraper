@@ -191,7 +191,7 @@ async function runDeterministicExtractor(
 			phase: "vertical_extract",
 			url: params.url,
 		},
-		assistantGuidance: verticalExtractorGuidance(params.extractor, result),
+		assistantGuidance: verticalExtractorGuidance(result),
 	});
 }
 
@@ -208,7 +208,6 @@ function verticalExtractorText(
 				blocked.attemptedEndpoints ??
 					result.sources?.map((source) => source.url),
 			),
-			blockedGuidance(name),
 		]
 			.filter(Boolean)
 			.join("\n");
@@ -217,7 +216,6 @@ function verticalExtractorText(
 		return [
 			`${name} failed (${result.error.code}): ${result.error.message}`,
 			attemptedText(result.sources?.map((source) => source.url)),
-			blockedGuidance(name),
 		]
 			.filter(Boolean)
 			.join("\n");
@@ -226,23 +224,17 @@ function verticalExtractorText(
 }
 
 function verticalExtractorGuidance(
-	extractor: string | undefined,
 	result: VerticalExtractionResult,
 ): string | undefined {
-	const guidance = blockedGuidance(extractor ?? result.extractor);
-	return result.error || blockedSource(result.data) ? guidance : undefined;
+	const blocked = blockedSource(result.data);
+	if (blocked?.reason) return blocked.reason;
+	return result.error?.message;
 }
 
 function attemptedText(urls: string[] | undefined): string | undefined {
 	const uniqueUrls = [...new Set(urls?.filter(Boolean) ?? [])];
 	return uniqueUrls.length
 		? `attempted:\n  - ${uniqueUrls.join("\n  - ")}`
-		: undefined;
-}
-
-function blockedGuidance(extractor: string): string | undefined {
-	return extractor === "reddit"
-		? "Reddit disallows this structured endpoint under robots; pi-scraper will not bypass it."
 		: undefined;
 }
 

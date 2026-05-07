@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { ModelAdapter, ModelRequest } from "../../extract/model.js";
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.js";
@@ -34,6 +35,16 @@ describe("selected web tool handlers", () => {
 		);
 		expect(result.content[0]?.text).toContain("npm");
 		expect((result.details as ResultEnvelope).format).toBe("json");
+	});
+
+	it("keeps web_extract adapter vertical-agnostic", () => {
+		const source = readFileSync(
+			new URL("../web-extract.ts", import.meta.url),
+			"utf8",
+		);
+
+		expect(source).not.toContain('"reddit"');
+		expect(source).not.toContain("'reddit'");
 	});
 
 	it("returns structured missing-model errors for ad hoc extraction", async () => {
