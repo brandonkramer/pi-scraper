@@ -93,6 +93,6 @@ export const webBatchTool = defineWebTool({
 			context,
 			{ donePrefix: false },
 		),
-	renderResult: (result, { expanded }) =>
-		renderWebBatchResult(result, expanded),
+	renderResult: (result, { expanded }, theme) =>
+		renderWebBatchResult(result, expanded, theme),
 });

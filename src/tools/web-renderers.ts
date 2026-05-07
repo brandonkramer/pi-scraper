@@ -66,17 +66,18 @@ export function renderWebScrapeResult(
 export function renderWebCrawlResult(
 	result: PiToolShell,
 	expanded = false,
+	theme?: RenderTheme,
 ): RenderComponent {
 	const details = result.details as
 		| Partial<ResultEnvelope<unknown>>
 		| ProgressDetails;
-	if (isProgress(details)) return renderProgress("web_crawl", details);
+	if (isProgress(details)) return renderProgress("web_crawl", details, theme);
 	const envelope = details as Partial<ResultEnvelope<{ metadata?: CrawlMeta }>>;
 	const metadata = envelope.data?.metadata;
 	const failed = metadata?.failedCount ?? 0;
 	const title = envelope.error
 		? errorTitle("web_crawl", envelope.error)
-		: `✓ ${metadata?.succeededCount ?? 0} succeeded · ✕ ${failed} failed · ◉ ${metadata?.visitedCount ?? 0} visited · → frontier ${metadata?.frontierCount ?? 0}`;
+		: `${successCountSegment(metadata?.succeededCount ?? 0, "succeeded", theme)} · ${failureCountSegment(failed, "failed")} · ◉ ${metadata?.visitedCount ?? 0} visited · → frontier ${metadata?.frontierCount ?? 0}`;
 	return renderChecklistResult(title, expanded, {
 		items: [
 			{ label: "robots checked", state: "done" },
@@ -93,11 +94,12 @@ export function renderWebCrawlResult(
 export function renderWebBatchResult(
 	result: PiToolShell,
 	expanded = false,
+	theme?: RenderTheme,
 ): RenderComponent {
 	const details = result.details as
 		| Partial<ResultEnvelope<unknown>>
 		| ProgressDetails;
-	if (isProgress(details)) return renderProgress("web_batch", details);
+	if (isProgress(details)) return renderProgress("web_batch", details, theme);
 	const envelope = details as Partial<ResultEnvelope<BatchItem[]>>;
 	const items = Array.isArray(envelope.data) ? envelope.data : [];
 	const succeeded = items.filter((item) => item.ok === true).length;
@@ -107,7 +109,7 @@ export function renderWebBatchResult(
 	).length;
 	const title = envelope.error
 		? errorTitle("web_batch", envelope.error)
-		: `✓ ${succeeded} succeeded · ✕ ${failed} failed · ↻ ${cacheHits} cache hits`;
+		: `${successCountSegment(succeeded, "succeeded", theme)} · ${failureCountSegment(failed, "failed")} · ↻ ${cacheHits} cache hits`;
 	return renderChecklistResult(title, expanded, {
 		items: [
 			{ label: `${succeeded} succeeded`, state: succeeded ? "done" : "info" },
@@ -252,6 +254,7 @@ function toolAllowsIcons(toolName: `web_${string}`): boolean {
 function renderProgress(
 	toolName: `web_${string}`,
 	details: ProgressDetails,
+	theme?: RenderTheme,
 ): RenderComponent {
 	const count = details.total
 		? ` ${details.current ?? 0}/${details.total}`
@@ -259,13 +262,7 @@ function renderProgress(
 	const message = details.message ? ` · ${details.message}` : "";
 	const url = details.url ? ` · ${details.url}` : "";
 	const icons = toolAllowsIcons(toolName);
-	const prefix = icons
-		? details.state === "error"
-			? "✕ "
-			: details.state === "done"
-				? "✓ "
-				: ""
-		: "";
+	const prefix = icons && details.state === "error" ? "✕ " : "";
 	const lines = [
 		`${prefix}${toolName} ${details.state}${count}${url}${message}`,
 	];
@@ -280,12 +277,12 @@ function renderProgress(
 				counts.succeeded === undefined
 					? undefined
 					: icons
-						? `✓ ${counts.succeeded} succeeded`
+						? successCountSegment(counts.succeeded, "succeeded", theme)
 						: `${counts.succeeded} succeeded`,
 				counts.failed === undefined
 					? undefined
 					: icons
-						? `✕ ${counts.failed} failed`
+						? failureCountSegment(counts.failed, "failed")
 						: `${counts.failed} failed`,
 				counts.cacheHits === undefined
 					? undefined
@@ -298,6 +295,27 @@ function renderProgress(
 		);
 	}
 	return renderText(lines.filter(Boolean).join("\n"));
+}
+
+function successCountSegment(
+	count: number,
+	label: string,
+	theme?: RenderTheme,
+): string {
+	const text = `${count} ${label}`;
+	if (count <= 0) return text;
+	return successText(`✅ ${text}`, theme);
+}
+
+function failureCountSegment(count: number, label: string): string {
+	const text = `${count} ${label}`;
+	return count > 0 ? `✕ ${text}` : text;
+}
+
+function successText(text: string, theme?: RenderTheme): string {
+	const themed = theme?.fg?.("success", text);
+	if (themed) return themed;
+	return `\u001B[38;2;148;226;213m${text}\u001B[0m`;
 }
 
 function formatChecklistItem(item: ChecklistItem): string {

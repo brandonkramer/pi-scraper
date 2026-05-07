@@ -75,9 +75,9 @@ export const webCrawlTool = defineWebTool({
 			theme,
 			context,
 		),
-	renderResult: (result, { expanded }) =>
+	renderResult: (result, { expanded }, theme) =>
 		isRunCrawlResult(result.details)
-			? renderWebCrawlResult(result, expanded)
+			? renderWebCrawlResult(result, expanded, theme)
 			: renderEnvelopeResult(result, expanded),
 });
 

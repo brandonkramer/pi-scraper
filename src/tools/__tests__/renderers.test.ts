@@ -107,7 +107,7 @@ describe("web tool renderers", () => {
 		expect(doneTitle).toContain("web_crawl https://example.com max 1");
 		expect(doneTitle).not.toContain("✓ web_crawl");
 		expect(collapsed).toContain(
-			"✓ 2 succeeded · ✕ 1 failed · ◉ 3 visited · → frontier 0",
+			"✅ 2 succeeded\u001B[0m · ✕ 1 failed · ◉ 3 visited · → frontier 0",
 		);
 		expect(collapsed).not.toContain("✓ web_crawl");
 		expect(expanded).toContain("✓ robots checked");
@@ -139,9 +139,34 @@ describe("web tool renderers", () => {
 		);
 		expect(doneTitle).toContain("web_batch 2 urls");
 		expect(doneTitle).not.toContain("✓ web_batch");
-		expect(collapsed).toContain("✓ 1 succeeded");
+		expect(collapsed).toContain("✅ 1 succeeded");
 		expect(collapsed).toContain("✕ 1 failed");
 		expect(collapsed).toContain("↻ 1 cache hits");
+	});
+
+	it("omits success icons when batch and crawl succeeded counts are zero", () => {
+		const batch = toolResult({
+			text: "Batch scrape failed",
+			data: [{ ok: false, url: "https://b.test" }],
+		});
+		const crawl = toolResult({
+			text: "Crawl c1: 0 succeeded, 1 failed, 1 visited, frontier 0.",
+			data: {
+				metadata: {
+					succeededCount: 0,
+					failedCount: 1,
+					visitedCount: 1,
+					frontierCount: 0,
+				},
+			},
+		});
+
+		expect(text(webBatchTool.renderResult?.(batch, { expanded: false }))).toContain(
+			"0 succeeded · ✕ 1 failed",
+		);
+		expect(text(webCrawlTool.renderResult?.(crawl, { expanded: false }))).toContain(
+			"0 succeeded · ✕ 1 failed",
+		);
 	});
 
 	it("renders diff baseline, unchanged, and changed states", () => {
