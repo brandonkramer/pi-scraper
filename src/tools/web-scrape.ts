@@ -1,4 +1,4 @@
-import { StringEnum, Type, type Static } from "@mariozechner/pi-ai";
+import { Type, type Static } from "@mariozechner/pi-ai";
 import type { ModelAdapter } from "../extract/model.js";
 import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.js";
 import {
@@ -23,7 +23,7 @@ import { renderWebScrapeResult, renderWebToolCall } from "./web-renderers.js";
 const scrapeTasks = ["read", "summarize"] as const;
 
 export const webScrapeSchema = Type.Object({
-	task: Type.Optional(StringEnum(scrapeTasks)),
+	task: Type.Optional(Type.String()),
 	url: Type.Optional(urlProperty()),
 	content: Type.Optional(Type.String()),
 	sentences: Type.Optional(Type.Number()),
