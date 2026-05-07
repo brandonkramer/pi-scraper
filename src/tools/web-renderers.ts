@@ -332,7 +332,7 @@ function failureCountSegment(
 }
 
 function successText(text: string, theme?: RenderTheme): string {
-	const themed = theme?.fg?.("success", text);
+	const themed = inlineThemeText("success", text, theme);
 	if (themed) return themed;
 	return `\u001B[38;2;148;226;213m${text}\u001B[39m`;
 }
@@ -347,21 +347,34 @@ function activityCountSegment(
 }
 
 function failureText(text: string, theme?: RenderTheme): string {
-	const themed = theme?.fg?.("error", text) ?? theme?.fg?.("danger", text);
+	const themed =
+		inlineThemeText("error", text, theme) ??
+		inlineThemeText("danger", text, theme);
 	if (themed) return themed;
 	return `\u001B[38;2;239;118;122m${text}\u001B[39m`;
 }
 
 function activityText(text: string, theme?: RenderTheme): string {
-	const themed = theme?.fg?.("warning", text) ?? theme?.fg?.("accent", text);
+	const themed =
+		inlineThemeText("warning", text, theme) ??
+		inlineThemeText("accent", text, theme);
 	if (themed) return themed;
 	return `\u001B[38;2;199;211;111m${text}\u001B[39m`;
 }
 
 function neutralText(text: string, theme?: RenderTheme): string {
-	const themed = theme?.fg?.("muted", text);
+	const themed = inlineThemeText("muted", text, theme);
 	if (themed) return themed;
 	return `\u001B[38;2;139;145;134m${text}\u001B[39m`;
+}
+
+function inlineThemeText(
+	name: string,
+	text: string,
+	theme?: RenderTheme,
+): string | undefined {
+	const themed = theme?.fg?.(name, text);
+	return themed?.replaceAll("\u001B[0m", "\u001B[39m");
 }
 
 function separator(theme?: RenderTheme): string {

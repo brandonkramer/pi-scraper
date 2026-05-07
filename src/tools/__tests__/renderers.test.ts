@@ -107,7 +107,9 @@ describe("web tool renderers", () => {
 		expect(doneTitle).toContain("web_crawl https://example.com max 1");
 		expect(doneTitle).not.toContain("✓ web_crawl");
 		expect(collapsed).toContain("✅ 2 succeeded");
-		expect(collapsed).toContain("\u001B[38;2;239;118;122m❌ 1 failed\u001B[39m");
+		expect(collapsed).toContain(
+			"\u001B[38;2;239;118;122m❌ 1 failed\u001B[39m",
+		);
 		expect(collapsed).toContain(
 			"\u001B[38;2;199;211;111m🌐 3 visited\u001B[39m",
 		);
@@ -152,6 +154,24 @@ describe("web tool renderers", () => {
 		);
 	});
 
+	it("preserves card backgrounds when a theme emits full resets", () => {
+		const result = toolResult({
+			text: "Batch scrape complete",
+			data: [{ ok: true, url: "https://a.test" }],
+		});
+		const collapsed = text(
+			webBatchTool.renderResult?.(
+				result,
+				{ expanded: false },
+				{ fg: (_name, value) => `\u001B[35m${value}\u001B[0m` },
+			),
+		);
+
+		expect(collapsed).not.toContain("\u001B[0m");
+		expect(collapsed).toContain("\u001B[35m❌ 0 failed\u001B[39m");
+		expect(collapsed).toContain("\u001B[35m🔄 0 cache hits\u001B[39m");
+	});
+
 	it("uses failed icon and color even when failed count is zero", () => {
 		const result = toolResult({
 			text: "Batch scrape complete",
@@ -162,7 +182,9 @@ describe("web tool renderers", () => {
 		);
 
 		expect(collapsed).toContain("❌ 0 failed");
-		expect(collapsed).toContain("\u001B[38;2;239;118;122m❌ 0 failed\u001B[39m");
+		expect(collapsed).toContain(
+			"\u001B[38;2;239;118;122m❌ 0 failed\u001B[39m",
+		);
 		expect(collapsed).toContain("🔄 0 cache hits");
 		expect(collapsed).toContain(
 			"\u001B[38;2;199;211;111m🔄 0 cache hits\u001B[39m",
