@@ -29,11 +29,7 @@ const sourceFormats = ["text", "markdown", "html"] as const;
 
 export const webExtractSchema = Type.Object({
 	action: Type.Optional(StringEnum(extractActions)),
-	extractor: Type.Optional(
-		Type.String({
-			description: "npm github_repo pypi arxiv deepwiki docsite reddit",
-		}),
-	),
+	extractor: Type.Optional(Type.String()),
 	url: Type.Optional(urlProperty()),
 	content: Type.Optional(Type.String()),
 	prompt: Type.Optional(Type.String()),

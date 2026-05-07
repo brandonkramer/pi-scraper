@@ -37,7 +37,7 @@ export const webCrawlSchema = Type.Object({
 	resume: Type.Optional(Type.Boolean()),
 	seed: Type.Optional(Type.String()),
 	status: Type.Optional(StringEnum(crawlStatuses)),
-	limit: Type.Optional(Type.Number({ minimum: 1, maximum: 100, default: 20 })),
+	limit: Type.Optional(Type.Number({ minimum: 1, maximum: 100 })),
 	concurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 32 })),
 	perHostConcurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 16 })),
 	...crawlScrapeOptionSchema,
