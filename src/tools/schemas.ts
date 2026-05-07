@@ -9,7 +9,7 @@ export const headersSchema = Type.Record(Type.String(), Type.String());
 export const commonRequestSchema = {
 	timeoutSeconds: Type.Optional(Type.Number()),
 	maxChars: Type.Optional(Type.Number()),
-	proxy: Type.Optional(Type.String()),
+	proxy: Type.Optional(Type.Any()),
 	respectRobots: Type.Optional(Type.Any()),
 	refresh: Type.Optional(Type.Any()),
 } as const;
