@@ -7,7 +7,7 @@ export interface SelectorOptions {
 	removeImages?: boolean;
 }
 
-const DEFAULT_REMOVE = "script,style,noscript,template,iframe,canvas";
+const DEFAULT_REMOVE = "script,style,noscript,template,iframe,canvas,svg,math,video,audio,embed,object,param,track";
 
 export function prepareDocument(
 	dom: DomAdapter,
