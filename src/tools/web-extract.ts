@@ -32,7 +32,7 @@ export const webExtractSchema = Type.Object({
 	prompt: Type.Optional(Type.String()),
 	schema: Type.Optional(Type.Unknown()),
 	sourceFormat: Type.Optional(Type.String()),
-	length: Type.Optional(Type.Boolean()),
+	length: Type.Optional(Type.Any()),
 	markers: Type.Optional(Type.Array(Type.Any())),
 	contains: Type.Optional(Type.Array(Type.Any())),
 	excerpts: Type.Optional(
