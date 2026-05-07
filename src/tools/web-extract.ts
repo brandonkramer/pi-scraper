@@ -38,7 +38,7 @@ export const webExtractSchema = Type.Object({
 	excerpts: Type.Optional(
 		Type.Array(
 			Type.Object({
-				needle: Type.String(),
+				needle: Type.Optional(Type.String()),
 				before: Type.Optional(Type.Number()),
 				after: Type.Optional(Type.Number()),
 				caseSensitive: Type.Optional(Type.Boolean()),
@@ -50,7 +50,7 @@ export const webExtractSchema = Type.Object({
 		Type.Array(
 			Type.Object({
 				name: Type.Optional(Type.String()),
-				pattern: Type.String(),
+				pattern: Type.Optional(Type.String()),
 				flags: Type.Optional(Type.String()),
 				capture: Type.Optional(StringEnum(["full", "first", "firstNonEmpty"])),
 				captureGroup: Type.Optional(Type.Number()),
