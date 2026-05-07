@@ -25,16 +25,16 @@ export const scrapeOutputOptionSchema = {
 
 export const scrapeOptionSchema = {
 	...scrapeOutputOptionSchema,
-	include: Type.Optional(Type.Array(Type.String())),
-	exclude: Type.Optional(Type.Array(Type.String())),
+	include: Type.Optional(Type.Array(Type.Any())),
+	exclude: Type.Optional(Type.Array(Type.Any())),
 	onlyMainContent: Type.Optional(Type.Boolean()),
 	...commonRequestSchema,
 } as const;
 
 export const crawlScrapeOptionSchema = {
 	...scrapeModeOptionSchema,
-	include: Type.Optional(Type.Array(Type.String())),
-	exclude: Type.Optional(Type.Array(Type.String())),
+	include: Type.Optional(Type.Array(Type.Any())),
+	exclude: Type.Optional(Type.Array(Type.Any())),
 } as const;
 
 export function urlProperty(
