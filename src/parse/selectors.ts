@@ -7,8 +7,6 @@ export interface SelectorOptions {
 	removeImages?: boolean;
 }
 
-
-
 export function prepareDocument(
 	dom: DomAdapter,
 	options: SelectorOptions = {},

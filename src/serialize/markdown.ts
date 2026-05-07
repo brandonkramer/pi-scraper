@@ -28,9 +28,13 @@ export function htmlToMarkdown(
  *  Only applies when HTML exceeds 40 KB. Tables: > 20 rows. Lists: > 100 items. */
 function stripLargeElements(html: string): string {
 	if (html.length < 40_000) return html;
-	// Count table rows and list items
-	const trCount = (html.match(/<tr/gi) ?? []).length;
-	const liCount = (html.match(/<li/gi) ?? []).length;
+	// Quick check: does HTML contain tables or lists at all?
+	const hasTable = html.includes('<table');
+	const hasList = html.includes('<ul') || html.includes('<ol');
+	if (!hasTable && !hasList) return html;
+	// Count elements only if present
+	const trCount = hasTable ? (html.match(/<tr/gi) ?? []).length : 0;
+	const liCount = hasList ? (html.match(/<li/gi) ?? []).length : 0;
 	if (trCount < 20 && liCount < 100) return html;
 	// Strip tables and/or lists if thresholds exceeded
 	let result = html;
