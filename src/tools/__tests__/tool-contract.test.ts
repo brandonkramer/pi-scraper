@@ -49,7 +49,7 @@ const discriminatorChecks: Record<string, RegExp[]> = {
 		/robots\/sitemaps\/llms/iu,
 		/no bodies|no page bodies|does not fetch page content/iu,
 	],
-	web_batch: [/independent URLs/iu, /per-URL/iu],
+	web_batch: [/URLs/iu, /per-URL/iu],
 	web_diff: [/compare/iu, /snapshot/iu],
 	web_extract: [
 		/verticals?|extractors?/iu,
