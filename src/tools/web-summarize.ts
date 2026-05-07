@@ -15,8 +15,8 @@ import {
 import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
 
 export const webSummarizeSchema = Type.Object({
-	url: Type.Optional(urlProperty("URL; required unless content is provided.")),
-	content: Type.Optional(Type.String({ description: "Text to summarize." })),
+	url: Type.Optional(urlProperty()),
+	content: Type.Optional(Type.String()),
 	sentences: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
 	bullets: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
 	...scrapeModeOptionSchema,
@@ -34,9 +34,8 @@ export function createWebSummarizeTool(
 ): WebTool<typeof webSummarizeSchema> {
 	return defineWebTool({
 		name: "web_summarize",
-		label: "Web Summarize",
-		description:
-			"Summarize one URL or provided content; page-scoped only, no multi-source research.",
+		label: "Summarize",
+		description: "Summarize one URL/provided content; no multi-source research.",
 		parameters: webSummarizeSchema,
 		async execute(_toolCallId, params: Params, signal) {
 			const config = await loadEffectiveConfig();

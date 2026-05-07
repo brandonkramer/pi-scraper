@@ -20,12 +20,8 @@ import { toolResult } from "./result.js";
 import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
 
 export const webDiffSchema = Type.Object({
-	url: urlProperty("URL to diff."),
-	snapshotName: Type.Optional(
-		Type.String({
-			description: "Baseline name, e.g. homepage.",
-		}),
-	),
+	url: urlProperty(),
+	snapshotName: Type.Optional(Type.String()),
 	...scrapeModeOptionSchema,
 });
 
@@ -33,8 +29,8 @@ type Params = Static<typeof webDiffSchema>;
 
 export const webDiffTool = defineWebTool({
 	name: "web_diff",
-	label: "Web Diff",
-	description: "Re-scrape one URL and compare with a stored or named snapshot.",
+	label: "Diff",
+	description: "Compare one URL with a stored/named snapshot.",
 	parameters: webDiffSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();

@@ -1,9 +1,7 @@
 import { StringEnum, Type } from "@mariozechner/pi-ai";
 import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.js";
 
-export const scrapeModeSchema = StringEnum(SCRAPE_MODES, {
-	description: "Default auto.",
-});
+export const scrapeModeSchema = StringEnum(SCRAPE_MODES);
 export const outputFormatSchema = StringEnum(OUTPUT_FORMATS);
 
 export const headersSchema = Type.Record(Type.String(), Type.String());
@@ -11,9 +9,9 @@ export const headersSchema = Type.Record(Type.String(), Type.String());
 export const commonRequestSchema = {
 	timeoutSeconds: Type.Optional(Type.Number({ minimum: 1, maximum: 120 })),
 	maxChars: Type.Optional(Type.Number({ minimum: 1000 })),
-	proxy: Type.Optional(Type.String({ description: "Proxy URL." })),
-	respectRobots: Type.Optional(Type.Boolean({ description: "Default true." })),
-	refresh: Type.Optional(Type.Boolean({ description: "Fetch fresh." })),
+	proxy: Type.Optional(Type.String()),
+	respectRobots: Type.Optional(Type.Boolean()),
+	refresh: Type.Optional(Type.Boolean()),
 } as const;
 
 export const scrapeModeOptionSchema = {
@@ -40,7 +38,7 @@ export const crawlScrapeOptionSchema = {
 } as const;
 
 export function urlProperty(
-	description = "URL",
+	description?: string,
 ): ReturnType<typeof Type.String> {
-	return Type.String({ description });
+	return description ? Type.String({ description }) : Type.String();
 }

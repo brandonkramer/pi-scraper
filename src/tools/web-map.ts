@@ -9,7 +9,7 @@ import { toolResult } from "./result.js";
 import { urlProperty } from "./schemas.js";
 
 export const webMapSchema = Type.Object({
-	url: urlProperty("Seed URL."),
+	url: urlProperty(),
 	maxSitemaps: Type.Optional(Type.Number({ minimum: 1, maximum: 200 })),
 });
 
@@ -17,9 +17,8 @@ type Params = Static<typeof webMapSchema>;
 
 export const webMapTool = defineWebTool({
 	name: "web_map",
-	label: "Web Map",
-	description:
-		"Discover URLs from robots/sitemaps/llms.txt only; does not fetch page content.",
+	label: "Map",
+	description: "URLs from robots/sitemaps/llms.txt; does not fetch page content.",
 	parameters: webMapSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();

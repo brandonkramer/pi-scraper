@@ -28,14 +28,14 @@ const crawlStatuses = ["queued", "running", "paused", "done", "error"] as const;
 
 export const webCrawlSchema = Type.Object({
 	action: Type.Optional(StringEnum(crawlActions)),
-	url: Type.Optional(urlProperty("Seed URL.")),
+	url: Type.Optional(urlProperty()),
 	maxPages: Type.Optional(Type.Number({ minimum: 1, maximum: 1000 })),
 	maxDepth: Type.Optional(Type.Number({ minimum: 0, maximum: 20 })),
 	sameOrigin: Type.Optional(Type.Boolean()),
 	seedSitemap: Type.Optional(Type.Boolean()),
-	crawlId: Type.Optional(Type.String({ description: "Crawl id." })),
-	resume: Type.Optional(Type.Boolean({ description: "Resume." })),
-	seed: Type.Optional(Type.String({ description: "List filter." })),
+	crawlId: Type.Optional(Type.String()),
+	resume: Type.Optional(Type.Boolean()),
+	seed: Type.Optional(Type.String()),
 	status: Type.Optional(StringEnum(crawlStatuses)),
 	limit: Type.Optional(Type.Number({ minimum: 1, maximum: 100, default: 20 })),
 	concurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 32 })),
@@ -53,9 +53,8 @@ type CrawlEntry = CrawlMetadata & {
 
 export const webCrawlTool = defineWebTool({
 	name: "web_crawl",
-	label: "Web Crawl",
-	description:
-		"Run/resume linked-page crawl or inspect/list crawl status; reads pages.",
+	label: "Crawl",
+	description: "Crawl linked pages; status/list.",
 	parameters: webCrawlSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const action = inferCrawlAction(params);

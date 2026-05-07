@@ -22,9 +22,8 @@ type Params = Static<typeof webBatchSchema>;
 
 export const webBatchTool = defineWebTool({
 	name: "web_batch",
-	label: "Web Batch",
-	description:
-		"Scrape independent URLs with web_scrape semantics; returns per-URL success/failure.",
+	label: "Batch",
+	description: "Scrape independent URLs; per-URL success/failure.",
 	parameters: webBatchSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();

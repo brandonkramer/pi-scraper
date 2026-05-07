@@ -28,19 +28,14 @@ const extractActions = ["list", "vertical", "adhoc", "pattern"] as const;
 const sourceFormats = ["text", "markdown", "html"] as const;
 
 export const webExtractSchema = Type.Object({
-	action: Type.Optional(
-		StringEnum(extractActions, { description: "list|vertical|adhoc|pattern" }),
-	),
+	action: Type.Optional(StringEnum(extractActions)),
 	extractor: Type.Optional(
-		Type.String({
-			description:
-				"e.g. npm, github_repo, pypi, arxiv, deepwiki, docsite, reddit",
-		}),
+		Type.String({ description: "npm github_repo pypi arxiv deepwiki docsite reddit" }),
 	),
 	url: Type.Optional(urlProperty()),
-	content: Type.Optional(Type.String({ description: "Text input." })),
-	prompt: Type.Optional(Type.String({ description: "Instructions." })),
-	schema: Type.Optional(Type.Unknown({ description: "JSON schema." })),
+	content: Type.Optional(Type.String()),
+	prompt: Type.Optional(Type.String()),
+	schema: Type.Optional(Type.Unknown()),
 	sourceFormat: Type.Optional(StringEnum(sourceFormats)),
 	length: Type.Optional(Type.Boolean()),
 	markers: Type.Optional(Type.Array(Type.String())),
@@ -89,9 +84,8 @@ export function createWebExtractTool(
 ): WebTool<typeof webExtractSchema> {
 	return defineWebTool({
 		name: "web_extract",
-		label: "Web Extract",
-		description:
-			"List/run deterministic extractors, inspect text patterns, or LLM JSON/schema extraction.",
+		label: "Extract",
+		description: "Deterministic extractors; regex/patterns; LLM JSON/schema.",
 		parameters: webExtractSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
 			const action = inferExtractAction(params);

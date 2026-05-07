@@ -20,6 +20,80 @@
 		]
 	},
 	{
+		"id": "natural-read-markdown-url",
+		"prompt": "Read https://example.com as markdown.",
+		"expectedTool": "web_scrape",
+		"expectedArgs": {
+			"url": "https://example.com",
+			"format": "markdown"
+		},
+		"rationale": "Natural single URL read request with markdown output belongs to web_scrape.",
+		"tags": [
+			"scrape",
+			"read",
+			"one-url",
+			"url",
+			"markdown",
+			"contrast:web_summarize"
+		]
+	},
+	{
+		"id": "natural-map-url-inventory",
+		"prompt": "List the URLs available from https://example.com.",
+		"expectedTool": "web_map",
+		"expectedArgs": {
+			"url": "https://example.com"
+		},
+		"rationale": "Listing URLs available from a site is URL inventory/discovery, so use web_map instead of reading pages.",
+		"tags": [
+			"map",
+			"discover",
+			"urls",
+			"inventory",
+			"seed-url",
+			"no-content",
+			"contrast:web_crawl"
+		]
+	},
+	{
+		"id": "natural-crawl-max-pages",
+		"prompt": "Crawl https://example.com, up to 25 pages.",
+		"expectedTool": "web_crawl",
+		"expectedArgs": {
+			"action": "run",
+			"url": "https://example.com",
+			"maxPages": 25
+		},
+		"rationale": "The user asks to crawl and read linked pages with a page limit, so use web_crawl.",
+		"tags": [
+			"crawl",
+			"run",
+			"linked",
+			"pages",
+			"maxPages",
+			"url",
+			"contrast:web_map"
+		]
+	},
+	{
+		"id": "natural-diff-homepage-snapshot",
+		"prompt": "Compare https://example.com against my homepage snapshot.",
+		"expectedTool": "web_diff",
+		"expectedArgs": {
+			"url": "https://example.com",
+			"snapshotName": "homepage"
+		},
+		"rationale": "Comparing a URL against a named homepage snapshot is web_diff.",
+		"tags": [
+			"diff",
+			"compare",
+			"snapshot",
+			"homepage",
+			"url",
+			"contrast:web_scrape"
+		]
+	},
+	{
 		"id": "crawl-docs-depth",
 		"prompt": "Crawl this docs site to depth 2 and collect linked pages.",
 		"expectedTool": "web_crawl",

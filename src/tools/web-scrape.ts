@@ -26,13 +26,9 @@ import { renderWebScrapeResult, renderWebToolCall } from "./web-renderers.js";
 const scrapeTasks = ["read", "summarize"] as const;
 
 export const webScrapeSchema = Type.Object({
-	task: Type.Optional(
-		StringEnum(scrapeTasks, { description: "read or summarize" }),
-	),
-	url: Type.Optional(
-		urlProperty("URL; required except summarize with content."),
-	),
-	content: Type.Optional(Type.String({ description: "Text to summarize." })),
+	task: Type.Optional(StringEnum(scrapeTasks)),
+	url: Type.Optional(urlProperty()),
+	content: Type.Optional(Type.String()),
 	sentences: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
 	bullets: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
 	...scrapeOptionSchema,
@@ -51,9 +47,8 @@ export function createWebScrapeTool(
 ): WebTool<typeof webScrapeSchema> {
 	return defineWebTool({
 		name: "web_scrape",
-		label: "Web Scrape",
-		description:
-			"Read or summarize one URL/content; local-first, browser/fingerprint only when requested.",
+		label: "Scrape",
+		description: "Read/summarize one URL/content.",
 		parameters: webScrapeSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
 			const task = inferScrapeTask(params);
