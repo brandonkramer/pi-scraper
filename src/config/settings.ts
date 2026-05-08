@@ -123,7 +123,15 @@ function normalizeScrapeDefaults(
 		timeoutSeconds: raw.timeoutSeconds,
 		maxBytes: raw.maxBytes,
 		maxChars: raw.maxChars,
-		headers: normalizeHeaders(raw.headers),
+		headers:
+			raw.headers && typeof raw.headers === "object"
+				? Object.fromEntries(
+						Object.entries(raw.headers).filter(
+							(entry): entry is [string, string] =>
+								typeof entry[1] === "string",
+						),
+					)
+				: undefined,
 		proxy: raw.proxy,
 		respectRobots: raw.respectRobots,
 		cacheTtlSeconds: raw.cacheTtlSeconds,
@@ -150,17 +158,6 @@ function boundedNumber(
 ): number | undefined {
 	if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
 	return Math.max(minimum, Math.min(maximum, value));
-}
-
-function normalizeHeaders(
-	headers: unknown,
-): Record<string, string> | undefined {
-	if (typeof headers !== "object" || headers === null) return undefined;
-	return Object.fromEntries(
-		Object.entries(headers).filter(
-			(entry): entry is [string, string] => typeof entry[1] === "string",
-		),
-	);
 }
 
 function stripUndefined<T extends object>(config: T): Partial<T> {
