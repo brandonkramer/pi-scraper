@@ -13,8 +13,10 @@ import type { FetchUrlResult, HttpClientOptions } from "./client.js";
 import { HttpClient } from "./client.js";
 import {
 	BodySizeLimitError,
+	enforceContentLength,
 	isPdfContentType,
 	isTextLikeContentType,
+	normalizeHeaders,
 	streamToTempFile,
 } from "./download.js";
 import { HttpClientError } from "./errors.js";
@@ -346,32 +348,6 @@ function baseResult(
 		contentType,
 		downloadedBytes,
 	};
-}
-
-function normalizeHeaders(
-	headers: Record<string, string | string[] | undefined>,
-): Record<string, string> {
-	const normalized: Record<string, string> = {};
-	for (const [key, value] of Object.entries(headers)) {
-		if (Array.isArray(value)) {
-			normalized[key.toLowerCase()] = value.join(", ");
-		} else if (typeof value === "string") {
-			normalized[key.toLowerCase()] = value;
-		}
-	}
-	return normalized;
-}
-
-function enforceContentLength(
-	contentLength: string | undefined,
-	maxBytes: number,
-): void {
-	const length = contentLength
-		? Number.parseInt(contentLength, 10)
-		: Number.NaN;
-	if (Number.isFinite(length) && length > maxBytes) {
-		throw new BodySizeLimitError(maxBytes, length);
-	}
 }
 
 function hasStructuredError(

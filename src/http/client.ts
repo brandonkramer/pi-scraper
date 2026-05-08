@@ -13,8 +13,10 @@ import type { CacheMetadata, CommonRequestOptions } from "../types.js";
 import {
 	BodySizeLimitError,
 	collectBody,
+	enforceContentLength,
 	isPdfContentType,
 	isTextLikeContentType,
+	normalizeHeaders,
 	streamToTempFile,
 	type BinaryDownloadMetadata,
 } from "./download.js";
@@ -470,28 +472,3 @@ function baseResult(
 	};
 }
 
-function normalizeHeaders(
-	headers: Record<string, string | string[] | undefined>,
-): Record<string, string> {
-	const normalized: Record<string, string> = {};
-	for (const [key, value] of Object.entries(headers)) {
-		if (Array.isArray(value)) {
-			normalized[key.toLowerCase()] = value.join(", ");
-		} else if (typeof value === "string") {
-			normalized[key.toLowerCase()] = value;
-		}
-	}
-	return normalized;
-}
-
-function enforceContentLength(
-	contentLength: string | undefined,
-	maxBytes: number,
-): void {
-	const length = contentLength
-		? Number.parseInt(contentLength, 10)
-		: Number.NaN;
-	if (Number.isFinite(length) && length > maxBytes) {
-		throw new BodySizeLimitError(maxBytes, length);
-	}
-}
