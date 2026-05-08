@@ -29,12 +29,7 @@ import {
 	type FingerprintRequestBackend,
 } from "./fingerprint-types.js";
 import { PolitenessController } from "./politeness.js";
-import {
-	isRedirectStatus,
-	redirectLimitError,
-	redirectLoopError,
-	resolveRedirectUrl,
-} from "./redirects.js";
+import { followRedirects } from "./redirects.js";
 import { hasStructuredError } from "./retry.js";
 import { RobotsCache, RobotsDeniedError } from "./robots.js";
 import { decodeText } from "./text-decode.js";
@@ -74,50 +69,17 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		assertSupportedFingerprintOptions({ ...this.profile, ...options });
 		const initialSafe = await assertSafeFetchUrl(url, this.clientOptions);
 		try {
-			return await this.fetchWithRedirects(initialSafe, options, signal);
+			return await followRedirects({
+				initialSafe,
+				maxRedirects:
+					options.maxRedirects ?? this.clientOptions.maxRedirects ?? 5,
+				fetchRequest: (safe) => this.fetchOneRequest(safe, options, signal),
+				resolveSafeUrl: (nextUrl) =>
+					assertSafeFetchUrl(nextUrl, this.clientOptions),
+			});
 		} catch (error) {
 			throw this.toClientError(error, initialSafe.normalizedUrl, options);
 		}
-	}
-
-	private async fetchWithRedirects(
-		initialSafe: SafeUrlResult,
-		options: FingerprintFetchOptions,
-		signal: AbortSignal | undefined,
-	): Promise<FetchUrlResult> {
-		const maxRedirects =
-			options.maxRedirects ?? this.clientOptions.maxRedirects ?? 5;
-		const initialUrl = initialSafe.normalizedUrl;
-		const visited = new Set<string>([initialUrl]);
-		let currentSafe = initialSafe;
-
-		for (let redirects = 0; redirects <= maxRedirects; redirects += 1) {
-			const result = await this.fetchOneRequest(currentSafe, options, signal);
-			if (!isRedirectStatus(result.status) || !result.headers.location) {
-				return {
-					...result,
-					url: initialUrl,
-					finalUrl: currentSafe.normalizedUrl,
-				};
-			}
-			if (redirects >= maxRedirects) {
-				throw redirectLimitError(initialUrl, currentSafe.normalizedUrl);
-			}
-			const next = await assertSafeFetchUrl(
-				resolveRedirectUrl(result.headers.location, currentSafe.normalizedUrl),
-				this.clientOptions,
-			);
-			if (visited.has(next.normalizedUrl)) {
-				throw redirectLoopError(
-					initialUrl,
-					currentSafe.normalizedUrl,
-					next.normalizedUrl,
-				);
-			}
-			visited.add(next.normalizedUrl);
-			currentSafe = next;
-		}
-		throw redirectLimitError(initialUrl, currentSafe.normalizedUrl);
 	}
 
 	private async fetchOneRequest(

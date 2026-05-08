@@ -23,12 +23,7 @@ import {
 import { HttpClientError } from "./errors.js";
 import { createDefaultDispatcher } from "./guarded-agent.js";
 import { PolitenessController, abortableSleep } from "./politeness.js";
-import {
-	isRedirectStatus,
-	redirectLimitError,
-	redirectLoopError,
-	resolveRedirectUrl,
-} from "./redirects.js";
+import { followRedirects } from "./redirects.js";
 import {
 	hasStructuredError,
 	isRetryableStatus,
@@ -211,12 +206,13 @@ export class HttpClient {
 
 		for (let attempt = 1; attempt <= attempts; attempt += 1) {
 			try {
-				const result = await this.fetchWithRedirects(
+				const result = await followRedirects({
 					initialSafe,
-					options,
-					signal,
-					applyPolicy,
-				);
+					maxRedirects: options.maxRedirects ?? this.options.maxRedirects ?? 5,
+					fetchRequest: (safe) =>
+						this.fetchOneRequest(safe, options, signal, applyPolicy),
+					resolveSafeUrl: (url) => this.safeFetchUrl(url),
+				});
 				this.politeness.noteResponse(
 					new URL(result.finalUrl).host,
 					result.status,
@@ -249,53 +245,6 @@ export class HttpClient {
 		}
 
 		throw this.toClientError(lastError, initialSafe.normalizedUrl, options);
-	}
-
-	private async fetchWithRedirects(
-		initialSafe: SafeUrlResult,
-		options: FetchUrlOptions,
-		signal: AbortSignal | undefined,
-		applyPolicy: boolean,
-	): Promise<FetchUrlResult> {
-		const maxRedirects = options.maxRedirects ?? this.options.maxRedirects ?? 5;
-		const initialUrl = initialSafe.normalizedUrl;
-		const visited = new Set<string>([initialUrl]);
-		let currentSafe = initialSafe;
-
-		for (let redirects = 0; redirects <= maxRedirects; redirects += 1) {
-			const result = await this.fetchOneRequest(
-				currentSafe,
-				options,
-				signal,
-				applyPolicy,
-			);
-			if (!isRedirectStatus(result.status) || !result.headers.location) {
-				return {
-					...result,
-					url: initialUrl,
-					finalUrl: currentSafe.normalizedUrl,
-				};
-			}
-
-			if (redirects >= maxRedirects) {
-				throw redirectLimitError(initialUrl, currentSafe.normalizedUrl);
-			}
-
-			const next = await this.safeFetchUrl(
-				resolveRedirectUrl(result.headers.location, currentSafe.normalizedUrl),
-			);
-			if (visited.has(next.normalizedUrl)) {
-				throw redirectLoopError(
-					initialUrl,
-					currentSafe.normalizedUrl,
-					next.normalizedUrl,
-				);
-			}
-			visited.add(next.normalizedUrl);
-			currentSafe = next;
-		}
-
-		throw redirectLimitError(initialUrl, currentSafe.normalizedUrl);
 	}
 
 	private async fetchOneRequest(
