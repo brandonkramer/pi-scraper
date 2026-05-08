@@ -307,7 +307,11 @@ export class HttpClient {
 			const response = await request(url, {
 				method: options.method ?? "GET",
 				dispatcher: this.dispatcher,
-				headers: buildHeaders(this.userAgent, options.headers),
+				headers: {
+					"user-agent": this.userAgent,
+					accept: "*/*",
+					...(options.headers ?? {}),
+				},
 				signal,
 			});
 			const responseHeaders = normalizeHeaders(response.headers);
@@ -434,13 +438,6 @@ function isPdfResponse(contentType: string | undefined, url: string): boolean {
 
 function isHttpClientError(error: unknown): error is HttpClientError {
 	return error instanceof HttpClientError;
-}
-
-function buildHeaders(
-	userAgent: string,
-	headers: Record<string, string> = {},
-): Record<string, string> {
-	return { "user-agent": userAgent, accept: "*/*", ...headers };
 }
 
 function baseResult(
