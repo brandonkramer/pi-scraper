@@ -8,7 +8,6 @@ import {
 	DEFAULT_TIMEOUT_SECONDS,
 	DEFAULT_USER_AGENT,
 } from "../defaults.js";
-import type { StructuredError } from "../types.js";
 import type { FetchUrlResult, HttpClientOptions } from "./client.js";
 import { HttpClient } from "./client.js";
 import {
@@ -35,6 +34,7 @@ import {
 	redirectError,
 	resolveRedirectUrl,
 } from "./redirects.js";
+import { hasStructuredError } from "./retry.js";
 import { RobotsCache, RobotsDeniedError } from "./robots.js";
 import { decodeText } from "./text-decode.js";
 import { withTimeout } from "./timeout.js";
@@ -350,8 +350,3 @@ function baseResult(
 	};
 }
 
-function hasStructuredError(
-	error: unknown,
-): error is { structured: StructuredError } {
-	return typeof error === "object" && error !== null && "structured" in error;
-}
