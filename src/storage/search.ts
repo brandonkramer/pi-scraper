@@ -3,6 +3,7 @@
  */
 import type { ResultEnvelope } from "../types.js";
 import { openStorageDb } from "./db.js";
+import { stringField } from "./_fields.js";
 import type { ResolveStorageOptions } from "./paths.js";
 
 export interface SearchHit {
@@ -134,10 +135,6 @@ function firstString(...values: Array<unknown>): string | undefined {
 	return values.find(
 		(value): value is string => typeof value === "string" && value.length > 0,
 	);
-}
-
-function stringField(value: unknown): string | undefined {
-	return typeof value === "string" ? value : undefined;
 }
 
 function cacheKey(options: ResolveStorageOptions): string {

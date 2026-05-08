@@ -4,9 +4,9 @@
 import { randomUUID } from "node:crypto";
 import { PI_TRUNCATION_LIMITS } from "../defaults.js";
 import type { ResponseStorageMetadata } from "../types.js";
-import { normalizeUrl } from "../url/normalize.js";
 import { readBlob, writeBlob } from "./blobs.js";
 import { openStorageDb } from "./db.js";
+import { normalizeMaybe, numberField, stringField } from "./_fields.js";
 import type { ResolveStorageOptions } from "./paths.js";
 import { recordStoredSearchText } from "./search.js";
 
@@ -131,14 +131,6 @@ function responseFields(value: unknown, responseId: string) {
 	};
 }
 
-function normalizeMaybe(url: string): string {
-	try {
-		return normalizeUrl(url);
-	} catch {
-		return url;
-	}
-}
-
 function expiresAt(
 	storedAt: string,
 	options: StoreResultOptions,
@@ -172,14 +164,6 @@ function trimToBytes(text: string, maxBytes: number): string {
 		else high = mid - 1;
 	}
 	return text.slice(0, low);
-}
-
-function stringField(value: unknown): string | undefined {
-	return typeof value === "string" ? value : undefined;
-}
-
-function numberField(value: unknown): number | undefined {
-	return typeof value === "number" ? value : undefined;
 }
 
 const UPSERT_RESPONSE = `INSERT OR REPLACE INTO responses

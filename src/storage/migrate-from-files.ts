@@ -6,9 +6,9 @@ import { cp, mkdir, readdir, readFile, rename, stat } from "node:fs/promises";
 import path from "node:path";
 import type { CrawlState } from "../crawl/state.js";
 import type { ResponseStorageMetadata } from "../types.js";
-import { normalizeUrl } from "../url/normalize.js";
 import { writeBlob } from "./blobs.js";
 import type { StorageDb } from "./db.js";
+import { normalizeMaybe, numberField, stringField } from "./_fields.js";
 import { type ResolveStorageOptions, resolvePiStoragePaths } from "./paths.js";
 
 interface LegacyEnvelope {
@@ -258,21 +258,6 @@ async function isFile(filePath: string): Promise<boolean> {
 	);
 }
 
-function normalizeMaybe(url: string): string {
-	try {
-		return normalizeUrl(url);
-	} catch {
-		return url;
-	}
-}
-
-function stringField(value: unknown): string | undefined {
-	return typeof value === "string" ? value : undefined;
-}
-
-function numberField(value: unknown): number | undefined {
-	return typeof value === "number" ? value : undefined;
-}
 
 const UPSERT_RESPONSE = `INSERT OR REPLACE INTO responses
 (response_id, url, url_normalized, final_url, content_hash, content_type, status, mode, format, byte_length, stored_at, expires_at, metadata_json)
