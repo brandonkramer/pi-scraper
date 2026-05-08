@@ -1,6 +1,7 @@
 /**
  * @fileoverview crawl frontier module.
  */
+import { compactQueue } from "../url/dedupe.js";
 import { normalizeUrl } from "../url/normalize.js";
 import { matchesAny } from "../url/patterns.js";
 
@@ -46,7 +47,7 @@ export class CrawlFrontier {
 		if (this.queueHead >= this.queue.length) return undefined;
 		const item = this.queue[this.queueHead];
 		this.queueHead += 1;
-		this.compactQueue();
+		this.queueHead = compactQueue(this.queue, this.queueHead);
 		return item;
 	}
 
@@ -60,13 +61,6 @@ export class CrawlFrontier {
 
 	get size(): number {
 		return this.queue.length - this.queueHead;
-	}
-
-	private compactQueue(): void {
-		const consumed = this.queueHead;
-		if (consumed < 1024 || consumed <= this.queue.length - consumed) return;
-		this.queue.splice(0, consumed);
-		this.queueHead = 0;
 	}
 
 	private allowed(url: string, depth: number): boolean {

@@ -2,6 +2,7 @@
  * @fileoverview http politeness module.
  */
 import { DEFAULT_CONCURRENCY } from "../defaults.js";
+import { compactQueue } from "../url/dedupe.js";
 
 export interface PolitenessOptions {
 	globalConcurrency?: number;
@@ -68,16 +69,9 @@ export class Semaphore {
 			if (!next) return;
 			this.active += 1;
 			this.queueHead += 1;
-			this.compactQueue();
+			this.queueHead = compactQueue(this.queue, this.queueHead);
 			queueMicrotask(next);
 		}
-	}
-
-	private compactQueue(): void {
-		const consumed = this.queueHead;
-		if (consumed < 1024 || consumed <= this.queue.length - consumed) return;
-		this.queue.splice(0, consumed);
-		this.queueHead = 0;
 	}
 }
 
