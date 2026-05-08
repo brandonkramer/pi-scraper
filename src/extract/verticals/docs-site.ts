@@ -8,7 +8,6 @@ import { parseDocument } from "htmlparser2";
 import { capability, type VerticalExtractor } from "../capabilities.js";
 import {
 	cleanText,
-	followingSectionNodes,
 	stripUndefined,
 	titleCase,
 	truncateText,
@@ -16,7 +15,7 @@ import {
 import {
 	extractHeadingSections,
 	firstTextBySelector,
-	headingLevel,
+	sectionFromHeading,
 	type ExtractedDocSection,
 } from "../doc-structure.js";
 
@@ -224,14 +223,11 @@ function extractReturns(
 		.filter((node): node is Element => domutils.isTag(node))
 		.find((node) => /returns?/iu.test(domutils.textContent(node)));
 	if (!returnsHeading) return undefined;
-	const description = cleanText(
-		domutils.textContent(
-			followingSectionNodes(returnsHeading, headingLevel(returnsHeading)),
-		),
-	);
-	return description
-		? { description: truncateText(description, 500) }
+	const section = sectionFromHeading(returnsHeading);
+	const description = section.content
+		? truncateText(cleanText(section.content), 500)
 		: undefined;
+	return description ? { description } : undefined;
 }
 
 function metaContent(document: AnyNode, name: string): string | undefined {
