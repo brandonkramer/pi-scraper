@@ -63,7 +63,7 @@ function parseDeepWiki(
 		repo,
 		lastIndexed,
 		commit,
-		sections: extractSections(cleanedText),
+		sections: extractTextSections(cleanedText),
 		activeSection: extractActiveSection(cleanedText),
 		sourceFiles: extractSourceFiles(cleanedText),
 		githubUrl: `https://github.com/${owner}/${repo}`,
@@ -101,7 +101,7 @@ function isSourcePathToken(token: string): boolean {
 	);
 }
 
-function extractSections(text: string): string[] {
+function extractTextSections(text: string): string[] {
 	// DeepWiki navigation is exposed as flattened text after static HTML cleanup.
 	// Parse the segment after the last-indexed marker and before the Glossary item.
 	const startMatch = text.match(/Last indexed:[^)]*\)\s*/iu);
