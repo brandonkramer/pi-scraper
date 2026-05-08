@@ -78,7 +78,10 @@ async function renderWithLoader(
 	loader: () => Promise<PlaywrightModule>,
 	safetyCheck: BrowserSafetyCheck = assertSafeFetchUrl,
 ): Promise<BrowserRenderResult> {
-	const browserSafety = createBrowserSafetyState(safetyCheck);
+	const browserSafety: BrowserSafetyState = {
+		check: safetyCheck,
+		checkedHosts: new Map(),
+	};
 	const safe = await assertSafeBrowserUrl(
 		input,
 		input.toString(),
@@ -198,12 +201,6 @@ type BrowserSafetyCheck = (input: string | URL) => Promise<SafeUrlResult>;
 interface BrowserSafetyState {
 	check: BrowserSafetyCheck;
 	checkedHosts: Map<string, Promise<SafeUrlResult>>;
-}
-
-function createBrowserSafetyState(
-	check: BrowserSafetyCheck,
-): BrowserSafetyState {
-	return { check, checkedHosts: new Map() };
 }
 
 async function assertSafeBrowserUrl(
