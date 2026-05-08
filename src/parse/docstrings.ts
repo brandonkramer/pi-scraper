@@ -1,4 +1,5 @@
 /** @fileoverview Surface-level docstring extraction for source files without typechecking. */
+import { stripUndefined } from "../extract/_html.js";
 
 export type DocstringKind = "function" | "class" | "interface" | "variable";
 
@@ -200,12 +201,4 @@ function symbolFromSignature(signature: string): {
 	if (/\binterface\b/u.test(signature)) return { name, kind: "interface" };
 	if (/\b(const|let|var)\b/u.test(signature)) return { name, kind: "variable" };
 	return { name, kind: "function" };
-}
-
-function stripUndefined<T extends Record<string, unknown>>(value: T): T {
-	return Object.fromEntries(
-		Object.entries(value).filter(
-			([, item]) => item !== undefined && item !== "",
-		),
-	) as T;
 }
