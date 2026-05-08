@@ -187,7 +187,7 @@ function redditEndpoints(match: RedditPostMatch): string[] {
 	endpoints.push(
 		redditEndpoint("https://www.reddit.com", `/by_id/t3_${match.postId}.json`),
 	);
-	return unique(endpoints);
+	return [...new Set(endpoints)];
 }
 
 function redditEndpoint(origin: string, path: string): string {
@@ -266,7 +266,7 @@ function assertUsableRedditResponse(status: number, text: string): void {
 		);
 	}
 	if (
-		!looksLikeJson(text) &&
+		!/^[\s\r\n]*[[{]/u.test(text) &&
 		/enable javascript|blocked|captcha|too many requests/iu.test(text)
 	) {
 		throw redditError(
@@ -377,10 +377,6 @@ function extractTopComments(
 	return topComments.length ? topComments : undefined;
 }
 
-function looksLikeJson(text: string): boolean {
-	return /^[\s\r\n]*[[{]/u.test(text);
-}
-
 function cleanPostId(value: string | undefined): string | undefined {
 	const cleaned = value?.match(/^[A-Za-z0-9]+/u)?.[0]?.toLowerCase();
 	return cleaned || undefined;
@@ -389,10 +385,6 @@ function cleanPostId(value: string | undefined): string | undefined {
 function absoluteRedditUrl(value?: string): string | undefined {
 	if (!value) return undefined;
 	return value.startsWith("/") ? `https://www.reddit.com${value}` : value;
-}
-
-function unique(values: string[]): string[] {
-	return [...new Set(values)];
 }
 
 function redditSchema() {
