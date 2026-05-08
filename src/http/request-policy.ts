@@ -30,7 +30,7 @@ export async function fetchWithRequestPolicy<T>({
 	if (!applyPolicy) return await fetch();
 
 	const rules =
-		respectRobots ?? DEFAULT_RESPECT_ROBOTS
+		(respectRobots ?? DEFAULT_RESPECT_ROBOTS)
 			? await robots.assertAllowed(safe.normalizedUrl, signal)
 			: undefined;
 	const crawlDelayMs = rules?.crawlDelay(userAgent);

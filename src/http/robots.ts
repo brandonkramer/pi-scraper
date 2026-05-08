@@ -4,6 +4,26 @@
 import { createRequire } from "node:module";
 import { DEFAULT_USER_AGENT } from "../defaults.js";
 
+interface RobotsTextFetchResult {
+  status: number;
+  text?: string;
+  body?: Buffer;
+}
+
+export interface RobotsTextClient {
+  fetchUrl(
+    url: string,
+    options: {
+      respectRobots: false;
+      timeoutSeconds: number;
+      maxBytes: number;
+      headers: Record<string, string>;
+      forceText: true;
+    },
+    signal?: AbortSignal,
+  ): Promise<RobotsTextFetchResult>;
+}
+
 interface RobotsParserResult {
   isAllowed(url: string, userAgent?: string): boolean | undefined;
   getCrawlDelay(userAgent?: string): number | undefined;
@@ -22,6 +42,28 @@ export interface RobotsRules {
 export interface RobotsCacheOptions {
   userAgent?: string;
   fetchText: (url: string, signal?: AbortSignal) => Promise<{ status: number; text: string }>;
+}
+
+export async function loadRobotsText(
+  client: RobotsTextClient,
+  url: string,
+  signal?: AbortSignal,
+): Promise<{ status: number; text: string }> {
+  const result = await client.fetchUrl(
+    url,
+    {
+      respectRobots: false,
+      timeoutSeconds: 5,
+      maxBytes: 256 * 1024,
+      headers: { accept: "text/plain,*/*;q=0.1" },
+      forceText: true,
+    },
+    signal,
+  );
+  return {
+    status: result.status,
+    text: result.text ?? result.body?.toString("utf8") ?? "",
+  };
 }
 
 interface CacheEntry {

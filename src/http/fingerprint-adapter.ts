@@ -22,7 +22,7 @@ import {
 import { PolitenessController } from "./politeness.js";
 import { followRedirects } from "./redirects.js";
 import { fetchWithRequestPolicy } from "./request-policy.js";
-import { RobotsCache } from "./robots.js";
+import { loadRobotsText, RobotsCache } from "./robots.js";
 import { materializeFetchBufferResponse } from "./response.js";
 import { withTimeout } from "./timeout.js";
 import { assertSafeFetchUrl, type SafeUrlResult } from "./url-safety.js";
@@ -48,7 +48,8 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		});
 		this.robots = new RobotsCache({
 			userAgent: clientOptions.userAgent ?? DEFAULT_USER_AGENT,
-			fetchText: (url, signal) => this.fetchRobotsText(url, signal),
+			fetchText: (url, signal) =>
+				loadRobotsText(this.policyClient, url, signal),
 		});
 	}
 
@@ -140,27 +141,6 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		);
 		this.backends.set(key, backend);
 		return backend;
-	}
-
-	private async fetchRobotsText(
-		url: string,
-		signal?: AbortSignal,
-	): Promise<{ status: number; text: string }> {
-		const result = await this.policyClient.fetchUrl(
-			url,
-			{
-				respectRobots: false,
-				timeoutSeconds: 5,
-				maxBytes: 256 * 1024,
-				headers: { accept: "text/plain,*/*;q=0.1" },
-				forceText: true,
-			},
-			signal,
-		);
-		return {
-			status: result.status,
-			text: result.text ?? result.body?.toString("utf8") ?? "",
-		};
 	}
 }
 
