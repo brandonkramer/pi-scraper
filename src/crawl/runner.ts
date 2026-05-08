@@ -9,6 +9,7 @@ import {
 	type ScrapeResult,
 	scrapeUrl,
 } from "../scrape/pipeline.js";
+import { isAbortError, resultChars } from "../scrape/_utils.js";
 import type { CommonScrapeOptions, StructuredError } from "../types.js";
 import {
 	appendJobError,
@@ -305,15 +306,6 @@ function extractLinks(result: ScrapeResult): string[] {
 		.filter(Boolean) as string[];
 }
 
-function resultChars(result: ScrapeResult): number {
-	return (
-		result.data.markdown?.length ??
-		result.data.text?.length ??
-		result.data.html?.length ??
-		0
-	);
-}
-
 function progressSummary(metadata: CrawlMetadata, maxPages: number): string {
 	const done = metadata.succeededCount + metadata.failedCount;
 	return `${done}/${maxPages} pages · ${metadata.failedCount} failed · depth ${metadata.currentDepth ?? 0} · frontier ${metadata.frontierCount}`;
@@ -341,13 +333,6 @@ function unknownErrorSummary(
 		message: error instanceof Error ? error.message : "Crawl failed",
 		phase: "crawl",
 	};
-}
-
-function isAbortError(error: unknown, signal?: AbortSignal): boolean {
-	return (
-		signal?.aborted === true ||
-		(error instanceof Error && error.name === "AbortError")
-	);
 }
 
 class CrawlCoordinator {

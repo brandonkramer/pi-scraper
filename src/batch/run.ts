@@ -9,6 +9,7 @@ import {
 	type ScrapePipelineDeps,
 	type ScrapeResult,
 } from "../scrape/pipeline.js";
+import { isAbortError, resultChars } from "../scrape/_utils.js";
 import type { CommonScrapeOptions, StructuredError } from "../types.js";
 import {
 	appendJobError,
@@ -277,21 +278,6 @@ function safeCacheKey(url: string): string {
 	}
 }
 
-function resultChars(result: ScrapeResult): number {
-	return (
-		result.data.markdown?.length ??
-		result.data.text?.length ??
-		result.data.html?.length ??
-		0
-	);
-}
-
-function isAbortError(error: unknown, signal?: AbortSignal): boolean {
-	return (
-		signal?.aborted === true ||
-		(error instanceof Error && error.name === "AbortError")
-	);
-}
 
 function toStructuredError(error: unknown, url: string): StructuredError {
 	if (typeof error === "object" && error !== null && "structured" in error) {
