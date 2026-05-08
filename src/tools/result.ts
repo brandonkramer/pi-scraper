@@ -109,6 +109,23 @@ export function structuredToolError(
 	});
 }
 
+export function missingModelResult(
+	task: "extract" | "summarize",
+	url: string | undefined,
+	text: string,
+): PiToolShell<ResultEnvelope<undefined>> {
+	return errorResult(missingModelError(task, url), text);
+}
+
+export function toolErrorResult(
+	error: unknown,
+	fallbackCode: string,
+	phase: string,
+	url?: string,
+): PiToolShell<ResultEnvelope<undefined>> {
+	return errorResult(structuredToolError(error, fallbackCode, phase, url));
+}
+
 export function missingModelError(
 	task: "extract" | "summarize",
 	url?: string,

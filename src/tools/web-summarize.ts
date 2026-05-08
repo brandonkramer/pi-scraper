@@ -14,8 +14,10 @@ import { defineWebTool, type WebTool } from "./define.js";
 import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
 import {
 	errorResult,
+	missingModelResult,
 	missingModelError,
 	structuredToolError,
+	toolErrorResult,
 } from "./result.js";
 import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
 
@@ -45,8 +47,9 @@ export function createWebSummarizeTool(
 		async execute(_toolCallId, params: Params, signal) {
 			const config = await loadEffectiveConfig();
 			if (!options.modelAdapter) {
-				return errorResult(
-					missingModelError("summarize", params.url),
+				return missingModelResult(
+					"summarize",
+					params.url,
 					"web_summarize requires a model-backed adapter; use web_scrape to read source text locally.",
 				);
 			}
@@ -78,13 +81,11 @@ export function createWebSummarizeTool(
 					formatFallback: "markdown",
 				});
 			} catch (error) {
-				return errorResult(
-					structuredToolError(
-						error,
-						"SUMMARIZE_FAILED",
-						"summarize",
-						params.url,
-					),
+				return toolErrorResult(
+					error,
+					"SUMMARIZE_FAILED",
+					"summarize",
+					params.url,
 				);
 			}
 		},

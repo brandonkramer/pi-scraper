@@ -18,8 +18,10 @@ import { emitProgress } from "./progress.js";
 import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
 import {
 	errorResult,
+	missingModelResult,
 	missingModelError,
 	structuredToolError,
+	toolErrorResult,
 	toolResult,
 } from "./result.js";
 import { urlProperty } from "./schemas.js";
@@ -326,15 +328,13 @@ async function runPatternInspection(
 			assistantGuidance: storedResultGuidance(),
 		});
 	} catch (error) {
-		return errorResult(
-			structuredToolError(
-				error,
-				error instanceof PatternInspectError
-					? error.structured.code
-					: "PATTERN_EXTRACT_FAILED",
-				"pattern_extract",
-				params.url,
-			),
+		return toolErrorResult(
+			error,
+			error instanceof PatternInspectError
+				? error.structured.code
+				: "PATTERN_EXTRACT_FAILED",
+			"pattern_extract",
+			params.url,
 		);
 	}
 }
@@ -346,8 +346,9 @@ async function runAdHocExtraction(
 ) {
 	const config = await loadEffectiveConfig();
 	if (!options.modelAdapter) {
-		return errorResult(
-			missingModelError("extract", params.url),
+		return missingModelResult(
+			"extract",
+			params.url,
 			"web_extract action=adhoc requires a model-backed adapter. Use action=list or action=vertical for deterministic extractors.",
 		);
 	}
@@ -381,15 +382,13 @@ async function runAdHocExtraction(
 			answerContext: `${summary} Refresh the source page before extraction when the requested facts are time-sensitive.`,
 		});
 	} catch (error) {
-		return errorResult(
-			structuredToolError(
-				error,
-				error instanceof MissingExtractInputError
-					? "MISSING_INPUT"
-					: "EXTRACT_FAILED",
-				"extract",
-				params.url,
-			),
+		return toolErrorResult(
+			error,
+			error instanceof MissingExtractInputError
+				? "MISSING_INPUT"
+				: "EXTRACT_FAILED",
+			"extract",
+			params.url,
 		);
 	}
 }

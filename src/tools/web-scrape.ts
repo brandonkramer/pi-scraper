@@ -14,8 +14,10 @@ import { defineWebTool, type WebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
 import {
 	errorResult,
+	missingModelResult,
 	missingModelError,
 	structuredToolError,
+	toolErrorResult,
 	toolResult,
 } from "./result.js";
 import { urlProperty } from "./schemas.js";
@@ -195,8 +197,9 @@ async function summarizeScrape(
 	signal: AbortSignal,
 ) {
 	if (!options.modelAdapter) {
-		return errorResult(
-			missingModelError("summarize", params.url),
+		return missingModelResult(
+			"summarize",
+			params.url,
 			"web_scrape task=summarize requires a model-backed adapter; use task=read for source text.",
 		);
 	}
@@ -231,8 +234,11 @@ async function summarizeScrape(
 			formatFallback: "markdown",
 		});
 	} catch (error) {
-		return errorResult(
-			structuredToolError(error, "SUMMARIZE_FAILED", "summarize", params.url),
+		return toolErrorResult(
+			error,
+			"SUMMARIZE_FAILED",
+			"summarize",
+			params.url,
 		);
 	}
 }
