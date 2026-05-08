@@ -84,7 +84,7 @@ function pairChangedLines(previousLines: LineRecord[], currentLines: LineRecord[
       current: best.current.line,
       previousIndex: previousLine.index,
       currentIndex: best.current.index,
-      similarity: roundSimilarity(best.similarity),
+      similarity: Math.round(best.similarity * 1_000) / 1_000,
     });
   }
 
@@ -149,6 +149,3 @@ function levenshteinDistance(left: string, right: string): number {
   return row[right.length] ?? 0;
 }
 
-function roundSimilarity(value: number): number {
-  return Math.round(value * 1_000) / 1_000;
-}
