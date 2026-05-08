@@ -7,7 +7,7 @@ import * as cheerio from "cheerio";
 import { parseHTML } from "linkedom";
 import { intFlag } from "../../lib/cli-args.mjs";
 import { timedRepeats } from "../../lib/stats.mjs";
-import { writeSuiteReport } from "../../lib/results.mjs";
+import { perfRow, writeBenchmarkReport } from "../../lib/report.mjs";
 
 const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -76,7 +76,13 @@ const report = {
 	cases,
 };
 const markdown = renderMarkdown(report);
-await writeReport({ rootDir, report, markdown });
+await writeBenchmarkReport({
+	rootDir,
+	suite: "parsers",
+	kind: "linkedom",
+	report,
+	markdown,
+});
 console.log(markdown);
 
 async function loadFixtures(dir, { fixtureNames, minBytes }) {
@@ -99,16 +105,6 @@ async function loadFixtures(dir, { fixtureNames, minBytes }) {
 	return out;
 }
 
-async function writeReport({ rootDir, report, markdown }) {
-	await writeSuiteReport({
-		rootDir,
-		suite: "parsers",
-		kind: "linkedom",
-		timestamp: report.generatedAt,
-		report,
-		markdown,
-	});
-}
 
 function renderMarkdown(report) {
 	const lines = [
@@ -132,10 +128,6 @@ function renderMarkdown(report) {
 	return lines.join("\n");
 }
 
-function perfRow(tool) {
-	const p = tool.perf;
-	return `| ${tool.name} | ${p.samples} | ${p.min_ms} | ${p.median_ms} | ${p.mean_ms} | ${p.p95_ms} | ${p.max_ms} | ${p.stddev_ms} |`;
-}
 
 function flagList(argv, name) {
 	const match = argv.find((arg) => arg.startsWith(`--${name}=`));

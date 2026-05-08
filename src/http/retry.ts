@@ -2,9 +2,9 @@
  * @fileoverview http retry module.
  */
 import { DEFAULT_RETRY } from "../defaults.js";
-import type { CommonRequestOptions, StructuredError } from "../types.js";
+import type { CommonRequestOptions } from "../types.js";
 import { BodySizeLimitError } from "./download.js";
-import type { HttpClientError } from "./errors.js";
+import { hasStructuredError, type HttpClientError } from "./errors.js";
 import { RobotsDeniedError } from "./robots.js";
 
 export function isRetryableStatus(status: number): boolean {
@@ -54,11 +54,7 @@ export function parseRetryAfterMs(
 	return parseRetryAfter(value);
 }
 
-export function hasStructuredError(
-	error: unknown,
-): error is { structured: StructuredError } {
-	return typeof error === "object" && error !== null && "structured" in error;
-}
+export { hasStructuredError } from "./errors.js";
 
 function parseRetryAfter(value: string | undefined): number | undefined {
 	if (!value) {

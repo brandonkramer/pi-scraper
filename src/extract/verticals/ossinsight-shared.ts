@@ -12,3 +12,10 @@ export function rowsOf<T>(payload: OssInsightRows<T> | T[]): T[] {
 	if (Array.isArray(payload.data?.result)) return payload.data.result;
 	return [];
 }
+
+export function isOneOf<const T extends readonly string[]>(
+	value: string,
+	choices: T,
+): value is T[number] {
+	return choices.includes(value);
+}

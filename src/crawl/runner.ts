@@ -2,6 +2,7 @@
  * @fileoverview crawl runner module.
  */
 import { DEFAULT_CONCURRENCY, DEFAULT_CRAWL_LIMITS } from "../defaults.js";
+import { isAbortError } from "../http/abort.js";
 import { createHttpClient } from "../http/client.js";
 import { discoverSiteUrls, type SiteMapDeps } from "../map/discover.js";
 import {
@@ -9,15 +10,15 @@ import {
 	type ScrapeResult,
 	scrapeUrl,
 } from "../scrape/pipeline.js";
-import { isAbortError, resultChars } from "../scrape/_utils.js";
+import { resultChars } from "../scrape/_utils.js";
 import { hasStructuredError } from "../http/retry.js";
 import type { CommonScrapeOptions, StructuredError } from "../types.js";
 import {
+	JobProgressWriter,
 	appendJobError,
 	createJobManifest,
 	structuredErrorToJobError,
 	unknownToJobError,
-	updateJobManifest,
 	writeJobManifest,
 	type JobError,
 } from "../storage/jobs.js";
@@ -146,9 +147,10 @@ export async function runCrawl(
 	let statePath = "";
 	let persistChain: Promise<CrawlMetadata | undefined> =
 		Promise.resolve(undefined);
+	const jobWriter = new JobProgressWriter(state.crawlId, options);
 
 	const coordinator = new CrawlCoordinator(frontier, maxPages, signal);
-	const queuedMetadata = await persist("queued");
+	const queuedMetadata = await persist("queued", undefined, true);
 	options.onProgress?.({
 		state: "queued",
 		current: counts.succeeded + counts.failed,
@@ -161,6 +163,7 @@ export async function runCrawl(
 	async function persist(
 		status: CrawlMetadata["status"],
 		lastError?: CrawlMetadata["lastError"],
+		force = false,
 	): Promise<CrawlMetadata> {
 		persistChain = persistChain
 			.catch(() => undefined)
@@ -188,9 +191,9 @@ export async function runCrawl(
 					maxDepthVisited,
 					lastError: lastError ?? state.metadata?.lastError,
 				};
-				statePath = await saveCrawlState(state, options);
-				const manifest = await updateJobManifest(
-					state.crawlId,
+				const shouldFlush = jobWriter.shouldFlush(force);
+				if (shouldFlush) statePath = await saveCrawlState(state, options);
+				const manifest = await jobWriter.update(
 					{
 						status: status === "running" ? "running" : status,
 						startedAt: new Date().toISOString(),
@@ -205,9 +208,9 @@ export async function runCrawl(
 						totalChars,
 						truncatedPages,
 					},
-					options,
+					{ force: shouldFlush },
 				);
-				jobManifestPath = manifest.path;
+				if (manifest) jobManifestPath = manifest.path;
 				return state.metadata;
 			});
 		return (await persistChain) as CrawlMetadata;
@@ -247,7 +250,7 @@ export async function runCrawl(
 				totalBytes += result.downloadedBytes ?? 0;
 				totalChars += resultChars(result);
 				if (result.truncated) truncatedPages += 1;
-				for (const link of extractLinks(result))
+				for (const link of resultLinks(result))
 					frontier.enqueue(link, item.depth + 1, item.url);
 				completed = true;
 				activeItems.delete(item.url);
@@ -280,7 +283,7 @@ export async function runCrawl(
 			...pages.map((page) => page.finalUrl ?? page.url ?? "").filter(Boolean),
 		];
 		const finalStatus = frontier.size > 0 ? "paused" : "done";
-		const metadata = await persist(finalStatus);
+		const metadata = await persist(finalStatus, undefined, true);
 		return {
 			crawlId: state.crawlId,
 			pages,
@@ -293,12 +296,12 @@ export async function runCrawl(
 		const status = isAbortError(error, signal) ? "paused" : "error";
 		const summary = unknownErrorSummary(error);
 		jobErrors = appendJobError(jobErrors, unknownToJobError(error, "crawl"));
-		await persist(status, summary);
+		await persist(status, summary, true);
 		throw error;
 	}
 }
 
-function extractLinks(result: ScrapeResult): string[] {
+function resultLinks(result: ScrapeResult): string[] {
 	const links = result.data.links ?? [];
 	return links
 		.map((link) =>

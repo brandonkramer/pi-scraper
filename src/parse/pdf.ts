@@ -1,6 +1,10 @@
 /**
  * @fileoverview parse pdf module.
  */
+import { abortable, throwIfAborted } from "../http/abort.js";
+
+const PDF_ABORT_MESSAGE = "PDF extraction aborted";
+
 export interface PdfMetadata {
 	title?: string;
 	author?: string;
@@ -56,7 +60,7 @@ export async function extractPdfText(
 		: input;
 	if (bytes.byteLength === 0) return { ok: false, reason: "empty", text: "" };
 	try {
-		throwIfAborted(options.signal);
+		throwIfAborted(options.signal, PDF_ABORT_MESSAGE);
 		const backend = options.backend ?? (await getPdfJsBackend());
 		return await backend.extract(bytes, {
 			maxPages: options.maxPages ?? DEFAULT_MAX_PAGES,
@@ -65,7 +69,7 @@ export async function extractPdfText(
 		});
 	} catch (error) {
 		if (error instanceof Error && error.name === "AbortError") throw error;
-		return errorResult(error);
+		return pdfErrorResult(error);
 	}
 }
 
@@ -104,7 +108,7 @@ class PdfJsBackend implements PdfTextBackend {
 			signal?: AbortSignal;
 		},
 	): Promise<PdfExtractionResult> {
-		throwIfAborted(options.signal);
+		throwIfAborted(options.signal, PDF_ABORT_MESSAGE);
 		let document: PdfDocument | undefined;
 		try {
 			document = await abortable(
@@ -117,6 +121,7 @@ class PdfJsBackend implements PdfTextBackend {
 					verbosity: this.pdfjs.VerbosityLevel?.ERRORS ?? 0,
 				}).promise,
 				options.signal,
+				PDF_ABORT_MESSAGE,
 			);
 			const pageCount = document.numPages;
 			const extractedPages = Math.min(pageCount, options.maxPages);
@@ -125,10 +130,11 @@ class PdfJsBackend implements PdfTextBackend {
 			let chars = 0;
 			let truncated = pageCount > extractedPages;
 			for (let pageNumber = 1; pageNumber <= extractedPages; pageNumber += 1) {
-				throwIfAborted(options.signal);
+				throwIfAborted(options.signal, PDF_ABORT_MESSAGE);
 				const page = await abortable(
 					document.getPage(pageNumber),
 					options.signal,
+					PDF_ABORT_MESSAGE,
 				);
 				const text = await pageText(page, options.signal);
 				if (!text) continue;
@@ -169,7 +175,11 @@ async function readMetadata(
 ): Promise<PdfMetadata | undefined> {
 	if (!document.getMetadata) return undefined;
 	try {
-		const result = await abortable(document.getMetadata(), signal);
+		const result = await abortable(
+			document.getMetadata(),
+			signal,
+			PDF_ABORT_MESSAGE,
+		);
 		return sanitizeMetadata(result.info);
 	} catch {
 		return undefined;
@@ -183,6 +193,7 @@ async function pageText(
 	const content = await abortable(
 		page.getTextContent({ disableNormalization: false }),
 		signal,
+		PDF_ABORT_MESSAGE,
 	);
 	return content.items
 		.map((item) => (isTextItem(item) ? item.str : ""))
@@ -223,7 +234,7 @@ function normalizePdfText(text: string): string {
 		.trim();
 }
 
-function errorResult(error: unknown): PdfExtractionResult {
+function pdfErrorResult(error: unknown): PdfExtractionResult {
 	const message =
 		error instanceof Error ? error.message : "PDF extraction failed";
 	const lower = message.toLowerCase();
@@ -243,32 +254,6 @@ function isTextItem(item: unknown): item is { str: string } {
 			"str" in item &&
 			typeof (item as { str?: unknown }).str === "string",
 	);
-}
-
-function throwIfAborted(signal: AbortSignal | undefined): void {
-	if (!signal?.aborted) return;
-	throw abortError();
-}
-
-function abortError(): Error {
-	const error = new Error("PDF extraction aborted");
-	error.name = "AbortError";
-	return error;
-}
-
-function abortable<T>(
-	promise: Promise<T>,
-	signal: AbortSignal | undefined,
-): Promise<T> {
-	if (!signal) return promise;
-	throwIfAborted(signal);
-	return new Promise((resolve, reject) => {
-		const onAbort = () => reject(abortError());
-		signal.addEventListener("abort", onAbort, { once: true });
-		promise.then(resolve, reject).finally(() => {
-			signal.removeEventListener("abort", onAbort);
-		});
-	});
 }
 
 interface PdfJsModule {

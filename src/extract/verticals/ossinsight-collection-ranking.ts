@@ -2,7 +2,7 @@
  * @fileoverview extract verticals ossinsight-collection-ranking module.
  */
 import { capability, type VerticalExtractor } from "../capabilities.js";
-import { rowsOf, type OssInsightRows } from "./ossinsight-shared.js";
+import { isOneOf, rowsOf, type OssInsightRows } from "./ossinsight-shared.js";
 
 const metrics = ["stars", "pull-requests", "issues"] as const;
 const periods = ["past_24_hours", "past_28_days", "past_month"] as const;
@@ -34,7 +34,10 @@ export interface OssInsightCollectionRankingOutput {
 
 export const ossInsightCollectionRankingExtractor: VerticalExtractor<OssInsightCollectionRankingOutput> =
 	{
-		capability: capability("ossinsight_collection_ranking", ["https://ossinsight.io/collections/:slug"], {
+		capability: capability(
+			"ossinsight_collection_ranking",
+			["https://ossinsight.io/collections/:slug"],
+			{
 				type: "object",
 				required: ["collection", "metric", "period", "rows"],
 				properties: {
@@ -43,19 +46,22 @@ export const ossInsightCollectionRankingExtractor: VerticalExtractor<OssInsightC
 					period: { enum: periods },
 					rows: { type: "array" },
 				},
-			}),
+			},
+		),
 		match: (url) => {
 			if (url.hostname !== "ossinsight.io") return undefined;
 			const parts = url.pathname.split("/").filter(Boolean);
 			const metric = url.searchParams.get("metric") ?? "stars";
 			const period = url.searchParams.get("period") ?? "past_28_days";
 			if (parts.length !== 2 || parts[0] !== "collections") return undefined;
-			if (!isMetric(metric) || !isPeriod(period)) return undefined;
+			if (!isMetric(metric) || !isRankingPeriod(period)) return undefined;
 			return { slug: parts[1] ?? "", metric, period };
 		},
 		extract: async (_url, match, context, signal) => {
 			const metric = isMetric(match.metric) ? match.metric : "stars";
-			const period = isPeriod(match.period) ? match.period : "past_28_days";
+			const period = isRankingPeriod(match.period)
+				? match.period
+				: "past_28_days";
 			const collections = await loadCollections(context, signal);
 			const collection = collections.find((item) =>
 				collectionSlugVariants(item).includes(match.slug),
@@ -123,9 +129,9 @@ function trimRankingRow(row: OssInsightRankingRow): OssInsightRankingRow {
 }
 
 function isMetric(value: string): value is OssInsightMetric {
-	return metrics.includes(value as OssInsightMetric);
+	return isOneOf(value, metrics);
 }
 
-function isPeriod(value: string): value is OssInsightPeriod {
-	return periods.includes(value as OssInsightPeriod);
+function isRankingPeriod(value: string): value is OssInsightPeriod {
+	return isOneOf(value, periods);
 }

@@ -13,7 +13,7 @@ import {
 	flagList,
 	loadHtmlFixtures,
 } from "../../lib/fixtures.mjs";
-import { writeSuiteReport } from "../../lib/results.mjs";
+import { safeSelect, writeBenchmarkReport } from "../../lib/report.mjs";
 
 const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -58,7 +58,13 @@ for (const fixture of fixtures) {
 	});
 }
 const markdown = renderMarkdown(report);
-await writeReport(report, markdown);
+await writeBenchmarkReport({
+	rootDir,
+	suite: "dom-adapters",
+	kind: "diff-stability",
+	report,
+	markdown,
+});
 console.log(markdown);
 
 function snapshot(adapter, html) {
@@ -77,24 +83,7 @@ function snapshot(adapter, html) {
 	return { text, markdown, textHash: hash(text), markdownHash: hash(markdown) };
 }
 
-function safeSelect(adapter, doc, selector) {
-	try {
-		return adapter.select(doc, selector);
-	} catch {
-		return [];
-	}
-}
 
-async function writeReport(report, markdown) {
-	await writeSuiteReport({
-		rootDir,
-		suite: "dom-adapters",
-		kind: "diff-stability",
-		timestamp: report.generatedAt,
-		report,
-		markdown,
-	});
-}
 
 function renderMarkdown(report) {
 	const lines = [

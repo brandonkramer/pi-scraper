@@ -11,7 +11,7 @@ import {
 	loadHtmlFixtures,
 } from "../../lib/fixtures.mjs";
 import { timedRepeats } from "../../lib/stats.mjs";
-import { writeSuiteReport } from "../../lib/results.mjs";
+import { safeSelect, writeBenchmarkReport } from "../../lib/report.mjs";
 
 const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -50,7 +50,13 @@ const report = {
 	tools: results,
 };
 const markdown = renderMarkdown(report);
-await writeReport(report, markdown);
+await writeBenchmarkReport({
+	rootDir,
+	suite: "dom-adapters",
+	kind: "timing",
+	report,
+	markdown,
+});
 console.log(markdown);
 
 async function runAdapterBatch(adapter, inputFixtures) {
@@ -72,13 +78,6 @@ function runAdapterOnce(adapter, html) {
 	return clean(adapter.text(doc, root)).length + adapter.html(doc, root).length;
 }
 
-function safeSelect(adapter, doc, selector) {
-	try {
-		return adapter.select(doc, selector);
-	} catch {
-		return [];
-	}
-}
 
 async function mapLimit(items, limit, fn) {
 	let next = 0;
@@ -90,16 +89,6 @@ async function mapLimit(items, limit, fn) {
 	);
 }
 
-async function writeReport(report, markdown) {
-	await writeSuiteReport({
-		rootDir,
-		suite: "dom-adapters",
-		kind: "timing",
-		timestamp: report.generatedAt,
-		report,
-		markdown,
-	});
-}
 
 function renderMarkdown(report) {
 	const lines = [

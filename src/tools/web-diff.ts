@@ -20,7 +20,7 @@ import {
 	writeJobManifest,
 	type JobError,
 } from "../storage/jobs.js";
-import { storeResult } from "../storage/results.js";
+import { storeResultWithResponseId } from "../storage/results.js";
 import {
 	formatAge,
 	retrieveResultAction,
@@ -93,20 +93,17 @@ export const webDiffTool = defineWebTool({
 				snapshotTag: params.snapshotTag,
 				compareTag: params.compareTag,
 			});
-			const responseId = randomUUID();
-			diff.current.metadata.responseId = responseId;
-			let stored = await storeResult(diff, {
-				responseId,
-				contentType: "application/json",
-			});
+			const { metadata: stored } = await storeResultWithResponseId(
+				(responseId) => {
+					diff.current.metadata.responseId = responseId;
+					return diff;
+				},
+				{ contentType: "application/json" },
+			);
 			diff.current.metadata.fullOutputPath = stored.fullOutputPath;
 			await updateSnapshotReference(diff.current.url, stored, {
 				snapshotName: params.snapshotName,
 				snapshotTag: params.snapshotTag,
-			});
-			stored = await storeResult(diff, {
-				responseId,
-				contentType: "application/json",
 			});
 			await updateJobManifest(jobId, {
 				status: errors.length ? "error" : "done",

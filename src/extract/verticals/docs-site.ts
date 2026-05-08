@@ -13,6 +13,12 @@ import {
 	titleCase,
 	truncateText,
 } from "../_html.js";
+import {
+	extractHeadingSections,
+	firstTextBySelector,
+	headingLevel,
+	type ExtractedDocSection,
+} from "../doc-structure.js";
 
 export type DocsPlatform =
 	| "docusaurus"
@@ -21,13 +27,7 @@ export type DocsPlatform =
 	| "mdn"
 	| "unknown";
 
-interface DocSection {
-	heading: string;
-	level: number;
-	anchor?: string;
-	content?: string;
-	codeBlocks?: Array<{ language?: string; code: string }>;
-}
+type DocSection = ExtractedDocSection;
 
 interface DocSiteResult {
 	platform: DocsPlatform;
@@ -46,7 +46,9 @@ interface DocSiteResult {
 }
 
 export const docsiteExtractor: VerticalExtractor<DocSiteResult> = {
-	capability: capability("docsite", [
+	capability: capability(
+		"docsite",
+		[
 			"https://:host/docs/:path*",
 			"https://:host/api/:path*",
 			"https://*.readthedocs.io/:path*",
@@ -55,7 +57,9 @@ export const docsiteExtractor: VerticalExtractor<DocSiteResult> = {
 			"https://gitbook.com/:path*",
 			"https://developer.mozilla.org/:locale/docs/:path*",
 			"https://:host/:path*",
-		], docSiteSchema()),
+		],
+		docSiteSchema(),
+	),
 	match: (url) => (/^https?:$/u.test(url.protocol) ? {} : undefined),
 	extract: async (url, _match, context, signal) => {
 		if (context.fetchPage) {
@@ -75,7 +79,7 @@ function parseDocSite(html: string, url: URL): DocSiteResult {
 	});
 	const platform = detectPlatform(url, document);
 	const title =
-		firstText(document, ["main h1", "article h1", "h1", "title"]) ??
+		firstTextBySelector(document, ["main h1", "article h1", "h1", "title"]) ??
 		url.pathname;
 	const summary =
 		metaContent(document, "description") ??
@@ -187,44 +191,7 @@ function extractSections(document: AnyNode): DocSection[] {
 			"article, main, .theme-doc-markdown, .rst-content .document, .markdown-section",
 			document,
 		) ?? document;
-	return cssSelect
-		.selectAll("h1,h2,h3,h4,h5,h6", root)
-		.filter((heading): heading is Element => domutils.isTag(heading))
-		.map((heading) => sectionFromHeading(heading))
-		.filter((section) => section.heading);
-}
-
-function sectionFromHeading(heading: Element): DocSection {
-	const level = Number.parseInt(heading.name.slice(1), 10);
-	const contentNodes = followingSectionNodes(heading, level);
-	const codeBlocks = extractCodeBlocks(contentNodes);
-	return stripUndefined({
-		heading: cleanText(domutils.textContent(heading)),
-		level,
-		anchor: headingAnchor(heading),
-		content: truncateText(cleanText(domutils.textContent(contentNodes)), 1200),
-		codeBlocks: codeBlocks.length ? codeBlocks : undefined,
-	});
-}
-
-function extractCodeBlocks(
-	nodes: AnyNode[],
-): Array<{ language?: string; code: string }> {
-	return cssSelect
-		.selectAll("pre", nodes)
-		.filter((node): node is Element => domutils.isTag(node))
-		.map((node) => {
-			const code = cssSelect.selectOne("code", node);
-			const className =
-				code && domutils.isTag(code)
-					? domutils.getAttributeValue(code, "class")
-					: domutils.getAttributeValue(node, "class");
-			return stripUndefined({
-				language: extractLanguage(className),
-				code: cleanText(domutils.textContent(code ?? node)),
-			});
-		})
-		.filter((block) => block.code);
+	return extractHeadingSections(root, { contentChars: 1200 });
 }
 
 function extractMdnSignature(
@@ -232,7 +199,7 @@ function extractMdnSignature(
 	title: string,
 ): DocSiteResult["apiSignature"] {
 	const signature =
-		firstText(document, ["pre.syntaxbox", "pre code", "pre"]) ?? "";
+		firstTextBySelector(document, ["pre.syntaxbox", "pre code", "pre"]) ?? "";
 	if (!signature.includes("(") && !title.includes("()")) return undefined;
 	const parameters: Array<{ name: string; description?: string }> = [];
 	for (const node of cssSelect.selectAll("dt", document)) {
@@ -259,22 +226,12 @@ function extractReturns(
 	if (!returnsHeading) return undefined;
 	const description = cleanText(
 		domutils.textContent(
-			followingSectionNodes(
-				returnsHeading,
-				Number.parseInt(returnsHeading.name.slice(1), 10),
-			),
+			followingSectionNodes(returnsHeading, headingLevel(returnsHeading)),
 		),
 	);
-	return description ? { description: truncateText(description, 500) } : undefined;
-}
-
-function firstText(document: AnyNode, selectors: string[]): string | undefined {
-	for (const selector of selectors) {
-		const node = cssSelect.selectOne(selector, document);
-		const text = cleanText(textOf(node));
-		if (text) return text;
-	}
-	return undefined;
+	return description
+		? { description: truncateText(description, 500) }
+		: undefined;
 }
 
 function metaContent(document: AnyNode, name: string): string | undefined {
@@ -287,21 +244,8 @@ function metaContent(document: AnyNode, name: string): string | undefined {
 		: undefined;
 }
 
-function headingAnchor(node: Element): string | undefined {
-	const id = domutils.getAttributeValue(node, "id");
-	if (id) return `#${id}`;
-	const link = cssSelect.selectOne("a[href^='#']", node);
-	return link && domutils.isTag(link)
-		? domutils.getAttributeValue(link, "href")
-		: undefined;
-}
-
 function textOf(node: AnyNode | null | undefined): string {
 	return node ? domutils.textContent(node) : "";
-}
-
-function extractLanguage(className?: string): string | undefined {
-	return className?.match(/(?:language|lang)-([A-Za-z0-9_+-]+)/u)?.[1];
 }
 
 function looksLikeVersion(value?: string): boolean {
@@ -309,4 +253,3 @@ function looksLikeVersion(value?: string): boolean {
 		value && /^(?:v?\d+(?:\.\d+){0,3}|latest|next|stable)$/iu.test(value),
 	);
 }
-

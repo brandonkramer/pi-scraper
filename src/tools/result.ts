@@ -8,7 +8,7 @@ import type {
 	StructuredError,
 	TimingInfo,
 } from "../types.js";
-import { hasStructuredError } from "../http/retry.js";
+import { structuredErrorFromUnknown } from "../http/errors.js";
 import {
 	freshnessFromCache,
 	guidanceWithFreshness,
@@ -101,15 +101,12 @@ export function structuredToolError(
 	phase: string,
 	url?: string,
 ): StructuredError {
-	if (hasStructuredError(error)) return error.structured;
-	return {
+	return structuredErrorFromUnknown(error, {
 		code: fallbackCode,
 		phase,
-		message: error instanceof Error ? error.message : "Tool execution failed",
-		retryable: false,
+		message: "Tool execution failed",
 		url,
-		cause: error,
-	};
+	});
 }
 
 export function missingModelError(

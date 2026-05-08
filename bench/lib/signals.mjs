@@ -1,3 +1,5 @@
+import { perfCells } from "./report.mjs";
+
 export function evaluateSignals(names, context) {
 	return names.map((name) => ({ name, ...signalStatus(name, context) }));
 }
@@ -36,7 +38,8 @@ export function renderMarkdown(report) {
 			"| Case | Samples | Min ms | Median ms | Mean ms | P95 ms | Max ms | Stddev ms |",
 			"| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
 			...perfRows.map(
-				(result) => `| ${perfRow(result).map(escapeCell).join(" | ")} |`,
+				(result) =>
+					`| ${perfCells(result.id, result.perf).map(escapeCell).join(" | ")} |`,
 			),
 		);
 	}
@@ -117,20 +120,6 @@ function signalRow(result) {
 		result.metrics.downloaded_bytes,
 		result.metrics.markdown_chars,
 		signalSummary(result.signals),
-	];
-}
-
-function perfRow(result) {
-	const p = result.perf;
-	return [
-		result.id,
-		p.samples,
-		p.min_ms,
-		p.median_ms,
-		p.mean_ms,
-		p.p95_ms,
-		p.max_ms,
-		p.stddev_ms,
 	];
 }
 

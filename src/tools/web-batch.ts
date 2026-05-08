@@ -9,11 +9,11 @@ import {
 	freshnessFromCache,
 } from "../storage/freshness.js";
 import { updateJobManifest } from "../storage/jobs.js";
-import { storeResult } from "../storage/results.js";
 import {
 	retrieveResultAction,
 	storedResultGuidance,
 } from "./agentic-context.js";
+import { buildStoredContextPackage } from "./context-package.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
 import { renderWebBatchResult, renderWebToolCall } from "./web-renderers.js";
@@ -28,31 +28,26 @@ export const webBatchSchema = Type.Object({
 	compile: Type.Optional(Type.Any()),
 });
 
-async function maybeBuildContextPackage(
+async function buildBatchContextPackage(
 	params: Params,
 	items: readonly BatchItemResult[],
 	jobId: string,
 ) {
 	if (params.compile !== true) return undefined;
-	const { buildContextPackage } = await import("../extract/context-package.js");
-	const pages = items
-		.filter((item) => item.ok)
-		.map((item) => ({
-			url: item.result.finalUrl ?? item.result.url ?? item.url,
-			result: item.result,
-		}));
-	const value = buildContextPackage({
+	const contextPackage = await buildStoredContextPackage({
 		source: "batch",
 		batchId: jobId,
-		pages,
+		pages: items
+			.filter((item) => item.ok)
+			.map((item) => ({
+				url: item.result.finalUrl ?? item.result.url ?? item.url,
+				result: item.result,
+			})),
 	});
-	const stored = await storeResult(value);
-	await updateJobManifest(jobId, { responseIds: [stored.responseId] });
-	return {
-		value,
-		responseId: stored.responseId,
-		fullOutputPath: stored.fullOutputPath,
-	};
+	await updateJobManifest(jobId, {
+		responseIds: [contextPackage.responseId],
+	});
+	return contextPackage;
 }
 
 type Params = Static<typeof webBatchSchema>;
@@ -98,7 +93,7 @@ export const webBatchTool = defineWebTool({
 					: undefined,
 			),
 		);
-		const contextPackage = await maybeBuildContextPackage(
+		const contextPackage = await buildBatchContextPackage(
 			params,
 			result.items,
 			result.jobId,

@@ -10,7 +10,11 @@ import {
 import type { CommonScrapeOptions, OutputFormat } from "../../types.js";
 import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.js";
 import { responseScrape } from "./fast.js";
-import { errorResult, fetchOptions, structuredError } from "./shared.js";
+import {
+	fetchOptions,
+	scrapeErrorResult,
+	scrapeStructuredError,
+} from "./shared.js";
 
 export async function fingerprintScrape(
 	input: string | URL,
@@ -28,7 +32,7 @@ export async function fingerprintScrape(
 			signal,
 		);
 	} catch (error) {
-		return errorResult(
+		return scrapeErrorResult(
 			input.toString(),
 			"fingerprint",
 			format,
@@ -100,5 +104,5 @@ async function fingerprintFetch(
 
 function fingerprintStructuredError(error: unknown, url: string) {
 	if (isFingerprintFetchError(error)) return { url, ...error.structured };
-	return structuredError(error, url);
+	return scrapeStructuredError(error, url);
 }

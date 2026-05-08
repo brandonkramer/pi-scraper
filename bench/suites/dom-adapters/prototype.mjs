@@ -12,7 +12,11 @@ import {
 	loadHtmlFixtures,
 } from "../../lib/fixtures.mjs";
 import { timedRepeats } from "../../lib/stats.mjs";
-import { writeSuiteReport } from "../../lib/results.mjs";
+import {
+	markdownRow,
+	safeSelect,
+	writeBenchmarkReport,
+} from "../../lib/report.mjs";
 
 const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -95,7 +99,13 @@ const report = {
 	cases,
 };
 const markdown = renderMarkdown(report);
-await writeReport({ report, markdown });
+await writeBenchmarkReport({
+	rootDir,
+	suite: "dom-adapters",
+	kind: "prototype",
+	report,
+	markdown,
+});
 console.log(markdown);
 
 function snapshotWith(adapter, html) {
@@ -156,14 +166,6 @@ function snapshotWith(adapter, html) {
 	};
 }
 
-function safeSelect(adapter, doc, selector) {
-	try {
-		return adapter.select(doc, selector);
-	} catch {
-		return [];
-	}
-}
-
 function firstAttr(adapter, doc, selector, name) {
 	const [node] = safeSelect(adapter, doc, selector);
 	return node ? adapter.attr(doc, node, name) : undefined;
@@ -189,17 +191,6 @@ function qualityDelta(sample, baseline) {
 
 function boolDelta(left, right) {
 	return Number(left) - Number(right);
-}
-
-async function writeReport({ report, markdown }) {
-	await writeSuiteReport({
-		rootDir,
-		suite: "dom-adapters",
-		kind: "prototype",
-		timestamp: report.generatedAt,
-		report,
-		markdown,
-	});
 }
 
 function renderMarkdown(report) {
@@ -232,5 +223,15 @@ function renderMarkdown(report) {
 
 function toolRow(tool) {
 	const d = tool.delta;
-	return `| ${tool.name} | ${tool.parse.median_ms} | ${tool.parseAndSurvey.median_ms} | ${d.bodyTextChars} | ${d.bodyHtmlChars} | ${d.headingCount} | ${d.linkCount} | ${d.jsonLdCount} | ${d.logoCandidateCount} |`;
+	return markdownRow([
+		tool.name,
+		tool.parse.median_ms,
+		tool.parseAndSurvey.median_ms,
+		d.bodyTextChars,
+		d.bodyHtmlChars,
+		d.headingCount,
+		d.linkCount,
+		d.jsonLdCount,
+		d.logoCandidateCount,
+	]);
 }

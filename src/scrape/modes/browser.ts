@@ -10,7 +10,7 @@ import type { FetchUrlResult } from "../../http/client.js";
 import type { CommonScrapeOptions, OutputFormat } from "../../types.js";
 import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.js";
 import { responseScrape } from "./fast.js";
-import { errorResult, structuredError } from "./shared.js";
+import { scrapeErrorResult, scrapeStructuredError } from "./shared.js";
 
 export async function browserScrape(
 	input: string | URL,
@@ -22,7 +22,7 @@ export async function browserScrape(
 	try {
 		return await browserResponseScrape(input, format, options, deps, signal);
 	} catch (error) {
-		return errorResult(
+		return scrapeErrorResult(
 			input.toString(),
 			"browser",
 			format,
@@ -77,7 +77,7 @@ async function browserResponseScrape(
 
 function browserStructuredError(error: unknown, url: string) {
 	if (error instanceof BrowserRenderError) return { url, ...error.structured };
-	return structuredError(error, url);
+	return scrapeStructuredError(error, url);
 }
 
 export type { BrowserRenderer };

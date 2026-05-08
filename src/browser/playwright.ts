@@ -1,6 +1,7 @@
 /**
  * @fileoverview browser playwright module.
  */
+import { createAbortError } from "../http/abort.js";
 import {
 	assertSafeFetchUrl,
 	assertSafeUrl,
@@ -293,12 +294,14 @@ function blockedRequestError(
 }
 
 function abortError(url: string): BrowserRenderError {
+	const cause = createAbortError("Browser rendering aborted");
 	return new BrowserRenderError({
 		code: "ABORTED",
 		phase: "browser",
-		message: "Browser rendering aborted",
+		message: cause.message,
 		retryable: false,
 		url,
+		cause,
 	});
 }
 

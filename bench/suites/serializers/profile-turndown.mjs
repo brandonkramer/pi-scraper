@@ -8,7 +8,7 @@ import turndownPluginGfm from "turndown-plugin-gfm";
 import { buildAndImport } from "../../lib/build-pipeline.mjs";
 import { intFlag } from "../../lib/cli-args.mjs";
 import { timedRepeats } from "../../lib/stats.mjs";
-import { writeSuiteReport } from "../../lib/results.mjs";
+import { markdownRow, writeBenchmarkReport } from "../../lib/report.mjs";
 
 const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -66,7 +66,13 @@ const report = {
 	cases,
 };
 const markdown = renderMarkdown(report);
-await writeReport({ rootDir, report, markdown });
+await writeBenchmarkReport({
+	rootDir,
+	suite: "serializers",
+	kind: "turndown-rules",
+	report,
+	markdown,
+});
 console.log(markdown);
 
 function buildVariants(compiled) {
@@ -169,17 +175,6 @@ async function loadFixtures(dir, { fixtureNames, minBytes }) {
 	return out;
 }
 
-async function writeReport({ rootDir, report, markdown }) {
-	await writeSuiteReport({
-		rootDir,
-		suite: "serializers",
-		kind: "turndown-rules",
-		timestamp: report.generatedAt,
-		report,
-		markdown,
-	});
-}
-
 function renderMarkdown(report) {
 	const lines = [
 		"# Turndown rule profile",
@@ -203,7 +198,16 @@ function renderMarkdown(report) {
 }
 
 function toolRow(tool) {
-	return `| ${tool.name} | ${tool.perf.samples} | ${tool.perf.median_ms} | ${tool.perf.mean_ms} | ${tool.perf.p95_ms} | ${tool.quality.chars} | ${tool.quality.link_count} | ${tool.quality.table_row_count} |`;
+	return markdownRow([
+		tool.name,
+		tool.perf.samples,
+		tool.perf.median_ms,
+		tool.perf.mean_ms,
+		tool.perf.p95_ms,
+		tool.quality.chars,
+		tool.quality.link_count,
+		tool.quality.table_row_count,
+	]);
 }
 
 function markdownStats(markdown) {

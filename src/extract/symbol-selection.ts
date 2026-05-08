@@ -153,9 +153,9 @@ function parseSelectableContent(
 	content: string,
 	sourceFormat: PatternSourceFormat,
 ): ParsedContent {
-	const headings = extractHeadings(content, sourceFormat);
+	const headings = selectHeadings(content, sourceFormat);
 	const sections = sectionsFromHeadings(content, headings);
-	const codeBlocks = extractCodeBlocks(content, sourceFormat);
+	const codeBlocks = selectCodeBlocks(content, sourceFormat);
 	const tables = extractTables(content, sourceFormat);
 	const codeBearingContent =
 		codeBlocks.length === 0 && looksCodeBearing(content)
@@ -173,7 +173,7 @@ function parseSelectableContent(
 	return { headings, sections, codeBlocks, tables, symbols };
 }
 
-function extractHeadings(
+function selectHeadings(
 	content: string,
 	sourceFormat: PatternSourceFormat,
 ): SelectedSection[] {
@@ -227,7 +227,7 @@ function sectionsFromHeadings(
 	});
 }
 
-function extractCodeBlocks(
+function selectCodeBlocks(
 	content: string,
 	sourceFormat: PatternSourceFormat,
 ): SelectedCodeBlock[] {

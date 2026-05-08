@@ -2,6 +2,7 @@
  * @fileoverview extract registry module.
  */
 import { createHttpClient, type HttpClient } from "../http/client.js";
+import { hasStructuredError } from "../http/errors.js";
 import type {
 	CommonRequestOptions,
 	ExtractorCapability,
@@ -132,7 +133,7 @@ function verticalError(error: unknown): {
 	message: string;
 	retryable: boolean;
 } {
-	const structured = structuredError(error);
+	const structured = extractionStructuredError(error);
 	if (structured) return structured;
 	return {
 		code: "EXTRACTION_FAILED",
@@ -142,19 +143,14 @@ function verticalError(error: unknown): {
 	};
 }
 
-function structuredError(
+function extractionStructuredError(
 	error: unknown,
 ): { code: string; message: string; retryable: boolean } | undefined {
-	if (!error || typeof error !== "object") return undefined;
-	const structured = (error as { structured?: unknown }).structured;
-	if (!structured || typeof structured !== "object") return undefined;
-	const code = (structured as { code?: unknown }).code;
-	const message = (structured as { message?: unknown }).message;
-	if (typeof code !== "string" || typeof message !== "string") return undefined;
+	if (!hasStructuredError(error)) return undefined;
 	return {
-		code,
-		message,
-		retryable: Boolean((structured as { retryable?: unknown }).retryable),
+		code: error.structured.code,
+		message: error.structured.message,
+		retryable: Boolean(error.structured.retryable),
 	};
 }
 

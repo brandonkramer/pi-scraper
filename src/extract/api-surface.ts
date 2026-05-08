@@ -5,17 +5,15 @@
  * richer raw Markdown/RST/source parsing belongs to Task 21 and symbol filtering to Task 23.
  */
 import * as cssSelect from "css-select";
-import type { AnyNode, Element } from "domhandler";
+import type { AnyNode } from "domhandler";
 import * as domutils from "domutils";
 import { parseDocument } from "htmlparser2";
 import type { ScrapeResult } from "../scrape/pipeline.js";
+import { cleanText, stripUndefined, titleCase, truncateText } from "./_html.js";
 import {
-	cleanText,
-	followingSectionNodes,
-	stripUndefined,
-	titleCase,
-	truncateText,
-} from "./_html.js";
+	extractHeadingSections,
+	firstTextBySelector,
+} from "./doc-structure.js";
 
 export interface ApiSurfaceParameter {
 	name: string;
@@ -170,22 +168,15 @@ function parseHtml(
 		lowerCaseAttributeNames: true,
 		lowerCaseTags: true,
 	});
-	const title = firstText(document, ["main h1", "article h1", "h1", "title"]);
-	const headings = cssSelect.selectAll(
-		"h1,h2,h3,h4",
-		document as AnyNode,
-	) as AnyNode[];
-	const sections = headings
-		.filter((heading): heading is Element => domutils.isTag(heading))
-		.map((heading) => {
-			const level = Number.parseInt(heading.name.slice(1), 10);
-			const nodes = followingSectionNodes(heading, level);
-			return {
-				heading: cleanText(domutils.textContent(heading)),
-				content: cleanText(domutils.textContent(nodes)),
-				codeBlocks: codeBlocks(nodes),
-			};
-		});
+	const title = firstTextBySelector(document, [
+		"main h1",
+		"article h1",
+		"h1",
+		"title",
+	]);
+	const sections = extractHeadingSections(document as AnyNode).filter(
+		(section) => section.level <= 4,
+	);
 	return {
 		title,
 		description: firstParagraph(document),
@@ -407,16 +398,6 @@ function moduleNameFromUrl(value: string): string {
 	}
 }
 
-function firstText(document: AnyNode, selectors: string[]): string | undefined {
-	for (const selector of selectors) {
-		const text = cleanText(
-			domutils.textContent(cssSelect.selectOne(selector, document) ?? []),
-		);
-		if (text) return text;
-	}
-	return undefined;
-}
-
 function firstParagraph(document: AnyNode): string | undefined {
 	return truncateText(
 		cleanText(
@@ -426,16 +407,6 @@ function firstParagraph(document: AnyNode): string | undefined {
 		),
 		700,
 	);
-}
-
-function codeBlocks(
-	nodes: AnyNode[],
-): Array<{ language?: string; code: string }> {
-	return cssSelect
-		.selectAll("pre", nodes)
-		.map((node) => cleanText(domutils.textContent(node)))
-		.filter(Boolean)
-		.map((code) => ({ code }));
 }
 
 function sectionUrl(url: string, anchor?: string): string {
@@ -451,4 +422,3 @@ function dedupeByName<T extends { name: string }>(items: T[]): T[] {
 		return true;
 	});
 }
-

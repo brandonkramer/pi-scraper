@@ -34,11 +34,38 @@ interface ResponseRow {
 	content_type: string | null;
 }
 
+/**
+ * Reserves the response identifier used for a stored result.
+ *
+ * @remarks
+ * Use when a payload needs to include its own responseId before it is written.
+ */
+export function createResponseId(): string {
+	return randomUUID();
+}
+
+/**
+ * Stores a payload that needs to know its responseId before serialization.
+ *
+ * @remarks
+ * This avoids speculative store-then-mutate-then-store flows for self-referential
+ * tool payloads. The final fullOutputPath is still returned as storage metadata.
+ */
+export async function storeResultWithResponseId<T>(
+	createValue: (responseId: string) => T | Promise<T>,
+	options: StoreResultOptions = {},
+): Promise<{ value: T; metadata: ResponseStorageMetadata }> {
+	const responseId = options.responseId ?? createResponseId();
+	const value = await createValue(responseId);
+	const metadata = await storeResult(value, { ...options, responseId });
+	return { value, metadata };
+}
+
 export async function storeResult<T>(
 	value: T,
 	options: StoreResultOptions = {},
 ): Promise<ResponseStorageMetadata> {
-	const responseId = options.responseId ?? randomUUID();
+	const responseId = options.responseId ?? createResponseId();
 	const storedAt = new Date().toISOString();
 	const valueJson = JSON.stringify(value) ?? "null";
 	const contentType = options.contentType ?? "application/json";

@@ -18,7 +18,7 @@ import {
 } from "../storage/freshness.js";
 import type { ScrapeResult } from "../scrape/pipeline.js";
 import { updateJobManifest } from "../storage/jobs.js";
-import { storeResult } from "../storage/results.js";
+import { storeResultWithResponseId } from "../storage/results.js";
 import type {
 	AgenticNextAction,
 	AgenticQualitySignals,
@@ -29,6 +29,7 @@ import {
 	formatAge,
 	storedResultGuidance,
 } from "./agentic-context.js";
+import { buildStoredContextPackage } from "./context-package.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
 import { renderEnvelopeResult } from "./render.js";
@@ -150,17 +151,17 @@ async function crawlRun(
 		signal,
 	);
 	const apiSurface = await maybeBuildApiSurface(params, crawl.pages);
-	const storedPayload = apiSurface ? { ...crawl, apiSurface } : crawl;
-	const stored = await storeResult(storedPayload);
+	const { metadata: finalStored } = await storeResultWithResponseId(
+		(responseId) => {
+			crawl.metadata = { ...crawl.metadata, responseId };
+			return apiSurface ? { ...crawl, apiSurface } : crawl;
+		},
+	);
 	crawl.metadata = await updateCrawlMetadata(crawl.crawlId, {
-		responseId: stored.responseId,
+		responseId: finalStored.responseId,
 		status: crawl.metadata.status,
 	});
-	const finalStoredPayload = apiSurface ? { ...crawl, apiSurface } : crawl;
-	const finalStored = await storeResult(finalStoredPayload, {
-		responseId: stored.responseId,
-	});
-	const contextPackage = await maybeBuildContextPackage(
+	const contextPackage = await buildCrawlContextPackage(
 		params,
 		crawl.crawlId,
 		crawl.pages,
@@ -217,37 +218,21 @@ async function maybeBuildApiSurface(params: Params, pages: ScrapeResult[]) {
 	return buildApiSurfaceFromScrapes(pages);
 }
 
-async function maybeBuildContextPackage(
+async function buildCrawlContextPackage(
 	params: Params,
 	crawlId: string,
 	pages: ScrapeResult[],
 ) {
 	if (params.compile !== true) return undefined;
-	const [
-		{ buildContextPackage },
-		{ storeResult },
-		{ writeCrawlContextPackage },
-	] = await Promise.all([
-		import("../extract/context-package.js"),
-		import("../storage/results.js"),
-		import("../storage/context-packages.js"),
-	]);
-	const value = buildContextPackage({
+	return buildStoredContextPackage({
 		source: "crawl",
 		crawlId,
 		pages: pages.map((result) => ({
 			url: result.finalUrl ?? result.url ?? "",
 			result,
 		})),
+		persistCrawlPackage: true,
 	});
-	const stored = await storeResult(value);
-	const crawlFile = await writeCrawlContextPackage(crawlId, value);
-	return {
-		value,
-		responseId: stored.responseId,
-		fullOutputPath: stored.fullOutputPath,
-		crawlPackagePath: crawlFile.path,
-	};
 }
 
 async function resolveRunUrl(params: Params): Promise<string | undefined> {

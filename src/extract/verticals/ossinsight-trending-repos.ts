@@ -2,7 +2,7 @@
  * @fileoverview extract verticals ossinsight-trending-repos module.
  */
 import { capability, type VerticalExtractor } from "../capabilities.js";
-import { rowsOf, type OssInsightRows } from "./ossinsight-shared.js";
+import { isOneOf, rowsOf, type OssInsightRows } from "./ossinsight-shared.js";
 
 const periods = ["past_24_hours", "past_week", "past_month"] as const;
 type OssInsightTrendingPeriod = (typeof periods)[number];
@@ -27,10 +27,13 @@ export interface OssInsightTrendingReposOutput {
 
 export const ossInsightTrendingReposExtractor: VerticalExtractor<OssInsightTrendingReposOutput> =
 	{
-		capability: capability("ossinsight_trending_repos", [
+		capability: capability(
+			"ossinsight_trending_repos",
+			[
 				"https://ossinsight.io/trending",
 				"https://ossinsight.io/trending/:language",
-			], {
+			],
+			{
 				type: "object",
 				required: ["period", "language", "rows"],
 				properties: {
@@ -38,12 +41,13 @@ export const ossInsightTrendingReposExtractor: VerticalExtractor<OssInsightTrend
 					language: { type: "string" },
 					rows: { type: "array" },
 				},
-			}),
+			},
+		),
 		match: (url) => {
 			if (url.hostname !== "ossinsight.io") return undefined;
 			const parts = url.pathname.split("/").filter(Boolean);
 			const period = url.searchParams.get("period") ?? "past_24_hours";
-			if (!isPeriod(period)) return undefined;
+			if (!isTrendingPeriod(period)) return undefined;
 			if (parts.length === 1 && parts[0] === "trending") {
 				return { language: "All", period };
 			}
@@ -52,7 +56,9 @@ export const ossInsightTrendingReposExtractor: VerticalExtractor<OssInsightTrend
 				: undefined;
 		},
 		extract: async (_url, match, context, signal) => {
-			const period = isPeriod(match.period) ? match.period : "past_24_hours";
+			const period = isTrendingPeriod(match.period)
+				? match.period
+				: "past_24_hours";
 			const language = match.language || "All";
 			const payload = await context.fetchJson<
 				OssInsightRows<OssInsightTrendingRepoRow>
@@ -83,6 +89,6 @@ function trimTrendingRow(
 	};
 }
 
-function isPeriod(value: string): value is OssInsightTrendingPeriod {
-	return periods.includes(value as OssInsightTrendingPeriod);
+function isTrendingPeriod(value: string): value is OssInsightTrendingPeriod {
+	return isOneOf(value, periods);
 }

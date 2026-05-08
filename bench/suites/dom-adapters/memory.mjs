@@ -11,7 +11,11 @@ import {
 	loadHtmlFixtures,
 } from "../../lib/fixtures.mjs";
 import { summarize } from "../../lib/stats.mjs";
-import { writeSuiteReport } from "../../lib/results.mjs";
+import {
+	markdownRow,
+	safeSelect,
+	writeBenchmarkReport,
+} from "../../lib/report.mjs";
 
 const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -27,7 +31,9 @@ const fixtures = await loadHtmlFixtures(
 const adapters = [createCheerioAdapter(), createHtmlparser2Adapter()];
 
 if (!globalThis.gc) {
-	console.error("Run with `node --expose-gc bench/suites/dom-adapters/memory.mjs`.");
+	console.error(
+		"Run with `node --expose-gc bench/suites/dom-adapters/memory.mjs`.",
+	);
 	process.exit(2);
 }
 
@@ -73,7 +79,13 @@ for (const fixture of fixtures) {
 }
 
 const markdown = renderMarkdown(report);
-await writeReport(report, markdown);
+await writeBenchmarkReport({
+	rootDir,
+	suite: "dom-adapters",
+	kind: "memory",
+	report,
+	markdown,
+});
 console.log(markdown);
 
 function summarizeKb(samples) {
@@ -103,25 +115,6 @@ function extractChecksum(adapter, html) {
 	return title.length + links + headings + text.length + htmlOut.length;
 }
 
-function safeSelect(adapter, doc, selector) {
-	try {
-		return adapter.select(doc, selector);
-	} catch {
-		return [];
-	}
-}
-
-async function writeReport(report, markdown) {
-	await writeSuiteReport({
-		rootDir,
-		suite: "dom-adapters",
-		kind: "memory",
-		timestamp: report.generatedAt,
-		report,
-		markdown,
-	});
-}
-
 function renderMarkdown(report) {
 	const lines = [
 		"# DOM adapter memory comparison",
@@ -147,5 +140,12 @@ function renderMarkdown(report) {
 }
 
 function toolRow(tool) {
-	return `| ${tool.name} | ${tool.heapUsedKb.medianKb} | ${tool.heapUsedKb.p95Kb} | ${tool.rssKb.medianKb} | ${tool.rssKb.p95Kb} | ${tool.checksumStable ? "yes" : "no"} |`;
+	return markdownRow([
+		tool.name,
+		tool.heapUsedKb.medianKb,
+		tool.heapUsedKb.p95Kb,
+		tool.rssKb.medianKb,
+		tool.rssKb.p95Kb,
+		tool.checksumStable ? "yes" : "no",
+	]);
 }

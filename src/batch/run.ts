@@ -9,15 +9,16 @@ import {
 	type ScrapePipelineDeps,
 	type ScrapeResult,
 } from "../scrape/pipeline.js";
-import { isAbortError, resultChars } from "../scrape/_utils.js";
+import { isAbortError } from "../http/abort.js";
+import { resultChars } from "../scrape/_utils.js";
 import { hasStructuredError } from "../http/retry.js";
 import type { CommonScrapeOptions, StructuredError } from "../types.js";
 import {
+	JobProgressWriter,
 	appendJobError,
 	createJobManifest,
 	structuredErrorToJobError,
 	unknownToJobError,
-	updateJobManifest,
 	writeJobManifest,
 	type JobError,
 } from "../storage/jobs.js";
@@ -92,7 +93,7 @@ export async function runBatchScrape(
 		}),
 		options,
 	);
-	let manifestChain: Promise<void> = Promise.resolve();
+	const jobWriter = new JobProgressWriter(jobId, options);
 	const cache = new Map<
 		string,
 		Promise<
@@ -120,7 +121,7 @@ export async function runBatchScrape(
 			};
 
 	options.onProgress?.({ state: "queued", current: 0, total: urls.length });
-	await updateBatchJob("running", 0, 0);
+	await updateBatchJob("running", 0, 0, undefined, true);
 	async function worker(): Promise<void> {
 		while (next < urls.length) {
 			if (signal?.aborted)
@@ -194,6 +195,8 @@ export async function runBatchScrape(
 			isAbortError(error, signal) ? "paused" : "error",
 			items.filter(Boolean).length,
 			errors.length,
+			undefined,
+			true,
 		);
 		throw error;
 	}
@@ -201,9 +204,13 @@ export async function runBatchScrape(
 	const summary = summarize(completed);
 	if (options.storeFullResults === true) {
 		const metadata = await storeResult(completed, options);
-		await updateBatchJob("done", completed.length, errors.length, [
-			metadata.responseId,
-		]);
+		await updateBatchJob(
+			"done",
+			completed.length,
+			errors.length,
+			[metadata.responseId],
+			true,
+		);
 		return {
 			items: completed,
 			responseId: metadata.responseId,
@@ -222,6 +229,7 @@ export async function runBatchScrape(
 		truncated.metadata?.responseId
 			? [truncated.metadata.responseId]
 			: undefined,
+		true,
 	);
 	return {
 		items: completed,
@@ -238,30 +246,25 @@ export async function runBatchScrape(
 		urlsProcessed: number,
 		urlsFailed: number,
 		responseIds?: string[],
+		force = false,
 	): Promise<void> {
-		manifestChain = manifestChain
-			.catch(() => undefined)
-			.then(async () => {
-				const updated = await updateJobManifest(
-					jobId,
-					{
-						status,
-						startedAt: new Date().toISOString(),
-						completedAt:
-							status === "running" ? undefined : new Date().toISOString(),
-						urlsProcessed,
-						urlsFailed,
-						errors,
-						totalBytes,
-						totalChars,
-						truncatedPages,
-						responseIds,
-					},
-					options,
-				);
-				jobManifestPath = updated.path;
-			});
-		await manifestChain;
+		const updated = await jobWriter.update(
+			{
+				status,
+				startedAt: new Date().toISOString(),
+				completedAt:
+					status === "running" ? undefined : new Date().toISOString(),
+				urlsProcessed,
+				urlsFailed,
+				errors,
+				totalBytes,
+				totalChars,
+				truncatedPages,
+				responseIds,
+			},
+			{ force },
+		);
+		if (updated) jobManifestPath = updated.path;
 	}
 }
 

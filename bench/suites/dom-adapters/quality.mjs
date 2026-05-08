@@ -14,7 +14,11 @@ import {
 	loadHtmlFixtures,
 } from "../../lib/fixtures.mjs";
 import { timedRepeats } from "../../lib/stats.mjs";
-import { writeSuiteReport } from "../../lib/results.mjs";
+import {
+	markdownRow,
+	safeSelect,
+	writeBenchmarkReport,
+} from "../../lib/report.mjs";
 
 const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -103,7 +107,13 @@ for (const fixture of fixtures) {
 }
 
 const markdown = renderMarkdown(report);
-await writeReport(report, markdown);
+await writeBenchmarkReport({
+	rootDir,
+	suite: "dom-adapters",
+	kind: "quality",
+	report,
+	markdown,
+});
 console.log(markdown);
 
 function extractWith(adapter, html, scenario) {
@@ -330,27 +340,8 @@ function markdownFromHtml(html) {
 	return markdownService.turndown(html);
 }
 
-function safeSelect(adapter, doc, selector, root) {
-	try {
-		return adapter.select(doc, selector, root);
-	} catch {
-		return [];
-	}
-}
-
 function tagName(node) {
 	return (node.name ?? node.tagName ?? "").toLowerCase();
-}
-
-async function writeReport(report, markdown) {
-	await writeSuiteReport({
-		rootDir,
-		suite: "dom-adapters",
-		kind: "quality",
-		timestamp: report.generatedAt,
-		report,
-		markdown,
-	});
 }
 
 function renderMarkdown(report) {
@@ -391,7 +382,22 @@ function toolRow(tool) {
 		`~${d.dataIslandKeysDelta.changed.length}`,
 		`+${d.dataIslandKeysDelta.added.length}`,
 	].join("/");
-	return `| ${tool.name} | ${d.status} | ${tool.timing.median_ms} | ${d.textSimilarity} | ${d.markdownSimilarity} | ${d.textCharsDelta} | ${d.markdownCharsDelta} | ${d.htmlCharsDelta} | ${d.headingCountDelta} | ${d.linkCountDelta} | ${islandDelta} | ${d.dataIslandHashMatch ? "same" : "diff"} | ${islandKeys} | ${meta} |`;
+	return markdownRow([
+		tool.name,
+		d.status,
+		tool.timing.median_ms,
+		d.textSimilarity,
+		d.markdownSimilarity,
+		d.textCharsDelta,
+		d.markdownCharsDelta,
+		d.htmlCharsDelta,
+		d.headingCountDelta,
+		d.linkCountDelta,
+		islandDelta,
+		d.dataIslandHashMatch ? "same" : "diff",
+		islandKeys,
+		meta,
+	]);
 }
 
 function hash(value) {

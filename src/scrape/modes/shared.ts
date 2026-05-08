@@ -2,7 +2,7 @@
  * @fileoverview scrape modes shared module.
  */
 import type { FetchUrlOptions } from "../../http/client.js";
-import { HttpClientError } from "../../http/client.js";
+import { structuredErrorFromUnknown } from "../../http/errors.js";
 import type {
 	CommonScrapeOptions,
 	OutputFormat,
@@ -53,7 +53,7 @@ export function resultBase(
 	};
 }
 
-export function errorResult(
+export function scrapeErrorResult(
 	url: string,
 	mode: ScrapeMode,
 	format: OutputFormat,
@@ -72,14 +72,17 @@ export function errorResult(
 	};
 }
 
-export function structuredError(error: unknown, url: string): StructuredError {
-	if (error instanceof HttpClientError) return { url, ...error.structured };
+export function scrapeStructuredError(
+	error: unknown,
+	url: string,
+): StructuredError {
 	return {
-		code: "SCRAPE_FAILED",
-		phase: "scrape",
-		message: error instanceof Error ? error.message : "Scrape failed",
-		retryable: false,
 		url,
-		cause: error,
+		...structuredErrorFromUnknown(error, {
+			code: "SCRAPE_FAILED",
+			phase: "scrape",
+			message: "Scrape failed",
+			url,
+		}),
 	};
 }

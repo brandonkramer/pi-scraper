@@ -1,6 +1,10 @@
 /**
  * @fileoverview extract verticals reddit module.
  */
+import {
+	createStructuredError,
+	hasStructuredError,
+} from "../../http/errors.js";
 import { capability, type VerticalExtractor } from "../capabilities.js";
 import { stripUndefined } from "../_html.js";
 const COMMENT_LIMIT = 5;
@@ -82,11 +86,15 @@ interface RedditPostResult {
 }
 
 export const redditExtractor: VerticalExtractor<RedditPostResult> = {
-	capability: capability("reddit", [
+	capability: capability(
+		"reddit",
+		[
 			"https://www.reddit.com/r/:subreddit/comments/:postId/:slug*",
 			"https://old.reddit.com/r/:subreddit/comments/:postId/:slug*",
 			"https://redd.it/:postId",
-		], redditSchema()),
+		],
+		redditSchema(),
+	),
 	match: (url) => parseRedditPostUrl(url),
 	extract: async (_url, match, context, signal) => {
 		const reddit = match as RedditPostMatch;
@@ -451,30 +459,14 @@ function errorRetryable(error: Error): boolean {
 		: false;
 }
 
-function redditError(
-	code: string,
-	message: string,
-	retryable: boolean,
-): Error & {
-	structured: { code: string; message: string; retryable: boolean };
-} {
-	const error = new Error(message) as Error & {
-		structured: { code: string; message: string; retryable: boolean };
-	};
-	error.name = "RedditExtractionError";
-	error.structured = { code, message, retryable };
-	return error;
-}
-
-function hasStructuredError(error: unknown): error is {
-	structured: { code: string; message: string; retryable?: boolean };
-} {
-	if (!error || typeof error !== "object") return false;
-	const structured = (error as { structured?: unknown }).structured;
-	return Boolean(
-		structured &&
-			typeof structured === "object" &&
-			typeof (structured as { code?: unknown }).code === "string" &&
-			typeof (structured as { message?: unknown }).message === "string",
+function redditError(code: string, message: string, retryable: boolean): Error {
+	return createStructuredError(
+		{
+			code,
+			phase: "extract",
+			message,
+			retryable,
+		},
+		"RedditExtractionError",
 	);
 }

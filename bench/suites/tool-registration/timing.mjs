@@ -6,7 +6,7 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { intFlag } from "../../lib/cli-args.mjs";
 import { timedRepeats } from "../../lib/stats.mjs";
-import { writeSuiteReport } from "../../lib/results.mjs";
+import { writeBenchmarkReport } from "../../lib/report.mjs";
 
 const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
@@ -32,7 +32,13 @@ const report = {
 	perf,
 };
 const markdown = renderMarkdown(report);
-await writeReport({ rootDir, report, markdown });
+await writeBenchmarkReport({
+	rootDir,
+	suite: "tool-registration",
+	kind: "timing",
+	report,
+	markdown,
+});
 console.log(markdown);
 
 async function buildExtension({ rootDir, outDir }) {
@@ -89,17 +95,6 @@ function runOnce(runnerPath) {
 		stdio: ["ignore", "pipe", "pipe"],
 	});
 	return JSON.parse(output.trim());
-}
-
-async function writeReport({ rootDir, report, markdown }) {
-	await writeSuiteReport({
-		rootDir,
-		suite: "tool-registration",
-		kind: undefined,
-		timestamp: report.generatedAt,
-		report,
-		markdown,
-	});
 }
 
 function renderMarkdown(report) {

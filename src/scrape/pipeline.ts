@@ -15,7 +15,7 @@ import type {
 import { finishResult, materializeFormat } from "./render.js";
 import type { ScrapeSignals } from "./signals.js";
 import { httpScrape } from "./modes/fast.js";
-import { errorResult, structuredError } from "./modes/shared.js";
+import { scrapeErrorResult, scrapeStructuredError } from "./modes/shared.js";
 import type { BrowserRenderer } from "./modes/browser.js";
 
 export interface ScrapeData {
@@ -66,11 +66,11 @@ export async function scrapeUrl(
 		return finishResult(materializeFormat(result, format, options), startedAt);
 	} catch (error) {
 		return finishResult(
-			errorResult(
+			scrapeErrorResult(
 				input.toString(),
 				mode,
 				format,
-				structuredError(error, input.toString()),
+				scrapeStructuredError(error, input.toString()),
 			),
 			startedAt,
 		);

@@ -9,7 +9,7 @@ import {
 	DEFAULT_USER_AGENT,
 } from "../defaults.js";
 import type { FetchUrlResult, HttpClientOptions } from "./client.js";
-import { HttpClient } from "./client.js";
+import { createFetchUrlResult, HttpClient } from "./client.js";
 import {
 	BodySizeLimitError,
 	enforceContentLength,
@@ -282,7 +282,14 @@ async function materializeBackendResponse(
 	if (body.byteLength > maxBytes)
 		throw new BodySizeLimitError(maxBytes, body.byteLength);
 	if (options.method === "HEAD")
-		return baseResult(url, response, headers, contentType, 0);
+		return createFetchUrlResult({
+			url,
+			status: response.status,
+			statusText: response.statusText,
+			headers,
+			contentType,
+			downloadedBytes: 0,
+		});
 
 	const parseablePdf =
 		isPdfContentType(contentType) ||
@@ -298,12 +305,26 @@ async function materializeBackendResponse(
 			contentType,
 		});
 		return {
-			...baseResult(url, response, headers, contentType, file.downloadedBytes),
+			...createFetchUrlResult({
+				url,
+				status: response.status,
+				statusText: response.statusText,
+				headers,
+				contentType,
+				downloadedBytes: file.downloadedBytes,
+			}),
 			file,
 		};
 	}
 	return {
-		...baseResult(url, response, headers, contentType, body.byteLength),
+		...createFetchUrlResult({
+			url,
+			status: response.status,
+			statusText: response.statusText,
+			headers,
+			contentType,
+			downloadedBytes: body.byteLength,
+		}),
 		body,
 		text: parseablePdf ? undefined : decodeText(body, contentType),
 	};
@@ -319,23 +340,5 @@ function browserHeaders(
 		"accept-language": "en-US,en;q=0.9",
 		"upgrade-insecure-requests": "1",
 		...headers,
-	};
-}
-
-function baseResult(
-	url: string,
-	response: FingerprintBackendResponse,
-	headers: Record<string, string>,
-	contentType: string | undefined,
-	downloadedBytes: number,
-): FetchUrlResult {
-	return {
-		url,
-		finalUrl: url,
-		status: response.status,
-		statusText: response.statusText,
-		headers,
-		contentType,
-		downloadedBytes,
 	};
 }

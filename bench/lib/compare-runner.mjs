@@ -4,6 +4,7 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { buildAndImport } from "./build-pipeline.mjs";
 import { intFlag, stringFlag } from "./cli-args.mjs";
+import { perfRow } from "./report.mjs";
 import { writeSuiteReport } from "./results.mjs";
 import { timedRepeats } from "./stats.mjs";
 
@@ -219,11 +220,6 @@ function aggregatePerformance(cases) {
 
 function aggregateRow(row) {
 	return `| ${row.name} | ${row.medians.length} | ${round(average(row.medians))} | ${round(average(row.means))} | ${row.bestMedianCases} |`;
-}
-
-function perfRow(tool) {
-	const p = tool.perf;
-	return `| ${tool.name} | ${p.samples} | ${p.min_ms} | ${p.median_ms} | ${p.mean_ms} | ${p.p95_ms} | ${p.max_ms} | ${p.stddev_ms} |`;
 }
 
 function average(values) {

@@ -1,6 +1,13 @@
 /**
  * @fileoverview parse metadata module.
  */
+import {
+	cleanDomText,
+	extractDomHeadings,
+	extractDomLinks,
+	type DomHeading,
+	type DomLink,
+} from "./document-elements.js";
 import type { DomAdapter } from "./dom-adapter.js";
 import { absoluteUrl } from "./selectors.js";
 
@@ -14,16 +21,9 @@ export interface PageMetadata {
 	twitter: Record<string, string>;
 }
 
-export interface PageHeading {
-	level: number;
-	text: string;
-}
+export type PageHeading = DomHeading;
 
-export interface PageLink {
-	url: string;
-	text: string;
-	rel?: string;
-}
+export type PageLink = DomLink;
 
 export function extractMetadata(
 	dom: DomAdapter,
@@ -45,7 +45,7 @@ export function extractMetadata(
 	}
 	return {
 		title:
-			clean(dom.text(dom.first(dom.select("title")))) ||
+			cleanDomText(dom.text(dom.first(dom.select("title")))) ||
 			meta.title ||
 			openGraph.title,
 		description:
@@ -62,33 +62,9 @@ export function extractMetadata(
 }
 
 export function extractHeadings(dom: DomAdapter): PageHeading[] {
-	const headings: PageHeading[] = [];
-	for (const node of dom.nodes(dom.select("h1,h2,h3,h4,h5,h6"))) {
-		const tag = dom.tagName(node);
-		if (!tag) continue;
-		// Level is tag[1] as number: h1->1, h2->2, etc.
-		const level = tag.charCodeAt(1) - 48; // '0' is 48
-		if (level < 1 || level > 6) continue;
-		const text = clean(dom.text(node));
-		if (text) headings.push({ level, text });
-	}
-	return headings;
+	return extractDomHeadings(dom);
 }
 
 export function extractLinks(dom: DomAdapter, baseUrl: string): PageLink[] {
-	const links: PageLink[] = [];
-	for (const node of dom.nodes(dom.select("a[href]"))) {
-		const url = absoluteUrl(dom.attr(node, "href"), baseUrl);
-		if (!url) continue;
-		links.push({
-			url,
-			text: clean(dom.text(node)),
-			rel: dom.attr(node, "rel"),
-		});
-	}
-	return links;
-}
-
-function clean(value: string): string {
-	return value.replace(/\s+/gu, " ").trim();
+	return extractDomLinks(dom, baseUrl);
 }

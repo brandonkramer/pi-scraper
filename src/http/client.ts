@@ -83,6 +83,32 @@ export interface FetchUrlResult {
 	cache?: CacheMetadata;
 }
 
+/**
+ * Builds the shared FetchUrlResult envelope for HTTP backends.
+ *
+ * @remarks
+ * Static Undici and fingerprinted fetchers differ in transport, but both expose
+ * the same result shell to scraping modes.
+ */
+export function createFetchUrlResult(input: {
+	url: string;
+	status: number;
+	statusText?: string;
+	headers: Record<string, string>;
+	contentType?: string;
+	downloadedBytes: number;
+}): FetchUrlResult {
+	return {
+		url: input.url,
+		finalUrl: input.url,
+		status: input.status,
+		statusText: input.statusText,
+		headers: input.headers,
+		contentType: input.contentType,
+		downloadedBytes: input.downloadedBytes,
+	};
+}
+
 export class HttpClient {
 	private readonly dispatcher: Dispatcher;
 	private readonly userAgent: string;
@@ -212,7 +238,8 @@ export class HttpClient {
 						signal,
 						attempt,
 						attempts,
-						(value): value is HttpClientError => value instanceof HttpClientError,
+						(value): value is HttpClientError =>
+							value instanceof HttpClientError,
 					)
 				) {
 					throw this.toClientError(error, initialSafe.normalizedUrl, options);
@@ -320,14 +347,13 @@ export class HttpClient {
 
 			if (options.method === "HEAD") {
 				await response.body.dump();
-				return baseResult(
+				return createFetchUrlResult({
 					url,
-					response.statusCode,
-					undefined,
-					responseHeaders,
+					status: response.statusCode,
+					headers: responseHeaders,
 					contentType,
-					0,
-				);
+					downloadedBytes: 0,
+				});
 			}
 
 			const parseablePdf = isPdfResponse(contentType, url);
@@ -342,28 +368,26 @@ export class HttpClient {
 					contentType,
 				});
 				return {
-					...baseResult(
+					...createFetchUrlResult({
 						url,
-						response.statusCode,
-						undefined,
-						responseHeaders,
+						status: response.statusCode,
+						headers: responseHeaders,
 						contentType,
-						file.downloadedBytes,
-					),
+						downloadedBytes: file.downloadedBytes,
+					}),
 					file,
 				};
 			}
 
 			const collected = await collectBody(response.body, maxBytes);
 			return {
-				...baseResult(
+				...createFetchUrlResult({
 					url,
-					response.statusCode,
-					undefined,
-					responseHeaders,
+					status: response.statusCode,
+					headers: responseHeaders,
 					contentType,
-					collected.downloadedBytes,
-				),
+					downloadedBytes: collected.downloadedBytes,
+				}),
 				body: collected.buffer,
 				text: parseablePdf
 					? undefined
@@ -434,23 +458,4 @@ function isPdfResponse(contentType: string | undefined, url: string): boolean {
 		isPdfContentType(contentType) ||
 		new URL(url).pathname.toLowerCase().endsWith(".pdf")
 	);
-}
-
-function baseResult(
-	url: string,
-	status: number,
-	statusText: string | undefined,
-	headers: Record<string, string>,
-	contentType: string | undefined,
-	downloadedBytes: number,
-): FetchUrlResult {
-	return {
-		url,
-		finalUrl: url,
-		status,
-		statusText,
-		headers,
-		contentType,
-		downloadedBytes,
-	};
 }

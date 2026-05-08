@@ -1,6 +1,7 @@
 /**
  * @fileoverview parse recovery module.
  */
+import { dedupeBy } from "../url/dedupe.js";
 import type { DomAdapter } from "./dom-adapter.js";
 import { absoluteUrl } from "./selectors.js";
 
@@ -37,17 +38,10 @@ export function recoverUsefulContent(
 		const url = absoluteUrl(dom.attr(node, "href"), baseUrl);
 		if (text && url) recovered.push({ kind: "footer_link", text, url });
 	}
-	return dedupe(recovered);
-}
-
-function dedupe(items: RecoveredContent[]): RecoveredContent[] {
-	const seen = new Set<string>();
-	return items.filter((item) => {
-		const key = `${item.kind}:${item.text}:${item.url ?? ""}`;
-		if (seen.has(key)) return false;
-		seen.add(key);
-		return true;
-	});
+	return dedupeBy(
+		recovered,
+		(item) => `${item.kind}:${item.text}:${item.url ?? ""}`,
+	);
 }
 
 function clean(value: string): string {
