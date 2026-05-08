@@ -90,4 +90,3 @@ export function extensionForContentType(
 	if (type === "image/webp") return "webp";
 	return "bin";
 }
-

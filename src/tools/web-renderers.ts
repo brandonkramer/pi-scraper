@@ -13,11 +13,7 @@ import type {
 	ToolRenderContext,
 } from "./define.js";
 import { renderText } from "./render.js";
-import type {
-	BatchItem,
-	CrawlMeta,
-	DiffData,
-} from "./web-renderer-types.js";
+import type { BatchItem, CrawlMeta, DiffData } from "./web-renderer-types.js";
 
 export type ChecklistState = "done" | "pending" | "failed" | "warning" | "info";
 

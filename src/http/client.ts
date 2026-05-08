@@ -471,4 +471,3 @@ function baseResult(
 		downloadedBytes,
 	};
 }
-

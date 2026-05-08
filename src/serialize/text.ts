@@ -16,4 +16,3 @@ export function normalizeWhitespace(text: string): string {
 		.replace(/\n{3,}/gu, "\n\n")
 		.trim();
 }
-

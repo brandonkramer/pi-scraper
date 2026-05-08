@@ -82,16 +82,11 @@ interface RedditPostResult {
 }
 
 export const redditExtractor: VerticalExtractor<RedditPostResult> = {
-	capability: capability(
-		"reddit",
-		[
+	capability: capability("reddit", [
 			"https://www.reddit.com/r/:subreddit/comments/:postId/:slug*",
 			"https://old.reddit.com/r/:subreddit/comments/:postId/:slug*",
 			"https://redd.it/:postId",
-		],
-		redditSchema(),
-		{ requiresBrowser: false, requiresLLM: false, requiresCloud: false },
-	),
+		], redditSchema()),
 	match: (url) => parseRedditPostUrl(url),
 	extract: async (_url, match, context, signal) => {
 		const reddit = match as RedditPostMatch;
@@ -491,4 +486,3 @@ function hasStructuredError(error: unknown): error is {
 			typeof (structured as { message?: unknown }).message === "string",
 	);
 }
-

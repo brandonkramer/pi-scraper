@@ -19,4 +19,3 @@ export interface DiffData {
 	current?: unknown;
 	diff?: { changedCount?: number; addedCount?: number; removedCount?: number };
 }
-

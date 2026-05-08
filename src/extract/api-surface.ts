@@ -455,4 +455,3 @@ function truncate(value: string | undefined, max: number): string | undefined {
 	if (!value) return undefined;
 	return value.length > max ? `${value.slice(0, max - 1)}…` : value;
 }
-

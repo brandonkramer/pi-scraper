@@ -49,4 +49,3 @@ export async function pathExists(filePath: string): Promise<boolean> {
 		() => false,
 	);
 }
-

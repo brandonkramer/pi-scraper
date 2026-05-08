@@ -110,4 +110,3 @@ const SELECT_FETCH = `SELECT * FROM fetched_responses WHERE url_normalized = ? O
 const INSERT_FETCH = `INSERT OR REPLACE INTO fetched_responses
 (url_normalized, final_url, status, content_type, content_hash, byte_length, headers_json, fetched_at, expires_at, etag, last_modified)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-

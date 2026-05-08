@@ -255,7 +255,6 @@ async function isFile(filePath: string): Promise<boolean> {
 	);
 }
 
-
 const UPSERT_RESPONSE = `INSERT OR REPLACE INTO responses
 (response_id, url, url_normalized, final_url, content_hash, content_type, status, mode, format, byte_length, stored_at, expires_at, metadata_json)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;

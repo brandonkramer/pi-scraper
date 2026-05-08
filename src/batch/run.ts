@@ -278,7 +278,6 @@ function safeCacheKey(url: string): string {
 	}
 }
 
-
 function toStructuredError(error: unknown, url: string): StructuredError {
 	if (typeof error === "object" && error !== null && "structured" in error) {
 		return (error as { structured: StructuredError }).structured;

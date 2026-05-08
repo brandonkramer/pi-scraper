@@ -32,60 +32,62 @@ export interface OssInsightCollectionRankingOutput {
 	rows: OssInsightRankingRow[];
 }
 
-export const ossInsightCollectionRankingExtractor: VerticalExtractor<OssInsightCollectionRankingOutput> = {
-	capability: capability(
-		"ossinsight_collection_ranking",
-		["https://ossinsight.io/collections/:slug"],
-		{
-			type: "object",
-			required: ["collection", "metric", "period", "rows"],
-			properties: {
-				collection: { type: "object" },
-				metric: { enum: metrics },
-				period: { enum: periods },
-				rows: { type: "array" },
-			},
+export const ossInsightCollectionRankingExtractor: VerticalExtractor<OssInsightCollectionRankingOutput> =
+	{
+		capability: capability("ossinsight_collection_ranking", ["https://ossinsight.io/collections/:slug"], {
+				type: "object",
+				required: ["collection", "metric", "period", "rows"],
+				properties: {
+					collection: { type: "object" },
+					metric: { enum: metrics },
+					period: { enum: periods },
+					rows: { type: "array" },
+				},
+			}),
+		match: (url) => {
+			if (url.hostname !== "ossinsight.io") return undefined;
+			const parts = url.pathname.split("/").filter(Boolean);
+			const metric = url.searchParams.get("metric") ?? "stars";
+			const period = url.searchParams.get("period") ?? "past_28_days";
+			if (parts.length !== 2 || parts[0] !== "collections") return undefined;
+			if (!isMetric(metric) || !isPeriod(period)) return undefined;
+			return { slug: parts[1] ?? "", metric, period };
 		},
-		{ requiresBrowser: false, requiresLLM: false, requiresCloud: false },
-	),
-	match: (url) => {
-		if (url.hostname !== "ossinsight.io") return undefined;
-		const parts = url.pathname.split("/").filter(Boolean);
-		const metric = url.searchParams.get("metric") ?? "stars";
-		const period = url.searchParams.get("period") ?? "past_28_days";
-		if (parts.length !== 2 || parts[0] !== "collections") return undefined;
-		if (!isMetric(metric) || !isPeriod(period)) return undefined;
-		return { slug: parts[1] ?? "", metric, period };
-	},
-	extract: async (_url, match, context, signal) => {
-		const metric = isMetric(match.metric) ? match.metric : "stars";
-		const period = isPeriod(match.period) ? match.period : "past_28_days";
-		const collections = await loadCollections(context, signal);
-		const collection = collections.find((item) =>
-			collectionSlugVariants(item).includes(match.slug),
-		);
-		if (!collection) throw new Error(`Unknown OSSInsight collection slug: ${match.slug}`);
-		const payload = await context.fetchJson<OssInsightRows<OssInsightRankingRow>>(
-			`https://api.ossinsight.io/v1/collections/${encodeURIComponent(String(collection.id))}/${rankingPath(metric)}/?period=${encodeURIComponent(period)}`,
-			signal,
-		);
-		return {
-			collection: { id: collection.id, name: collection.name, slug: match.slug },
-			metric,
-			period,
-			rows: rowsOf(payload).map(trimRankingRow),
-		};
-	},
-};
+		extract: async (_url, match, context, signal) => {
+			const metric = isMetric(match.metric) ? match.metric : "stars";
+			const period = isPeriod(match.period) ? match.period : "past_28_days";
+			const collections = await loadCollections(context, signal);
+			const collection = collections.find((item) =>
+				collectionSlugVariants(item).includes(match.slug),
+			);
+			if (!collection)
+				throw new Error(`Unknown OSSInsight collection slug: ${match.slug}`);
+			const payload = await context.fetchJson<
+				OssInsightRows<OssInsightRankingRow>
+			>(
+				`https://api.ossinsight.io/v1/collections/${encodeURIComponent(String(collection.id))}/${rankingPath(metric)}/?period=${encodeURIComponent(period)}`,
+				signal,
+			);
+			return {
+				collection: {
+					id: collection.id,
+					name: collection.name,
+					slug: match.slug,
+				},
+				metric,
+				period,
+				rows: rowsOf(payload).map(trimRankingRow),
+			};
+		},
+	};
 
 async function loadCollections(
 	context: Parameters<VerticalExtractor["extract"]>[2],
 	signal?: AbortSignal,
 ): Promise<OssInsightCollectionRow[]> {
-	const payload = await context.fetchJson<OssInsightRows<OssInsightCollectionRow>>(
-		"https://api.ossinsight.io/v1/collections/",
-		signal,
-	);
+	const payload = await context.fetchJson<
+		OssInsightRows<OssInsightCollectionRow>
+	>("https://api.ossinsight.io/v1/collections/", signal);
 	return rowsOf(payload);
 }
 
@@ -97,7 +99,10 @@ function collectionSlugVariants(collection: OssInsightCollectionRow): string[] {
 	const lower = collection.name.toLowerCase().trim();
 	const variants = new Set<string>([
 		String(collection.id),
-		lower.replace(/&/gu, "").replace(/[^a-z0-9]/gu, "-").replace(/^-+|-+$/gu, ""),
+		lower
+			.replace(/&/gu, "")
+			.replace(/[^a-z0-9]/gu, "-")
+			.replace(/^-+|-+$/gu, ""),
 		lower.replace(/[^a-z0-9]/gu, "-").replace(/^-+|-+$/gu, ""),
 		lower.replace(/[^a-z0-9]+/gu, "-").replace(/^-+|-+$/gu, ""),
 	]);

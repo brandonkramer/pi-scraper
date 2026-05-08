@@ -45,9 +45,7 @@ interface DocSiteResult {
 }
 
 export const docsiteExtractor: VerticalExtractor<DocSiteResult> = {
-	capability: capability(
-		"docsite",
-		[
+	capability: capability("docsite", [
 			"https://:host/docs/:path*",
 			"https://:host/api/:path*",
 			"https://*.readthedocs.io/:path*",
@@ -56,10 +54,7 @@ export const docsiteExtractor: VerticalExtractor<DocSiteResult> = {
 			"https://gitbook.com/:path*",
 			"https://developer.mozilla.org/:locale/docs/:path*",
 			"https://:host/:path*",
-		],
-		docSiteSchema(),
-		{ requiresBrowser: false, requiresLLM: false, requiresCloud: false },
-	),
+		], docSiteSchema()),
 	match: (url) => (/^https?:$/u.test(url.protocol) ? {} : undefined),
 	extract: async (url, _match, context, signal) => {
 		if (context.fetchPage) {
@@ -319,4 +314,3 @@ function truncate(value: string, max: number): string | undefined {
 function unique(values: string[]): string[] {
 	return [...new Set(values.filter(Boolean))];
 }
-

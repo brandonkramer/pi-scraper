@@ -15,10 +15,7 @@ interface DeepWikiResult {
 }
 
 export const deepWikiExtractor: VerticalExtractor = {
-	capability: capability(
-		"deepwiki",
-		["https://deepwiki.com/:owner/:repo"],
-		{
+	capability: capability("deepwiki", ["https://deepwiki.com/:owner/:repo"], {
 			type: "object",
 			required: ["owner", "repo", "sections"],
 			properties: {
@@ -31,9 +28,7 @@ export const deepWikiExtractor: VerticalExtractor = {
 				sourceFiles: { type: "array", items: { type: "string" } },
 				githubUrl: { type: "string" },
 			},
-		},
-		{ requiresBrowser: false, requiresLLM: false, requiresCloud: false },
-	),
+		}),
 	match: (url) => {
 		if (url.hostname !== "deepwiki.com") return undefined;
 		const [owner, repo] = url.pathname.split("/").filter(Boolean);
