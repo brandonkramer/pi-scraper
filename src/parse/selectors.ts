@@ -2,7 +2,7 @@
  * @fileoverview parse selectors module.
  */
 import { normalizeWhitespace } from "../serialize/text.js";
-import type { DomAdapter, DomNode, DomSelection } from "./dom-adapter.js";
+import type { DomAdapter, DomSelection } from "./dom-adapter.js";
 
 export interface SelectorOptions {
 	include?: string[];
@@ -27,11 +27,9 @@ export function selectedRoots(
 ): DomSelection {
 	const include = options.include?.filter(Boolean) ?? [];
 	if (include.length > 0) {
-		return dom.selection(
-			dedupeNodes(
-				include.flatMap((selector) => dom.nodes(dom.select(selector))),
-			),
-		);
+		return dom.selection([
+			...new Set(include.flatMap((selector) => dom.nodes(dom.select(selector)))),
+		]);
 	}
 	if (dom.count(dom.select("body")) > 0) return dom.select("body");
 	if (dom.count(dom.select("html")) > 0) return dom.selection([]);
@@ -56,8 +54,4 @@ export function absoluteUrl(
 	} catch {
 		return undefined;
 	}
-}
-
-function dedupeNodes(nodes: DomNode[]): DomNode[] {
-	return [...new Set(nodes)];
 }
