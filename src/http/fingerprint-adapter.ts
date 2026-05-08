@@ -3,7 +3,6 @@
  */
 import {
 	DEFAULT_MAX_BYTES,
-	DEFAULT_RESPECT_ROBOTS,
 	DEFAULT_TIMEOUT_SECONDS,
 	DEFAULT_USER_AGENT,
 } from "../defaults.js";
@@ -22,6 +21,7 @@ import {
 } from "./fingerprint-types.js";
 import { PolitenessController } from "./politeness.js";
 import { followRedirects } from "./redirects.js";
+import { fetchWithRequestPolicy } from "./request-policy.js";
 import { RobotsCache } from "./robots.js";
 import { materializeFetchBufferResponse } from "./response.js";
 import { withTimeout } from "./timeout.js";
@@ -64,30 +64,22 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 				initialSafe,
 				maxRedirects:
 					options.maxRedirects ?? this.clientOptions.maxRedirects ?? 5,
-				fetchRequest: (safe) => this.fetchOneRequest(safe, options, signal),
+				fetchRequest: (safe) =>
+					fetchWithRequestPolicy({
+						safe,
+						respectRobots: options.respectRobots,
+						robots: this.robots,
+						politeness: this.politeness,
+						userAgent: this.clientOptions.userAgent ?? DEFAULT_USER_AGENT,
+						signal,
+						fetch: () => this.fetchOnce(safe, options, signal),
+					}),
 				resolveSafeUrl: (nextUrl) =>
 					assertSafeFetchUrl(nextUrl, this.clientOptions),
 			});
 		} catch (error) {
 			throw fingerprintFetchError(error, initialSafe.normalizedUrl, options);
 		}
-	}
-
-	private async fetchOneRequest(
-		safe: SafeUrlResult,
-		options: FingerprintFetchOptions,
-		signal: AbortSignal | undefined,
-	): Promise<FetchUrlResult> {
-		const respectRobots = options.respectRobots ?? DEFAULT_RESPECT_ROBOTS;
-		const robotsRules = respectRobots
-			? await this.robots.assertAllowed(safe.normalizedUrl, signal)
-			: undefined;
-		const crawlDelayMs = robotsRules?.crawlDelay(
-			this.clientOptions.userAgent ?? DEFAULT_USER_AGENT,
-		);
-		return await this.politeness.run(safe.url.host, crawlDelayMs, signal, () =>
-			this.fetchOnce(safe, options, signal),
-		);
 	}
 
 	private async fetchOnce(

@@ -4,7 +4,6 @@
 import { request, type Dispatcher } from "undici";
 import {
 	DEFAULT_MAX_BYTES,
-	DEFAULT_RESPECT_ROBOTS,
 	DEFAULT_RETRY,
 	DEFAULT_TIMEOUT_SECONDS,
 	DEFAULT_USER_AGENT,
@@ -15,6 +14,7 @@ import { HttpClientError, httpClientErrorFromUnknown } from "./errors.js";
 import { createDefaultDispatcher } from "./guarded-agent.js";
 import { PolitenessController, abortableSleep } from "./politeness.js";
 import { followRedirects } from "./redirects.js";
+import { fetchWithRequestPolicy } from "./request-policy.js";
 import {
 	isRetryableStatus,
 	isIdempotentMethod,
@@ -163,7 +163,16 @@ export class HttpClient {
 					initialSafe,
 					maxRedirects: options.maxRedirects ?? this.options.maxRedirects ?? 5,
 					fetchRequest: (safe) =>
-						this.fetchOneRequest(safe, options, signal, applyPolicy),
+						fetchWithRequestPolicy({
+							safe,
+							respectRobots: options.respectRobots,
+							applyPolicy,
+							robots: this.robots,
+							politeness: this.politeness,
+							userAgent: this.userAgent,
+							signal,
+							fetch: () => this.fetchOnce(safe.normalizedUrl, options, signal),
+						}),
 					resolveSafeUrl: (url) => this.safeFetchUrl(url),
 				});
 				this.politeness.noteResponse(
@@ -198,29 +207,6 @@ export class HttpClient {
 		}
 
 		throw httpFetchError(lastError, initialSafe.normalizedUrl, options);
-	}
-
-	private async fetchOneRequest(
-		safe: SafeUrlResult,
-		options: FetchUrlOptions,
-		signal: AbortSignal | undefined,
-		applyPolicy: boolean,
-	): Promise<FetchUrlResult> {
-		// `safe` is produced once for the initial request and once per redirect hop.
-		// Reusing it avoids duplicate DNS preflight work while the guarded Undici
-		// dispatcher remains the authoritative connect-time SSRF check.
-		if (!applyPolicy) {
-			return await this.fetchOnce(safe.normalizedUrl, options, signal);
-		}
-
-		const respectRobots = options.respectRobots ?? DEFAULT_RESPECT_ROBOTS;
-		const robotsRules = respectRobots
-			? await this.robots.assertAllowed(safe.normalizedUrl, signal)
-			: undefined;
-		const crawlDelayMs = robotsRules?.crawlDelay(this.userAgent);
-		return await this.politeness.run(safe.url.host, crawlDelayMs, signal, () =>
-			this.fetchOnce(safe.normalizedUrl, options, signal),
-		);
 	}
 
 	private async fetchOnce(

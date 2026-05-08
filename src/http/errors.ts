@@ -59,7 +59,8 @@ export function httpClientErrorFromUnknown(
 	fallback: { code: string; phase: string; message: string },
 ): HttpClientError {
 	if (error instanceof HttpClientError) return error;
-	if (hasStructuredError(error)) return new HttpClientError(error.structured, error);
+	if (hasStructuredError(error))
+		return new HttpClientError(error.structured, error);
 	if (error instanceof RobotsDeniedError) {
 		return new HttpClientError({
 			code: "ROBOTS_DENIED",
