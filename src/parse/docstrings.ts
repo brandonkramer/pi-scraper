@@ -41,7 +41,7 @@ export function parseDocstrings(
 	text: string,
 	file = "source",
 ): ParsedDocstrings {
-	const language = languageForFile(file);
+	const language = file.endsWith(".py") ? "python" : "js";
 	const blocks =
 		language === "python" ? pythonDocstrings(text) : jsLikeDocstrings(text);
 	return {
@@ -200,10 +200,6 @@ function symbolFromSignature(signature: string): {
 	if (/\binterface\b/u.test(signature)) return { name, kind: "interface" };
 	if (/\b(const|let|var)\b/u.test(signature)) return { name, kind: "variable" };
 	return { name, kind: "function" };
-}
-
-function languageForFile(file: string): string {
-	return file.endsWith(".py") ? "python" : "js";
 }
 
 function stripUndefined<T extends Record<string, unknown>>(value: T): T {
