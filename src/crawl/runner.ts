@@ -10,6 +10,7 @@ import {
 	scrapeUrl,
 } from "../scrape/pipeline.js";
 import { isAbortError, resultChars } from "../scrape/_utils.js";
+import { hasStructuredError } from "../http/retry.js";
 import type { CommonScrapeOptions, StructuredError } from "../types.js";
 import {
 	appendJobError,
@@ -325,9 +326,7 @@ function errorSummary(
 function unknownErrorSummary(
 	error: unknown,
 ): Pick<StructuredError, "code" | "message" | "phase" | "url"> {
-	if (typeof error === "object" && error !== null && "structured" in error) {
-		return errorSummary((error as { structured: StructuredError }).structured);
-	}
+	if (hasStructuredError(error)) return errorSummary(error.structured);
 	return {
 		code: error instanceof Error ? error.name : "CRAWL_ERROR",
 		message: error instanceof Error ? error.message : "Crawl failed",

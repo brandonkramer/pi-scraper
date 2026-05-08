@@ -10,6 +10,7 @@ import {
 	type ScrapeResult,
 } from "../scrape/pipeline.js";
 import { isAbortError, resultChars } from "../scrape/_utils.js";
+import { hasStructuredError } from "../http/retry.js";
 import type { CommonScrapeOptions, StructuredError } from "../types.js";
 import {
 	appendJobError,
@@ -279,9 +280,7 @@ function safeCacheKey(url: string): string {
 }
 
 function toStructuredError(error: unknown, url: string): StructuredError {
-	if (typeof error === "object" && error !== null && "structured" in error) {
-		return (error as { structured: StructuredError }).structured;
-	}
+	if (hasStructuredError(error)) return error.structured;
 	return {
 		code: "BATCH_ITEM_FAILED",
 		phase: "batch",

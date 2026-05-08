@@ -8,6 +8,7 @@ import type {
 	StructuredError,
 	TimingInfo,
 } from "../types.js";
+import { hasStructuredError } from "../http/retry.js";
 import {
 	freshnessFromCache,
 	guidanceWithFreshness,
@@ -100,9 +101,7 @@ export function structuredToolError(
 	phase: string,
 	url?: string,
 ): StructuredError {
-	if (typeof error === "object" && error !== null && "structured" in error) {
-		return (error as { structured: StructuredError }).structured;
-	}
+	if (hasStructuredError(error)) return error.structured;
 	return {
 		code: fallbackCode,
 		phase,
