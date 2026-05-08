@@ -16,19 +16,19 @@ interface DeepWikiResult {
 
 export const deepWikiExtractor: VerticalExtractor = {
 	capability: capability("deepwiki", ["https://deepwiki.com/:owner/:repo"], {
-			type: "object",
-			required: ["owner", "repo", "sections"],
-			properties: {
-				owner: { type: "string" },
-				repo: { type: "string" },
-				lastIndexed: { type: "string" },
-				commit: { type: "string" },
-				sections: { type: "array", items: { type: "string" } },
-				activeSection: { type: "string" },
-				sourceFiles: { type: "array", items: { type: "string" } },
-				githubUrl: { type: "string" },
-			},
-		}),
+		type: "object",
+		required: ["owner", "repo", "sections"],
+		properties: {
+			owner: { type: "string" },
+			repo: { type: "string" },
+			lastIndexed: { type: "string" },
+			commit: { type: "string" },
+			sections: { type: "array", items: { type: "string" } },
+			activeSection: { type: "string" },
+			sourceFiles: { type: "array", items: { type: "string" } },
+			githubUrl: { type: "string" },
+		},
+	}),
 	match: (url) => {
 		if (url.hostname !== "deepwiki.com") return undefined;
 		const [owner, repo] = url.pathname.split("/").filter(Boolean);

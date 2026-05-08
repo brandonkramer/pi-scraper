@@ -10,6 +10,7 @@ import * as domutils from "domutils";
 import { parseDocument } from "htmlparser2";
 import type { ScrapeResult } from "../scrape/pipeline.js";
 import { cleanText, stripUndefined, titleCase, truncateText } from "./_html.js";
+import { parseMarkdown as sharedMarkdownParse } from "../parse/markup-doc.js";
 import {
 	extractHeadingSections,
 	firstTextBySelector,
@@ -157,7 +158,7 @@ function parsePageContent(
 	classes: ApiSurfaceClass[];
 } {
 	if (page.html) return parseHtml(page.html, url);
-	return parseMarkdown(page.markdown ?? page.text ?? "", url);
+	return parseMarkdownPage(page.markdown ?? page.text ?? "", url);
 }
 
 function parseHtml(
@@ -185,43 +186,41 @@ function parseHtml(
 	};
 }
 
-function parseMarkdown(
+function parseMarkdownPage(
 	markdown: string,
 	url: string,
 ): ReturnType<typeof parsePageContent> {
+	const doc = sharedMarkdownParse(markdown);
+	const lines = markdown.split(/\r?\n/u);
 	const sections: SectionLike[] = [];
-	let current: SectionLike | undefined;
-	let inFence = false;
-	let fenceLanguage = "";
-	let fence: string[] = [];
-	for (const line of markdown.split(/\r?\n/u)) {
-		const fenceMatch = line.match(/^```\s*([\w+-]+)?/u);
-		if (fenceMatch) {
-			if (inFence && current) {
-				(current.codeBlocks ??= []).push({
-					language: fenceLanguage || undefined,
-					code: fence.join("\n").trim(),
-				});
-				fence = [];
-			} else {
-				fenceLanguage = fenceMatch[1] ?? "";
-			}
-			inFence = !inFence;
-			continue;
+	let cbIdx = 0;
+
+	const relevantHeadings = doc.headings.filter(
+		(heading) => heading.level <= 4,
+	);
+	for (let index = 0; index < relevantHeadings.length; index += 1) {
+		const heading = relevantHeadings[index];
+		const nextLine = relevantHeadings[index + 1]?.line ?? lines.length + 1;
+
+		const sectionCodeBlocks: Array<{ language?: string; code: string }> = [];
+		while (
+			cbIdx < doc.codeBlocks.length &&
+			doc.codeBlocks[cbIdx].lineEnd < nextLine
+		) {
+			const cb = doc.codeBlocks[cbIdx];
+			if (cb.value)
+				sectionCodeBlocks.push({ language: cb.language, code: cb.value });
+			cbIdx += 1;
 		}
-		if (inFence) {
-			fence.push(line);
-			continue;
-		}
-		const heading = line.match(/^(#{1,4})\s+(.+)$/u);
-		if (heading) {
-			current = { heading: cleanText(heading[2]), content: "", codeBlocks: [] };
-			sections.push(current);
-			continue;
-		}
-		if (current)
-			current.content = cleanText(`${current.content ?? ""} ${line}`);
+
+		const contentLines = lines.slice(heading.line, nextLine - 1);
+		sections.push({
+			heading: heading.text,
+			content: cleanText(contentLines.join(" ")),
+			codeBlocks: sectionCodeBlocks.length > 0 ? sectionCodeBlocks : undefined,
+		});
 	}
+
 	return {
 		title: sections[0]?.heading,
 		description: sections[0]?.content,
