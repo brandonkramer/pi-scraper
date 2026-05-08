@@ -2,6 +2,7 @@
  * @fileoverview extract verticals ossinsight-collection-ranking module.
  */
 import { capability, type VerticalExtractor } from "../capabilities.js";
+import { rowsOf, type OssInsightRows } from "./ossinsight-shared.js";
 
 const metrics = ["stars", "pull-requests", "issues"] as const;
 const periods = ["past_24_hours", "past_28_days", "past_month"] as const;
@@ -22,10 +23,6 @@ interface OssInsightRankingRow {
 	pull_requests?: MetricValue;
 	issues?: MetricValue;
 	total_score?: MetricValue;
-}
-
-interface OssInsightRows<T> {
-	data?: { rows?: T[]; result?: T[] };
 }
 
 export interface OssInsightCollectionRankingOutput {
@@ -118,13 +115,6 @@ function trimRankingRow(row: OssInsightRankingRow): OssInsightRankingRow {
 		...(row.issues !== undefined ? { issues: row.issues } : {}),
 		...(row.total_score !== undefined ? { total_score: row.total_score } : {}),
 	};
-}
-
-function rowsOf<T>(payload: OssInsightRows<T> | T[]): T[] {
-	if (Array.isArray(payload)) return payload;
-	if (Array.isArray(payload.data?.rows)) return payload.data.rows;
-	if (Array.isArray(payload.data?.result)) return payload.data.result;
-	return [];
 }
 
 function isMetric(value: string): value is OssInsightMetric {

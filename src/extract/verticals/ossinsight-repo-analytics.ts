@@ -2,6 +2,7 @@
  * @fileoverview extract verticals ossinsight-repo-analytics module.
  */
 import { capability, type VerticalExtractor } from "../capabilities.js";
+import { rowsOf, type OssInsightRows } from "./ossinsight-shared.js";
 
 type MetricValue = string | number;
 
@@ -11,10 +12,6 @@ interface OssInsightStargazerRow {
 	stars?: MetricValue;
 	stargazers?: MetricValue;
 	total?: MetricValue;
-}
-
-interface OssInsightRows<T> {
-	data?: { rows?: T[]; result?: T[] };
 }
 
 export interface OssInsightRepoAnalyticsOutput {
@@ -67,13 +64,6 @@ export const ossInsightRepoAnalyticsExtractor: VerticalExtractor<OssInsightRepoA
 		};
 	},
 };
-
-function rowsOf<T>(payload: OssInsightRows<T> | T[]): T[] {
-	if (Array.isArray(payload)) return payload;
-	if (Array.isArray(payload.data?.rows)) return payload.data.rows;
-	if (Array.isArray(payload.data?.result)) return payload.data.result;
-	return [];
-}
 
 function toNumber(value: MetricValue | undefined): number | undefined {
 	if (value === undefined) return undefined;

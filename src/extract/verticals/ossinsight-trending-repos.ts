@@ -2,6 +2,7 @@
  * @fileoverview extract verticals ossinsight-trending-repos module.
  */
 import { capability, type VerticalExtractor } from "../capabilities.js";
+import { rowsOf, type OssInsightRows } from "./ossinsight-shared.js";
 
 const periods = ["past_24_hours", "past_week", "past_month"] as const;
 type OssInsightTrendingPeriod = (typeof periods)[number];
@@ -16,10 +17,6 @@ interface OssInsightTrendingRepoRow {
 	total_score?: MetricValue;
 	primary_language?: string;
 	description?: string;
-}
-
-interface OssInsightRows<T> {
-	data?: { rows?: T[]; result?: T[] };
 }
 
 export interface OssInsightTrendingReposOutput {
@@ -81,13 +78,6 @@ function trimTrendingRow(row: OssInsightTrendingRepoRow): OssInsightTrendingRepo
 			: {}),
 		...(row.description !== undefined ? { description: row.description } : {}),
 	};
-}
-
-function rowsOf<T>(payload: OssInsightRows<T> | T[]): T[] {
-	if (Array.isArray(payload)) return payload;
-	if (Array.isArray(payload.data?.rows)) return payload.data.rows;
-	if (Array.isArray(payload.data?.result)) return payload.data.result;
-	return [];
 }
 
 function isPeriod(value: string): value is OssInsightTrendingPeriod {
