@@ -110,7 +110,7 @@ class PdfJsBackend implements PdfTextBackend {
 			document = await abortable(
 				this.pdfjs.getDocument({
 					// PDF.js may transfer ownership of the input buffer; keep a bounded copy so callers retain their bytes.
-					data: copyBytes(input),
+					data: new Uint8Array(input),
 					disableFontFace: true,
 					isEvalSupported: false,
 					useSystemFonts: false,
@@ -234,10 +234,6 @@ function errorResult(error: unknown): PdfExtractionResult {
 		return { ok: false, reason: "unsupported", text: "", error: message };
 	}
 	return { ok: false, reason: "failed", text: "", error: message };
-}
-
-function copyBytes(input: Uint8Array): Uint8Array {
-	return new Uint8Array(input);
 }
 
 function isTextItem(item: unknown): item is { str: string } {
