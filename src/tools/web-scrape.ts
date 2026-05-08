@@ -234,12 +234,7 @@ async function summarizeScrape(
 			formatFallback: "markdown",
 		});
 	} catch (error) {
-		return toolErrorResult(
-			error,
-			"SUMMARIZE_FAILED",
-			"summarize",
-			params.url,
-		);
+		return toolErrorResult(error, "SUMMARIZE_FAILED", "summarize", params.url);
 	}
 }
 

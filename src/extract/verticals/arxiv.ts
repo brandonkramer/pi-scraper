@@ -1,6 +1,7 @@
 /**
  * @fileoverview extract verticals arxiv module.
  */
+import { cleanText as sharedCleanText } from "../_html.js";
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 export const arxivExtractor: VerticalExtractor = {
@@ -36,11 +37,11 @@ export const arxivExtractor: VerticalExtractor = {
 		if (!entry) throw new Error(`arXiv entry not found for ${match.id}`);
 		return {
 			id: extractArxivId(firstTag(entry, "id")) ?? match.id,
-			title: cleanText(firstTag(entry, "title")),
-			summary: cleanText(firstTag(entry, "summary")),
-			published: cleanText(firstTag(entry, "published")),
-			updated: cleanText(firstTag(entry, "updated")),
-			authors: allTags(entry, "name").map(cleanText).filter(isPresent),
+			title: arxivText(firstTag(entry, "title")),
+			summary: arxivText(firstTag(entry, "summary")),
+			published: arxivText(firstTag(entry, "published")),
+			updated: arxivText(firstTag(entry, "updated")),
+			authors: allTags(entry, "name").map(arxivText).filter(isPresent),
 			categories: allCategoryTerms(entry),
 			pdfUrl: firstPdfLink(entry),
 		};
@@ -75,15 +76,14 @@ function firstPdfLink(xml: string): string | undefined {
 }
 
 function extractArxivId(idUrl: string | undefined): string | undefined {
-	const text = cleanText(idUrl);
+	const text = arxivText(idUrl);
 	return text ? text.split("/abs/").pop() : undefined;
 }
 
-function cleanText(value: string | undefined): string | undefined {
-	const decoded = decodeXml(value ?? "")
-		.replace(/\s+/gu, " ")
-		.trim();
-	return decoded || undefined;
+function arxivText(value: string | undefined): string | undefined {
+	const decoded = decodeXml(value ?? "");
+	const cleaned = sharedCleanText(decoded);
+	return cleaned || undefined;
 }
 
 function isPresent<T>(value: T | undefined): value is T {

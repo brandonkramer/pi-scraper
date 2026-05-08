@@ -135,8 +135,13 @@ export async function runCrawl(
 		},
 		options,
 	);
-	let { jobManifestPath, errors: jobErrors, totalBytes, totalChars, truncatedPages } =
-		jobSetup;
+	let {
+		jobManifestPath,
+		errors: jobErrors,
+		totalBytes,
+		totalChars,
+		truncatedPages,
+	} = jobSetup;
 	const jobWriter = jobSetup.writer;
 	const progressTotal = counts.succeeded + counts.failed + maxPages;
 	const activeItems = new Map<string, FrontierItem>();
