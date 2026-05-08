@@ -70,16 +70,18 @@ The package declares its extension entrypoint and packaged skills in `package.js
 
 ## Public tools
 
-| Tool             | Capability                                      | Use it for                                                                                                                                                 |
-| ---------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, including raw Markdown, MDX, RST, and source docstrings.                                                 |
-| `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                                        |
-| `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, list prior crawl metadata, or compile crawled docs into API-surface/context packages. |
-| `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.                           |
-| `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results and optional context-package compilation.                                        |
-| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                                          |
-| `web_extract`    | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text/patterns/symbols, compile API surfaces, or run ad hoc schema/prompt extraction from one input.  |
-| `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                      |
+| Tool             | Capability                                      | Use it for                                                                                                                                                 | Tokens |
+| ---------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -----: |
+| `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, including raw Markdown, MDX, RST, and source docstrings.                                                 |     95 |
+| `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                                        |     94 |
+| `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, list prior crawl metadata, or compile crawled docs into API-surface/context packages. |    107 |
+| `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.                           |     58 |
+| `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results and optional context-package compilation.                                        |    120 |
+| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                                          |     91 |
+| `web_extract`    | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text/patterns/symbols, compile API surfaces, or run ad hoc schema/prompt extraction from one input.  |    194 |
+| `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                      |     56 |
+
+Token counts are approximate contract tokens from `bench/suites/tool-contract/tokens.mjs` (`ceil(JSON contract chars / 4)`). Current total: 815.
 
 Capability labels:
 
