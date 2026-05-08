@@ -221,7 +221,7 @@ async function assertSafeBrowserUrl(
 		await hostCheck;
 		return safe;
 	} catch (cause) {
-		if (isUrlSafetyBlock(cause)) {
+		if (cause instanceof UrlSafetyError || cause instanceof TypeError) {
 			throw blockedRequestError(cause, url, finalUrl ?? input.toString());
 		}
 		throw cause;
@@ -272,10 +272,6 @@ function isBenignBrowserScheme(protocol: string): boolean {
 		protocol === "data:" ||
 		protocol === "devtools:"
 	);
-}
-
-function isUrlSafetyBlock(error: unknown): boolean {
-	return error instanceof UrlSafetyError || error instanceof TypeError;
 }
 
 function blockedRequestError(
