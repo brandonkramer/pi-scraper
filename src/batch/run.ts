@@ -26,7 +26,7 @@ import {
 	truncateAndStore,
 	type StoreResultOptions,
 } from "../storage/results.js";
-import { normalizeUrl } from "../url/normalize.js";
+import { normalizeMaybe } from "../storage/_fields.js";
 
 export interface BatchProgress {
 	state: "queued" | "processing" | "done" | "error";
@@ -163,7 +163,7 @@ export async function runBatchScrape(
 	): Promise<
 		{ ok: true; result: ScrapeResult } | { ok: false; error: StructuredError }
 	> {
-		const key = safeCacheKey(url);
+		const key = normalizeMaybe(url);
 		const existing = cache.get(key);
 		if (existing) return existing;
 		const promise = scrapeItem(url);
@@ -269,14 +269,6 @@ function summarize(items: readonly BatchItemResult[]): string {
 	const ok = items.filter((item) => item.ok).length;
 	const failed = items.length - ok;
 	return `Batch scrape complete: ${ok} succeeded, ${failed} failed, ${items.length} total.`;
-}
-
-function safeCacheKey(url: string): string {
-	try {
-		return normalizeUrl(url);
-	} catch {
-		return url;
-	}
 }
 
 function toStructuredError(error: unknown, url: string): StructuredError {
