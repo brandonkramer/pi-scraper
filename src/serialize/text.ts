@@ -17,6 +17,3 @@ export function normalizeWhitespace(text: string): string {
 		.trim();
 }
 
-export function linesToText(lines: readonly string[]): string {
-	return normalizeWhitespace(lines.filter(Boolean).join("\n"));
-}

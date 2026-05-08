@@ -100,20 +100,6 @@ export async function recordFetch(
 	);
 }
 
-export async function listFetches(
-	url: string,
-	options: ResolveStorageOptions & { since?: Date; limit?: number } = {},
-): Promise<Array<Record<string, unknown>>> {
-	const db = await openStorageDb(options);
-	return db
-		.prepare(LIST_FETCHES)
-		.all(
-			normalizeUrl(url),
-			options.since?.toISOString() ?? "0000-01-01T00:00:00.000Z",
-			options.limit ?? 10,
-		) as Array<Record<string, unknown>>;
-}
-
 function shouldNotStore(cacheControl: string | undefined): boolean {
 	const value = cacheControl?.toLowerCase() ?? "";
 	return value.includes("no-store") || value.includes("private");
@@ -125,6 +111,3 @@ const INSERT_FETCH = `INSERT OR REPLACE INTO fetched_responses
 (url_normalized, final_url, status, content_type, content_hash, byte_length, headers_json, fetched_at, expires_at, etag, last_modified)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-const LIST_FETCHES = `SELECT NULL AS responseId, fetched_at AS fetchedAt, status, content_type AS contentType,
-byte_length AS byteLength, NULL AS mode, NULL AS format, expires_at AS expiresAt FROM fetched_responses
-WHERE url_normalized = ? AND fetched_at >= ? ORDER BY fetched_at DESC LIMIT ?`;

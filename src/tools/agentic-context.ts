@@ -48,12 +48,6 @@ export function crawlAction(
 	};
 }
 
-export function narrowSearchAction(
-	description = "Rerun with a narrower query or URL scope.",
-): AgenticNextAction {
-	return { action: "narrow", description };
-}
-
 export function sourceNote(options: AgenticSourceNote): AgenticSourceNote {
 	return options;
 }
@@ -77,36 +71,6 @@ export function qualityFromCache(
 	};
 }
 
-export function qualityFromStaleness(
-	staleness: string | undefined,
-	coverage: AgenticQualitySignals["coverage"] = "complete",
-): AgenticQualitySignals {
-	return {
-		confidence:
-			staleness === "expired" || staleness === "stale" ? "medium" : "high",
-		freshness:
-			staleness === "expired" || staleness === "stale"
-				? "stale_possible"
-				: staleness
-					? "current"
-					: "unknown",
-		coverage,
-		knownGaps:
-			staleness === "expired" || staleness === "stale"
-				? [
-						"Stored content may be stale; refresh before answering time-sensitive questions.",
-					]
-				: undefined,
-	};
-}
-
-export function ageSecondsSince(iso: string | undefined): number | undefined {
-	if (!iso) return undefined;
-	const parsed = Date.parse(iso);
-	if (Number.isNaN(parsed)) return undefined;
-	return Math.max(0, Math.floor((Date.now() - parsed) / 1_000));
-}
-
 export function formatAge(ageSeconds: number | undefined): string {
 	if (ageSeconds === undefined) return "unknown age";
 	if (ageSeconds < MINUTE_SECONDS) return `${ageSeconds}s ago`;
@@ -115,12 +79,6 @@ export function formatAge(ageSeconds: number | undefined): string {
 	if (ageSeconds < DAY_SECONDS)
 		return `${Math.floor(ageSeconds / HOUR_SECONDS)}h ago`;
 	return `${Math.floor(ageSeconds / DAY_SECONDS)}d ago`;
-}
-
-export function truncateInline(value: string | undefined, max = 180): string {
-	const text = (value ?? "").replace(/\s+/gu, " ").trim();
-	if (text.length <= max) return text;
-	return `${text.slice(0, Math.max(0, max - 1))}…`;
 }
 
 export function storedResultGuidance(): string {

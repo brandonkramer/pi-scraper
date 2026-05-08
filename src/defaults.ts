@@ -1,9 +1,7 @@
 /**
  * @fileoverview defaults module.
  */
-import type { OutputFormat, ProgressState, ScrapeMode } from "./types.js";
-
-export const PACKAGE_NAME = "pi-scraper";
+import type { OutputFormat, ScrapeMode } from "./types.js";
 
 export const DEFAULT_USER_AGENT =
 	"pi-scraper/0.1 (+https://www.npmjs.com/package/pi-scraper)";
@@ -23,16 +21,6 @@ export const OUTPUT_FORMATS = [
 	"html",
 	"json",
 ] as const satisfies readonly OutputFormat[];
-
-export const PROGRESS_STATES = [
-	"queued",
-	"connecting",
-	"waiting",
-	"loading",
-	"processing",
-	"done",
-	"error",
-] as const satisfies readonly ProgressState[];
 
 export const DEFAULT_SCRAPE_MODE: ScrapeMode = "auto";
 export const DEFAULT_OUTPUT_FORMAT: OutputFormat = "markdown";
@@ -62,11 +50,6 @@ export const DEFAULT_RETRY = {
 	baseDelayMs: 250,
 	maxDelayMs: 5_000,
 	jitterMs: 250,
-} as const;
-
-export const DEFAULT_STORAGE_PATHS = {
-	crawl: "~/.pi/scraper/crawl",
-	snapshots: "~/.pi/scraper/snapshots",
 } as const;
 
 export const COMMON_TRACKING_QUERY_PARAMS = [

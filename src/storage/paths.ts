@@ -43,10 +43,3 @@ export async function ensureDir(dir: string): Promise<string> {
 	return dir;
 }
 
-export async function ensurePiStoragePaths(
-	options: ResolveStorageOptions = {},
-): Promise<PiStoragePaths> {
-	const paths = resolvePiStoragePaths(options);
-	await Promise.all(Object.values(paths).map((dir) => ensureDir(dir)));
-	return paths;
-}

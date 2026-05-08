@@ -4,11 +4,7 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import {
-	type ScrapePipelineDeps,
-	type ScrapeResult,
-	scrapeUrl,
-} from "../scrape/pipeline.js";
+import type { ScrapeResult } from "../scrape/pipeline.js";
 import { openStorageDb } from "../storage/db.js";
 import {
 	ensureDir,
@@ -112,18 +108,6 @@ export async function loadSnapshot(
 	return loadFileSnapshot(url, options);
 }
 
-export async function getSnapshot(
-	url: string,
-	options: SnapshotOptions = {},
-): Promise<SnapshotListingEntry | undefined> {
-	const snapshot = await loadSnapshot(url, options);
-	if (!snapshot) return undefined;
-	return {
-		snapshotPath: await snapshotPath(url, options),
-		metadata: snapshot.metadata,
-	};
-}
-
 export async function listSnapshots(
 	options: SnapshotOptions & { url?: string } = {},
 ): Promise<SnapshotListingEntry[]> {
@@ -193,15 +177,6 @@ export async function diffScrapeResult(
 		snapshotTag: options.snapshotTag,
 		compareTag: options.compareTag,
 	};
-}
-
-export async function diffUrl(
-	url: string,
-	options: SnapshotOptions = {},
-	deps: ScrapePipelineDeps = {},
-	signal?: AbortSignal,
-): Promise<SnapshotDiffResult> {
-	return diffScrapeResult(await scrapeUrl(url, {}, deps, signal), options);
 }
 
 export function snapshotFromResult(

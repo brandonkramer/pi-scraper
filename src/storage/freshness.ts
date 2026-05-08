@@ -44,10 +44,6 @@ export function freshnessMetadata(
 	};
 }
 
-export function coldFreshness(): CacheFreshness {
-	return { cached: false, stale: false };
-}
-
 export function crawlStaleness(updatedAt: string, now = Date.now()) {
 	const ageSeconds = ageSince(updatedAt, now);
 	const staleness =

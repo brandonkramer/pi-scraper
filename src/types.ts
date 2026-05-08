@@ -217,12 +217,6 @@ export interface CommonScrapeOptions extends CommonRequestOptions {
 	osProfile?: string;
 }
 
-export interface CommonMultiUrlOptions extends CommonRequestOptions {
-	concurrency?: number;
-	include?: string[];
-	exclude?: string[];
-}
-
 export interface ExtractorCapability {
 	name: string;
 	urlPatterns: string[];

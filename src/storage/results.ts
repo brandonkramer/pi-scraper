@@ -111,22 +111,6 @@ export async function truncateAndStore(
 	};
 }
 
-export async function listStoredResponses(
-	url: string,
-	options: ResolveStorageOptions & { since?: Date; limit?: number } = {},
-): Promise<Array<Record<string, unknown>>> {
-	const db = await openStorageDb(options);
-	const normalized = normalizeUrl(url);
-	const rows = db
-		.prepare(LIST_RESPONSES)
-		.all(
-			normalized,
-			options.since?.toISOString() ?? "0000-01-01T00:00:00.000Z",
-			options.limit ?? 10,
-		) as Array<Record<string, unknown>>;
-	return rows;
-}
-
 function responseFields(value: unknown, responseId: string) {
 	const source =
 		typeof value === "object" && value !== null
@@ -202,6 +186,3 @@ const UPSERT_RESPONSE = `INSERT OR REPLACE INTO responses
 (response_id, url, url_normalized, final_url, content_hash, content_type, status, mode, format, byte_length, stored_at, expires_at, metadata_json)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-const LIST_RESPONSES = `SELECT response_id AS responseId, stored_at AS storedAt, status, content_type AS contentType,
-byte_length AS byteLength, mode, format, expires_at AS expiresAt FROM responses
-WHERE url_normalized = ? AND stored_at >= ? ORDER BY stored_at DESC LIMIT ?`;

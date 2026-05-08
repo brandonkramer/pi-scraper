@@ -13,10 +13,6 @@ type Runner = (
 	signal?: AbortSignal,
 ) => Promise<unknown> | unknown;
 
-export interface ToolModelAdapterOptions {
-	modelAdapter?: ModelAdapter;
-}
-
 /**
  * Resolves the optional model adapter available to tool handlers.
  *
