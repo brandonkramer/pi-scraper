@@ -135,7 +135,7 @@ function entryForPage(
 		url,
 		title: result.data.title,
 		breadcrumbs: breadcrumbs(url, result.data.title),
-		summary: summarize(text),
+		summary: clipSummary(text),
 		contentRef: page.responseId ?? responseIdFromResult(result),
 		excerpt: excerptChars > 0 ? clip(text, excerptChars) : undefined,
 	});
@@ -199,7 +199,7 @@ function contentText(result: ScrapeResult): string {
 	return "";
 }
 
-function summarize(text: string): string | undefined {
+function clipSummary(text: string): string | undefined {
 	const normalized = normalizeText(text);
 	return normalized ? clip(normalized, SUMMARY_CHARS) : undefined;
 }
