@@ -6,14 +6,16 @@ import { loadEffectiveConfig } from "../config/settings.js";
 import type { ModelAdapter } from "../extract/model.js";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.js";
 import { summarizePage } from "../summarize/page.js";
-import { qualityFromCache, storedResultGuidance } from "./agentic-context.js";
+import {
+	scrapeInputSummary,
+	scrapeInputToolResult,
+} from "./scrape-input-result.js";
 import { defineWebTool, type WebTool } from "./define.js";
 import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
 import {
 	errorResult,
 	missingModelError,
 	structuredToolError,
-	toolResult,
 } from "./result.js";
 import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
 
@@ -60,25 +62,20 @@ export function createWebSummarizeTool(
 					options.scrapeDeps ?? {},
 					signal,
 				);
-				const scrape = result.input.scrape;
-				const summary = `Summarized ${result.input.source}${scrape?.cache?.cached ? " from cached scrape input" : scrape ? " from fresh scrape input" : " input"}.`;
-				return toolResult({
+				const summary = scrapeInputSummary(
+					"Summarized",
+					result.input,
+					" from fresh scrape input",
+					" from cached scrape input",
+				);
+				return scrapeInputToolResult({
 					text: result.summary,
 					data: result,
-					url: result.input.url ?? params.url,
-					finalUrl: scrape?.finalUrl,
-					status: scrape?.status,
-					mode: scrape?.mode,
-					format: scrape?.format ?? "markdown",
-					timing: scrape?.timing,
-					truncated: scrape?.truncated,
-					contentType: scrape?.contentType,
-					downloadedBytes: scrape?.downloadedBytes,
-					cache: scrape?.cache,
+					input: result.input,
+					fallbackUrl: params.url,
 					summary,
 					answerContext: `${summary} Refresh the source page before summarizing time-sensitive facts.`,
-					qualitySignals: qualityFromCache(scrape?.cache),
-					assistantGuidance: storedResultGuidance(),
+					formatFallback: "markdown",
 				});
 			} catch (error) {
 				return errorResult(

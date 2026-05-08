@@ -12,7 +12,7 @@ import {
 } from "../extract/pattern.js";
 import type { VerticalExtractionResult } from "../extract/capabilities.js";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.js";
-import { qualityFromCache, storedResultGuidance } from "./agentic-context.js";
+import { storedResultGuidance } from "./agentic-context.js";
 import { defineWebTool, type WebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
 import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
@@ -23,6 +23,10 @@ import {
 	toolResult,
 } from "./result.js";
 import { urlProperty } from "./schemas.js";
+import {
+	scrapeInputSummary,
+	scrapeInputToolResult,
+} from "./scrape-input-result.js";
 import { runApiSurfaceExtraction } from "./web-extract-surface.js";
 
 const extractActions = [
@@ -362,25 +366,19 @@ async function runAdHocExtraction(
 			options.scrapeDeps ?? {},
 			signal,
 		);
-		const scrape = result.input.scrape;
-		const summary = `Extracted structured data from ${result.input.source}${scrape?.cache?.cached ? " using cached scrape input" : scrape ? " using fresh scrape input" : " input"}.`;
-		return toolResult({
+		const summary = scrapeInputSummary(
+			"Extracted structured data from",
+			result.input,
+			" using fresh scrape input",
+			" using cached scrape input",
+		);
+		return scrapeInputToolResult({
 			text: summarizeExtraction(result.data),
 			data: result,
-			url: result.input.url ?? params.url,
-			finalUrl: scrape?.finalUrl,
-			status: scrape?.status,
-			mode: scrape?.mode,
-			format: scrape?.format,
-			timing: scrape?.timing,
-			truncated: scrape?.truncated,
-			contentType: scrape?.contentType,
-			downloadedBytes: scrape?.downloadedBytes,
-			cache: scrape?.cache,
+			input: result.input,
+			fallbackUrl: params.url,
 			summary,
 			answerContext: `${summary} Refresh the source page before extraction when the requested facts are time-sensitive.`,
-			qualitySignals: qualityFromCache(scrape?.cache),
-			assistantGuidance: storedResultGuidance(),
 		});
 	} catch (error) {
 		return errorResult(
