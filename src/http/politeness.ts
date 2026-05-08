@@ -9,9 +9,9 @@ export interface PolitenessOptions {
 	minDelayMs?: number;
 }
 
-type Release = () => void;
+export type Release = () => void;
 
-class Semaphore {
+export class Semaphore {
 	private active = 0;
 	private readonly queue: Array<() => void> = [];
 	private queueHead = 0;
@@ -78,6 +78,24 @@ class Semaphore {
 		if (consumed < 1024 || consumed <= this.queue.length - consumed) return;
 		this.queue.splice(0, consumed);
 		this.queueHead = 0;
+	}
+}
+
+export class KeyedSemaphore {
+	private readonly semaphores = new Map<string, Semaphore>();
+
+	constructor(private readonly limit: number) {}
+
+	async acquire(key: string, signal?: AbortSignal): Promise<Release> {
+		return await this.semaphore(key).acquire(signal);
+	}
+
+	private semaphore(key: string): Semaphore {
+		const existing = this.semaphores.get(key);
+		if (existing) return existing;
+		const created = new Semaphore(this.limit);
+		this.semaphores.set(key, created);
+		return created;
 	}
 }
 

@@ -4,6 +4,7 @@
 import { DEFAULT_CONCURRENCY, DEFAULT_CRAWL_LIMITS } from "../defaults.js";
 import { isAbortError } from "../http/abort.js";
 import { createHttpClient } from "../http/client.js";
+import { KeyedSemaphore } from "../http/politeness.js";
 import { discoverSiteUrls, type SiteMapDeps } from "../map/discover.js";
 import {
 	type ScrapePipelineDeps,
@@ -115,7 +116,7 @@ export async function runCrawl(
 				}),
 			};
 	const injectedHostLimits = deps.httpClient
-		? new HostLimitPool(
+		? new KeyedSemaphore(
 				options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
 			)
 		: undefined;
@@ -394,73 +395,5 @@ class CrawlCoordinator {
 
 	private notify(): void {
 		for (const wake of this.waiters.splice(0)) queueMicrotask(wake);
-	}
-}
-
-type Release = () => void;
-
-interface HostQueue {
-	items: Array<() => void>;
-	head: number;
-}
-
-class HostLimitPool {
-	private readonly active = new Map<string, number>();
-	private readonly queues = new Map<string, HostQueue>();
-
-	constructor(private readonly perHostLimit: number) {}
-
-	async acquire(host: string, signal?: AbortSignal): Promise<Release> {
-		if (signal?.aborted)
-			throw signal.reason ?? new DOMException("Crawl aborted", "AbortError");
-		if ((this.active.get(host) ?? 0) < this.perHostLimit) {
-			this.active.set(host, (this.active.get(host) ?? 0) + 1);
-			return () => this.release(host);
-		}
-		return new Promise<Release>((resolve, reject) => {
-			const run = () => {
-				cleanup();
-				this.active.set(host, (this.active.get(host) ?? 0) + 1);
-				resolve(() => this.release(host));
-			};
-			const onAbort = () => {
-				cleanup();
-				const queue = this.hostQueue(host);
-				const index = queue.items.indexOf(run);
-				if (index >= queue.head) queue.items.splice(index, 1);
-				reject(
-					signal?.reason ?? new DOMException("Crawl aborted", "AbortError"),
-				);
-			};
-			const cleanup = () => signal?.removeEventListener("abort", onAbort);
-			this.hostQueue(host).items.push(run);
-			signal?.addEventListener("abort", onAbort, { once: true });
-		});
-	}
-
-	private release(host: string): void {
-		this.active.set(host, Math.max(0, (this.active.get(host) ?? 1) - 1));
-		const queue = this.queues.get(host);
-		const next = queue?.items[queue.head];
-		if (!queue || !next) return;
-		queue.head += 1;
-		this.compactHostQueue(host, queue);
-		queueMicrotask(next);
-	}
-
-	private hostQueue(host: string): HostQueue {
-		const existing = this.queues.get(host);
-		if (existing) return existing;
-		const created = { items: [], head: 0 };
-		this.queues.set(host, created);
-		return created;
-	}
-
-	private compactHostQueue(host: string, queue: HostQueue): void {
-		const consumed = queue.head;
-		if (consumed < 1024 || consumed <= queue.items.length - consumed) return;
-		queue.items.splice(0, consumed);
-		queue.head = 0;
-		if (queue.items.length === 0) this.queues.delete(host);
 	}
 }
