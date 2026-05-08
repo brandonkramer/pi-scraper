@@ -11,6 +11,7 @@ import {
 	followingSectionNodes,
 	stripUndefined,
 	titleCase,
+	truncateText,
 } from "../_html.js";
 
 export type DocsPlatform =
@@ -201,7 +202,7 @@ function sectionFromHeading(heading: Element): DocSection {
 		heading: cleanText(domutils.textContent(heading)),
 		level,
 		anchor: headingAnchor(heading),
-		content: truncate(cleanText(domutils.textContent(contentNodes)), 1200),
+		content: truncateText(cleanText(domutils.textContent(contentNodes)), 1200),
 		codeBlocks: codeBlocks.length ? codeBlocks : undefined,
 	});
 }
@@ -264,7 +265,7 @@ function extractReturns(
 			),
 		),
 	);
-	return description ? { description: truncate(description, 500) } : undefined;
+	return description ? { description: truncateText(description, 500) } : undefined;
 }
 
 function firstText(document: AnyNode, selectors: string[]): string | undefined {
@@ -309,7 +310,3 @@ function looksLikeVersion(value?: string): boolean {
 	);
 }
 
-function truncate(value: string, max: number): string | undefined {
-	if (!value) return undefined;
-	return value.length > max ? `${value.slice(0, max - 1)}…` : value;
-}

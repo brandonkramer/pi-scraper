@@ -14,6 +14,7 @@ import {
 	followingSectionNodes,
 	stripUndefined,
 	titleCase,
+	truncateText,
 } from "./_html.js";
 
 export interface ApiSurfaceParameter {
@@ -253,7 +254,7 @@ function functionsFromSections(
 			stripUndefined({
 				name,
 				signature,
-				description: truncate(section.content, 700),
+				description: truncateText(section.content, 700),
 				examples: examples(section.codeBlocks),
 				url: sectionUrl(url, section.anchor),
 			}),
@@ -272,7 +273,7 @@ function classesFromSections(
 		classes.push(
 			stripUndefined({
 				name: section.heading.replace(/^class\s+/iu, "").trim(),
-				description: truncate(section.content, 700),
+				description: truncateText(section.content, 700),
 				methods: functionsFromSections([{ ...section, heading: "" }], url),
 				url: sectionUrl(url, section.anchor),
 			}),
@@ -417,7 +418,7 @@ function firstText(document: AnyNode, selectors: string[]): string | undefined {
 }
 
 function firstParagraph(document: AnyNode): string | undefined {
-	return truncate(
+	return truncateText(
 		cleanText(
 			domutils.textContent(
 				cssSelect.selectOne("main p, article p, p", document) ?? [],
@@ -451,7 +452,3 @@ function dedupeByName<T extends { name: string }>(items: T[]): T[] {
 	});
 }
 
-function truncate(value: string | undefined, max: number): string | undefined {
-	if (!value) return undefined;
-	return value.length > max ? `${value.slice(0, max - 1)}…` : value;
-}
