@@ -80,14 +80,10 @@ function classify(type: string, path: string): RoutedContentKind {
 	)
 		return "markdown";
 	if (path.endsWith(".rst")) return "rst";
-	if (isSourcePath(path)) return "source";
+	if (/\.(?:[cm]?[jt]sx?|py|rs)$/u.test(path)) return "source";
 	if (type.includes("json") || path.endsWith(".json")) return "json";
 	if (type.includes("svg") || path.endsWith(".svg")) return "svg";
 	if (type.includes("xml") || path.endsWith(".xml")) return "xml";
 	if (type.startsWith("text/") || path.endsWith(".txt")) return "text";
 	return "binary";
-}
-
-function isSourcePath(path: string): boolean {
-	return /\.(?:[cm]?[jt]sx?|py|rs)$/u.test(path);
 }
