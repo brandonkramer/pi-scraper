@@ -2,10 +2,11 @@
  * @fileoverview storage blobs module.
  */
 import { createHash, randomUUID } from "node:crypto";
-import { rename, stat, readFile, writeFile } from "node:fs/promises";
+import { rename, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
 	ensureDir,
+	pathExists,
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
 } from "./paths.js";
@@ -30,14 +31,14 @@ export async function writeBlob(
 		options,
 	);
 	await ensureDir(path.dirname(target));
-	if (!(await exists(target))) {
+	if (!(await pathExists(target))) {
 		const tmp = path.join(
 			path.dirname(target),
 			`.${contentHash}.${randomUUID()}.tmp`,
 		);
 		await writeFile(tmp, buffer, { mode: 0o600 });
 		await rename(tmp, target).catch(async (error: unknown) => {
-			if (await exists(target)) return;
+			if (await pathExists(target)) return;
 			throw error;
 		});
 	}
@@ -90,9 +91,3 @@ export function extensionForContentType(
 	return "bin";
 }
 
-async function exists(filePath: string): Promise<boolean> {
-	return stat(filePath).then(
-		() => true,
-		() => false,
-	);
-}

@@ -9,7 +9,11 @@ import type { ResponseStorageMetadata } from "../types.js";
 import { writeBlob } from "./blobs.js";
 import type { StorageDb } from "./db.js";
 import { normalizeMaybe, numberField, stringField } from "./_fields.js";
-import { type ResolveStorageOptions, resolvePiStoragePaths } from "./paths.js";
+import {
+	pathExists,
+	type ResolveStorageOptions,
+	resolvePiStoragePaths,
+} from "./paths.js";
 
 interface LegacyEnvelope {
 	metadata?: ResponseStorageMetadata;
@@ -226,7 +230,7 @@ async function backupDirectory(
 	source: string,
 	preferredBackup: string,
 ): Promise<void> {
-	const target = (await exists(preferredBackup))
+	const target = (await pathExists(preferredBackup))
 		? `${preferredBackup}.${Date.now()}-${randomUUID()}`
 		: preferredBackup;
 	await mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
@@ -235,13 +239,6 @@ async function backupDirectory(
 	} catch {
 		await cp(source, target, { recursive: true, errorOnExist: false });
 	}
-}
-
-async function exists(filePath: string): Promise<boolean> {
-	return stat(filePath).then(
-		() => true,
-		() => false,
-	);
 }
 
 async function isDirectory(filePath: string): Promise<boolean> {

@@ -1,7 +1,7 @@
 /**
  * @fileoverview storage paths module.
  */
-import { mkdir } from "node:fs/promises";
+import { mkdir, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
@@ -41,5 +41,12 @@ export function resolvePiStoragePaths(
 export async function ensureDir(dir: string): Promise<string> {
 	await mkdir(dir, { recursive: true, mode: 0o700 });
 	return dir;
+}
+
+export async function pathExists(filePath: string): Promise<boolean> {
+	return stat(filePath).then(
+		() => true,
+		() => false,
+	);
 }
 
