@@ -47,29 +47,33 @@ export const webExtractSchema = Type.Object({
 	contains: Type.Optional(Type.Array(Type.Any())),
 	excerpts: Type.Optional(
 		Type.Array(
-			Type.Object({
-				needle: Type.Optional(Type.Any()),
-				before: Type.Optional(Type.Any()),
-				after: Type.Optional(Type.Any()),
-				caseSensitive: Type.Optional(Type.Any()),
-				maxOccurrences: Type.Optional(Type.Any()),
+			Type.Unsafe({
+				properties: {
+					needle: Type.Optional(Type.Any()),
+					before: Type.Optional(Type.Any()),
+					after: Type.Optional(Type.Any()),
+					caseSensitive: Type.Optional(Type.Any()),
+					maxOccurrences: Type.Optional(Type.Any()),
+				},
 			}),
 		),
 	),
 	regexes: Type.Optional(
 		Type.Array(
-			Type.Object({
-				name: Type.Optional(Type.Any()),
-				pattern: Type.Optional(Type.Any()),
-				flags: Type.Optional(Type.Any()),
-				capture: Type.Optional(Type.Any()),
-				captureGroup: Type.Optional(Type.Any()),
-				includeContains: Type.Optional(Type.Any()),
-				maxMatches: Type.Optional(Type.Any()),
-				dedupe: Type.Optional(Type.Any()),
-				sort: Type.Optional(Type.Any()),
-				contextBefore: Type.Optional(Type.Any()),
-				contextAfter: Type.Optional(Type.Any()),
+			Type.Unsafe({
+				properties: {
+					name: Type.Optional(Type.Any()),
+					pattern: Type.Optional(Type.Any()),
+					flags: Type.Optional(Type.Any()),
+					capture: Type.Optional(Type.Any()),
+					captureGroup: Type.Optional(Type.Any()),
+					includeContains: Type.Optional(Type.Any()),
+					maxMatches: Type.Optional(Type.Any()),
+					dedupe: Type.Optional(Type.Any()),
+					sort: Type.Optional(Type.Any()),
+					contextBefore: Type.Optional(Type.Any()),
+					contextAfter: Type.Optional(Type.Any()),
+				},
 			}),
 		),
 	),
