@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals github-release module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 interface GitHubReleaseApi {

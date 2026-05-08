@@ -1,3 +1,6 @@
+/**
+ * @fileoverview tools model-adapter module.
+ */
 import type {
 	ModelAdapter,
 	ModelRequest,

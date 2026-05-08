@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract __tests__ ossinsight.test module.
+ */
 import { describe, expect, it } from "vitest";
 import type { VerticalExtractorContext } from "../capabilities.js";
 import { runVerticalExtractor } from "../registry.js";

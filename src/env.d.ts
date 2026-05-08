@@ -1,3 +1,6 @@
+/**
+ * @fileoverview env.d module.
+ */
 declare module "turndown-plugin-gfm" {
 	import type TurndownService from "turndown";
 

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http politeness module.
+ */
 import { DEFAULT_CONCURRENCY } from "../defaults.js";
 
 export interface PolitenessOptions {

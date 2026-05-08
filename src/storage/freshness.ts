@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage freshness module.
+ */
 import type { CacheMetadata, FreshnessMetadata } from "../types.js";
 
 export type Staleness = "fresh" | "aging" | "stale" | "expired" | "revalidated";

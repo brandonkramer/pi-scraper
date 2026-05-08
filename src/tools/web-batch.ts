@@ -1,7 +1,7 @@
 /**
  * @fileoverview Pi tool adapter for independent multi-URL scraping.
  */
-import { Type, type Static } from "@mariozechner/pi-ai";
+import { Type, type Static } from "@earendil-works/pi-ai";
 import { runBatchScrape, type BatchItemResult } from "../batch/run.js";
 import { loadEffectiveConfig } from "../config/settings.js";
 import {

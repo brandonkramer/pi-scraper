@@ -1,3 +1,6 @@
+/**
+ * @fileoverview tools result module.
+ */
 import type {
 	OutputFormat,
 	PiToolShell,

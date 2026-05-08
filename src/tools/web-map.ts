@@ -1,7 +1,7 @@
 /**
  * @fileoverview Pi tool adapter for robots, sitemap, and llms.txt URL maps.
  */
-import { Type, type Static } from "@mariozechner/pi-ai";
+import { Type, type Static } from "@earendil-works/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
 import { discoverSiteUrls } from "../map/discover.js";
 import { storeResult } from "../storage/results.js";

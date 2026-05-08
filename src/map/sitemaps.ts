@@ -1,3 +1,6 @@
+/**
+ * @fileoverview map sitemaps module.
+ */
 import { gunzipSync } from "node:zlib";
 import { normalizeUrl } from "../url/normalize.js";
 

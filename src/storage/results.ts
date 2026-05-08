@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage results module.
+ */
 import { randomUUID } from "node:crypto";
 import { PI_TRUNCATION_LIMITS } from "../defaults.js";
 import type { ResponseStorageMetadata } from "../types.js";

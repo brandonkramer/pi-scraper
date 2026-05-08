@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract pattern module.
+ */
 import type { ScrapeResult } from "../scrape/pipeline.js";
 import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.js";
 import {

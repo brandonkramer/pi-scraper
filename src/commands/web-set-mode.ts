@@ -1,4 +1,7 @@
-import { type Static, StringEnum, Type } from "@mariozechner/pi-ai";
+/**
+ * @fileoverview Command adapter for persisted default web scrape settings.
+ */
+import { type Static, StringEnum, Type } from "@earendil-works/pi-ai";
 import {
 	type ConfigOptions,
 	type WebConfig,

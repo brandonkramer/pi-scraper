@@ -1,3 +1,6 @@
+/**
+ * @fileoverview tools __tests__ result.test module.
+ */
 import { describe, expect, it } from "vitest";
 import { progressShell } from "../progress.js";
 import { errorResult, toolResult } from "../result.js";

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http guarded-agent module.
+ */
 import { lookup as dnsLookup, type LookupAddress, type LookupOptions } from "node:dns";
 import { Agent, type Dispatcher } from "undici";
 import { assertPublicAddresses, type UrlSafetyOptions } from "./url-safety.js";

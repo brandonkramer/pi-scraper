@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse htmlparser2-dom-adapter module.
+ */
 import * as cssSelect from "css-select";
 import renderDom from "dom-serializer";
 import type { AnyNode, Document } from "domhandler";

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals docker-hub module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 interface DockerHubRepository {

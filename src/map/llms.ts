@@ -1,3 +1,6 @@
+/**
+ * @fileoverview map llms module.
+ */
 import { normalizeUrl } from "../url/normalize.js";
 
 export interface LlmsLinkEntry {

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage blobs module.
+ */
 import { createHash, randomUUID } from "node:crypto";
 import { rename, stat, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";

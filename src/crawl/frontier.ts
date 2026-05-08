@@ -1,3 +1,6 @@
+/**
+ * @fileoverview crawl frontier module.
+ */
 import { normalizeUrl } from "../url/normalize.js";
 import { matchesAny } from "../url/patterns.js";
 

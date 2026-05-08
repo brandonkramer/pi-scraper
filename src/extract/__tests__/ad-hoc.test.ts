@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract __tests__ ad-hoc.test module.
+ */
 import { describe, expect, it } from "vitest";
 import { extractAdHoc, MissingExtractInputError, prepareExtractionInput } from "../ad-hoc.js";
 import { MissingModelAdapterError, type ModelAdapter } from "../model.js";

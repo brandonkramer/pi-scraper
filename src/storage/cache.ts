@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage cache module.
+ */
 import type { FetchUrlResult } from "../http/client.js";
 import { isTextLikeContentType } from "../http/download.js";
 import { normalizeUrl } from "../url/normalize.js";

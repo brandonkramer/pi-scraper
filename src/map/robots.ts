@@ -1,3 +1,6 @@
+/**
+ * @fileoverview map robots module.
+ */
 import { normalizeUrl } from "../url/normalize.js";
 
 export interface RobotsMapInfo {

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse pdf module.
+ */
 export interface PdfMetadata {
 	title?: string;
 	author?: string;

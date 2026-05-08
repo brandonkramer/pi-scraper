@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse selectors module.
+ */
 import { normalizeWhitespace } from "../serialize/text.js";
 import type { DomAdapter, DomNode, DomSelection } from "./dom-adapter.js";
 

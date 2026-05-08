@@ -1,3 +1,6 @@
+/**
+ * @fileoverview crawl runner module.
+ */
 import { DEFAULT_CONCURRENCY, DEFAULT_CRAWL_LIMITS } from "../defaults.js";
 import { createHttpClient } from "../http/client.js";
 import { discoverSiteUrls, type SiteMapDeps } from "../map/discover.js";

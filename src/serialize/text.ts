@@ -1,3 +1,6 @@
+/**
+ * @fileoverview serialize text module.
+ */
 /** Normalizes whitespace in text for consistent output.
  * Fast path: checks if normalization is needed before applying regex transformations. */
 export function normalizeWhitespace(text: string): string {

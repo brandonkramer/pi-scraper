@@ -1,6 +1,8 @@
+/**
+ * @fileoverview extract verticals reddit module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 const COMMENT_LIMIT = 5;
-
 interface RedditPostData {
 	id?: string;
 	subreddit?: string;
@@ -21,7 +23,6 @@ interface RedditPostData {
 	stickied?: boolean;
 	archived?: boolean;
 }
-
 interface RedditCommentData {
 	id?: string;
 	author?: string;
@@ -30,7 +31,6 @@ interface RedditCommentData {
 	created_utc?: number;
 	permalink?: string;
 }
-
 interface RedditListing<T> {
 	kind?: string;
 	data?: {

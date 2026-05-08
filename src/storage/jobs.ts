@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage jobs module.
+ */
 import { readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { OutputFormat, ScrapeMode, StructuredError } from "../types.js";

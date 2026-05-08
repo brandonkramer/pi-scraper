@@ -1,7 +1,7 @@
 /**
  * @fileoverview Pi tool adapter for stored result, job, and snapshot lookup.
  */
-import { type Static, Type } from "@mariozechner/pi-ai";
+import { type Static, Type } from "@earendil-works/pi-ai";
 import { listSnapshots } from "../diff/snapshots.js";
 import { getJobManifest } from "../storage/jobs.js";
 import { getStoredResult } from "../storage/results.js";

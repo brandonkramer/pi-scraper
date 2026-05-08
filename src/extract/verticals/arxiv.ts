@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals arxiv module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 export const arxivExtractor: VerticalExtractor = {

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview diff __tests__ compare.test module.
+ */
 import { describe, expect, it } from "vitest";
 import { compareSnapshotText } from "../compare.js";
 

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview tools progress module.
+ */
 import type {
 	PiToolShell,
 	ProgressChecklistItem,

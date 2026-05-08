@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals pypi module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 interface PypiPackage {

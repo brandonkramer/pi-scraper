@@ -1,3 +1,6 @@
+/**
+ * @fileoverview types module.
+ */
 export type ScrapeMode =
 	| "fast"
 	| "fingerprint"

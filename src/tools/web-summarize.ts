@@ -1,7 +1,7 @@
 /**
  * @fileoverview Pi tool adapter for model-backed page summaries.
  */
-import { type Static, Type } from "@mariozechner/pi-ai";
+import { type Static, Type } from "@earendil-works/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
 import type { ModelAdapter } from "../extract/model.js";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.js";

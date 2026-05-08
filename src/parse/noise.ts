@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse noise module.
+ */
 import type { DomAdapter, DomNode, DomSelection } from "./dom-adapter.js";
 import { visibleText } from "./selectors.js";
 

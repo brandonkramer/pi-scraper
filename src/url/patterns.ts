@@ -1,3 +1,6 @@
+/**
+ * @fileoverview url patterns module.
+ */
 export function matchesAny(url: string, patterns: readonly string[] | undefined): boolean {
   if (!patterns || patterns.length === 0) return false;
   return patterns.some((pattern) => matchesPattern(url, pattern));

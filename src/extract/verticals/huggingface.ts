@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals huggingface module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 interface HuggingFaceModelApi {

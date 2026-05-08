@@ -1,3 +1,6 @@
+/**
+ * @fileoverview browser playwright module.
+ */
 import {
 	assertSafeFetchUrl,
 	assertSafeUrl,

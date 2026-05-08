@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http redirects module.
+ */
 import { HttpClientError } from "./errors.js";
 
 export function isRedirectStatus(status: number): boolean {

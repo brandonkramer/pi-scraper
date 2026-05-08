@@ -1,3 +1,6 @@
+/**
+ * @fileoverview scrape __tests__ pipeline.test module.
+ */
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

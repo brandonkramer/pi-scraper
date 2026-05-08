@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http errors module.
+ */
 import type { StructuredError } from "../types.js";
 
 export class HttpClientError extends Error {

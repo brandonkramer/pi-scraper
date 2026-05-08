@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http url-safety module.
+ */
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import type { StructuredError } from "../types.js";

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http download module.
+ */
 import { randomUUID } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { mkdir, stat } from "node:fs/promises";

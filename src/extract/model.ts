@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract model module.
+ */
 export interface ModelRequest {
   task: "extract" | "summarize";
   input: string;

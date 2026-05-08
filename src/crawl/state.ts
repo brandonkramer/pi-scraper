@@ -1,3 +1,6 @@
+/**
+ * @fileoverview crawl state module.
+ */
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { openStorageDb, type StorageDb } from "../storage/db.js";

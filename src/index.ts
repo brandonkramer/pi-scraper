@@ -1,3 +1,6 @@
+/**
+ * @fileoverview index module.
+ */
 import type { PiCommandRegistrar } from "./commands/define.js";
 import { registerWebCommands } from "./commands/register.js";
 import { registerSessionStartHealthChecks, type PiHealthRegistrar } from "./health/session-start.js";

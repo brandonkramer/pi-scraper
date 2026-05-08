@@ -1,3 +1,6 @@
+/**
+ * @fileoverview scrape modes fast module.
+ */
 import type { FetchUrlResult, HttpClient } from "../../http/client.js";
 import { createHttpClient } from "../../http/client.js";
 import { parseDocstrings } from "../../parse/docstrings.js";

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview commands __tests__ register.test module.
+ */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";

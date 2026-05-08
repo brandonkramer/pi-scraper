@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals ossinsight-repo-analytics module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 type MetricValue = string | number;

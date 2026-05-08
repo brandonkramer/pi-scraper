@@ -1,3 +1,6 @@
+/**
+ * @fileoverview tools __tests__ tool-selection-fixtures.test module.
+ */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { WebTool } from "../define.js";

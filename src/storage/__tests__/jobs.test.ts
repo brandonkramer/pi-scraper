@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage __tests__ jobs.test module.
+ */
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";

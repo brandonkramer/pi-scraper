@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse readable module.
+ */
 import { Readability, isProbablyReaderable } from "@mozilla/readability";
 import { parseHTML } from "linkedom";
 import { normalizeWhitespace } from "../serialize/text.js";

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview crawl __tests__ runner.test module.
+ */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";

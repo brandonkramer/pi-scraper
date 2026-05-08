@@ -1,3 +1,6 @@
+/**
+ * @fileoverview scrape render module.
+ */
 import { DEFAULT_MAX_CHARS } from "../defaults.js";
 import { toLlmText } from "../serialize/json.js";
 import { htmlToMarkdown } from "../serialize/markdown.js";

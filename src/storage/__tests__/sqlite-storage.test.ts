@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage __tests__ sqlite-storage.test module.
+ */
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";

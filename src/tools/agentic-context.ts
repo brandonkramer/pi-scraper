@@ -1,3 +1,6 @@
+/**
+ * @fileoverview tools agentic-context module.
+ */
 import type {
 	AgenticNextAction,
 	AgenticQualitySignals,

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http client module.
+ */
 import { request, type Dispatcher } from "undici";
 import {
 	DEFAULT_MAX_BYTES,

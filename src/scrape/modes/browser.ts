@@ -1,3 +1,6 @@
+/**
+ * @fileoverview scrape modes browser module.
+ */
 import type { BrowserRenderer } from "../../browser/playwright.js";
 import {
 	BrowserRenderError,

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse data-islands module.
+ */
 import { normalizeWhitespace } from "../serialize/text.js";
 import type { DomAdapter } from "./dom-adapter.js";
 

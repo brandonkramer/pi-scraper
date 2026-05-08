@@ -1,3 +1,6 @@
+/**
+ * @fileoverview scrape pipeline module.
+ */
 import { DEFAULT_OUTPUT_FORMAT, DEFAULT_SCRAPE_MODE } from "../defaults.js";
 import type { HttpClient } from "../http/client.js";
 import type { FingerprintFetchAdapter } from "../http/fingerprint.js";

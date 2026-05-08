@@ -1,3 +1,6 @@
+/**
+ * @fileoverview diff snapshots module.
+ */
 import { createHash } from "node:crypto";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";

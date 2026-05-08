@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage paths module.
+ */
 import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals hackernews module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 interface HackerNewsItem {

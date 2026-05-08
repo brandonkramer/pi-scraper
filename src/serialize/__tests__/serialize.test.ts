@@ -1,3 +1,6 @@
+/**
+ * @fileoverview serialize __tests__ serialize.test module.
+ */
 import { describe, expect, it } from "vitest";
 import { extractReadable } from "../../parse/readable.js";
 import { htmlToMarkdown } from "../markdown.js";

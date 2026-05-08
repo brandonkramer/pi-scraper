@@ -1,3 +1,6 @@
+/**
+ * @fileoverview summarize __tests__ page.test module.
+ */
 import { describe, expect, it } from "vitest";
 import { summarizePage } from "../page.js";
 import type { ModelAdapter } from "../../extract/model.js";

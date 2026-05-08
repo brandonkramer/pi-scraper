@@ -1,3 +1,6 @@
+/**
+ * @fileoverview batch run module.
+ */
 import { randomUUID } from "node:crypto";
 import { DEFAULT_CONCURRENCY } from "../defaults.js";
 import { createHttpClient } from "../http/client.js";

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse dom-adapter module.
+ */
 import { loadHtmlparser2Dom } from "./htmlparser2-dom-adapter.js";
 
 /** Opaque DOM node handle owned by a {@link DomAdapter}. */

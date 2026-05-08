@@ -1,3 +1,6 @@
+/**
+ * @fileoverview defaults module.
+ */
 import type { OutputFormat, ProgressState, ScrapeMode } from "./types.js";
 
 export const PACKAGE_NAME = "pi-scraper";

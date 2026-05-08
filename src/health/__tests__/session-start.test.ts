@@ -1,3 +1,6 @@
+/**
+ * @fileoverview health __tests__ session-start.test module.
+ */
 import { describe, expect, it } from "vitest";
 import {
 	registerSessionStartHealthChecks,

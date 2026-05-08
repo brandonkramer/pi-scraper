@@ -1,3 +1,6 @@
+/**
+ * @fileoverview config settings module.
+ */
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { DEFAULT_OUTPUT_FORMAT, DEFAULT_SCRAPE_MODE } from "../defaults.js";

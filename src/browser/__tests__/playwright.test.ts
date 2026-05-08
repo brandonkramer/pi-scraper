@@ -1,3 +1,6 @@
+/**
+ * @fileoverview browser __tests__ playwright.test module.
+ */
 import { describe, expect, it } from "vitest";
 import type { SafeUrlResult } from "../../http/url-safety.js";
 import {

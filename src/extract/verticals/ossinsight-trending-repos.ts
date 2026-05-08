@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals ossinsight-trending-repos module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 const periods = ["past_24_hours", "past_week", "past_month"] as const;

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals npm module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 interface NpmLatestPackage {

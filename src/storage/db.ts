@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage db module.
+ */
 import { DatabaseSync, type StatementSync } from "node:sqlite";
 import path from "node:path";
 import { migrateLegacyFiles } from "./migrate-from-files.js";

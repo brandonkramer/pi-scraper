@@ -55,11 +55,11 @@
     "prepublishOnly": "npm run typecheck"
   },
   "peerDependencies": {
-    "@mariozechner/pi-ai": "*",
+    "@earendil-works/pi-ai": "*",
     "@sinclair/typebox": "*"
   },
   "devDependencies": {
-    "@mariozechner/pi-ai": "latest",
+    "@earendil-works/pi-ai": "latest",
     "@sinclair/typebox": "latest",
     "@types/node": "latest",
     "@types/turndown": "^5.0.6",
@@ -76,6 +76,7 @@
     "pi": ">=0.65.0"
   },
   "dependencies": {
+    "@earendil-works/pi-tui": "^0.74.0",
     "@mozilla/readability": "^0.6.0",
     "css-select": "^6.0.0",
     "dom-serializer": "^2.0.0",

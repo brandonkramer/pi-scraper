@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract registry module.
+ */
 import { createHttpClient, type HttpClient } from "../http/client.js";
 import type {
 	CommonRequestOptions,

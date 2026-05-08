@@ -1,3 +1,6 @@
+/**
+ * @fileoverview serialize json module.
+ */
 import { normalizeWhitespace } from "./text.js";
 
 export function stableJson(value: unknown): string {

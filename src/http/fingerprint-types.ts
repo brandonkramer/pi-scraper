@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http fingerprint-types module.
+ */
 import type { StructuredError } from "../types.js";
 import type { FetchUrlOptions, FetchUrlResult } from "./client.js";
 import { HttpClientError } from "./errors.js";

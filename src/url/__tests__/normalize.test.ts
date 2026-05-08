@@ -1,3 +1,6 @@
+/**
+ * @fileoverview url __tests__ normalize.test module.
+ */
 import { describe, expect, it } from "vitest";
 import { normalizeUrl } from "../normalize.js";
 

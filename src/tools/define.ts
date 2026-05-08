@@ -1,13 +1,24 @@
-import type { Static, TSchema } from "@mariozechner/pi-ai";
+/**
+ * @fileoverview Shared Pi tool adapter contracts for web tools.
+ */
+import type { Static, TSchema } from "@earendil-works/pi-ai";
 import type { PiToolShell } from "../types.js";
 
 export type ToolUpdate = (result: PiToolShell) => void | Promise<void>;
+
+export interface ToolExecutionContext {
+	hasUI?: boolean;
+	model?: unknown;
+	modelRegistry?: unknown;
+	ui?: unknown;
+}
 
 export type ToolExecute<TParams> = (
 	toolCallId: string,
 	params: TParams,
 	signal: AbortSignal,
 	onUpdate?: ToolUpdate,
+	context?: ToolExecutionContext,
 ) => Promise<PiToolShell>;
 
 export interface RenderTheme {

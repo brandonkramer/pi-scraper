@@ -1,3 +1,6 @@
+/**
+ * @fileoverview map discover module.
+ */
 import type { HttpClient } from "../http/client.js";
 import { createHttpClient } from "../http/client.js";
 import { normalizeUrl } from "../url/normalize.js";

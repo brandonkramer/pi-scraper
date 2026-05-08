@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http fingerprint-adapter module.
+ */
 import { Readable } from "node:stream";
 import {
 	DEFAULT_MAX_BYTES,

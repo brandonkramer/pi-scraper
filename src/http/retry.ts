@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http retry module.
+ */
 import { DEFAULT_RETRY } from "../defaults.js";
 import type { CommonRequestOptions, StructuredError } from "../types.js";
 import { BodySizeLimitError } from "./download.js";

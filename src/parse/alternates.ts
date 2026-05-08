@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse alternates module.
+ */
 import { type DomAdapter, loadDom } from "./dom-adapter.js";
 import { absoluteUrl } from "./selectors.js";
 

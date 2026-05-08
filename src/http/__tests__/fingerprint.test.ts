@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http __tests__ fingerprint.test module.
+ */
 import { MockAgent } from "undici";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {

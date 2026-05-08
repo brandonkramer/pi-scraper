@@ -1,3 +1,6 @@
+/**
+ * @fileoverview scrape signals module.
+ */
 import type { FetchUrlResult } from "../http/client.js";
 import type { FastPageExtraction } from "../parse/fast.js";
 import type { ReadableExtraction } from "../parse/readable.js";

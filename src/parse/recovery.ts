@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse recovery module.
+ */
 import type { DomAdapter } from "./dom-adapter.js";
 import { absoluteUrl } from "./selectors.js";
 

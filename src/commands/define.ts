@@ -1,4 +1,7 @@
-import type { Static, TSchema } from "@mariozechner/pi-ai";
+/**
+ * @fileoverview Shared Pi command adapter contracts for web commands.
+ */
+import type { Static, TSchema } from "@earendil-works/pi-ai";
 import type { PiToolShell } from "../types.js";
 
 export type CommandExecute<TParams> = (

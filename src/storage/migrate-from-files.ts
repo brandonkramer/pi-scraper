@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage migrate-from-files module.
+ */
 import { randomUUID } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rename, stat } from "node:fs/promises";
 import path from "node:path";

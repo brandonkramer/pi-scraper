@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals docs-site module.
+ */
 import * as cssSelect from "css-select";
 import type { AnyNode, Element } from "domhandler";
 import * as domutils from "domutils";

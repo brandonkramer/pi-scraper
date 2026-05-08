@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http robots module.
+ */
 import { createRequire } from "node:module";
 import { DEFAULT_USER_AGENT } from "../defaults.js";
 

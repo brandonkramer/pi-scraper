@@ -1,3 +1,6 @@
+/**
+ * @fileoverview scrape modes readable module.
+ */
 import { extractReadable } from "../../parse/readable.js";
 import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.js";
 import { readableIsBetter } from "../signals.js";

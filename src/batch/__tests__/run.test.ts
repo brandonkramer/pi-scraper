@@ -1,3 +1,6 @@
+/**
+ * @fileoverview batch __tests__ run.test module.
+ */
 import { describe, expect, it } from "vitest";
 import { runBatchScrape } from "../run.js";
 import type { FetchUrlResult } from "../../http/client.js";

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage search module.
+ */
 import type { ResultEnvelope } from "../types.js";
 import { openStorageDb } from "./db.js";
 import type { ResolveStorageOptions } from "./paths.js";

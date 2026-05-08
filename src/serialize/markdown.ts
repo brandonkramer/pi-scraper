@@ -1,3 +1,6 @@
+/**
+ * @fileoverview serialize markdown module.
+ */
 import TurndownService from "turndown";
 import turndownPluginGfm from "turndown-plugin-gfm";
 import { normalizeWhitespace } from "./text.js";

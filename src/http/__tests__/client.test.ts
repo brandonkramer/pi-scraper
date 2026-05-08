@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http __tests__ client.test module.
+ */
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";

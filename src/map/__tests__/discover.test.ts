@@ -1,3 +1,6 @@
+/**
+ * @fileoverview map __tests__ discover.test module.
+ */
 import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { discoverSiteUrls } from "../discover.js";

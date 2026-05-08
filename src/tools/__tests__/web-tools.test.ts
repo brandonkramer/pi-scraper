@@ -1,3 +1,6 @@
+/**
+ * @fileoverview tools __tests__ web-tools.test module.
+ */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { ModelAdapter, ModelRequest } from "../../extract/model.js";

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview scrape pdf-route module.
+ */
 import type { FetchUrlResult } from "../http/client.js";
 import { extractPdfText } from "../parse/pdf.js";
 import { normalizeWhitespace } from "../serialize/text.js";

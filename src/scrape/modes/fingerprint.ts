@@ -1,3 +1,6 @@
+/**
+ * @fileoverview scrape modes fingerprint module.
+ */
 import type { FetchUrlResult } from "../../http/client.js";
 import type { FingerprintFetchAdapter } from "../../http/fingerprint.js";
 import {

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview scrape modes shared module.
+ */
 import type { FetchUrlOptions } from "../../http/client.js";
 import { HttpClientError } from "../../http/client.js";
 import type {

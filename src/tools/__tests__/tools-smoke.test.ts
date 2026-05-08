@@ -1,3 +1,6 @@
+/**
+ * @fileoverview tools __tests__ tools-smoke.test module.
+ */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";

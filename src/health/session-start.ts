@@ -1,3 +1,6 @@
+/**
+ * @fileoverview health session-start module.
+ */
 export interface HealthWarning {
 	code: string;
 	message: string;

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract ad-hoc module.
+ */
 import type { ScrapeResult } from "../scrape/pipeline.js";
 import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.js";
 import type { CommonScrapeOptions } from "../types.js";

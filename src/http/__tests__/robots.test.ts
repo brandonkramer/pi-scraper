@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http __tests__ robots.test module.
+ */
 import { describe, expect, it } from "vitest";
 import { RobotsCache } from "../robots.js";
 

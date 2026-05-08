@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http text-decode module.
+ */
 export function decodeText(buffer: Buffer, contentType: string | undefined): string {
   const charset = contentType?.match(/charset=([^;]+)/iu)?.[1]?.trim().toLowerCase().replace(/_/gu, "-");
   if (charset === "ascii") {

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview summarize page module.
+ */
 import type { ModelAdapter } from "../extract/model.js";
 import type { ScrapeResult } from "../scrape/pipeline.js";
 import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.js";

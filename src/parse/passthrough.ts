@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse passthrough module.
+ */
 import type { BinaryDownloadMetadata } from "../http/download.js";
 
 export type RoutedContentKind =

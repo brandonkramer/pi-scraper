@@ -2,7 +2,7 @@
  * @fileoverview Pi tool adapter for URL snapshot diffing.
  */
 import { randomUUID } from "node:crypto";
-import { type Static, Type } from "@mariozechner/pi-ai";
+import { type Static, Type } from "@earendil-works/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
 import {
 	diffScrapeResult,

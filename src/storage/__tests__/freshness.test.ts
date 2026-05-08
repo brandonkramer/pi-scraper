@@ -1,3 +1,6 @@
+/**
+ * @fileoverview storage __tests__ freshness.test module.
+ */
 import { describe, expect, it } from "vitest";
 import {
 	aggregateFreshness,

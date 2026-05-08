@@ -1,3 +1,6 @@
+/**
+ * @fileoverview tools register module.
+ */
 import type { PiToolRegistrar, WebTool } from "./define.js";
 import { resolveToolModelAdapter } from "./model-adapter.js";
 import { webBatchTool } from "./web-batch.js";

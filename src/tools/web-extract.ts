@@ -1,7 +1,7 @@
 /**
  * @fileoverview Pi tool adapter for vertical, pattern, ad hoc, and surface extraction.
  */
-import { type Static, StringEnum, Type } from "@mariozechner/pi-ai";
+import { type Static, StringEnum, Type } from "@earendil-works/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
 import { extractAdHoc, MissingExtractInputError } from "../extract/ad-hoc.js";
 import type { ModelAdapter } from "../extract/model.js";

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals deepwiki module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 interface DeepWikiResult {

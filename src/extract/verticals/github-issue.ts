@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals github-issue module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 interface GitHubIssueApi {

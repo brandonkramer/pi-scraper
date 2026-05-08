@@ -1,3 +1,6 @@
+/**
+ * @fileoverview extract verticals ossinsight-collection-ranking module.
+ */
 import { capability, type VerticalExtractor } from "../capabilities.js";
 
 const metrics = ["stars", "pull-requests", "issues"] as const;

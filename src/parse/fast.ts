@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse fast module.
+ */
 import { type DataIslandContent, recoverDataIslands } from "./data-islands.js";
 import { type DomAdapter, type DomSelection, loadDom } from "./dom-adapter.js";
 import {

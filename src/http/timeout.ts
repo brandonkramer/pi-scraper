@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http timeout module.
+ */
 export function withTimeout(parentSignal: AbortSignal | undefined, timeoutMs: number): { signal: AbortSignal; cleanup: () => void } {
   const controller = new AbortController();
   const onAbort = () => controller.abort(parentSignal?.reason ?? new DOMException("Operation aborted", "AbortError"));

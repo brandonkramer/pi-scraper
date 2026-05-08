@@ -1,3 +1,6 @@
+/**
+ * @fileoverview http fingerprint module.
+ */
 import type { HttpClientOptions } from "./client.js";
 import { SafeFingerprintAdapter } from "./fingerprint-adapter.js";
 import {

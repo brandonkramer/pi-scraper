@@ -1,3 +1,6 @@
+/**
+ * @fileoverview parse __tests__ fast.test module.
+ */
 import { describe, expect, it } from "vitest";
 import { discoverAlternateLinks } from "../alternates.js";
 import { recoverDataIslands } from "../data-islands.js";

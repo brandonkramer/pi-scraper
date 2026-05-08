@@ -1,3 +1,6 @@
+/**
+ * @fileoverview diff compare module.
+ */
 export interface ChangedTextLine {
   previous: string;
   current: string;
