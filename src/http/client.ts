@@ -212,7 +212,7 @@ export class HttpClient {
 						signal,
 						attempt,
 						attempts,
-						isHttpClientError,
+						(value): value is HttpClientError => value instanceof HttpClientError,
 					)
 				) {
 					throw this.toClientError(error, initialSafe.normalizedUrl, options);
@@ -434,10 +434,6 @@ function isPdfResponse(contentType: string | undefined, url: string): boolean {
 		isPdfContentType(contentType) ||
 		new URL(url).pathname.toLowerCase().endsWith(".pdf")
 	);
-}
-
-function isHttpClientError(error: unknown): error is HttpClientError {
-	return error instanceof HttpClientError;
 }
 
 function baseResult(
