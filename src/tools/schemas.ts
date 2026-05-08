@@ -7,14 +7,6 @@ import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.js";
 export const scrapeModeSchema = StringEnum(SCRAPE_MODES);
 export const outputFormatSchema = StringEnum(OUTPUT_FORMATS);
 
-export const commonRequestSchema = {
-	timeoutSeconds: Type.Optional(Type.Any()),
-	maxChars: Type.Optional(Type.Any()),
-	proxy: Type.Optional(Type.Any()),
-	respectRobots: Type.Optional(Type.Any()),
-	refresh: Type.Optional(Type.Any()),
-} as const;
-
 export const scrapeModeOptionSchema = {
 	mode: Type.Optional(scrapeModeSchema),
 } as const;
