@@ -64,7 +64,7 @@ export async function extractPdfText(
 			signal: options.signal,
 		});
 	} catch (error) {
-		if (isAbortError(error)) throw error;
+		if (error instanceof Error && error.name === "AbortError") throw error;
 		return errorResult(error);
 	}
 }
@@ -254,10 +254,6 @@ function abortError(): Error {
 	const error = new Error("PDF extraction aborted");
 	error.name = "AbortError";
 	return error;
-}
-
-function isAbortError(error: unknown): boolean {
-	return error instanceof Error && error.name === "AbortError";
 }
 
 function abortable<T>(
