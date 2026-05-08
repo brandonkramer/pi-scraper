@@ -52,7 +52,7 @@ Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` when browsers are managed externally. `
 | `web_extract`    | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text/patterns/symbols, compile API surfaces, or run ad hoc schema/prompt extraction from one input.  |    194 |
 | `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                      |     56 |
 
-Token counts are approximate contract tokens from `bench/suites/tool-contract/tokens.mjs` (`ceil(JSON contract chars / 4)`). Current total: 815.
+Token counts are approximate contract tokens. Current total: 815.
 
 Capability labels:
 

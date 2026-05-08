@@ -139,7 +139,7 @@ function snapshotWith(adapter, html) {
 		const sample = ["src", "alt", "class", "id"]
 			.map((name) => adapter.attr(doc, node, name) ?? "")
 			.join(" ");
-		return /logo|brand|mark/iu.test(sample);
+		return /logo|mark/iu.test(sample);
 	});
 	return {
 		titleFound: Boolean(title),

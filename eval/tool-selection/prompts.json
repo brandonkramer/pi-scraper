@@ -543,18 +543,18 @@
 		]
 	},
 	{
-		"id": "negative-brand-assets",
-		"prompt": "Extract the site logo, brand colors, fonts, favicons, and Open Graph assets.",
+		"id": "negative-site-visual-assets-no-source",
+		"prompt": "Extract the site logo, colors, fonts, favicons, and Open Graph assets.",
 		"expectedTool": null,
-		"rationale": "Dedicated brand extraction is no longer a public pi-scraper tool; do not route brand-asset requests to ad hoc extraction by default.",
+		"rationale": "The request does not provide a URL or content source; do not call a scraper or extractor without an input page.",
 		"tags": [
 			"negative",
-			"brand",
 			"logo",
 			"colors",
 			"fonts",
 			"favicons",
-			"unsupported",
+			"site-assets",
+			"no-url",
 			"contrast:web_extract"
 		]
 	},
