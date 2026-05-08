@@ -99,6 +99,84 @@ describe("selected web tool handlers", () => {
 		).toEqual(["web_crawl", "web_scrape"]);
 	});
 
+	it("filters pattern inspection to requested symbols", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				action: "pattern",
+				content:
+					"# API\n\n/** Fetch metrics. */\nexport function fetchMetrics(id: string) {}\n\nexport function parseUrl(input: string) {}",
+				include: [{ type: "symbol", pattern: "fetchMetrics|parseUrl" }],
+			},
+			signal,
+		);
+		const envelope = result.details as ResultEnvelope<{
+			selection?: { symbols: Array<{ name: string; description?: string }> };
+		}>;
+
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.data?.selection?.symbols.map((item) => item.name)).toEqual([
+			"fetchMetrics",
+			"parseUrl",
+		]);
+		expect(envelope.data?.selection?.symbols[0]?.description).toContain(
+			"Fetch metrics",
+		);
+	});
+
+	it("returns structured api-reference preset selections", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				action: "pattern",
+				content:
+					"# Package\n\n## fetchMetrics\nThe function fetchMetrics helps. We let users decide.\n\n```ts\nexport function fetchMetrics(): Promise<void> {}\n```\n\n| Param | Type |\n| --- | --- |\n| id | string |",
+				extractSchema: "api-reference",
+			},
+			signal,
+		);
+		const envelope = result.details as ResultEnvelope<{
+			selection?: {
+				extractSchema?: string;
+				sections: unknown[];
+				codeBlocks: unknown[];
+				tables: unknown[];
+				symbols: unknown[];
+			};
+		}>;
+
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.data?.selection?.extractSchema).toBe("api-reference");
+		expect(envelope.data?.selection?.sections).toHaveLength(1);
+		expect(envelope.data?.selection?.codeBlocks).toHaveLength(1);
+		expect(envelope.data?.selection?.tables).toHaveLength(1);
+		expect(envelope.data?.selection?.symbols).toHaveLength(0);
+	});
+
+	it("returns valid empty selections for unmatched symbol filters", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				action: "pattern",
+				content: "export function fetchMetrics(): void {}",
+				include: [{ type: "symbol", pattern: "doesNotExist" }],
+			},
+			signal,
+		);
+		const envelope = result.details as ResultEnvelope<{
+			selection?: {
+				symbols: unknown[];
+				unmatched: Array<{ type: string; pattern?: string }>;
+			};
+		}>;
+
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.data?.selection?.symbols).toEqual([]);
+		expect(envelope.data?.selection?.unmatched).toEqual([
+			{ type: "symbol", pattern: "doesNotExist" },
+		]);
+	});
+
 	it("scrapes URL text before pattern inspection", async () => {
 		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
 		const result = await tool.execute(
@@ -119,6 +197,25 @@ describe("selected web tool handlers", () => {
 		expect(envelope.data?.source.source).toBe("scrape");
 		expect(envelope.data?.source.status).toBe(200);
 		expect(envelope.data?.contains[0]?.found).toBe(true);
+	});
+
+	it("extracts an API surface from provided documentation without a model", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				extract: "api-surface",
+				content:
+					"# Client\n\n## fetchMetrics()\nFetch metrics.\n\n```ts\nfetchMetrics(project: string)\n```",
+			},
+			signal,
+		);
+		const envelope = result.details as ResultEnvelope<{
+			modules: Array<{ functions: Array<{ name: string }> }>;
+		}>;
+
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.format).toBe("json");
+		expect(envelope.data?.modules[0]?.functions[0]?.name).toBe("fetchMetrics");
 	});
 
 	it("returns structured errors for invalid pattern regexes", async () => {

@@ -1,5 +1,4 @@
 import { capability, type VerticalExtractor } from "../capabilities.js";
-
 const COMMENT_LIMIT = 5;
 
 interface RedditPostData {

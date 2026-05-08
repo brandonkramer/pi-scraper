@@ -20,8 +20,15 @@ import {
 	toolResult,
 } from "./result.js";
 import { urlProperty } from "./schemas.js";
+import { runApiSurfaceExtraction } from "./web-extract-surface.js";
 
-const extractActions = ["list", "vertical", "adhoc", "pattern"] as const;
+const extractActions = [
+	"list",
+	"vertical",
+	"adhoc",
+	"pattern",
+	"surface",
+] as const;
 const sourceFormats = ["text", "markdown", "html"] as const;
 
 export const webExtractSchema = Type.Object({
@@ -32,6 +39,18 @@ export const webExtractSchema = Type.Object({
 	prompt: Type.Optional(Type.Any()),
 	schema: Type.Optional(Type.Unknown()),
 	sourceFormat: Type.Optional(Type.Any()),
+	include: Type.Optional(
+		Type.Array(
+			Type.Object({
+				type: Type.Optional(Type.Any()),
+				name: Type.Optional(Type.Any()),
+				pattern: Type.Optional(Type.Any()),
+				level: Type.Optional(Type.Any()),
+				language: Type.Optional(Type.Any()),
+			}),
+		),
+	),
+	extractSchema: Type.Optional(Type.Any()),
 	length: Type.Optional(Type.Any()),
 	markers: Type.Optional(Type.Array(Type.Any())),
 	contains: Type.Optional(Type.Array(Type.Any())),
@@ -64,6 +83,7 @@ export const webExtractSchema = Type.Object({
 		),
 	),
 	mode: Type.Optional(Type.Any()),
+	extract: Type.Optional(Type.Any()),
 });
 
 type Params = Static<typeof webExtractSchema>;
@@ -89,6 +109,8 @@ export function createWebExtractTool(
 				return runDeterministicExtractor(params, signal, onUpdate);
 			if (action === "pattern")
 				return runPatternInspection(params, options, signal, onUpdate);
+			if (action === "surface")
+				return runApiSurfaceExtraction(params, options, signal, onUpdate);
 			return runAdHocExtraction(params, options, signal);
 		},
 		renderCall: (args, theme) =>
@@ -103,6 +125,7 @@ export const webExtractTool = createWebExtractTool();
 function inferExtractAction(params: Params): ExtractAction {
 	if (params.action) return params.action as ExtractAction;
 	if (!params.url && !params.content && !params.extractor) return "list";
+	if (params.extract === "api-surface") return "surface";
 	if (params.extractor) return "vertical";
 	if (hasPatternRequest(params)) return "pattern";
 	return "adhoc";
@@ -119,6 +142,8 @@ function renderExtractCallParts(params: Params): string[] {
 function hasPatternRequest(params: Params): boolean {
 	return Boolean(
 		params.sourceFormat ||
+			params.include?.length ||
+			params.extractSchema ||
 			params.length ||
 			params.markers?.length ||
 			params.contains?.length ||
@@ -328,10 +353,13 @@ async function runAdHocExtraction(
 		);
 	}
 	try {
+		const { include, extractSchema, ...extractParams } = params;
+		void include;
+		void extractSchema;
 		const result = await extractAdHoc(
 			{
 				...config.scrapeDefaults,
-				...params,
+				...extractParams,
 				mode: params.mode ?? config.scrapeMode,
 				format: config.outputFormat,
 			},

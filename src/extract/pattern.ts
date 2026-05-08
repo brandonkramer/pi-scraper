@@ -1,5 +1,11 @@
 import type { ScrapeResult } from "../scrape/pipeline.js";
 import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.js";
+import {
+	selectSymbolContent,
+	type ExtractSchemaPreset,
+	type SymbolIncludeFilter,
+	type SymbolSelectionResult,
+} from "./symbol-selection.js";
 import type {
 	CommonScrapeOptions,
 	OutputFormat,
@@ -41,7 +47,8 @@ export interface PatternRegexRequest {
 	contextAfter?: number;
 }
 
-export interface PatternInspectOptions extends CommonScrapeOptions {
+export interface PatternInspectOptions
+	extends Omit<CommonScrapeOptions, "include"> {
 	url?: string;
 	content?: string;
 	sourceFormat?: PatternSourceFormat;
@@ -50,6 +57,8 @@ export interface PatternInspectOptions extends CommonScrapeOptions {
 	contains?: string[];
 	excerpts?: PatternExcerptRequest[];
 	regexes?: PatternRegexRequest[];
+	include?: SymbolIncludeFilter[];
+	extractSchema?: ExtractSchemaPreset;
 }
 
 export interface PatternInspectResult {
@@ -93,6 +102,7 @@ export interface PatternInspectResult {
 		totalMatches: number;
 		truncated: boolean;
 	}>;
+	selection?: SymbolSelectionResult;
 }
 
 export class PatternInspectError extends Error {
@@ -137,6 +147,11 @@ export async function inspectPatterns(
 		regexes: options.regexes?.length
 			? inspectRegexes(inspected, options.regexes, options.url)
 			: undefined,
+		selection: selectSymbolContent(inspected, {
+			include: options.include,
+			extractSchema: options.extractSchema,
+			sourceFormat: prepared.source.sourceFormat,
+		}),
 	};
 }
 
@@ -171,9 +186,13 @@ async function preparePatternSource(
 			"MISSING_INPUT",
 		);
 	}
+	const { content, include, extractSchema, ...scrapeOptions } = options;
+	void content;
+	void include;
+	void extractSchema;
 	const scrape = await scrapeUrl(
 		options.url,
-		{ ...options, format: sourceFormat as OutputFormat },
+		{ ...scrapeOptions, format: sourceFormat as OutputFormat },
 		deps,
 		signal,
 	);

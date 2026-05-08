@@ -1,12 +1,19 @@
 import type { FetchUrlResult, HttpClient } from "../../http/client.js";
 import { createHttpClient } from "../../http/client.js";
+import { parseDocstrings } from "../../parse/docstrings.js";
 import { extractFastPage } from "../../parse/fast.js";
+import { parseMarkdown, parseMdx, parseRst } from "../../parse/markup-doc.js";
 import {
 	binaryAttachmentInfo,
 	parseJsonText,
 	type RoutedContentKind,
 	routeContentType,
 } from "../../parse/passthrough.js";
+import {
+	docstringsToText,
+	markupDocumentToMarkdown,
+	markupDocumentToText,
+} from "../../serialize/structured-doc.js";
 import { normalizeWhitespace } from "../../serialize/text.js";
 import type {
 	CommonScrapeOptions,
@@ -108,11 +115,16 @@ function passthroughResult(
 	format: OutputFormat,
 	mode: ScrapeMode,
 ): ScrapeResult {
-	const normalized = normalizeWhitespace(text);
-	const json = route === "json" ? safeParseJson(text) : undefined;
+	const parsed = parsePassthroughContent(
+		route,
+		text,
+		base.finalUrl ?? base.url,
+	);
+	const normalized = normalizeWhitespace(parsed.text);
+	const json = route === "json" ? safeParseJson(text) : parsed.json;
 	const rendered = renderFormat(format, {
 		text: normalized,
-		markdown: route === "markdown" ? normalized : undefined,
+		markdown: parsed.markdown,
 		html: text,
 		json,
 	});
@@ -120,6 +132,46 @@ function passthroughResult(
 		...base,
 		data: { route, extractionPath: [mode], ...rendered, json },
 	};
+}
+
+function parsePassthroughContent(
+	route: RoutedContentKind,
+	text: string,
+	file?: string,
+): { text: string; markdown?: string; json?: unknown } {
+	if (route === "markdown") {
+		const document = parseMarkdown(text, file);
+		return {
+			text: markupDocumentToText(document),
+			markdown: markupDocumentToMarkdown(document),
+			json: document,
+		};
+	}
+	if (route === "mdx") {
+		const document = parseMdx(text, file);
+		return {
+			text: markupDocumentToText(document),
+			markdown: markupDocumentToMarkdown(document),
+			json: document,
+		};
+	}
+	if (route === "rst") {
+		const document = parseRst(text, file);
+		return {
+			text: markupDocumentToText(document),
+			markdown: markupDocumentToMarkdown(document),
+			json: document,
+		};
+	}
+	if (route === "source") {
+		const document = parseDocstrings(text, file);
+		return {
+			text: docstringsToText(document),
+			markdown: docstringsToText(document),
+			json: document,
+		};
+	}
+	return { text: normalizeWhitespace(text) };
 }
 
 function htmlResult(

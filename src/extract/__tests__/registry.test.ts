@@ -142,6 +142,9 @@ const context: VerticalExtractorContext = {
 		throw new Error(`Unexpected URL: ${url}`);
 	},
 	fetchText: async (url: string) => {
+		if (url.endsWith("/src/api.ts")) {
+			return `/** Fetch metrics.\n * @param {string} project - Project slug.\n */\nexport function fetchMetrics(project: string) { return project.length; }`;
+		}
 		if (url.includes("deepwiki.com")) {
 			return `
 				<div>Loading...<span>Index your code with Devin</span></div>
@@ -185,6 +188,7 @@ describe("vertical extractor registry", () => {
 				"arxiv",
 				"deepwiki",
 				"docsite",
+				"docstrings",
 				"ossinsight_collections",
 				"ossinsight_collection_ranking",
 				"ossinsight_trending_repos",
@@ -349,6 +353,20 @@ describe("vertical extractor registry", () => {
 				authors: ["Ada Lovelace"],
 				categories: ["cs.CL"],
 			},
+		});
+	});
+
+	it("extracts raw source docstrings through a deterministic vertical", async () => {
+		const result = await runVerticalExtractor(
+			"docstrings",
+			"https://example.com/src/api.ts",
+			{ context },
+		);
+
+		expect(result.error).toBeUndefined();
+		expect(result.data).toMatchObject({
+			file: "/src/api.ts",
+			exports: [{ name: "fetchMetrics", kind: "function" }],
 		});
 	});
 

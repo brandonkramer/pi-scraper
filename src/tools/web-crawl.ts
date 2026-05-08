@@ -13,6 +13,7 @@ import {
 	crawlStaleness,
 	freshnessFromTimestamp,
 } from "../storage/freshness.js";
+import type { ScrapeResult } from "../scrape/pipeline.js";
 import { updateJobManifest } from "../storage/jobs.js";
 import { storeResult } from "../storage/results.js";
 import type {
@@ -51,6 +52,7 @@ export const webCrawlSchema = Type.Object({
 	mode: Type.Optional(Type.Any()),
 	include: Type.Optional(Type.Array(Type.Any())),
 	exclude: Type.Optional(Type.Array(Type.Any())),
+	extract: Type.Optional(Type.Any()),
 });
 
 type Params = Static<typeof webCrawlSchema>;
@@ -143,12 +145,15 @@ async function crawlRun(
 		{},
 		signal,
 	);
-	const stored = await storeResult(crawl);
+	const apiSurface = await maybeBuildApiSurface(params, crawl.pages);
+	const storedPayload = apiSurface ? { ...crawl, apiSurface } : crawl;
+	const stored = await storeResult(storedPayload);
 	crawl.metadata = await updateCrawlMetadata(crawl.crawlId, {
 		responseId: stored.responseId,
 		status: crawl.metadata.status,
 	});
-	const finalStored = await storeResult(crawl, {
+	const finalStoredPayload = apiSurface ? { ...crawl, apiSurface } : crawl;
+	const finalStored = await storeResult(finalStoredPayload, {
 		responseId: stored.responseId,
 	});
 	const manifest = await updateJobManifest(crawl.crawlId, {
@@ -158,7 +163,10 @@ async function crawlRun(
 		crawl.metadata,
 		config.scrapeDefaults.maxAgeSeconds,
 	);
-	const text = `Crawl ${crawl.crawlId}: ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}. responseId: ${finalStored.responseId}`;
+	const surfaceText = apiSurface
+		? ` apiSurface: ${apiSurface.modules.length} module(s).`
+		: "";
+	const text = `Crawl ${crawl.crawlId}: ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}.${surfaceText} responseId: ${finalStored.responseId}`;
 	return toolResult({
 		text,
 		data: {
@@ -167,6 +175,7 @@ async function crawlRun(
 			visited: crawl.visited,
 			statePath: crawl.statePath,
 			metadata: crawl.metadata,
+			apiSurface,
 		},
 		url,
 		responseId: finalStored.responseId,
@@ -176,6 +185,14 @@ async function crawlRun(
 		diagnostics: { jobId: crawl.crawlId, jobManifestPath: manifest.path },
 		assistantGuidance: storedResultGuidance(),
 	});
+}
+
+async function maybeBuildApiSurface(params: Params, pages: ScrapeResult[]) {
+	if (params.extract !== "api-surface") return undefined;
+	const { buildApiSurfaceFromScrapes } = await import(
+		"../extract/api-surface.js"
+	);
+	return buildApiSurfaceFromScrapes(pages);
 }
 
 async function resolveRunUrl(params: Params): Promise<string | undefined> {

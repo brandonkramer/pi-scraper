@@ -70,16 +70,16 @@ The package declares its extension entrypoint and packaged skills in `package.js
 
 ## Public tools
 
-| Tool             | Capability                                      | Use it for                                                                                                                         |
-| ---------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON; legacy `task: "summarize"` remains supported.                                    |
-| `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                |
-| `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, or list prior crawl metadata.                                 |
-| `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.   |
-| `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results.                                                         |
-| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                  |
-| `web_extract`    | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text patterns, or run ad hoc schema/prompt extraction from one page/content. |
-| `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.              |
+| Tool             | Capability                                      | Use it for                                                                                                                                                |
+| ---------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, including raw Markdown, MDX, RST, and source docstrings.                                                |
+| `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                                       |
+| `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, list prior crawl metadata, or compile crawled docs into an API-surface tree.         |
+| `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.                          |
+| `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results.                                                                                |
+| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                                         |
+| `web_extract`    | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text/patterns/symbols, compile API surfaces, or run ad hoc schema/prompt extraction from one input. |
+| `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                     |
 
 Capability labels:
 
@@ -122,6 +122,7 @@ Used by `web_scrape`, `web_summarize`, `web_batch`, `web_crawl`, `web_diff`, and
 | `crawlId`                            | Resume/persist crawl state and inspect crawl status.                                               |
 | `resume`                             | Resume existing `crawlId` state; defaults to true when available.                                  |
 | `seed` / `status` / `limit`          | Filters for `web_crawl` `action: "list"`.                                                          |
+| `extract: "api-surface"`             | Compile crawled documentation pages into one hierarchical module/function tree when possible.      |
 
 ### Diff snapshots
 
@@ -179,8 +180,9 @@ Vertical extractors return typed JSON for known sites. They prefer public APIs a
 | `arxiv`               | arXiv abstract/PDF entry URLs                     | arXiv Atom export feed          | No browser; no LLM.                                                                      |
 | `deepwiki`            | DeepWiki URLs                                     | Static HTML metadata parsing    | No browser; no LLM.                                                                      |
 | `docsite`             | Docs sites, MDN, GitBook, ReadTheDocs, Docusaurus | Static HTML section parsing     | No browser; no LLM; returns `platform` with `unknown` fallback.                          |
+| `docstrings`          | Raw `.ts`, `.js`, `.py`, and `.rs` source URLs    | Surface docstring parsing       | No browser; no LLM; extracts documented exports without typechecking.                    |
 
-Use `web_extract` with `action: "list"` to inspect exact runtime declarations, `action: "vertical"` for known-site typed JSON, `action: "pattern"` for deterministic length/markers/contains/regex/excerpts over a URL or provided content, and `action: "adhoc"` for arbitrary pages that need a custom schema or prompt and model-backed extraction.
+Use `web_extract` with `action: "list"` to inspect exact runtime declarations, `action: "vertical"` for known-site typed JSON including `docstrings`, `action: "pattern"` for deterministic length/markers/contains/regex/excerpts plus symbol-level `include` filters and `extractSchema` presets (`api-reference`, `changelog`, `faq`, `compatibility-table`) over a URL or provided content, `extract: "api-surface"` for a local hierarchical module/function tree from one URL or provided content, and `action: "adhoc"` for arbitrary pages that need a custom schema or prompt and model-backed extraction.
 
 Reddit support is limited to public post URLs and available structured JSON endpoints. If Reddit blocks access, requires auth, or rate-limits the request, the extractor returns a structured error instead of using browser automation, CAPTCHA solving, proxy rotation, or bot-like HTML scraping.
 

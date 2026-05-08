@@ -83,6 +83,40 @@ describe("scrapeUrl", () => {
 		expect(browser.calls()).toBe(0);
 	});
 
+	it("parses raw markdown into structured document metadata", async () => {
+		const url = "https://example.com/README.md";
+		const markdown = `---\ntitle: Package\n---\n# Package\n\nSee [API](./api.md).\n\n\`\`\`ts\nexport const ok = true;\n\`\`\``;
+		const result = await scrapeUrl(
+			url,
+			{ mode: "fast", format: "json" },
+			deps(textResponse(url, "text/plain", markdown)),
+		);
+
+		expect(result.data.route).toBe("markdown");
+		expect(result.data.json).toMatchObject({
+			format: "markdown",
+			frontmatter: { title: "Package" },
+			headings: [{ level: 1, text: "Package", line: 1 }],
+		});
+	});
+
+	it("parses raw source docstrings without browser escalation", async () => {
+		const url = "https://example.com/src/api.ts";
+		const source = `/** Fetch metrics.\n * @param {string} project - Project slug.\n */\nexport function fetchMetrics(project: string) { return project.length; }`;
+		const result = await scrapeUrl(
+			url,
+			{ mode: "auto", format: "json" },
+			deps(textResponse(url, "text/plain", source)),
+		);
+
+		expect(result.mode).toBe("fast");
+		expect(result.data.route).toBe("source");
+		expect(result.data.json).toMatchObject({
+			file: url,
+			exports: [{ name: "fetchMetrics", kind: "function" }],
+		});
+	});
+
 	it("returns structured missing-backend errors for explicit fingerprint mode", async () => {
 		const result = await scrapeUrl(URL, { mode: "fingerprint" });
 
@@ -237,6 +271,19 @@ function htmlResponse(html: string, status = 200): FetchUrlResult {
 		text: html,
 		body: Buffer.from(html),
 		downloadedBytes: Buffer.byteLength(html),
+	};
+}
+
+function textResponse(
+	url: string,
+	contentType: string,
+	text: string,
+): FetchUrlResult {
+	return {
+		...baseResponse(url, contentType),
+		text,
+		body: Buffer.from(text),
+		downloadedBytes: Buffer.byteLength(text),
 	};
 }
 

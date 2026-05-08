@@ -12,6 +12,7 @@ import type {
 import { arxivExtractor } from "./verticals/arxiv.js";
 import { cratesIoExtractor } from "./verticals/crates-io.js";
 import { deepWikiExtractor } from "./verticals/deepwiki.js";
+import { docstringsExtractor } from "./verticals/docstrings.js";
 import { docsiteExtractor } from "./verticals/docs-site.js";
 import { dockerHubExtractor } from "./verticals/docker-hub.js";
 import { githubIssueExtractor } from "./verticals/github-issue.js";
@@ -47,6 +48,7 @@ export const verticalExtractors = [
 	arxivExtractor,
 	deepWikiExtractor,
 	docsiteExtractor,
+	docstringsExtractor,
 	ossInsightCollectionsExtractor,
 	ossInsightCollectionRankingExtractor,
 	ossInsightTrendingReposExtractor,
