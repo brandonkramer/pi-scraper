@@ -20,6 +20,3 @@ export interface DiffData {
 	diff?: { changedCount?: number; addedCount?: number; removedCount?: number };
 }
 
-export type HistoryEntry = { responseId?: string };
-export type CrawlEntry = { recommendedAction?: string };
-export type SearchData = { supported?: boolean; hits?: unknown[] };

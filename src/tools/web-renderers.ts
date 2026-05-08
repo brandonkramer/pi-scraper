@@ -15,11 +15,8 @@ import type {
 import { renderText } from "./render.js";
 import type {
 	BatchItem,
-	CrawlEntry,
 	CrawlMeta,
 	DiffData,
-	HistoryEntry,
-	SearchData,
 } from "./web-renderer-types.js";
 
 export type ChecklistState = "done" | "pending" | "failed" | "warning" | "info";
@@ -181,75 +178,6 @@ export function renderWebDiffResult(
 		preview: envelope.answerContext ?? result.content[0]?.text,
 		responseId: envelope.responseId,
 		icons: false,
-	});
-}
-
-export function renderWebHistoryResult(
-	result: PiToolShell,
-	expanded = false,
-): RenderComponent {
-	const envelope = result.details as Partial<
-		ResultEnvelope<{ entries?: HistoryEntry[] }>
-	>;
-	const entries = envelope.data?.entries ?? [];
-	const hasResponse = entries.some((entry) => Boolean(entry.responseId));
-	const stale = envelope.qualitySignals?.freshness === "stale_possible";
-	const title =
-		hasResponse && !stale ? "reusable result found" : "refresh recommended";
-	return renderLookupResult(title, result, envelope, expanded);
-}
-
-export function renderWebCrawlsResult(
-	result: PiToolShell,
-	expanded = false,
-): RenderComponent {
-	const envelope = result.details as Partial<
-		ResultEnvelope<{ crawls?: CrawlEntry[] }>
-	>;
-	const crawls = envelope.data?.crawls ?? [];
-	const action = crawls.find(
-		(crawl) => crawl.recommendedAction,
-	)?.recommendedAction;
-	const title =
-		action === "resume"
-			? "↻ resume crawl"
-			: action === "recrawl"
-				? "⚠ recrawl recommended"
-				: action === "reuse_results"
-					? "✓ reusable crawl"
-					: crawls.length
-						? "⚠ inspect crawl history"
-						: "↻ crawl first";
-	return renderLookupResult(title, result, envelope, expanded, { icons: true });
-}
-
-export function renderWebSearchScrapesResult(
-	result: PiToolShell,
-	expanded = false,
-): RenderComponent {
-	const envelope = result.details as Partial<ResultEnvelope<SearchData>>;
-	const data = envelope.data;
-	const title =
-		data?.supported === false
-			? "search unavailable"
-			: data?.hits?.length
-				? `${data.hits.length} stored hits`
-				: "scrape/search first";
-	return renderLookupResult(title, result, envelope, expanded);
-}
-
-function renderLookupResult(
-	title: string,
-	result: PiToolShell,
-	envelope: Partial<ResultEnvelope<unknown>>,
-	expanded: boolean,
-	options: { icons?: boolean } = {},
-): RenderComponent {
-	const summary = envelope.summary ? `${title} · ${envelope.summary}` : title;
-	return renderChecklistResult(summary, expanded, {
-		preview: envelope.answerContext ?? result.content[0]?.text,
-		responseId: envelope.responseId,
-		icons: options.icons ?? false,
 	});
 }
 
