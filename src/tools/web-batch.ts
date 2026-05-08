@@ -1,10 +1,12 @@
 import { Type, type Static } from "@mariozechner/pi-ai";
-import { runBatchScrape } from "../batch/run.js";
+import { runBatchScrape, type BatchItemResult } from "../batch/run.js";
 import { loadEffectiveConfig } from "../config/settings.js";
 import {
 	aggregateFreshness,
 	freshnessFromCache,
 } from "../storage/freshness.js";
+import { updateJobManifest } from "../storage/jobs.js";
+import { storeResult } from "../storage/results.js";
 import {
 	retrieveResultAction,
 	storedResultGuidance,
@@ -20,7 +22,35 @@ export const webBatchSchema = Type.Object({
 	concurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 32 })),
 	perHostConcurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 16 })),
 	...scrapeOutputOptionSchema,
+	compile: Type.Optional(Type.Any()),
 });
+
+async function maybeBuildContextPackage(
+	params: Params,
+	items: readonly BatchItemResult[],
+	jobId: string,
+) {
+	if (params.compile !== true) return undefined;
+	const { buildContextPackage } = await import("../extract/context-package.js");
+	const pages = items
+		.filter((item) => item.ok)
+		.map((item) => ({
+			url: item.result.finalUrl ?? item.result.url ?? item.url,
+			result: item.result,
+		}));
+	const value = buildContextPackage({
+		source: "batch",
+		batchId: jobId,
+		pages,
+	});
+	const stored = await storeResult(value);
+	await updateJobManifest(jobId, { responseIds: [stored.responseId] });
+	return {
+		value,
+		responseId: stored.responseId,
+		fullOutputPath: stored.fullOutputPath,
+	};
+}
 
 type Params = Static<typeof webBatchSchema>;
 
@@ -65,8 +95,16 @@ export const webBatchTool = defineWebTool({
 					: undefined,
 			),
 		);
+		const contextPackage = await maybeBuildContextPackage(
+			params,
+			result.items,
+			result.jobId,
+		);
+		const text = contextPackage
+			? `${result.summary} Context package: ${contextPackage.value.package.urlCount} page(s), packageResponseId: ${contextPackage.responseId}.`
+			: result.summary;
 		return toolResult({
-			text: result.summary,
+			text,
 			data: result.items,
 			responseId: result.responseId,
 			fullOutputPath: result.fullOutputPath,
@@ -75,6 +113,11 @@ export const webBatchTool = defineWebTool({
 			diagnostics: {
 				jobId: result.jobId,
 				jobManifestPath: result.jobManifestPath,
+				contextPackage: contextPackage && {
+					responseId: contextPackage.responseId,
+					fullOutputPath: contextPackage.fullOutputPath,
+					package: contextPackage.value.package,
+				},
 			},
 			mode: params.mode ?? "auto",
 			format: params.format ?? "markdown",
@@ -86,14 +129,22 @@ export const webBatchTool = defineWebTool({
 				coverage: failed ? "partial" : "complete",
 				partialFailures: failed ? [`${failed} URL(s) failed.`] : undefined,
 			},
-			nextActions: result.responseId
-				? [
-						retrieveResultAction(
+			nextActions: [
+				result.responseId
+					? retrieveResultAction(
 							result.responseId,
 							"Retrieve the full batch result with every per-URL item.",
-						),
-					]
-				: undefined,
+						)
+					: undefined,
+				contextPackage
+					? retrieveResultAction(
+							contextPackage.responseId,
+							"Retrieve the compiled context package.",
+						)
+					: undefined,
+			].filter(Boolean) as NonNullable<
+				ReturnType<typeof retrieveResultAction>
+			>[],
 			assistantGuidance: storedResultGuidance(),
 		});
 	},

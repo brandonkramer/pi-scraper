@@ -1,7 +1,7 @@
 /**
  * @fileoverview Tool-level regression coverage for web_crawl API-surface wiring.
  */
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,6 +10,7 @@ import { closeStorageDbs } from "../../storage/db.js";
 import { getStoredResult } from "../../storage/results.js";
 import type { ResultEnvelope } from "../../types.js";
 import { webCrawlTool } from "../web-crawl.js";
+import { webGetResultTool } from "../web-get-result.js";
 
 let crawlRunCount = 0;
 
@@ -70,6 +71,58 @@ afterEach(async () => {
 });
 
 describe("web_crawl api-surface extraction", () => {
+	it("stores a crawl context package when compile is requested", async () => {
+		const result = await webCrawlTool.execute(
+			"call",
+			{
+				action: "run",
+				url: "https://docs.example.com/api/client",
+				compile: true,
+			},
+			signal,
+		);
+		const envelope = result.details as ResultEnvelope<{
+			contextPackage?: {
+				package: { source: string; crawlId?: string; urlCount: number };
+				tree: Array<{ url: string; breadcrumbs?: string[]; excerpt?: string }>;
+			};
+		}>;
+		const diagnostics = envelope.diagnostics as {
+			contextPackage?: { responseId: string; crawlPackagePath: string };
+		};
+
+		expect(result.content[0]?.text).toContain("package: 1 page(s)");
+		expect(envelope.data.contextPackage?.package.source).toBe("crawl");
+		expect(envelope.data.contextPackage?.package.urlCount).toBe(1);
+		expect(envelope.data.contextPackage?.tree[0]?.breadcrumbs).toContain(
+			"docs.example.com",
+		);
+		expect(envelope.data.contextPackage?.tree[0]?.excerpt).toContain(
+			"fetchMetrics",
+		);
+
+		const stored = await getStoredResult<{
+			package: { source: string; crawlId?: string };
+			tree: Array<{ title?: string }>;
+		}>(diagnostics.contextPackage!.responseId);
+		expect(stored.value.package.source).toBe("crawl");
+		expect(stored.value.tree[0]?.title).toBe("Client API");
+
+		const fetched = await webGetResultTool.execute(
+			"call",
+			{ responseId: diagnostics.contextPackage!.responseId },
+			signal,
+		);
+		expect((fetched.details as ResultEnvelope).data).toMatchObject({
+			package: { source: "crawl" },
+		});
+
+		const crawlFile = JSON.parse(
+			await readFile(diagnostics.contextPackage!.crawlPackagePath, "utf8"),
+		) as { package: { source: string } };
+		expect(crawlFile.package.source).toBe("crawl");
+	});
+
 	it("returns and stores API surface only when requested", async () => {
 		const requested = await webCrawlTool.execute(
 			"call",

@@ -70,16 +70,16 @@ The package declares its extension entrypoint and packaged skills in `package.js
 
 ## Public tools
 
-| Tool             | Capability                                      | Use it for                                                                                                                                                |
-| ---------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, including raw Markdown, MDX, RST, and source docstrings.                                                |
-| `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                                       |
-| `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, list prior crawl metadata, or compile crawled docs into an API-surface tree.         |
-| `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.                          |
-| `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results.                                                                                |
-| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                                         |
-| `web_extract`    | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text/patterns/symbols, compile API surfaces, or run ad hoc schema/prompt extraction from one input. |
-| `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                     |
+| Tool             | Capability                                      | Use it for                                                                                                                                                 |
+| ---------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, including raw Markdown, MDX, RST, and source docstrings.                                                 |
+| `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                                        |
+| `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, list prior crawl metadata, or compile crawled docs into API-surface/context packages. |
+| `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.                           |
+| `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results and optional context-package compilation.                                        |
+| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                                          |
+| `web_extract`    | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text/patterns/symbols, compile API surfaces, or run ad hoc schema/prompt extraction from one input.  |
+| `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                      |
 
 Capability labels:
 
@@ -111,18 +111,19 @@ Used by `web_scrape`, `web_summarize`, `web_batch`, `web_crawl`, `web_diff`, and
 
 ### Crawl and map
 
-| Parameter                            | Description                                                                                        |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `action`                             | For `web_crawl`: `run`, `status`, or `list`; omitted values are inferred from args.                |
-| `maxPages`                           | Maximum pages to crawl or discover.                                                                |
-| `maxDepth`                           | Maximum link depth from the seed URL.                                                              |
-| `sameOrigin`                         | Defaults to same-origin crawling.                                                                  |
-| `include` / `exclude`                | URL pattern filters.                                                                               |
-| `concurrency` / `perHostConcurrency` | Bound batch/crawl work while HTTP politeness enforces host limits and reacts to 429/`Retry-After`. |
-| `crawlId`                            | Resume/persist crawl state and inspect crawl status.                                               |
-| `resume`                             | Resume existing `crawlId` state; defaults to true when available.                                  |
-| `seed` / `status` / `limit`          | Filters for `web_crawl` `action: "list"`.                                                          |
-| `extract: "api-surface"`             | Compile crawled documentation pages into one hierarchical module/function tree when possible.      |
+| Parameter                            | Description                                                                                                                      |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `action`                             | For `web_crawl`: `run`, `status`, or `list`; omitted values are inferred from args.                                              |
+| `maxPages`                           | Maximum pages to crawl or discover.                                                                                              |
+| `maxDepth`                           | Maximum link depth from the seed URL.                                                                                            |
+| `sameOrigin`                         | Defaults to same-origin crawling.                                                                                                |
+| `include` / `exclude`                | URL pattern filters.                                                                                                             |
+| `concurrency` / `perHostConcurrency` | Bound batch/crawl work while HTTP politeness enforces host limits and reacts to 429/`Retry-After`.                               |
+| `crawlId`                            | Resume/persist crawl state and inspect crawl status.                                                                             |
+| `resume`                             | Resume existing `crawlId` state; defaults to true when available.                                                                |
+| `seed` / `status` / `limit`          | Filters for `web_crawl` `action: "list"`.                                                                                        |
+| `extract: "api-surface"`             | Compile crawled documentation pages into one hierarchical module/function tree when possible.                                    |
+| `compile: true`                      | After `web_crawl` or `web_batch` completes, store a bounded context package with URL tree, breadcrumbs, summaries, and excerpts. |
 
 ### Diff snapshots
 

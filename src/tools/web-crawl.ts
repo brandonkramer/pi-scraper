@@ -53,6 +53,7 @@ export const webCrawlSchema = Type.Object({
 	include: Type.Optional(Type.Array(Type.Any())),
 	exclude: Type.Optional(Type.Array(Type.Any())),
 	extract: Type.Optional(Type.Any()),
+	compile: Type.Optional(Type.Any()),
 });
 
 type Params = Static<typeof webCrawlSchema>;
@@ -156,9 +157,15 @@ async function crawlRun(
 	const finalStored = await storeResult(finalStoredPayload, {
 		responseId: stored.responseId,
 	});
-	const manifest = await updateJobManifest(crawl.crawlId, {
-		responseIds: [finalStored.responseId],
-	});
+	const contextPackage = await maybeBuildContextPackage(
+		params,
+		crawl.crawlId,
+		crawl.pages,
+	);
+	const responseIds = contextPackage?.responseId
+		? [finalStored.responseId, contextPackage.responseId]
+		: [finalStored.responseId];
+	const manifest = await updateJobManifest(crawl.crawlId, { responseIds });
 	const freshness = crawlFreshness(
 		crawl.metadata,
 		config.scrapeDefaults.maxAgeSeconds,
@@ -166,7 +173,10 @@ async function crawlRun(
 	const surfaceText = apiSurface
 		? ` apiSurface: ${apiSurface.modules.length} module(s).`
 		: "";
-	const text = `Crawl ${crawl.crawlId}: ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}.${surfaceText} responseId: ${finalStored.responseId}`;
+	const packageText = contextPackage
+		? ` package: ${contextPackage.value.package.urlCount} page(s), packageResponseId: ${contextPackage.responseId}.`
+		: "";
+	const text = `Crawl ${crawl.crawlId}: ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}.${surfaceText}${packageText} responseId: ${finalStored.responseId}`;
 	return toolResult({
 		text,
 		data: {
@@ -176,13 +186,22 @@ async function crawlRun(
 			statePath: crawl.statePath,
 			metadata: crawl.metadata,
 			apiSurface,
+			contextPackage: contextPackage?.value,
 		},
 		url,
 		responseId: finalStored.responseId,
 		fullOutputPath: finalStored.fullOutputPath,
 		truncated: true,
 		freshness,
-		diagnostics: { jobId: crawl.crawlId, jobManifestPath: manifest.path },
+		diagnostics: {
+			jobId: crawl.crawlId,
+			jobManifestPath: manifest.path,
+			contextPackage: contextPackage && {
+				responseId: contextPackage.responseId,
+				fullOutputPath: contextPackage.fullOutputPath,
+				crawlPackagePath: contextPackage.crawlPackagePath,
+			},
+		},
 		assistantGuidance: storedResultGuidance(),
 	});
 }
@@ -193,6 +212,39 @@ async function maybeBuildApiSurface(params: Params, pages: ScrapeResult[]) {
 		"../extract/api-surface.js"
 	);
 	return buildApiSurfaceFromScrapes(pages);
+}
+
+async function maybeBuildContextPackage(
+	params: Params,
+	crawlId: string,
+	pages: ScrapeResult[],
+) {
+	if (params.compile !== true) return undefined;
+	const [
+		{ buildContextPackage },
+		{ storeResult },
+		{ writeCrawlContextPackage },
+	] = await Promise.all([
+		import("../extract/context-package.js"),
+		import("../storage/results.js"),
+		import("../storage/context-packages.js"),
+	]);
+	const value = buildContextPackage({
+		source: "crawl",
+		crawlId,
+		pages: pages.map((result) => ({
+			url: result.finalUrl ?? result.url ?? "",
+			result,
+		})),
+	});
+	const stored = await storeResult(value);
+	const crawlFile = await writeCrawlContextPackage(crawlId, value);
+	return {
+		value,
+		responseId: stored.responseId,
+		fullOutputPath: stored.fullOutputPath,
+		crawlPackagePath: crawlFile.path,
+	};
 }
 
 async function resolveRunUrl(params: Params): Promise<string | undefined> {
