@@ -3,7 +3,12 @@
  */
 import { readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { OutputFormat, ScrapeMode, StructuredError } from "../types.js";
+import {
+	isUnknownRecord,
+	type OutputFormat,
+	type ScrapeMode,
+	type StructuredError,
+} from "../types.js";
 import {
 	ensureDir,
 	type ResolveStorageOptions,
@@ -194,7 +199,7 @@ export function createJobManifest(input: {
 
 export function sanitizeJobParams(value: unknown): Record<string, unknown> {
 	const sanitized = sanitizeValue(value, 0);
-	return isRecord(sanitized) ? sanitized : {};
+	return isUnknownRecord(sanitized) ? sanitized : {};
 }
 
 export function structuredErrorToJobError(error: StructuredError): JobError {
@@ -211,7 +216,7 @@ export function unknownToJobError(
 	phase: string,
 	url?: string,
 ): JobError {
-	if (isRecord(error) && "structured" in error) {
+	if (isUnknownRecord(error) && "structured" in error) {
 		return structuredErrorToJobError(error.structured as StructuredError);
 	}
 	return {
@@ -240,7 +245,7 @@ function sanitizeValue(value: unknown, depth: number): unknown {
 		return value;
 	if (Array.isArray(value))
 		return value.slice(0, 100).map((item) => sanitizeValue(item, depth + 1));
-	if (!isRecord(value)) return undefined;
+	if (!isUnknownRecord(value)) return undefined;
 	const output: Record<string, unknown> = {};
 	for (const [key, entry] of Object.entries(value)) {
 		if (SECRET_KEY_PATTERN.test(key)) continue;
@@ -274,8 +279,4 @@ function mergePatches(
 		responseIds: mergeUnique(left?.responseIds, right.responseIds),
 		snapshots: right.snapshots ?? left?.snapshots,
 	};
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null;
 }

@@ -21,6 +21,26 @@ export type ProgressState =
 
 export type ToolRequirement = "local" | "browser" | "cloud" | "llm";
 
+/**
+ * Object record used when narrowing unknown JSON-like values.
+ *
+ * @remarks
+ * This is intentionally broad: callers that need array or prototype exclusion
+ * should add those checks locally after narrowing to object shape.
+ */
+export type UnknownRecord = Record<string, unknown>;
+
+/**
+ * Narrows unknown values to non-null object records.
+ *
+ * @remarks
+ * Shared by storage and tool adapter boundaries that receive loosely typed host
+ * or persisted data.
+ */
+export function isUnknownRecord(value: unknown): value is UnknownRecord {
+	return typeof value === "object" && value !== null;
+}
+
 export interface PiTextContent {
 	type: "text";
 	text: string;

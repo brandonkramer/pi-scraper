@@ -6,8 +6,7 @@ import type {
 	ModelRequest,
 	ModelResponse,
 } from "../extract/model.js";
-
-type UnknownRecord = Record<string, unknown>;
+import { isUnknownRecord, type UnknownRecord } from "../types.js";
 type Runner = (
 	payload: unknown,
 	signal?: AbortSignal,
@@ -26,7 +25,7 @@ type Runner = (
 export function resolveToolModelAdapter(
 	source: unknown,
 ): ModelAdapter | undefined {
-	if (isRecord(source)) {
+	if (isUnknownRecord(source)) {
 		const configured = source.modelAdapter;
 		if (isModelAdapter(configured)) return configured;
 	}
@@ -41,14 +40,14 @@ export function resolveToolModelAdapter(
 }
 
 function findRunner(source: unknown): Runner | undefined {
-	if (!isRecord(source)) return undefined;
+	if (!isUnknownRecord(source)) return undefined;
 	for (const key of ["runModel", "generate", "chat", "complete"] as const) {
 		if (typeof source[key] === "function")
 			return source[key].bind(source) as Runner;
 	}
 	for (const key of ["model", "selectedModel", "models"] as const) {
 		const candidate = source[key];
-		if (!isRecord(candidate)) continue;
+		if (!isUnknownRecord(candidate)) continue;
 		for (const method of ["run", "generate", "chat", "complete"] as const) {
 			if (typeof candidate[method] === "function") {
 				return candidate[method].bind(candidate) as Runner;
@@ -90,7 +89,7 @@ function normalizeModelResponse<T>(
 	request: ModelRequest,
 	raw: unknown,
 ): ModelResponse<T> {
-	if (isRecord(raw) && "data" in raw) {
+	if (isUnknownRecord(raw) && "data" in raw) {
 		return raw as unknown as ModelResponse<T>;
 	}
 	const text = extractText(raw);
@@ -101,7 +100,7 @@ function normalizeModelResponse<T>(
 
 function extractText(value: unknown): string {
 	if (typeof value === "string") return value;
-	if (!isRecord(value)) return String(value ?? "");
+	if (!isUnknownRecord(value)) return String(value ?? "");
 	if (typeof value.text === "string") return value.text;
 	if (typeof value.output === "string") return value.output;
 	if (typeof value.message === "string") return value.message;
@@ -109,7 +108,7 @@ function extractText(value: unknown): string {
 		return value.content
 			.map((item) => {
 				if (typeof item === "string") return item;
-				if (isRecord(item) && typeof item.text === "string") return item.text;
+				if (isUnknownRecord(item) && typeof item.text === "string") return item.text;
 				return "";
 			})
 			.filter(Boolean)
@@ -127,9 +126,5 @@ function parseJsonOrText<T>(text: string): T {
 }
 
 function isModelAdapter(value: unknown): value is ModelAdapter {
-	return isRecord(value) && typeof value.run === "function";
-}
-
-function isRecord(value: unknown): value is UnknownRecord {
-	return typeof value === "object" && value !== null;
+	return isUnknownRecord(value) && typeof value.run === "function";
 }
