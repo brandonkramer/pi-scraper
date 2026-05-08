@@ -167,11 +167,14 @@ function extractBreadcrumbs(document: AnyNode, url: URL): string[] {
 		".wy-breadcrumbs a, .wy-breadcrumbs li, .breadcrumb a, .breadcrumb li",
 	];
 	for (const selector of selectors) {
-		const values = unique(
-			cssSelect
-				.selectAll(selector, document)
-				.map((node) => cleanText(domutils.textContent(node))),
-		);
+		const values = [
+			...new Set(
+				cssSelect
+					.selectAll(selector, document)
+					.map((node) => cleanText(domutils.textContent(node)))
+					.filter(Boolean),
+			),
+		];
 		if (values.length) return values;
 	}
 	return url.pathname.split("/").filter(Boolean).slice(0, -1).map(titleCase);
@@ -309,8 +312,4 @@ function looksLikeVersion(value?: string): boolean {
 function truncate(value: string, max: number): string | undefined {
 	if (!value) return undefined;
 	return value.length > max ? `${value.slice(0, max - 1)}…` : value;
-}
-
-function unique(values: string[]): string[] {
-	return [...new Set(values.filter(Boolean))];
 }
