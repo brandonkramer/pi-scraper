@@ -13,33 +13,20 @@ class TextRenderComponent implements RenderComponent {
 
 	render(width: number): string[] {
 		const safeWidth = Math.max(1, Math.floor(width || 80));
-		const lines = this.text
-			.split("\n")
-			.flatMap((line) =>
-				this.options.truncate
-					? [truncateAnsiAwareLine(line, safeWidth)]
-					: wrapAnsiAwareLine(line, safeWidth),
-			);
+		const lines = this.text.split("\n").flatMap((line) => {
+			const normalized = line.replaceAll("\t", "   ");
+			return this.options.truncate
+				? [truncateToWidth(normalized, safeWidth, "…")]
+				: wrapTextWithAnsi(normalized, safeWidth);
+		});
 		return this.options.padToWidth
-			? lines.map((line) => padAnsiAwareLine(line, safeWidth))
+			? lines.map((line) => truncateToWidth(line, safeWidth, "", true))
 			: lines;
 	}
 
 	invalidate(): void {
 		// Static text renderers have no cached state to clear.
 	}
-}
-
-function wrapAnsiAwareLine(line: string, width: number): string[] {
-	return wrapTextWithAnsi(line.replaceAll("\t", "   "), width);
-}
-
-function truncateAnsiAwareLine(line: string, width: number): string {
-	return truncateToWidth(line.replaceAll("\t", "   "), width, "…");
-}
-
-function padAnsiAwareLine(line: string, width: number): string {
-	return truncateToWidth(line, width, "", true);
 }
 
 export function renderText(
