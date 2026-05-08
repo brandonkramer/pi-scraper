@@ -2,6 +2,27 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [0.3.0] - 2026-05-08
+
+### Added
+
+- Added dedicated `web_summarize` support for page-scoped summaries.
+- Added structured crawl/batch context packages and structured job manifests.
+- Added code-adjacent docs extraction and API-surface extraction.
+- Added freshness metadata and tagged snapshots.
+- Added OSSInsight vertical extractors and API source URL metadata for vertical results.
+
+### Changed
+
+- Reduced public tool and bundled skill contract token overhead while preserving routing cues.
+- Improved scrape parsing performance and lazy-loaded heavier runtime paths.
+- Simplified internal HTTP, parse, storage, extraction, and renderer code paths while preserving behavior.
+
+### Fixed
+
+- Restored compact tool contracts and width-safe rendering.
+- Kept vertical extraction guidance generic and provider-boundary-safe.
+
 ## [0.2.1] - 2026-05-04
 
 ### Added
