@@ -9,17 +9,8 @@ import {
 	DEFAULT_TIMEOUT_SECONDS,
 	DEFAULT_USER_AGENT,
 } from "../defaults.js";
-import type { CacheMetadata, CommonRequestOptions } from "../types.js";
-import {
-	BodySizeLimitError,
-	collectBody,
-	enforceContentLength,
-	isPdfContentType,
-	isTextLikeContentType,
-	normalizeHeaders,
-	streamToTempFile,
-	type BinaryDownloadMetadata,
-} from "./download.js";
+import type { CommonRequestOptions } from "../types.js";
+import { BodySizeLimitError, normalizeHeaders } from "./download.js";
 import { HttpClientError } from "./errors.js";
 import { createDefaultDispatcher } from "./guarded-agent.js";
 import { PolitenessController, abortableSleep } from "./politeness.js";
@@ -33,7 +24,10 @@ import {
 	shouldStopRetrying,
 } from "./retry.js";
 import { RobotsCache, RobotsDeniedError } from "./robots.js";
-import { decodeText } from "./text-decode.js";
+import {
+	materializeFetchStreamResponse,
+	type FetchUrlResult,
+} from "./response.js";
 import { withTimeout } from "./timeout.js";
 import { findFreshFetch, recordFetch } from "../storage/cache.js";
 import type { ResolveStorageOptions } from "../storage/paths.js";
@@ -44,6 +38,8 @@ import {
 } from "./url-safety.js";
 
 export { HttpClientError } from "./errors.js";
+export { createFetchUrlResult } from "./response.js";
+export type { FetchUrlResult } from "./response.js";
 
 export interface HttpClientOptions extends UrlSafetyOptions {
 	dispatcher?: Dispatcher;
@@ -60,48 +56,6 @@ export interface FetchUrlOptions extends CommonRequestOptions {
 	downloadBinary?: boolean;
 	forceText?: boolean;
 	maxRedirects?: number;
-}
-
-export interface FetchUrlResult {
-	/** Normalized original request URL after URL policy canonicalization, not the verbatim input string. */
-	url: string;
-	/** Normalized URL of the response actually fetched after HTTP redirects. */
-	finalUrl: string;
-	status: number;
-	statusText?: string;
-	headers: Record<string, string>;
-	contentType?: string;
-	body?: Buffer;
-	text?: string;
-	file?: BinaryDownloadMetadata;
-	downloadedBytes: number;
-	cache?: CacheMetadata;
-}
-
-/**
- * Builds the shared FetchUrlResult envelope for HTTP backends.
- *
- * @remarks
- * Static Undici and fingerprinted fetchers differ in transport, but both expose
- * the same result shell to scraping modes.
- */
-export function createFetchUrlResult(input: {
-	url: string;
-	status: number;
-	statusText?: string;
-	headers: Record<string, string>;
-	contentType?: string;
-	downloadedBytes: number;
-}): FetchUrlResult {
-	return {
-		url: input.url,
-		finalUrl: input.url,
-		status: input.status,
-		statusText: input.statusText,
-		headers: input.headers,
-		contentType: input.contentType,
-		downloadedBytes: input.downloadedBytes,
-	};
 }
 
 export class HttpClient {
@@ -290,58 +244,15 @@ export class HttpClient {
 				},
 				signal,
 			});
-			const responseHeaders = normalizeHeaders(response.headers);
-			enforceContentLength(responseHeaders["content-length"], maxBytes);
-			const contentType = responseHeaders["content-type"];
-
-			if (options.method === "HEAD") {
-				await response.body.dump();
-				return createFetchUrlResult({
-					url,
-					status: response.statusCode,
-					headers: responseHeaders,
-					contentType,
-					downloadedBytes: 0,
-				});
-			}
-
-			const parseablePdf = isPdfResponse(contentType, url);
-			if (
-				options.downloadBinary === true ||
-				(options.forceText !== true &&
-					!isTextLikeContentType(contentType) &&
-					!parseablePdf)
-			) {
-				const file = await streamToTempFile(response.body, {
-					maxBytes,
-					contentType,
-				});
-				return {
-					...createFetchUrlResult({
-						url,
-						status: response.statusCode,
-						headers: responseHeaders,
-						contentType,
-						downloadedBytes: file.downloadedBytes,
-					}),
-					file,
-				};
-			}
-
-			const collected = await collectBody(response.body, maxBytes);
-			return {
-				...createFetchUrlResult({
-					url,
-					status: response.statusCode,
-					headers: responseHeaders,
-					contentType,
-					downloadedBytes: collected.downloadedBytes,
-				}),
-				body: collected.buffer,
-				text: parseablePdf
-					? undefined
-					: decodeText(collected.buffer, contentType),
-			};
+			return await materializeFetchStreamResponse({
+				url,
+				status: response.statusCode,
+				headers: normalizeHeaders(response.headers),
+				body: response.body,
+				maxBytes,
+				options,
+				discardBody: () => response.body.dump(),
+			});
 		} finally {
 			cleanup();
 		}
@@ -400,11 +311,4 @@ export class HttpClient {
 
 export function createHttpClient(options?: HttpClientOptions): HttpClient {
 	return new HttpClient(options);
-}
-
-function isPdfResponse(contentType: string | undefined, url: string): boolean {
-	return (
-		isPdfContentType(contentType) ||
-		new URL(url).pathname.toLowerCase().endsWith(".pdf")
-	);
 }

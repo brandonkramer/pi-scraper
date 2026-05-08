@@ -1,7 +1,6 @@
 /**
  * @fileoverview http fingerprint-adapter module.
  */
-import { Readable } from "node:stream";
 import {
 	DEFAULT_MAX_BYTES,
 	DEFAULT_RESPECT_ROBOTS,
@@ -9,15 +8,8 @@ import {
 	DEFAULT_USER_AGENT,
 } from "../defaults.js";
 import type { FetchUrlResult, HttpClientOptions } from "./client.js";
-import { createFetchUrlResult, HttpClient } from "./client.js";
-import {
-	BodySizeLimitError,
-	enforceContentLength,
-	isPdfContentType,
-	isTextLikeContentType,
-	normalizeHeaders,
-	streamToTempFile,
-} from "./download.js";
+import { HttpClient } from "./client.js";
+import { BodySizeLimitError, normalizeHeaders } from "./download.js";
 import { HttpClientError } from "./errors.js";
 import {
 	assertSupportedFingerprintOptions,
@@ -32,7 +24,7 @@ import { PolitenessController } from "./politeness.js";
 import { followRedirects } from "./redirects.js";
 import { hasStructuredError } from "./retry.js";
 import { RobotsCache, RobotsDeniedError } from "./robots.js";
-import { decodeText } from "./text-decode.js";
+import { materializeFetchBufferResponse } from "./response.js";
 import { withTimeout } from "./timeout.js";
 import { assertSafeFetchUrl, type SafeUrlResult } from "./url-safety.js";
 
@@ -236,60 +228,18 @@ async function materializeBackendResponse(
 	maxBytes: number,
 ): Promise<FetchUrlResult> {
 	const headers = normalizeHeaders(response.headers ?? {});
-	const contentType = headers["content-type"];
-	enforceContentLength(headers["content-length"], maxBytes);
 	const body = Buffer.isBuffer(response.body)
 		? response.body
 		: Buffer.from(response.body ?? "");
-	if (body.byteLength > maxBytes)
-		throw new BodySizeLimitError(maxBytes, body.byteLength);
-	if (options.method === "HEAD")
-		return createFetchUrlResult({
-			url,
-			status: response.status,
-			statusText: response.statusText,
-			headers,
-			contentType,
-			downloadedBytes: 0,
-		});
-
-	const parseablePdf =
-		isPdfContentType(contentType) ||
-		new URL(url).pathname.toLowerCase().endsWith(".pdf");
-	if (
-		options.downloadBinary === true ||
-		(options.forceText !== true &&
-			!isTextLikeContentType(contentType) &&
-			!parseablePdf)
-	) {
-		const file = await streamToTempFile(Readable.from([body]), {
-			maxBytes,
-			contentType,
-		});
-		return {
-			...createFetchUrlResult({
-				url,
-				status: response.status,
-				statusText: response.statusText,
-				headers,
-				contentType,
-				downloadedBytes: file.downloadedBytes,
-			}),
-			file,
-		};
-	}
-	return {
-		...createFetchUrlResult({
-			url,
-			status: response.status,
-			statusText: response.statusText,
-			headers,
-			contentType,
-			downloadedBytes: body.byteLength,
-		}),
+	return await materializeFetchBufferResponse({
+		url,
+		status: response.status,
+		statusText: response.statusText,
+		headers,
 		body,
-		text: parseablePdf ? undefined : decodeText(body, contentType),
-	};
+		maxBytes,
+		options,
+	});
 }
 
 function browserHeaders(
