@@ -17,7 +17,7 @@ import {
 	structuredToolError,
 	toolResult,
 } from "./result.js";
-import { outputFormatSchema, urlProperty } from "./schemas.js";
+import { urlProperty } from "./schemas.js";
 import { renderWebScrapeResult, renderWebToolCall } from "./web-renderers.js";
 
 const scrapeTasks = ["read", "summarize"] as const;
@@ -25,11 +25,11 @@ const scrapeTasks = ["read", "summarize"] as const;
 export const webScrapeSchema = Type.Object({
 	task: Type.Optional(Type.Any()),
 	url: Type.Optional(urlProperty()),
-	content: Type.Optional(Type.String()),
+	content: Type.Optional(Type.Any()),
 	sentences: Type.Optional(Type.Any()),
 	bullets: Type.Optional(Type.Any()),
 	mode: Type.Optional(Type.Any()),
-	format: Type.Optional(outputFormatSchema),
+	format: Type.Optional(Type.Any()),
 	include: Type.Optional(Type.Array(Type.Any())),
 	exclude: Type.Optional(Type.Array(Type.Any())),
 	onlyMainContent: Type.Optional(Type.Any()),

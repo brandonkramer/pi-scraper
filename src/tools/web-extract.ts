@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Pi tool adapter for vertical, pattern, ad hoc, and surface extraction.
+ */
 import { type Static, StringEnum, Type } from "@mariozechner/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
 import { extractAdHoc, MissingExtractInputError } from "../extract/ad-hoc.js";
@@ -35,21 +38,11 @@ export const webExtractSchema = Type.Object({
 	action: Type.Optional(Type.Any()),
 	extractor: Type.Optional(Type.Any()),
 	url: Type.Optional(urlProperty()),
-	content: Type.Optional(Type.String()),
+	content: Type.Optional(Type.Any()),
 	prompt: Type.Optional(Type.Any()),
-	schema: Type.Optional(Type.Unknown()),
+	schema: Type.Optional(Type.Any()),
 	sourceFormat: Type.Optional(Type.Any()),
-	include: Type.Optional(
-		Type.Array(
-			Type.Object({
-				type: Type.Optional(Type.Any()),
-				name: Type.Optional(Type.Any()),
-				pattern: Type.Optional(Type.Any()),
-				level: Type.Optional(Type.Any()),
-				language: Type.Optional(Type.Any()),
-			}),
-		),
-	),
+	include: Type.Optional(Type.Array(Type.Any())),
 	extractSchema: Type.Optional(Type.Any()),
 	length: Type.Optional(Type.Any()),
 	markers: Type.Optional(Type.Array(Type.Any())),
@@ -100,7 +93,7 @@ export function createWebExtractTool(
 	return defineWebTool({
 		name: "web_extract",
 		label: "Extract",
-		description: "Vertical/docsite deterministic adhoc regex JSON/schema",
+		description: "Vertical regex JSON/schema",
 		parameters: webExtractSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
 			const action = inferExtractAction(params);

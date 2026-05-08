@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Pi tool adapter for stored result, job, and snapshot lookup.
+ */
 import { type Static, Type } from "@mariozechner/pi-ai";
 import { listSnapshots } from "../diff/snapshots.js";
 import { getJobManifest } from "../storage/jobs.js";
@@ -11,11 +14,11 @@ import {
 import { errorResult, structuredToolError, toolResult } from "./result.js";
 
 export const webGetResultSchema = Type.Object({
-	responseId: Type.Optional(Type.String()),
-	jobId: Type.Optional(Type.String()),
-	snapshotUrl: Type.Optional(Type.String()),
-	snapshotName: Type.Optional(Type.String()),
-	snapshotTag: Type.Optional(Type.String()),
+	responseId: Type.Optional(Type.Any()),
+	jobId: Type.Optional(Type.Any()),
+	snapshotUrl: Type.Optional(Type.Any()),
+	snapshotName: Type.Optional(Type.Any()),
+	snapshotTag: Type.Optional(Type.Any()),
 });
 
 type Params = Static<typeof webGetResultSchema>;
@@ -23,7 +26,7 @@ type Params = Static<typeof webGetResultSchema>;
 export const webGetResultTool = defineWebTool({
 	name: "web_get_result",
 	label: "Get",
-	description: "Retrieve stored response, job manifest, or snapshot listing",
+	description: "Retrieve stored response or job manifest",
 	parameters: webGetResultSchema,
 	async execute(_toolCallId, params: Params) {
 		if (params.jobId) return getJob(params.jobId);

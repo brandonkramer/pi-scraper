@@ -1,10 +1,18 @@
 ---
 name: web-scraping
-description: web
+description: Use for known URLs/content to scrape/read pages, summarize, map sitemaps/robots/llms, crawl links, batch URLs, diff snapshots, extract JSON/regex/verticals, or get responseId/jobId; not web search/research.
 ---
 
-URLs/content; no search/research/multi-source/citations/reports.
+Known URL/content only. Not search/research/citations, monitoring, translation, CAPTCHA/stealth/proxy rotation, or brand assets.
 
-web_scrape read URL/content/raw md/mdx/rst/source docs; web_summarize summarize URL/content; web_map robots/sitemaps/llms inventory/no bodies; web_crawl links/read/run/status/list/crawlId/api-surface/compile package; web_batch URLs/per-URL/compile package; web_diff URL snapshot diff; web_extract verticals/markers/regex/excerpts/docstrings/symbol include/extractSchema/api-surface/LLM JSON/schema; web_get_result responseId/jobId.
+Tools:
+web_scrape read one URL/content; raw md/mdx/rst/source docs ok.
+web_summarize summarize one URL/content; no multi-source.
+web_map robots/sitemaps/llms URL inventory; no bodies.
+web_crawl follow links/read pages; run/status/list/resume crawlId; extract api-surface; compile package.
+web_batch many independent URLs; per-URL failures; compile package.
+web_diff compare URL snapshot.
+web_extract list/vertical/pattern/adhoc; known sites/docsite/docstrings/npm/reddit/deepwiki; markers/regex/excerpts/include/extractSchema/api-surface; JSON/schema.
+web_get_result responseId/jobId/snapshot.
 
-Map inventory; crawl read. Use compile:true on crawl/batch when the user wants one reusable structured context artifact. Vertical/pattern before adhoc LLM. If freshness.stale=true, rerun with refresh:true before time-sensitive claims. Browser/fingerprint/proxy request/failure only. No CAPTCHA/stealth/rotation/brand. Verticals: npm docsite docstrings reddit(no bypass) deepwiki.
+Rules: map=inventory, crawl=read linked pages. Prefer vertical > pattern > adhoc LLM. refresh:true time-sensitive. Browser/fingerprint/proxy only requested/static fail. Reddit no bypass.

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Pi tool adapter for robots, sitemap, and llms.txt URL maps.
+ */
 import { Type, type Static } from "@mariozechner/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
 import { discoverSiteUrls } from "../map/discover.js";
@@ -18,7 +21,7 @@ type Params = Static<typeof webMapSchema>;
 export const webMapTool = defineWebTool({
 	name: "web_map",
 	label: "Map",
-	description: "List site URLs from robots/sitemaps/llms; no page bodies",
+	description: "URLs robots/sitemaps/llms no bodies",
 	parameters: webMapSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();

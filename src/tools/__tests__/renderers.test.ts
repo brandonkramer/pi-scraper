@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Renderer contract tests for Pi web tool cards.
+ */
 import { describe, expect, it } from "vitest";
 import type { RenderComponent, ToolRenderContext } from "../define.js";
 import { progressShell } from "../progress.js";
@@ -121,6 +124,24 @@ describe("web tool renderers", () => {
 		expect(expanded).toContain("✓ crawl state saved");
 	});
 
+	it("fills collapsed crawl result width after frontier count", () => {
+		const result = toolResult({
+			text: "Crawl c1: 1 succeeded, 0 failed, 1 visited, frontier 0.",
+			data: {
+				metadata: {
+					succeededCount: 1,
+					failedCount: 0,
+					visitedCount: 1,
+					frontierCount: 0,
+				},
+			},
+			responseId: "369cd692-91a6-4348-906b-ce493c8696d8",
+		});
+		const component = webCrawlTool.renderResult?.(result, { expanded: false });
+
+		expect(terminalWidthFilled(component, 116)).toBe(true);
+	});
+
 	it("renders batch succeeded, failed, and cache-hit counts", () => {
 		const result = toolResult({
 			text: "Batch scrape complete",
@@ -152,6 +173,17 @@ describe("web tool renderers", () => {
 		expect(collapsed).toContain(
 			"\u001B[38;2;199;211;111m🔄 1 cache hits\u001B[39m",
 		);
+	});
+
+	it("keeps collapsed batch result within terminal width with emoji icons", () => {
+		const result = toolResult({
+			text: "Batch scrape complete",
+			data: [{ ok: true, url: "https://a.test" }],
+			responseId: "8c943bba-de19-472e-9",
+		});
+		const component = webBatchTool.renderResult?.(result, { expanded: false });
+
+		expect(terminalWidthSafe(component, 116)).toBe(true);
 	});
 
 	it("preserves card backgrounds when a theme emits full resets", () => {
@@ -278,3 +310,37 @@ function widthSafe(
 		component?.render(width).every((line) => line.length <= width) ?? false
 	);
 }
+
+function terminalWidthSafe(
+	component: RenderComponent | undefined,
+	width: number,
+): boolean {
+	return (
+		component
+			?.render(width)
+			.every((line) => terminalVisibleWidth(line) <= width) ?? false
+	);
+}
+
+function terminalWidthFilled(
+	component: RenderComponent | undefined,
+	width: number,
+): boolean {
+	return (
+		component
+			?.render(width)
+			.every((line) => terminalVisibleWidth(line) === width) ?? false
+	);
+}
+
+function terminalVisibleWidth(text: string): number {
+	const stripped = text.replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, "");
+	let width = 0;
+	for (const char of stripped) {
+		width += emojiOrWideCharPattern.test(char) ? 2 : 1;
+	}
+	return width;
+}
+
+const emojiOrWideCharPattern =
+	/[✅❌🔄🌐⚠]|[\u{1100}-\u{115F}\u{2E80}-\u{A4CF}\u{AC00}-\u{D7A3}\u{F900}-\u{FAFF}\u{FE10}-\u{FE6F}\u{FF00}-\u{FFE6}]/u;

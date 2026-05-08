@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Pi tool adapter for model-backed page summaries.
+ */
 import { type Static, Type } from "@mariozechner/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
 import type { ModelAdapter } from "../extract/model.js";
@@ -35,7 +38,7 @@ export function createWebSummarizeTool(
 	return defineWebTool({
 		name: "web_summarize",
 		label: "Sum",
-		description: "Summarize one URL/content; no multi-source",
+		description: "Summarize URL no multi-source",
 		parameters: webSummarizeSchema,
 		async execute(_toolCallId, params: Params, signal) {
 			const config = await loadEffectiveConfig();

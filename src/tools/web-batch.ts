@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Pi tool adapter for independent multi-URL scraping.
+ */
 import { Type, type Static } from "@mariozechner/pi-ai";
 import { runBatchScrape, type BatchItemResult } from "../batch/run.js";
 import { loadEffectiveConfig } from "../config/settings.js";
@@ -57,7 +60,7 @@ type Params = Static<typeof webBatchSchema>;
 export const webBatchTool = defineWebTool({
 	name: "web_batch",
 	label: "Batch",
-	description: "Fetch independent URLs per-URL failures",
+	description: "per-URL",
 	parameters: webBatchSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();

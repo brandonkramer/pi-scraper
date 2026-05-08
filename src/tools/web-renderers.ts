@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Renderers for Pi web tool calls and results.
+ */
 import type {
 	PiToolShell,
 	ProgressDetails,
@@ -264,7 +267,7 @@ function renderChecklistResult(
 		const id = options.responseId
 			? `${separator()}${neutralText(`responseId: ${options.responseId}`)}`
 			: "";
-		return renderText(`${title}${id}`.slice(0, 240), { padToWidth: true });
+		return renderText(`${title}${id}`, { padToWidth: true, truncate: true });
 	}
 	const lines = [title];
 	if (options.items?.length) {

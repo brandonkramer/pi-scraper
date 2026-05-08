@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Pi tool adapter for URL snapshot diffing.
+ */
 import { randomUUID } from "node:crypto";
 import { type Static, Type } from "@mariozechner/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
@@ -44,7 +47,7 @@ type Params = Static<typeof webDiffSchema>;
 export const webDiffTool = defineWebTool({
 	name: "web_diff",
 	label: "Diff",
-	description: "Compare URL/page with saved snapshot",
+	description: "Compare snapshot",
 	parameters: webDiffSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();

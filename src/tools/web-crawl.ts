@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Pi tool adapter for crawling, crawl state, and context packages.
+ */
 import { type Static, Type } from "@mariozechner/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.js";
 import { runCrawl } from "../crawl/runner.js";
@@ -68,7 +71,7 @@ type CrawlEntry = CrawlMetadata & {
 export const webCrawlTool = defineWebTool({
 	name: "web_crawl",
 	label: "Crawl",
-	description: "Crawl/follow links, read pages, depth/status",
+	description: "Crawl pages/status",
 	parameters: webCrawlSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const action = inferCrawlAction(params);
