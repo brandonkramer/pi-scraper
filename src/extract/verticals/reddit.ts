@@ -2,6 +2,7 @@
  * @fileoverview extract verticals reddit module.
  */
 import { capability, type VerticalExtractor } from "../capabilities.js";
+import { stripUndefined } from "../_html.js";
 const COMMENT_LIMIT = 5;
 interface RedditPostData {
 	id?: string;
@@ -491,10 +492,3 @@ function hasStructuredError(error: unknown): error is {
 	);
 }
 
-function stripUndefined<T extends object>(value: T): T {
-	return Object.fromEntries(
-		Object.entries(value).filter(
-			([, item]) => item !== undefined && item !== "",
-		),
-	) as T;
-}

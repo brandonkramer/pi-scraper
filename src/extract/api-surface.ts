@@ -9,6 +9,12 @@ import type { AnyNode, Element } from "domhandler";
 import * as domutils from "domutils";
 import { parseDocument } from "htmlparser2";
 import type { ScrapeResult } from "../scrape/pipeline.js";
+import {
+	cleanText,
+	followingSectionNodes,
+	stripUndefined,
+	titleCase,
+} from "./_html.js";
 
 export interface ApiSurfaceParameter {
 	name: string;
@@ -421,20 +427,6 @@ function firstParagraph(document: AnyNode): string | undefined {
 	);
 }
 
-function followingSectionNodes(heading: AnyNode, level: number): AnyNode[] {
-	const nodes: AnyNode[] = [];
-	let next = (heading as { next?: AnyNode }).next;
-	while (next) {
-		if (domutils.isTag(next) && /^h[1-6]$/u.test(next.name)) {
-			const nextLevel = Number.parseInt(next.name.slice(1), 10);
-			if (nextLevel <= level) break;
-		}
-		nodes.push(next);
-		next = (next as { next?: AnyNode }).next;
-	}
-	return nodes;
-}
-
 function codeBlocks(
 	nodes: AnyNode[],
 ): Array<{ language?: string; code: string }> {
@@ -459,25 +451,8 @@ function dedupeByName<T extends { name: string }>(items: T[]): T[] {
 	});
 }
 
-function cleanText(value: unknown): string {
-	return typeof value === "string" ? value.replace(/\s+/gu, " ").trim() : "";
-}
-
 function truncate(value: string | undefined, max: number): string | undefined {
 	if (!value) return undefined;
 	return value.length > max ? `${value.slice(0, max - 1)}…` : value;
 }
 
-function titleCase(value: string): string {
-	return value
-		.replace(/[-_]+/gu, " ")
-		.replace(/\b\w/gu, (char) => char.toUpperCase());
-}
-
-function stripUndefined<T extends object>(value: T): T {
-	return Object.fromEntries(
-		Object.entries(value).filter(
-			([, item]) => item !== undefined && item !== "",
-		),
-	) as T;
-}

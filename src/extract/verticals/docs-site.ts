@@ -6,6 +6,12 @@ import type { AnyNode, Element } from "domhandler";
 import * as domutils from "domutils";
 import { parseDocument } from "htmlparser2";
 import { capability, type VerticalExtractor } from "../capabilities.js";
+import {
+	cleanText,
+	followingSectionNodes,
+	stripUndefined,
+	titleCase,
+} from "../_html.js";
 
 export type DocsPlatform =
 	| "docusaurus"
@@ -202,20 +208,6 @@ function sectionFromHeading(heading: Element): DocSection {
 	});
 }
 
-function followingSectionNodes(heading: AnyNode, level: number): AnyNode[] {
-	const nodes: AnyNode[] = [];
-	let next = (heading as { next?: AnyNode }).next;
-	while (next) {
-		if (domutils.isTag(next) && /^h[1-6]$/u.test(next.name)) {
-			const nextLevel = Number.parseInt(next.name.slice(1), 10);
-			if (nextLevel <= level) break;
-		}
-		nodes.push(next);
-		next = (next as { next?: AnyNode }).next;
-	}
-	return nodes;
-}
-
 function extractCodeBlocks(
 	nodes: AnyNode[],
 ): Array<{ language?: string; code: string }> {
@@ -319,29 +311,12 @@ function looksLikeVersion(value?: string): boolean {
 	);
 }
 
-function cleanText(value: unknown): string {
-	return typeof value === "string" ? value.replace(/\s+/gu, " ").trim() : "";
-}
-
 function truncate(value: string, max: number): string | undefined {
 	if (!value) return undefined;
 	return value.length > max ? `${value.slice(0, max - 1)}…` : value;
-}
-
-function titleCase(value: string): string {
-	return value
-		.replace(/[-_]+/gu, " ")
-		.replace(/\b\w/gu, (char) => char.toUpperCase());
 }
 
 function unique(values: string[]): string[] {
 	return [...new Set(values.filter(Boolean))];
 }
 
-function stripUndefined<T extends object>(value: T): T {
-	return Object.fromEntries(
-		Object.entries(value).filter(
-			([, item]) => item !== undefined && item !== "",
-		),
-	) as T;
-}
