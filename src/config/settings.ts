@@ -9,6 +9,7 @@ import {
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
 } from "../storage/paths.js";
+import { stripUndefined } from "../extract/_html.js";
 import type {
 	CommonScrapeOptions,
 	OutputFormat,
@@ -158,10 +159,4 @@ function boundedNumber(
 ): number | undefined {
 	if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
 	return Math.max(minimum, Math.min(maximum, value));
-}
-
-function stripUndefined<T extends object>(config: T): Partial<T> {
-	return Object.fromEntries(
-		Object.entries(config).filter(([, value]) => value !== undefined),
-	) as Partial<T>;
 }
