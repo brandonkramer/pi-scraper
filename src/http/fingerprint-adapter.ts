@@ -31,7 +31,8 @@ import {
 import { PolitenessController } from "./politeness.js";
 import {
 	isRedirectStatus,
-	redirectError,
+	redirectLimitError,
+	redirectLoopError,
 	resolveRedirectUrl,
 } from "./redirects.js";
 import { hasStructuredError } from "./retry.js";
@@ -100,34 +101,23 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 				};
 			}
 			if (redirects >= maxRedirects) {
-				throw redirectError(
-					"REDIRECT_LIMIT",
-					`Redirect limit exceeded at ${currentSafe.normalizedUrl}`,
-					initialUrl,
-					currentSafe.normalizedUrl,
-				);
+				throw redirectLimitError(initialUrl, currentSafe.normalizedUrl);
 			}
 			const next = await assertSafeFetchUrl(
 				resolveRedirectUrl(result.headers.location, currentSafe.normalizedUrl),
 				this.clientOptions,
 			);
 			if (visited.has(next.normalizedUrl)) {
-				throw redirectError(
-					"REDIRECT_LOOP",
-					`Redirect loop detected at ${next.normalizedUrl}`,
+				throw redirectLoopError(
 					initialUrl,
 					currentSafe.normalizedUrl,
+					next.normalizedUrl,
 				);
 			}
 			visited.add(next.normalizedUrl);
 			currentSafe = next;
 		}
-		throw redirectError(
-			"REDIRECT_LIMIT",
-			`Redirect limit exceeded at ${currentSafe.normalizedUrl}`,
-			initialUrl,
-			currentSafe.normalizedUrl,
-		);
+		throw redirectLimitError(initialUrl, currentSafe.normalizedUrl);
 	}
 
 	private async fetchOneRequest(

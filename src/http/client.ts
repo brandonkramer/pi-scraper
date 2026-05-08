@@ -24,8 +24,9 @@ import { HttpClientError } from "./errors.js";
 import { createDefaultDispatcher } from "./guarded-agent.js";
 import { PolitenessController, abortableSleep } from "./politeness.js";
 import {
-	redirectError,
 	isRedirectStatus,
+	redirectLimitError,
+	redirectLoopError,
 	resolveRedirectUrl,
 } from "./redirects.js";
 import {
@@ -250,35 +251,24 @@ export class HttpClient {
 			}
 
 			if (redirects >= maxRedirects) {
-				throw redirectError(
-					"REDIRECT_LIMIT",
-					`Redirect limit exceeded at ${currentSafe.normalizedUrl}`,
-					initialUrl,
-					currentSafe.normalizedUrl,
-				);
+				throw redirectLimitError(initialUrl, currentSafe.normalizedUrl);
 			}
 
 			const next = await this.safeFetchUrl(
 				resolveRedirectUrl(result.headers.location, currentSafe.normalizedUrl),
 			);
 			if (visited.has(next.normalizedUrl)) {
-				throw redirectError(
-					"REDIRECT_LOOP",
-					`Redirect loop detected at ${next.normalizedUrl}`,
+				throw redirectLoopError(
 					initialUrl,
 					currentSafe.normalizedUrl,
+					next.normalizedUrl,
 				);
 			}
 			visited.add(next.normalizedUrl);
 			currentSafe = next;
 		}
 
-		throw redirectError(
-			"REDIRECT_LIMIT",
-			`Redirect limit exceeded at ${currentSafe.normalizedUrl}`,
-			initialUrl,
-			currentSafe.normalizedUrl,
-		);
+		throw redirectLimitError(initialUrl, currentSafe.normalizedUrl);
 	}
 
 	private async fetchOneRequest(

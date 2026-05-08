@@ -14,3 +14,11 @@ export function resolveRedirectUrl(location: string, baseUrl: string): string {
 export function redirectError(code: string, message: string, url: string, finalUrl: string): HttpClientError {
   return new HttpClientError({ code, phase: "redirect", message, retryable: false, url, finalUrl });
 }
+
+export function redirectLimitError(url: string, finalUrl: string): HttpClientError {
+  return redirectError("REDIRECT_LIMIT", `Redirect limit exceeded at ${finalUrl}`, url, finalUrl);
+}
+
+export function redirectLoopError(url: string, finalUrl: string, nextUrl: string): HttpClientError {
+  return redirectError("REDIRECT_LOOP", `Redirect loop detected at ${nextUrl}`, url, finalUrl);
+}
