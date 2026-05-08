@@ -243,7 +243,6 @@ function shapeDiffResult(
 				baselineWarning,
 			].filter(Boolean) as string[],
 		},
-
 	};
 }
 

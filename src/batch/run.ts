@@ -14,13 +14,10 @@ import { resultChars } from "../scrape/_utils.js";
 import { hasStructuredError } from "../http/retry.js";
 import type { CommonScrapeOptions, StructuredError } from "../types.js";
 import {
-	JobProgressWriter,
 	appendJobError,
-	createJobManifest,
+	setupScrapeJob,
 	structuredErrorToJobError,
 	unknownToJobError,
-	writeJobManifest,
-	type JobError,
 } from "../storage/jobs.js";
 import {
 	storeResult,
@@ -79,21 +76,19 @@ export async function runBatchScrape(
 ): Promise<BatchScrapeResult> {
 	const items = new Array<BatchItemResult>(urls.length);
 	const jobId = randomUUID();
-	let errors: JobError[] = [];
-	let totalBytes = 0;
-	let totalChars = 0;
-	let truncatedPages = 0;
-	let jobManifestPath = await writeJobManifest(
-		createJobManifest({
+	const jobSetup = await setupScrapeJob(
+		{
 			jobId,
 			jobType: "batch",
 			params: { urls, ...options },
 			mode: options.mode,
 			format: options.format,
-		}),
+		},
 		options,
 	);
-	const jobWriter = new JobProgressWriter(jobId, options);
+	let { jobManifestPath, errors, totalBytes, totalChars, truncatedPages } =
+		jobSetup;
+	const jobWriter = jobSetup.writer;
 	const cache = new Map<
 		string,
 		Promise<

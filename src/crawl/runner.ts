@@ -15,13 +15,10 @@ import { resultChars } from "../scrape/_utils.js";
 import { hasStructuredError } from "../http/retry.js";
 import type { CommonScrapeOptions, StructuredError } from "../types.js";
 import {
-	JobProgressWriter,
 	appendJobError,
-	createJobManifest,
+	setupScrapeJob,
 	structuredErrorToJobError,
 	unknownToJobError,
-	writeJobManifest,
-	type JobError,
 } from "../storage/jobs.js";
 import { CrawlFrontier, type FrontierItem } from "./frontier.js";
 import {
@@ -124,23 +121,23 @@ export async function runCrawl(
 		succeeded: state.metadata?.succeededCount ?? state.results.length,
 		failed: state.metadata?.failedCount ?? 0,
 	};
-	let jobErrors: JobError[] = state.metadata?.lastError
-		? [state.metadata.lastError]
-		: [];
-	let totalBytes = 0;
-	let totalChars = 0;
-	let truncatedPages = 0;
-	let jobManifestPath = await writeJobManifest(
-		createJobManifest({
+	const jobSetup = await setupScrapeJob(
+		{
 			jobId: state.crawlId,
 			jobType: "crawl",
 			createdAt: state.createdAt,
 			params: { seedUrl, ...options },
 			mode: options.mode,
 			format: options.format,
-		}),
+			initialErrors: state.metadata?.lastError
+				? [state.metadata.lastError]
+				: undefined,
+		},
 		options,
 	);
+	let { jobManifestPath, errors: jobErrors, totalBytes, totalChars, truncatedPages } =
+		jobSetup;
+	const jobWriter = jobSetup.writer;
 	const progressTotal = counts.succeeded + counts.failed + maxPages;
 	const activeItems = new Map<string, FrontierItem>();
 	let currentDepth = state.metadata?.currentDepth;
@@ -148,7 +145,6 @@ export async function runCrawl(
 	let statePath = "";
 	let persistChain: Promise<CrawlMetadata | undefined> =
 		Promise.resolve(undefined);
-	const jobWriter = new JobProgressWriter(state.crawlId, options);
 
 	const coordinator = new CrawlCoordinator(frontier, maxPages, signal);
 	const queuedMetadata = await persist("queued", undefined, true);
