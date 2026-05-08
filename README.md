@@ -2,13 +2,11 @@
 
 Crawl, map, and structured extraction for Pi — scraper-first, Pi-native, and local-first.
 
-`pi-scraper` is a Pi extension for reading web pages and small sites. It focuses on fast scraping, recursive crawling, URL/site mapping, brand extraction, content diffing, PDF text extraction, local result history, and deterministic vertical extraction.
+`pi-scraper` reads known URLs and small sites. Use it to scrape, summarize one page, crawl, map URLs, diff snapshots, retrieve stored results, or extract deterministic/structured data.
 
-Use it when you already have URLs and want to read, crawl, compare, or extract them. Use a companion search/research extension such as [`pi-gemini-acp`](https://github.com/brandonkramer/pi-gemini-acp) when you need broad source discovery or multi-source synthesis first.
+Use companion search/research extensions such as [`pi-gemini-acp`](https://github.com/brandonkramer/pi-gemini-acp) for broad source discovery or multi-source synthesis.
 
 ## Install
-
-From npm:
 
 ```bash
 pi install npm:pi-scraper
@@ -25,13 +23,7 @@ Crawl https://example.com, up to 25 pages.
 Compare https://example.com against my homepage snapshot.
 ```
 
-For repeated local work, Pi can opt into the fetch cache:
-
-```json
-{ "url": "https://example.com", "cacheTtlSeconds": 3600 }
-```
-
-Omit `cacheTtlSeconds` for always-fresh behavior.
+Add `cacheTtlSeconds` when you want opt-in fetch-cache reuse; omit it for fresh fetches.
 
 ## Requirements
 
@@ -39,34 +31,13 @@ Omit `cacheTtlSeconds` for always-fresh behavior.
 - Pi `>=0.65.0`
 - Optional Chromium binaries for `mode: "browser"`
 
-Normal installs include the optional Playwright package but do **not** bundle Chromium browser binaries. Install Chromium only if you need browser rendering:
+Browser mode lazy-loads Playwright. Chromium is not bundled; install only if needed:
 
 ```bash
 npx playwright install chromium
 ```
 
-If optional dependencies were omitted, first run `npm install playwright` in the `pi-scraper` checkout/install directory.
-
-Managed environments that install browsers separately can set:
-
-```bash
-PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-```
-
-`mode: "fingerprint"` is an optional static-fetch capability. The package exposes a safe backend boundary for a no-redirect TLS/HTTP fingerprint adapter, but does not bundle a fingerprint backend by default. Without one, fingerprint mode returns structured `FINGERPRINT_BACKEND_MISSING` metadata; other modes continue to work.
-
-## Pi manifest
-
-The package declares its extension entrypoint and packaged skills in `package.json`:
-
-```json
-{
-  "pi": {
-    "extensions": ["./src/index.ts"],
-    "skills": ["./skills"]
-  }
-}
-```
+Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` when browsers are managed externally. `mode: "fingerprint"` requires an optional no-redirect fingerprint backend; without one it returns structured `FINGERPRINT_BACKEND_MISSING` metadata.
 
 ## Public tools
 
@@ -91,65 +62,29 @@ Capability labels:
 | Browser optional | Uses lazy Playwright only when requested or auto-escalation justifies it.               |
 | Model/LLM        | Needs Pi's selected model or a configured model adapter after scraping clean page text. |
 
-## Common parameters
+## Parameter quick reference
 
-### Scrape-like tools
+| Area             | Parameters                                                                                                                          |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Input            | `url`, `urls`, `content`                                                                                                            |
+| Scrape output    | `mode`, `format`, `onlyMainContent`, `maxChars`, `timeoutSeconds`                                                                   |
+| Freshness/safety | `respectRobots` defaults true; use `refresh: true` for time-sensitive facts                                                         |
+| Crawl            | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `crawlId`, `resume`, `seed`, `status`, `limit`                                      |
+| Concurrency      | `concurrency`, `perHostConcurrency`; HTTP politeness reacts to 429 and `Retry-After`                                                |
+| Context packages | `compile: true` on `web_crawl`/`web_batch` stores a bounded package artifact                                                        |
+| API surface      | `extract: "api-surface"` builds a local module/function tree when possible                                                          |
+| Diff             | `snapshotName`, `snapshotTag`, `compareTag`, `maxSnapshotAgeSeconds`                                                                |
+| Extract          | `action`, `extractor`, `prompt`, `schema`, `sourceFormat`, `markers`, `contains`, `excerpts`, `regexes`, `include`, `extractSchema` |
+| Retrieve         | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag`                                                                 |
 
-Used by `web_scrape`, `web_summarize`, `web_batch`, `web_crawl`, `web_diff`, and `web_extract`.
-
-| Parameter                           | Description                                                                                                                               |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `url` / `urls`                      | HTTP(S) URL or URLs. Private-network and unsupported schemes are blocked by default.                                                      |
-| `mode`                              | `auto`, `fast`, `fingerprint`, `readable`, or `browser`. Use `auto` unless the user requests a path.                                      |
-| `format`                            | `markdown`, `text`, `llm`, `html`, or `json`.                                                                                             |
-| `task`                              | For `web_scrape`: `read` or legacy `summarize`; omitted means `read` unless only `content` is provided.                                   |
-| `content` / `sentences` / `bullets` | Summary input and length controls for `web_summarize` and `web_scrape task: "summarize"`.                                                 |
-| `include` / `exclude`               | Optional CSS selectors or URL patterns where supported.                                                                                   |
-| `onlyMainContent`                   | Prefer main/article-like content.                                                                                                         |
-| `timeoutSeconds` / `maxChars`       | Direct timeout/output bounds; rarer `headers`, `maxBytes`, cache TTL, retry/backoff, and profile knobs live in persisted scrape defaults. |
-| `respectRobots`                     | Defaults to `true`; disabling must be explicit.                                                                                           |
-| `proxy`                             | Optional proxy for supported modes/providers.                                                                                             |
-| `refresh`                           | Bypass cache for fresh time-sensitive facts.                                                                                              |
-
-### Crawl and map
-
-| Parameter                            | Description                                                                                                                      |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `action`                             | For `web_crawl`: `run`, `status`, or `list`; omitted values are inferred from args.                                              |
-| `maxPages`                           | Maximum pages to crawl or discover.                                                                                              |
-| `maxDepth`                           | Maximum link depth from the seed URL.                                                                                            |
-| `sameOrigin`                         | Defaults to same-origin crawling.                                                                                                |
-| `include` / `exclude`                | URL pattern filters.                                                                                                             |
-| `concurrency` / `perHostConcurrency` | Bound batch/crawl work while HTTP politeness enforces host limits and reacts to 429/`Retry-After`.                               |
-| `crawlId`                            | Resume/persist crawl state and inspect crawl status.                                                                             |
-| `resume`                             | Resume existing `crawlId` state; defaults to true when available.                                                                |
-| `seed` / `status` / `limit`          | Filters for `web_crawl` `action: "list"`.                                                                                        |
-| `extract: "api-surface"`             | Compile crawled documentation pages into one hierarchical module/function tree when possible.                                    |
-| `compile: true`                      | After `web_crawl` or `web_batch` completes, store a bounded context package with URL tree, breadcrumbs, summaries, and excerpts. |
-
-### Diff snapshots
-
-`web_diff` compares the current normalized page content against a previous snapshot. Pass `snapshotName` to keep a repeatable baseline per URL:
+Examples:
 
 ```json
 { "url": "https://example.com", "snapshotName": "homepage" }
 ```
 
-Reusing the same `snapshotName` compares against and then replaces that named baseline. Pass `snapshotTag` to save release/date baselines, `compareTag` to compare current content against a tagged baseline, and `maxSnapshotAgeSeconds` to warn when the baseline snapshot is too old for time-sensitive comparisons:
-
 ```json
-{
-  "url": "https://example.com/docs",
-  "snapshotName": "docs",
-  "snapshotTag": "v2.0.0",
-  "compareTag": "v1.0.0"
-}
-```
-
-List available per-URL snapshot tags with `web_get_result`:
-
-```json
-{ "snapshotUrl": "https://example.com/docs", "snapshotName": "docs" }
+{ "url": "https://example.com/docs", "compile": true, "extract": "api-surface" }
 ```
 
 ## Scrape modes
@@ -164,7 +99,7 @@ List available per-URL snapshot tags with `web_get_result`:
 
 ## Vertical extraction
 
-Vertical extractors return typed JSON for known sites. They prefer public APIs and feeds over browser or LLM extraction.
+Vertical extractors return typed JSON for known sites, preferring public APIs/feeds over browser or LLM extraction.
 
 | Extractor             | Input patterns                                    | Primary strategy                | Browser/cloud/LLM requirement                                                            |
 | --------------------- | ------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -185,50 +120,21 @@ Vertical extractors return typed JSON for known sites. They prefer public APIs a
 | `docsite`             | Docs sites, MDN, GitBook, ReadTheDocs, Docusaurus | Static HTML section parsing     | No browser; no LLM; returns `platform` with `unknown` fallback.                          |
 | `docstrings`          | Raw `.ts`, `.js`, `.py`, and `.rs` source URLs    | Surface docstring parsing       | No browser; no LLM; extracts documented exports without typechecking.                    |
 
-Use `web_extract` with `action: "list"` to inspect exact runtime declarations, `action: "vertical"` for known-site typed JSON including `docstrings`, `action: "pattern"` for deterministic length/markers/contains/regex/excerpts plus symbol-level `include` filters and `extractSchema` presets (`api-reference`, `changelog`, `faq`, `compatibility-table`) over a URL or provided content, `extract: "api-surface"` for a local hierarchical module/function tree from one URL or provided content, and `action: "adhoc"` for arbitrary pages that need a custom schema or prompt and model-backed extraction.
+`web_extract` modes:
 
-Reddit support is limited to public post URLs and available structured JSON endpoints. If Reddit blocks access, requires auth, or rate-limits the request, the extractor returns a structured error instead of using browser automation, CAPTCHA solving, proxy rotation, or bot-like HTML scraping.
+- `action: "list"` — inspect runtime extractor declarations.
+- `action: "vertical"` — known-site typed JSON, including `docstrings`.
+- `action: "pattern"` — deterministic length, markers, contains, regex, excerpts, symbol `include`, and `extractSchema` presets.
+- `extract: "api-surface"` — local hierarchical module/function tree.
+- `action: "adhoc"` — custom schema/prompt extraction; model-backed.
 
-Substack and Shopify candidates are intentionally not listed as built-ins yet because their reliable machine-readable surfaces vary by publication or storefront.
+Reddit returns structured blocked/rate-limit errors rather than bypassing robots, auth, CAPTCHA, or anti-bot controls. Substack/Shopify are not built-ins yet because reliable machine-readable surfaces vary.
 
 ## Storage, cache, and history
 
-Tool results use Pi's standard shell:
+Large outputs are stored locally and returned with compact summaries plus `responseId` / `fullOutputPath`. Inline previews follow Pi defaults: 50KB or 2000 lines.
 
-```ts
-{
-  content: [{ type: "text", text }],
-  details: {
-    url,
-    finalUrl,
-    status,
-    mode,
-    format,
-    timing,
-    truncated,
-    fullOutputPath,
-    responseId,
-    data
-  }
-}
-```
-
-Large crawl, batch, diff, and scrape outputs are stored locally and returned with a compact summary plus local trace metadata such as `responseId` and `fullOutputPath`.
-
-Inline truncation follows Pi defaults:
-
-- 50KB
-- 2000 lines
-
-The storage backend uses a local SQLite metadata index plus content-addressed blob files. Cache reuse is opt-in with `cacheTtlSeconds`; default behavior remains fresh network fetches. Cached results include `cache.cached`, `fetchedAt`, `ageSeconds`, `ttlSeconds`, and `staleness` metadata plus standard `freshness.cachedAt`, `freshness.maxAgeSeconds`, `freshness.ageSeconds`, and `freshness.stale` fields when returned from the fetch cache.
-
-Use freshness controls deliberately:
-
-- `web_crawl` with `action: "list"` or `action: "status"` to inspect prior crawls and decide whether to resume, reuse, or recrawl.
-- `web_diff` with `maxSnapshotAgeSeconds` when an old snapshot baseline should be treated as stale.
-- `refresh: true` for time-sensitive questions such as prices, news, status pages, availability, or anything the user asks about “now”.
-
-The fetch cache currently records in-memory text/buffer responses. Streamed binary downloads are saved as normal result blobs but are not reused as raw HTTP cache hits.
+Storage uses a local SQLite metadata index plus content-addressed blobs. Cache reuse is opt-in with `cacheTtlSeconds`; default behavior is fresh network fetches. Use `refresh: true` for time-sensitive facts, `web_crawl action: "list"|"status"` for prior crawl freshness, and `web_diff maxSnapshotAgeSeconds` for stale baselines.
 
 Persistent paths:
 
@@ -251,7 +157,7 @@ Persistent paths:
 
 ## Packaged skill
 
-This package includes a small Pi skill, `web-scraping`, with guidance for choosing between scrape/summarize, map, crawl, batch, diff, and merged extraction tools.
+Includes the compact `web-scraping` Pi skill for tool routing.
 
 ## Development and release checks
 
@@ -278,8 +184,6 @@ npm run smoke:install
 npm run audit:strict
 PI_SCRAPER_LIVE=1 npm run smoke:live
 ```
-
-Benchmark suites live under `bench/suites/`; generated summaries and ignored JSON history live under `bench/results/`. See [`bench/README.md`](bench/README.md) for the current layout and output paths.
 
 Optional browser smoke:
 
