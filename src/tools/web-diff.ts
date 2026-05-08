@@ -21,12 +21,7 @@ import {
 	type JobError,
 } from "../storage/jobs.js";
 import { storeResultWithResponseId } from "../storage/results.js";
-import {
-	formatAge,
-	retrieveResultAction,
-	sourceNote,
-	storedResultGuidance,
-} from "./agentic-context.js";
+import { formatAge, storedTraceContext } from "./agentic-context.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
 import { renderWebDiffResult, renderWebToolCall } from "./web-renderers.js";
@@ -219,16 +214,20 @@ function shapeDiffResult(
 		]
 			.filter(Boolean)
 			.join("\n"),
-		sourceNotes: [
-			sourceNote({
+		...storedTraceContext({
+			responseId,
+			source: {
 				id: "current",
 				uri: sourceUrl,
 				excerpt: diff.current.content.text.slice(0, 240),
 				relevance: "Current scraped page used for snapshot comparison.",
 				retrievedAt: diff.current.metadata.timestamp,
 				sourceType: "docs",
-			}),
-		],
+			},
+			retrieveDescription: "Inspect the full stored diff result.",
+			guidanceSuffix:
+				"For changed diffs, inspect added/removed sections before answering from an older snapshot.",
+		}),
 		qualitySignals: {
 			confidence: baselineFreshness?.stale
 				? ("medium" as const)
@@ -244,10 +243,7 @@ function shapeDiffResult(
 				baselineWarning,
 			].filter(Boolean) as string[],
 		},
-		nextActions: [
-			retrieveResultAction(responseId, "Inspect the full stored diff result."),
-		],
-		assistantGuidance: `${storedResultGuidance()} For changed diffs, inspect added/removed sections before answering from an older snapshot.`,
+
 	};
 }
 

@@ -52,6 +52,29 @@ export function sourceNote(options: AgenticSourceNote): AgenticSourceNote {
 	return options;
 }
 
+export function storedTraceContext(options: {
+	responseId: string;
+	source: AgenticSourceNote;
+	retrieveDescription?: string;
+	extraActions?: AgenticNextAction[];
+	guidanceSuffix?: string;
+}): {
+	sourceNotes: AgenticSourceNote[];
+	nextActions: AgenticNextAction[];
+	assistantGuidance: string;
+} {
+	return {
+		sourceNotes: [sourceNote(options.source)],
+		nextActions: [
+			retrieveResultAction(options.responseId, options.retrieveDescription),
+			...(options.extraActions ?? []),
+		],
+		assistantGuidance: options.guidanceSuffix
+			? `${storedResultGuidance()} ${options.guidanceSuffix}`
+			: storedResultGuidance(),
+	};
+}
+
 export function qualityFromCache(
 	cache: CacheMetadata | undefined,
 ): AgenticQualitySignals {

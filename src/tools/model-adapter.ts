@@ -108,7 +108,8 @@ function extractText(value: unknown): string {
 		return value.content
 			.map((item) => {
 				if (typeof item === "string") return item;
-				if (isUnknownRecord(item) && typeof item.text === "string") return item.text;
+				if (isUnknownRecord(item) && typeof item.text === "string")
+					return item.text;
 				return "";
 			})
 			.filter(Boolean)
