@@ -9,8 +9,8 @@ import {
 } from "../defaults.js";
 import type { FetchUrlResult, HttpClientOptions } from "./client.js";
 import { HttpClient } from "./client.js";
-import { BodySizeLimitError, normalizeHeaders } from "./download.js";
-import { HttpClientError } from "./errors.js";
+import { normalizeHeaders } from "./download.js";
+import { httpClientErrorFromUnknown } from "./errors.js";
 import {
 	assertSupportedFingerprintOptions,
 	type FingerprintBackendFactory,
@@ -22,8 +22,7 @@ import {
 } from "./fingerprint-types.js";
 import { PolitenessController } from "./politeness.js";
 import { followRedirects } from "./redirects.js";
-import { hasStructuredError } from "./retry.js";
-import { RobotsCache, RobotsDeniedError } from "./robots.js";
+import { RobotsCache } from "./robots.js";
 import { materializeFetchBufferResponse } from "./response.js";
 import { withTimeout } from "./timeout.js";
 import { assertSafeFetchUrl, type SafeUrlResult } from "./url-safety.js";
@@ -70,7 +69,7 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 					assertSafeFetchUrl(nextUrl, this.clientOptions),
 			});
 		} catch (error) {
-			throw this.toClientError(error, initialSafe.normalizedUrl, options);
+			throw fingerprintFetchError(error, initialSafe.normalizedUrl, options);
 		}
 	}
 
@@ -171,54 +170,6 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 			text: result.text ?? result.body?.toString("utf8") ?? "",
 		};
 	}
-
-	private toClientError(
-		error: unknown,
-		url: string,
-		options: FingerprintFetchOptions,
-	): HttpClientError {
-		if (error instanceof HttpClientError) return error;
-		if (hasStructuredError(error))
-			return new HttpClientError(error.structured, error);
-		if (error instanceof RobotsDeniedError) {
-			return new HttpClientError({
-				code: "ROBOTS_DENIED",
-				phase: "robots",
-				message: error.message,
-				retryable: false,
-				url,
-			});
-		}
-		if (error instanceof BodySizeLimitError) {
-			return new HttpClientError(
-				{
-					code: "MAX_BYTES_EXCEEDED",
-					phase: "download",
-					message: error.message,
-					retryable: false,
-					downloadedBytes: error.downloadedBytes,
-					timeoutMs:
-						(options.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1_000,
-					url,
-				},
-				error,
-			);
-		}
-		const aborted = error instanceof Error && error.name === "AbortError";
-		return new HttpClientError(
-			{
-				code: aborted ? "ABORTED" : "FINGERPRINT_FETCH_FAILED",
-				phase: "fingerprint",
-				message:
-					error instanceof Error ? error.message : "Fingerprint fetch failed",
-				retryable: !aborted,
-				timeoutMs: (options.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1_000,
-				url,
-				cause: error,
-			},
-			error,
-		);
-	}
 }
 
 async function materializeBackendResponse(
@@ -239,6 +190,18 @@ async function materializeBackendResponse(
 		body,
 		maxBytes,
 		options,
+	});
+}
+
+function fingerprintFetchError(
+	error: unknown,
+	url: string,
+	options: FingerprintFetchOptions,
+) {
+	return httpClientErrorFromUnknown(error, url, options, {
+		code: "FINGERPRINT_FETCH_FAILED",
+		phase: "fingerprint",
+		message: "Fingerprint fetch failed",
 	});
 }
 

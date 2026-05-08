@@ -10,20 +10,19 @@ import {
 	DEFAULT_USER_AGENT,
 } from "../defaults.js";
 import type { CommonRequestOptions } from "../types.js";
-import { BodySizeLimitError, normalizeHeaders } from "./download.js";
-import { HttpClientError } from "./errors.js";
+import { normalizeHeaders } from "./download.js";
+import { HttpClientError, httpClientErrorFromUnknown } from "./errors.js";
 import { createDefaultDispatcher } from "./guarded-agent.js";
 import { PolitenessController, abortableSleep } from "./politeness.js";
 import { followRedirects } from "./redirects.js";
 import {
-	hasStructuredError,
 	isRetryableStatus,
 	isIdempotentMethod,
 	parseRetryAfterMs,
 	retryDelayMs,
 	shouldStopRetrying,
 } from "./retry.js";
-import { RobotsCache, RobotsDeniedError } from "./robots.js";
+import { RobotsCache } from "./robots.js";
 import {
 	materializeFetchStreamResponse,
 	type FetchUrlResult,
@@ -118,7 +117,7 @@ export class HttpClient {
 			if (error instanceof HttpClientError) {
 				throw error;
 			}
-			throw this.toClientError(error, safe.normalizedUrl, fetchOptions);
+			throw httpFetchError(error, safe.normalizedUrl, fetchOptions);
 		}
 	}
 
@@ -192,13 +191,13 @@ export class HttpClient {
 							value instanceof HttpClientError,
 					)
 				) {
-					throw this.toClientError(error, initialSafe.normalizedUrl, options);
+					throw httpFetchError(error, initialSafe.normalizedUrl, options);
 				}
 				await abortableSleep(retryDelayMs(attempt, undefined, options), signal);
 			}
 		}
 
-		throw this.toClientError(lastError, initialSafe.normalizedUrl, options);
+		throw httpFetchError(lastError, initialSafe.normalizedUrl, options);
 	}
 
 	private async fetchOneRequest(
@@ -257,58 +256,20 @@ export class HttpClient {
 			cleanup();
 		}
 	}
-
-	private toClientError(
-		error: unknown,
-		url: string,
-		options: FetchUrlOptions,
-	): HttpClientError {
-		if (error instanceof HttpClientError) {
-			return error;
-		}
-		if (hasStructuredError(error)) {
-			return new HttpClientError(error.structured, error);
-		}
-		if (error instanceof RobotsDeniedError) {
-			return new HttpClientError({
-				code: "ROBOTS_DENIED",
-				phase: "robots",
-				message: error.message,
-				retryable: false,
-				url,
-			});
-		}
-		if (error instanceof BodySizeLimitError) {
-			return new HttpClientError(
-				{
-					code: "MAX_BYTES_EXCEEDED",
-					phase: "download",
-					message: error.message,
-					retryable: false,
-					downloadedBytes: error.downloadedBytes,
-					timeoutMs:
-						(options.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1_000,
-					url,
-				},
-				error,
-			);
-		}
-		const aborted = error instanceof Error && error.name === "AbortError";
-		return new HttpClientError(
-			{
-				code: aborted ? "ABORTED" : "HTTP_FETCH_FAILED",
-				phase: "fetch",
-				message: error instanceof Error ? error.message : "HTTP fetch failed",
-				retryable: !aborted,
-				timeoutMs: (options.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1_000,
-				url,
-				cause: error,
-			},
-			error,
-		);
-	}
 }
 
 export function createHttpClient(options?: HttpClientOptions): HttpClient {
 	return new HttpClient(options);
+}
+
+function httpFetchError(
+	error: unknown,
+	url: string,
+	options: FetchUrlOptions,
+): HttpClientError {
+	return httpClientErrorFromUnknown(error, url, options, {
+		code: "HTTP_FETCH_FAILED",
+		phase: "fetch",
+		message: "HTTP fetch failed",
+	});
 }
