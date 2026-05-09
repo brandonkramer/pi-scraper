@@ -64,19 +64,19 @@ Capability labels:
 
 ## Parameter quick reference
 
-| Area             | Parameters                                                                                                                                      |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Input            | `url`, `urls`, `content`                                                                                                                        |
-| Scrape output    | `mode`, `format`, `onlyMainContent`, `maxChars`, `timeoutSeconds`                                                                               |
-| Freshness/safety | `respectRobots` defaults true; use `refresh: true` for time-sensitive facts                                                                     |
-| Session          | `sessionId` (name); `saveSession: true` persists cookies/profile to `~/.pi/scraper/`; `clearSession: true` deletes. Survives Pi `/reload`.      |
-| Crawl            | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `crawlId`, `resume`, `seed`, `status`, `limit`                                                  |
-| Concurrency      | `concurrency`, `perHostConcurrency`; HTTP politeness reacts to 429 and `Retry-After`                                                            |
-| Context packages | `compile: true` on `web_crawl`/`web_batch` stores a bounded package artifact                                                                    |
-| API surface      | `extract: "api-surface"` builds a local module/function tree when possible                                                                      |
-| Diff             | `snapshotName`, `snapshotTag`, `compareTag`, `maxSnapshotAgeSeconds`                                                                            |
-| Extract          | `action`, `extractor`, `prompt`, `schema`, `sourceFormat`, `markers`, `contains`, `excerpts`, `regexes`, `sections`, `include`, `extractSchema` |
-| Retrieve         | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag`                                                                             |
+| Area             | Parameters                                                                                                                                          |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Input            | `url`, `urls`, `content`                                                                                                                            |
+| Scrape output    | `mode`, `format`, `onlyMainContent`, `maxChars`, `timeoutSeconds`                                                                                   |
+| Freshness/safety | `respectRobots` defaults true; use `refresh: true` for time-sensitive facts                                                                         |
+| Session          | `sessionId` only for stateful flows (cookies/login/consent/locale/cart); `saveSession: true` persists across reloads; `clearSession: true` deletes. |
+| Crawl            | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `crawlId`, `resume`, `seed`, `status`, `limit`                                                      |
+| Concurrency      | `concurrency`, `perHostConcurrency`; HTTP politeness reacts to 429 and `Retry-After`                                                                |
+| Context packages | `compile: true` on `web_crawl`/`web_batch` stores a bounded package artifact                                                                        |
+| API surface      | `extract: "api-surface"` builds a local module/function tree when possible                                                                          |
+| Diff             | `snapshotName`, `snapshotTag`, `compareTag`, `maxSnapshotAgeSeconds`                                                                                |
+| Extract          | `action`, `extractor`, `prompt`, `schema`, `sourceFormat`, `markers`, `contains`, `excerpts`, `regexes`, `sections`, `include`, `extractSchema`     |
+| Retrieve         | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag`                                                                                 |
 
 Examples:
 
@@ -97,6 +97,8 @@ Examples:
   ]
 }
 ```
+
+**Session rule** — default stateless. Use `sessionId` only when prior state affects later requests: cookies, consent, locale, login, cart/account/dashboard, or multi-step crawl/batch. Add `saveSession: true` only when state must survive later tool calls; use `clearSession: true` to reset.
 
 **Session example** — log in once and reuse cookies across scrapes:
 

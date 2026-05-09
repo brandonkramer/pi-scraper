@@ -3,16 +3,11 @@
  */
 import type { ResultEnvelope } from "../types.js";
 import type { RenderComponent, RenderTheme } from "./define.js";
-import {
-	formatBytes,
-	formatDuration,
-	formatPreview,
-	isFileResult,
-	renderFileResultCard,
-	renderMetadataLines,
-	renderStackedResultCard,
-	renderUrlStatusRow,
-} from "./shared-renderers.js";
+import { renderUrlStatusRow } from "../tui/rows.js";
+import { renderStackedResultCard } from "../tui/cards.js";
+import { formatPreview, renderMetadataLines } from "../tui/preview.js";
+import { isFileResult, renderFileResultCard } from "../tui/file-card.js";
+import { formatBytes, formatDuration } from "../tui/format.js";
 
 export function renderScrapeResultCard(
 	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,

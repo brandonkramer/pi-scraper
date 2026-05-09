@@ -1,34 +1,36 @@
 /**
  * @fileoverview Renderers for Pi web tool calls and results.
  */
-import type { PiToolShell, ProgressDetails, ResultEnvelope } from "../types.js";
+import type {
+	PiToolShell,
+	ProgressDetails,
+	ResultEnvelope,
+	StructuredError,
+} from "../types.js";
+import { isProgress } from "../types.js";
 import type {
 	RenderComponent,
 	RenderTheme,
 	ToolRenderContext,
 } from "./define.js";
 import { renderText } from "./render.js";
+import { accent, metadataText, neutralText, separator } from "../tui/theme.js";
+import { currentSpinnerFrame } from "../tui/spinner.js";
+import { renderStatusGlyph, renderStatusPill } from "../tui/status-pill.js";
 import {
-	accent,
-	activityCountSegment,
-	currentSpinnerFrame,
-	errorTitle,
-	failureCountSegment,
-	formatChecklistItem,
-	formatChecklistText,
-	isProgress,
-	metadataText,
-	neutralText,
-	previewText,
 	progressPillLabel,
 	progressPillState,
 	progressStartedAtMs,
-	renderStatusGlyph,
-	renderStatusPill,
-	renderUrlStatusRow,
-	separator,
+} from "../tui/progress-status.js";
+import { renderUrlStatusRow } from "../tui/rows.js";
+import {
+	activityCountSegment,
+	failureCountSegment,
 	successCountSegment,
-} from "./shared-renderers.js";
+} from "../tui/counts.js";
+import { formatChecklistItem, formatChecklistText } from "../tui/checklist.js";
+import { previewText } from "../tui/preview.js";
+
 import {
 	batchExpandedDetails,
 	batchProgressFromCrawlPages,
@@ -471,6 +473,11 @@ function contextPackageResponseId(
 	if (typeof value !== "object" || value === null) return undefined;
 	const responseId = (value as { responseId?: unknown }).responseId;
 	return typeof responseId === "string" ? responseId : undefined;
+}
+
+function errorTitle(tool: `web_${string}`, error: StructuredError): string {
+	const prefix = toolAllowsIcons(tool) ? "✕ " : "";
+	return `${prefix}${tool} ${error.code}: ${error.message}`;
 }
 
 function diffTitle(

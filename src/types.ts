@@ -210,6 +210,15 @@ export interface ProgressDetails<TData = unknown> {
 	counts?: ProgressCounts;
 }
 
+export function isProgress(value: unknown): value is ProgressDetails {
+	return Boolean(
+		value &&
+			typeof value === "object" &&
+			"_progress" in value &&
+			(value as ProgressDetails)._progress,
+	);
+}
+
 export interface CommonRequestOptions {
 	timeoutSeconds?: number;
 	maxBytes?: number;

@@ -20,7 +20,7 @@ const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
 	web_scrape: 420,
 	web_crawl: 290,
 	web_map: 180,
-	web_batch: 180,
+	web_batch: 230,
 	web_diff: 180,
 	web_extract: 560,
 	web_summarize: 230,
@@ -78,7 +78,6 @@ describe("web tool contracts", () => {
 			(total, stat) => total + stat.tokens,
 			0,
 		);
-
 		expect(totalTokens).toBeLessThanOrEqual(1960);
 		for (const stat of contractStats) {
 			const name = stat.name as (typeof expectedNames)[number];

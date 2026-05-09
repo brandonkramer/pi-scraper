@@ -47,7 +47,7 @@ import {
 import { renderEnvelopeResult } from "./render.js";
 import { renderWebCrawlResult, renderWebToolCall } from "./web-renderers.js";
 import { toolResult } from "./result.js";
-import { urlProperty } from "./schemas.js";
+import { sessionOptionSchema, urlProperty } from "./schemas.js";
 
 const crawlActions = ["run", "status", "list"] as const;
 
@@ -71,10 +71,7 @@ export const webCrawlSchema = Type.Object({
 	extract: Type.Optional(Type.Any()),
 	compile: Type.Optional(Type.Any()),
 
-	// Session + browser options (Tasks 28–30)
-	sessionId: Type.Optional(Type.Any()),
-	saveSession: Type.Optional(Type.Any()),
-	clearSession: Type.Optional(Type.Any()),
+	...sessionOptionSchema,
 	stealth: Type.Optional(Type.Any()),
 	autoWait: Type.Optional(Type.Any()),
 });

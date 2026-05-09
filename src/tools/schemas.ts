@@ -11,14 +11,30 @@ export const scrapeModeOptionSchema = {
 	mode: Type.Optional(scrapeModeSchema),
 } as const;
 
+export const sessionOptionSchema = {
+	sessionId: Type.Optional(
+		Type.String({
+			description:
+				"Use only when prior state matters: cookies, login, consent, locale, cart, dashboard, or multi-step crawl/batch.",
+		}),
+	),
+	saveSession: Type.Optional(
+		Type.Boolean({
+			description:
+				"Persist sessionId cookies/profile across Pi reloads for later tool calls.",
+		}),
+	),
+	clearSession: Type.Optional(
+		Type.Boolean({
+			description: "Delete saved and in-memory state for sessionId.",
+		}),
+	),
+} as const;
+
 export const scrapeOutputOptionSchema = {
 	...scrapeModeOptionSchema,
 	format: Type.Optional(outputFormatSchema),
-
-	// Session + browser options (Tasks 28–30)
-	sessionId: Type.Optional(Type.Any()),
-	saveSession: Type.Optional(Type.Any()),
-	clearSession: Type.Optional(Type.Any()),
+	...sessionOptionSchema,
 	stealth: Type.Optional(Type.Any()),
 	autoWait: Type.Optional(Type.Any()),
 } as const;

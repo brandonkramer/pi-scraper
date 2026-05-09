@@ -4,18 +4,13 @@
 import type { ProgressDetails } from "../types.js";
 import type { RenderComponent, RenderTheme } from "./define.js";
 import { renderText } from "./render.js";
-import {
-	formatBytes,
-	formatDuration,
-	inlineThemeText,
-	muted,
-	renderProgressBar,
-	renderStackedResultCard,
-	renderStatusPill as renderSharedStatusPill,
-	renderUrlStatusRow,
-	truncateMiddle,
-	withSpinnerFooter,
-} from "./shared-renderers.js";
+import { inlineThemeText, muted } from "../tui/theme.js";
+import { renderProgressBar } from "../tui/progress-bar.js";
+import { renderStatusPill } from "../tui/status-pill.js";
+import { renderUrlStatusRow, truncateMiddle } from "../tui/rows.js";
+import { renderStackedResultCard } from "../tui/cards.js";
+import { withSpinnerFooter } from "../tui/spinner.js";
+import { formatBytes, formatDuration } from "../tui/format.js";
 import type {
 	BatchItem,
 	CrawlPageView,
@@ -422,7 +417,7 @@ function renderStatusBox(
 	if (item.status === "processing" && typeof item.progress === "number") {
 		return renderProgressBar(item.progress, width - 2);
 	}
-	return renderSharedStatusPill({
+	return renderStatusPill({
 		label: statusLabel(item.status),
 		state: statusPillState(item.status),
 		width,
