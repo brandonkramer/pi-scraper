@@ -23,6 +23,7 @@ export type ToolExecute<TParams> = (
 
 export interface RenderTheme {
 	fg?: (name: string, text: string) => string;
+	bg?: (name: string, text: string) => string;
 	bold?: (text: string) => string;
 }
 

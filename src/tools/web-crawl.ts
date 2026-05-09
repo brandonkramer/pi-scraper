@@ -30,8 +30,20 @@ import {
 	storedResultGuidance,
 } from "./agentic-context.js";
 import { buildStoredContextPackage } from "./context-package.js";
+import {
+	buildSessionNotice,
+	buildSessionText,
+	deleteSessionAndStorage,
+	saveSessionToStorage,
+} from "../http/session.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
+import {
+	batchProgressFromCrawlPages,
+	cloneBatchProgress,
+	type BatchProgressView,
+	updateUrlBatchProgress,
+} from "./web-batch-progress-renderer.js";
 import { renderEnvelopeResult } from "./render.js";
 import { renderWebCrawlResult, renderWebToolCall } from "./web-renderers.js";
 import { toolResult } from "./result.js";
@@ -58,6 +70,13 @@ export const webCrawlSchema = Type.Object({
 	exclude: Type.Optional(Type.Array(Type.Any())),
 	extract: Type.Optional(Type.Any()),
 	compile: Type.Optional(Type.Any()),
+
+	// Session + browser options (Tasks 28–30)
+	sessionId: Type.Optional(Type.Any()),
+	saveSession: Type.Optional(Type.Any()),
+	clearSession: Type.Optional(Type.Any()),
+	stealth: Type.Optional(Type.Any()),
+	autoWait: Type.Optional(Type.Any()),
 });
 
 type Params = Static<typeof webCrawlSchema>;
@@ -130,6 +149,15 @@ async function crawlRun(
 		});
 	}
 	const config = await loadEffectiveConfig();
+	const progressView: BatchProgressView = {
+		total: Number(params.maxPages ?? params.limit ?? 1) || 1,
+		completed: 0,
+		succeeded: 0,
+		failed: 0,
+		concurrency: Number(params.concurrency ?? 1) || 1,
+		items: [{ url, status: "queued" }],
+		label: "web_crawl",
+	};
 	const crawl = await runCrawl(
 		url,
 		{
@@ -137,15 +165,21 @@ async function crawlRun(
 			...params,
 			mode: params.mode ?? config.scrapeMode,
 			format: config.outputFormat,
-			onProgress: (progress) =>
+			onProgress: (progress) => {
+				updateUrlBatchProgress(progressView, progress.state, progress.url);
+				if (progress.total) progressView.total = progress.total;
 				void emitProgress(onUpdate, {
 					state: progress.state,
 					current: progress.current,
 					total: progress.total,
 					url: progress.url,
 					message: progress.message,
-					data: progress.metadata,
-				}),
+					data: {
+						metadata: progress.metadata,
+						batchProgress: cloneBatchProgress(progressView),
+					},
+				});
+			},
 		},
 		{},
 		signal,
@@ -181,8 +215,14 @@ async function crawlRun(
 		? ` package: ${contextPackage.value.package.urlCount} page(s), packageResponseId: ${contextPackage.responseId}.`
 		: "";
 	const text = `Crawl ${crawl.crawlId}: ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}.${surfaceText}${packageText} responseId: ${finalStored.responseId}`;
+	if (params.sessionId) {
+		if (params.saveSession) await saveSessionToStorage(params.sessionId);
+		if (params.clearSession) await deleteSessionAndStorage(params.sessionId);
+	}
+	const sessionNotice = buildSessionNotice(params);
+	const sessionSuffix = buildSessionText(params);
 	return toolResult({
-		text,
+		text: text + sessionSuffix,
 		data: {
 			crawlId: crawl.crawlId,
 			pages: crawl.pages,
@@ -198,6 +238,8 @@ async function crawlRun(
 		truncated: true,
 		freshness,
 		diagnostics: {
+			sessionNotice: sessionNotice || undefined,
+			batchProgress: batchProgressFromCrawlPages(crawl.pages),
 			jobId: crawl.crawlId,
 			jobManifestPath: manifest.path,
 			contextPackage: contextPackage && {

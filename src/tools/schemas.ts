@@ -14,6 +14,13 @@ export const scrapeModeOptionSchema = {
 export const scrapeOutputOptionSchema = {
 	...scrapeModeOptionSchema,
 	format: Type.Optional(outputFormatSchema),
+
+	// Session + browser options (Tasks 28–30)
+	sessionId: Type.Optional(Type.Any()),
+	saveSession: Type.Optional(Type.Any()),
+	clearSession: Type.Optional(Type.Any()),
+	stealth: Type.Optional(Type.Any()),
+	autoWait: Type.Optional(Type.Any()),
 } as const;
 
 export function urlProperty(

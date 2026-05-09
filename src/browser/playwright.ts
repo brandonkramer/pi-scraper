@@ -1,6 +1,12 @@
 /**
  * @fileoverview browser playwright module.
  */
+import { applyStealthPatches } from "./stealth.js";
+import {
+	acquireBrowserSession,
+	destroyBrowserSession,
+	releaseBrowserSession,
+} from "./session-pool.js";
 import { createAbortError } from "../http/abort.js";
 import {
 	assertSafeFetchUrl,
@@ -17,6 +23,19 @@ export interface BrowserRenderOptions {
 	proxy?: string;
 	browserProfile?: string;
 	waitUntil?: "domcontentloaded" | "load" | "networkidle";
+
+	// Session + stealth support
+	sessionId?: string;
+	saveSession?: boolean;
+	clearSession?: boolean;
+	stealth?: boolean;
+	autoWait?: boolean;
+	blockResources?: string[];
+	blockAds?: boolean;
+	hideCanvas?: boolean;
+	blockWebRTC?: boolean;
+	locale?: string;
+	timezone?: string;
 }
 
 export interface BrowserRenderResult {
@@ -93,62 +112,101 @@ async function renderWithLoader(
 	if (signal?.aborted) throw abortError(url);
 
 	const playwright = await loadPlaywright(url, loader);
-	const browser = await playwright.chromium.launch({
-		headless: true,
-		proxy: options.proxy ? { server: options.proxy } : undefined,
-	});
+	let browser: any;
 	let abortListener: (() => void) | undefined;
+	let page: any;
+	let session: { id: string } | undefined;
+
 	try {
-		const context = await browser.newContext({
-			extraHTTPHeaders: options.headers,
-			serviceWorkers: "block",
-			userAgent: options.browserProfile,
-		});
-		if (options.cookies) {
-			await context.addCookies(
-				Object.entries(options.cookies).map(([name, value]) => ({
-					name,
-					value,
-					url,
-				})),
-			);
-		}
-		let blockedRequest: BrowserRenderError | undefined;
-		// Playwright owns Chromium's DNS/connect path, so browser mode cannot reuse
-		// the Undici guarded dispatcher. Routing is the earliest Playwright hook we
-		// have for validating navigation redirects and subresource URLs before the
-		// browser is allowed to continue each request.
-		await context.route("**/*", async (route) => {
-			const requestUrl = route.request().url();
-			const routePolicy = browserRoutePolicy(requestUrl);
-			if (routePolicy.action === "allow") {
-				await route.continue();
-				return;
-			}
-			if (routePolicy.action === "block") {
-				blockedRequest ??= blockedRequestError(
-					routePolicy.cause,
-					url,
-					requestUrl,
+		// 1) Acquire page: pooled session or fresh browser
+		if (options.sessionId) {
+			const s = await acquireBrowserSession(options.sessionId, {
+				launchBrowser: () =>
+					playwright.chromium
+						.launch({
+							headless: true,
+							proxy: options.proxy ? { server: options.proxy } : undefined,
+						})
+						.then((b) => b as any),
+				profile: options.browserProfile,
+				proxy: options.proxy,
+				headers: options.headers,
+			});
+			page = s.page;
+			browser = s.session.browser;
+			session = s.session;
+		} else {
+			browser = await playwright.chromium.launch({
+				headless: true,
+				proxy: options.proxy ? { server: options.proxy } : undefined,
+			});
+			const context = await browser.newContext({
+				extraHTTPHeaders: options.headers,
+				serviceWorkers: "block",
+				userAgent: options.browserProfile,
+			});
+			if (options.cookies) {
+				await context.addCookies(
+					Object.entries(options.cookies).map(([name, value]) => ({
+						name,
+						value,
+						url,
+					})),
 				);
-				await route.abort("blockedbyclient").catch(() => undefined);
-				return;
 			}
-			try {
-				await assertSafeBrowserUrl(requestUrl, url, requestUrl, browserSafety);
-			} catch (error) {
-				if (error instanceof BrowserRenderError) {
-					blockedRequest ??= error;
+			page = await context.newPage();
+		}
+
+		// 2) Apply stealth patches before navigation
+		if (options.stealth) {
+			await applyStealthPatches(page, {
+				webdriver: true,
+				canvasNoise: options.hideCanvas ?? false,
+				blockWebRTC: options.blockWebRTC ?? false,
+				locale: options.locale,
+				timezone: options.timezone,
+			});
+		}
+
+		// 3) Route for blocking + safety checks
+		let blockedRequest: BrowserRenderError | undefined;
+		if (!options.sessionId) {
+			await page.context().route("**/*", async (route: any) => {
+				const requestUrl = route.request().url();
+				const routePolicy = browserRoutePolicy(requestUrl);
+				if (routePolicy.action === "allow") {
+					await route.continue();
+					return;
+				}
+				if (routePolicy.action === "block") {
+					blockedRequest ??= blockedRequestError(
+						routePolicy.cause,
+						url,
+						requestUrl,
+					);
 					await route.abort("blockedbyclient").catch(() => undefined);
 					return;
 				}
+				try {
+					await assertSafeBrowserUrl(
+						requestUrl,
+						url,
+						requestUrl,
+						browserSafety,
+					);
+				} catch (error) {
+					if (error instanceof BrowserRenderError) {
+						blockedRequest ??= error;
+						await route.abort("blockedbyclient").catch(() => undefined);
+						return;
+					}
+					await route.continue();
+					return;
+				}
 				await route.continue();
-				return;
-			}
-			await route.continue();
-		});
+			});
+		}
 
-		const page = await context.newPage();
 		const closeOnAbort = () => void page.close().catch(() => undefined);
 		abortListener = closeOnAbort;
 		signal?.addEventListener("abort", closeOnAbort, { once: true });
@@ -164,6 +222,12 @@ async function renderWithLoader(
 		}
 		if (blockedRequest) throw blockedRequest;
 		if (signal?.aborted) throw abortError(url);
+
+		// 4) Auto-wait for challenge pages
+		if (options.autoWait) {
+			await autoWaitForChallenge(page, url, options.timeoutSeconds ?? 20);
+		}
+
 		const finalUrl = page.url();
 		await assertSafeBrowserUrl(finalUrl, url, finalUrl, browserSafety);
 		return {
@@ -174,7 +238,14 @@ async function renderWithLoader(
 		};
 	} finally {
 		if (abortListener) signal?.removeEventListener("abort", abortListener);
-		await browser.close().catch(() => undefined);
+		if (session) {
+			releaseBrowserSession(session.id);
+			if (options.clearSession) {
+				await destroyBrowserSession(session.id);
+			}
+		} else if (browser) {
+			await browser.close().catch(() => undefined);
+		}
 	}
 }
 
@@ -305,6 +376,41 @@ function abortError(url: string): BrowserRenderError {
 	});
 }
 
+async function autoWaitForChallenge(
+	page: Page,
+	url: string,
+	timeoutSeconds: number,
+): Promise<void> {
+	const challengeMarkers = [
+		"Just a moment...",
+		"Checking your browser...",
+		"Please wait...",
+	];
+	const maxWaitMs = timeoutSeconds * 1_000;
+	const pollInterval = 1_000;
+	const start = Date.now();
+
+	while (Date.now() - start < maxWaitMs) {
+		const title = await page.title().catch(() => "");
+		const body = await page.content().catch(() => "");
+		const isChallenge = challengeMarkers.some(
+			(m) => title.includes(m) || body.includes(m),
+		);
+		if (!isChallenge) return;
+		await new Promise((resolve) => setTimeout(resolve, pollInterval));
+	}
+	// Timeout exceeded — challenge still present
+	throw new BrowserRenderError({
+		code: "BLOCKED_CHALLENGE",
+		phase: "browser",
+		message:
+			'Challenge page persisted after auto-wait timeout. Try mode: "fingerprint" or a different browser profile.',
+		retryable: false,
+		url,
+		recommendedMode: "fingerprint",
+	});
+}
+
 async function defaultPlaywrightLoader(): Promise<PlaywrightModule> {
 	const moduleName = "playwright";
 	return (await import(moduleName)) as PlaywrightModule;
@@ -343,6 +449,8 @@ interface Page {
 		options: Record<string, unknown>,
 	): Promise<{ status(): number } | null>;
 	content(): Promise<string>;
+	title(): Promise<string>;
 	url(): string;
 	close(): Promise<void>;
+	context(): BrowserContext;
 }

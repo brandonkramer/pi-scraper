@@ -179,7 +179,8 @@ export const webDiffTool = defineWebTool({
 			theme,
 			context,
 		),
-	renderResult: (result, { expanded }) => renderWebDiffResult(result, expanded),
+	renderResult: (result, { expanded }, theme) =>
+		renderWebDiffResult(result, expanded, theme),
 });
 
 function diffProgressMessage(params: Params): string {

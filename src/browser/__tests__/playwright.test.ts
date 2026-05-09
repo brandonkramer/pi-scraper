@@ -261,16 +261,24 @@ function fakePlaywright(
 				return {
 					newContext: async (contextOptions) => {
 						seen.context = contextOptions;
-						return {
-							addCookies: async (cookies) => {
+						const browserContext: any = {
+							addCookies: async (cookies: Record<string, string>[]) => {
 								seen.cookies = cookies;
 							},
-							route: async (glob, handler) => {
+							route: async (
+								glob: string,
+								handler: (route: FakeRoute) => Promise<void>,
+							) => {
 								seen.routeGlob = glob;
 								routeHandler = handler;
 							},
-							newPage: async () => ({
-								goto: async (requestUrl, gotoOptions) => {
+						};
+						browserContext.newPage = async () => {
+							const page: any = {
+								goto: async (
+									requestUrl: string,
+									gotoOptions: Record<string, unknown>,
+								) => {
 									seen.goto = gotoOptions;
 									for (const url of options.requestUrls ?? [requestUrl]) {
 										await routeHandler?.(fakeRoute(seen, url));
@@ -278,10 +286,14 @@ function fakePlaywright(
 									return { status: () => 204 };
 								},
 								content: async () => "<html>rendered</html>",
+								title: async () => "",
+								context: () => browserContext,
 								url: () => options.finalUrl ?? `${URL}#rendered`,
 								close: async () => undefined,
-							}),
+							};
+							return page;
 						};
+						return browserContext;
 					},
 					close: async () => {
 						seen.closed = true;

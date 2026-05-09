@@ -41,18 +41,18 @@ Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` when browsers are managed externally. `
 
 ## Public tools
 
-| Tool             | Capability                                      | Use it for                                                                                                                                                 | Tokens |
-| ---------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -----: |
-| `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, including raw Markdown, MDX, RST, and source docstrings.                                                 |     95 |
-| `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                                        |     94 |
-| `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, list prior crawl metadata, or compile crawled docs into API-surface/context packages. |    107 |
-| `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.                           |     58 |
-| `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results and optional context-package compilation.                                        |    120 |
-| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                                          |     91 |
-| `web_extract`    | Local/model depending on action                 | List/run deterministic known-site extractors, inspect text/patterns/symbols, compile API surfaces, or run ad hoc schema/prompt extraction from one input.  |    186 |
-| `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                      |     56 |
+| Tool             | Capability                                      | Use it for                                                                                                                                                 | Description / Contract | Overhead |
+| ---------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------: | -------: |
+| `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, including raw Markdown, MDX, RST, and source docstrings.                                                 |                2 / 115 |     +140 |
+| `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                                        |                 8 / 94 |     +100 |
+| `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, list prior crawl metadata, or compile crawled docs into API-surface/context packages. |                5 / 126 |     +158 |
+| `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.                           |                 9 / 58 |      +67 |
+| `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results and optional context-package compilation.                                        |                2 / 140 |     +166 |
+| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                                          |                 4 / 91 |      +82 |
+| `web_extract`    | Local/model depending on action                 | List/run deterministic extractors, inspect patterns, compile API surfaces, run selector extraction with adaptive repair, or extract via schema/prompt.     |                7 / 253 |     +289 |
+| `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                      |                10 / 56 |      +74 |
 
-Token counts are approximate contract tokens. Current total: 807.
+Token counts are approximate: **Description** is lightweight public-facing prose only; **Contract** is the full serialized declaration including schema; **Overhead** is the empirical Pi JSON-mode input token delta against a no-tools baseline, which includes provider serialization and hidden wrapper metadata and varies by provider/model.
 
 Capability labels:
 
@@ -64,18 +64,19 @@ Capability labels:
 
 ## Parameter quick reference
 
-| Area             | Parameters                                                                                                                          |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Input            | `url`, `urls`, `content`                                                                                                            |
-| Scrape output    | `mode`, `format`, `onlyMainContent`, `maxChars`, `timeoutSeconds`                                                                   |
-| Freshness/safety | `respectRobots` defaults true; use `refresh: true` for time-sensitive facts                                                         |
-| Crawl            | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `crawlId`, `resume`, `seed`, `status`, `limit`                                      |
-| Concurrency      | `concurrency`, `perHostConcurrency`; HTTP politeness reacts to 429 and `Retry-After`                                                |
-| Context packages | `compile: true` on `web_crawl`/`web_batch` stores a bounded package artifact                                                        |
-| API surface      | `extract: "api-surface"` builds a local module/function tree when possible                                                          |
-| Diff             | `snapshotName`, `snapshotTag`, `compareTag`, `maxSnapshotAgeSeconds`                                                                |
-| Extract          | `action`, `extractor`, `prompt`, `schema`, `sourceFormat`, `markers`, `contains`, `excerpts`, `regexes`, `include`, `extractSchema` |
-| Retrieve         | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag`                                                                 |
+| Area             | Parameters                                                                                                                                      |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Input            | `url`, `urls`, `content`                                                                                                                        |
+| Scrape output    | `mode`, `format`, `onlyMainContent`, `maxChars`, `timeoutSeconds`                                                                               |
+| Freshness/safety | `respectRobots` defaults true; use `refresh: true` for time-sensitive facts                                                                     |
+| Session          | `sessionId` (name); `saveSession: true` persists cookies/profile to `~/.pi/scraper/`; `clearSession: true` deletes. Survives Pi `/reload`.      |
+| Crawl            | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `crawlId`, `resume`, `seed`, `status`, `limit`                                                  |
+| Concurrency      | `concurrency`, `perHostConcurrency`; HTTP politeness reacts to 429 and `Retry-After`                                                            |
+| Context packages | `compile: true` on `web_crawl`/`web_batch` stores a bounded package artifact                                                                    |
+| API surface      | `extract: "api-surface"` builds a local module/function tree when possible                                                                      |
+| Diff             | `snapshotName`, `snapshotTag`, `compareTag`, `maxSnapshotAgeSeconds`                                                                            |
+| Extract          | `action`, `extractor`, `prompt`, `schema`, `sourceFormat`, `markers`, `contains`, `excerpts`, `regexes`, `sections`, `include`, `extractSchema` |
+| Retrieve         | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag`                                                                             |
 
 Examples:
 
@@ -85,6 +86,64 @@ Examples:
 
 ```json
 { "url": "https://example.com/docs", "compile": true, "extract": "api-surface" }
+```
+
+```json
+{
+  "action": "pattern",
+  "url": "https://raw.githubusercontent.com/vitejs/vite/main/README.md",
+  "sections": [
+    { "name": "packages", "start": "## Packages", "end": "## Contribution" }
+  ]
+}
+```
+
+**Session example** — log in once and reuse cookies across scrapes:
+
+```text
+web_scrape({ url: "https://example.com/login", sessionId: "example", saveSession: true })
+web_scrape({ url: "https://example.com/dashboard", sessionId: "example" })
+web_batch({ urls: ["https://example.com/page1", "https://example.com/page2"], sessionId: "example" })
+```
+
+```json
+{ "crawlId": "abc-123", "sessionId": "example", "saveSession": true }
+```
+
+````
+
+## Selector extraction
+
+Extract structured content from HTML using CSS selectors, XPath, or text search. Optionally save a fingerprint of the matched element and relocate it later after page layout changes.
+
+```text
+Extract all product cards from https://example.com/products with selector .product-card
+````
+
+Parameters:
+
+| Parameter      | Type    | Default    | Description                                          |
+| -------------- | ------- | ---------- | ---------------------------------------------------- |
+| `selector`     | string  | —          | CSS selector, XPath, or text to find                 |
+| `selectorType` | string  | "css"      | "css" or "xpath" or "text"                           |
+| `attribute`    | string  | —          | Extract a specific attribute instead of text         |
+| `identifier`   | string  | (selector) | Stable key for fingerprint storage                   |
+| `adaptive`     | boolean | false      | Enable relocation when selector no longer matches    |
+| `autoSave`     | boolean | false      | Save fingerprint after a successful match            |
+| `threshold`    | number  | 0.35       | Minimum similarity score (0–1) for adaptive fallback |
+| `limit`        | number  | 10         | Maximum elements to return                           |
+
+Examples:
+
+```json
+// Extract all links with href
+{ "url": "https://example.com", "selector": "a", "attribute": "href", "identifier": "example-links", "autoSave": true }
+
+// Extract product cards and save fingerprint for future layout stability
+{ "url": "https://example.com", "selector": ".product-card", "identifier": "products-v1", "autoSave": true }
+
+// Later — if the layout changes but the content stays the same
+{ "url": "https://example.com", "selector": ".product-card", "identifier": "products-v1", "adaptive": true, "threshold": 0.5 }
 ```
 
 ## Scrape modes
@@ -124,7 +183,7 @@ Vertical extractors return typed JSON for known sites, preferring public APIs/fe
 
 - `action: "list"` — inspect runtime extractor declarations.
 - `action: "vertical"` — known-site typed JSON, including `docstrings`.
-- `action: "pattern"` — deterministic length, markers, contains, regex, excerpts, symbol `include`, and `extractSchema` presets.
+- `action: "pattern"` — deterministic length, markers, contains, regex, excerpts, start/end `sections`, symbol `include`, and `extractSchema` presets.
 - `extract: "api-surface"` — local hierarchical module/function tree.
 - `action: "adhoc"` — custom schema/prompt extraction; model-backed.
 

@@ -304,6 +304,29 @@
 		]
 	},
 	{
+		"id": "extract-pattern-jsonpath-notebook",
+		"prompt": "Search this Jupyter notebook JSON for code cells mentioning 'tool calls' using JSONPath: https://raw.githubusercontent.com/openai/openai-cookbook/main/examples/How_to_count_tokens_with_tiktoken.ipynb",
+		"expectedTool": "web_extract",
+		"expectedArgs": {
+			"action": "pattern",
+			"url": "https://raw.githubusercontent.com/openai/openai-cookbook/main/examples/How_to_count_tokens_with_tiktoken.ipynb",
+			"sourceFormat": "json",
+			"jsonPaths": ["$.cells[*].source"],
+			"excerpts": [{"needle": "tool calls", "after": 2500}]
+		},
+		"rationale": "Deterministic JSONPath field selection and excerpt search over a notebook or API JSON payload belongs to web_extract action=pattern with sourceFormat=json and jsonPaths, replacing one-off Python scripts.",
+		"tags": [
+			"extract",
+			"pattern",
+			"json",
+			"jsonPath",
+			"notebook",
+			"deterministic",
+			"url",
+			"contrast:web_scrape"
+		]
+	},
+	{
 		"id": "extract-product-json",
 		"prompt": "From this arbitrary product page, extract name and price as JSON.",
 		"expectedTool": "web_extract",

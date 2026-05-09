@@ -7,8 +7,9 @@ import { discoverSiteUrls } from "../map/discover.js";
 import { storeResult } from "../storage/results.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
+import { renderSimpleCall } from "./render.js";
 import { toolResult } from "./result.js";
+import { renderWebMapResult } from "./web-renderers.js";
 import { urlProperty } from "./schemas.js";
 
 export const webMapSchema = Type.Object({
@@ -58,6 +59,6 @@ export const webMapTool = defineWebTool({
 		});
 	},
 	renderCall: (args, theme) => renderSimpleCall("web_map", [args.url], theme),
-	renderResult: (result, { expanded }) =>
-		renderEnvelopeResult(result, expanded),
+	renderResult: (result, { expanded }, theme) =>
+		renderWebMapResult(result, expanded, theme),
 });

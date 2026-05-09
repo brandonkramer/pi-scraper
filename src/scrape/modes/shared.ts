@@ -25,6 +25,8 @@ export function fetchOptions(options: CommonScrapeOptions): FetchUrlOptions {
 		retryBaseDelayMs: options.retryBaseDelayMs,
 		retryMaxDelayMs: options.retryMaxDelayMs,
 		retryJitterMs: options.retryJitterMs,
+		sessionId: options.sessionId,
+		cookies: options.cookies,
 	};
 }
 

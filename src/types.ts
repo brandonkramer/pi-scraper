@@ -71,6 +71,7 @@ export interface StructuredError {
 	timeoutMs?: number;
 	url?: string;
 	finalUrl?: string;
+	recommendedMode?: string;
 	cause?: unknown;
 }
 
@@ -235,6 +236,22 @@ export interface CommonScrapeOptions extends CommonRequestOptions {
 	cookies?: Record<string, string>;
 	browserProfile?: string;
 	osProfile?: string;
+
+	// Session support (Tasks 28 + 30)
+	sessionId?: string;
+	saveSession?: boolean;
+	clearSession?: boolean;
+
+	// Browser rendering options (Tasks 29 + 30)
+	waitUntil?: "domcontentloaded" | "load" | "networkidle";
+	stealth?: boolean;
+	autoWait?: boolean;
+	blockResources?: string[];
+	blockAds?: boolean;
+	hideCanvas?: boolean;
+	blockWebRTC?: boolean;
+	locale?: string;
+	timezone?: string;
 }
 
 export interface ExtractorCapability {

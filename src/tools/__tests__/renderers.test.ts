@@ -31,13 +31,14 @@ describe("web tool renderers", () => {
 		expect(loading).toContain("web_scrape");
 		expect(loading).not.toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/u);
 		expect(done).toContain("web_scrape");
+		expect(done).not.toContain("https://example.com");
 		expect(done).not.toContain("✓ web_scrape");
 	});
 
-	it("renders web_scrape result checklists and width-safe lines", () => {
+	it("renders web_scrape result rows and width-safe expanded details", () => {
 		const result = toolResult({
 			text: "200 · fast · markdown\n# Example Domain",
-			data: { markdown: "# Example Domain" },
+			data: { title: "Example Domain", markdown: "# Example Domain" },
 			url: "https://example.com",
 			status: 200,
 			mode: "fast",
@@ -45,24 +46,32 @@ describe("web tool renderers", () => {
 			responseId: "r-scrape",
 		});
 
-		expect(
-			text(webScrapeTool.renderResult?.(result, { expanded: false })),
-		).toContain("web_scrape 200");
-		expect(
-			text(webScrapeTool.renderResult?.(result, { expanded: false })),
-		).not.toContain("✓ web_scrape");
+		const collapsed = text(
+			webScrapeTool.renderResult?.(result, { expanded: false }),
+		);
+		expect(collapsed).not.toContain("web_scrape · 1/1 done");
+		expect(collapsed).not.toContain("ok 1");
+		expect(collapsed).not.toContain("err 0");
+		expect(collapsed).toContain("done");
+		expect(collapsed).toContain("200");
+		expect(collapsed).toContain("(ctrl+o to expand)");
+		expect(collapsed).not.toContain("✓ web_scrape");
 		const expanded = text(
 			webScrapeTool.renderResult?.(result, { expanded: true }),
 		);
-		expect(expanded).toContain("URL validated");
-		expect(expanded).toContain("stored result");
-		expect(expanded).not.toContain("✓ URL validated");
+		expect(expanded).toContain("Scrape details:");
+		expect(expanded).toContain("status 200 · fast · markdown");
+		expect(expanded).toContain("title: Example Domain");
+		expect(expanded).toContain("responseId: r-scrape");
 		expect(
-			widthSafe(webScrapeTool.renderResult?.(result, { expanded: true }), 32),
+			terminalWidthSafe(
+				webScrapeTool.renderResult?.(result, { expanded: true }),
+				32,
+			),
 		).toBe(true);
 	});
 
-	it("renders progress checklist details", () => {
+	it("renders scrape progress as row card with checklist", () => {
 		const progress = progressShell({
 			state: "loading",
 			url: "https://example.com",
@@ -74,14 +83,18 @@ describe("web tool renderers", () => {
 		const rendered = text(
 			webScrapeTool.renderResult?.(progress, { expanded: false }),
 		);
+		expect(rendered).toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] https:\/\/example\.com/u);
+		expect(rendered).toContain("loading");
 		expect(rendered).toContain("web_scrape loading");
-		expect(rendered).not.toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/u);
-		expect(rendered).toContain("URL validated");
-		expect(rendered).toContain("fetching page");
-		expect(rendered).not.toContain("✓ URL validated");
+		const expanded = text(
+			webScrapeTool.renderResult?.(progress, { expanded: true }),
+		);
+		expect(expanded).toContain("URL validated");
+		expect(expanded).toContain("fetching page");
+		expect(expanded).not.toContain("✓ URL validated");
 	});
 
-	it("renders crawl checklist and counts", () => {
+	it("renders crawl row list and counts like batch", () => {
 		const result = toolResult({
 			text: "Crawl c1: 2 succeeded, 1 failed, 3 visited, frontier 0.",
 			data: {
@@ -91,6 +104,15 @@ describe("web tool renderers", () => {
 					visitedCount: 3,
 					frontierCount: 0,
 				},
+				pages: [
+					{ ok: true, url: "https://a.test", status: 200, mode: "fast" },
+					{ ok: true, url: "https://b.test", status: 200, mode: "fast" },
+					{
+						ok: false,
+						url: "https://c.test",
+						error: { code: "BLOCKED", phase: "fetch", message: "blocked" },
+					},
+				],
 			},
 			responseId: "r-crawl",
 		});
@@ -109,19 +131,19 @@ describe("web tool renderers", () => {
 		);
 		expect(doneTitle).toContain("web_crawl https://example.com max 1");
 		expect(doneTitle).not.toContain("✓ web_crawl");
-		expect(collapsed).toContain("✅ 2 succeeded");
+		expect(collapsed).toContain("✓ 2 succeeded");
+		expect(collapsed).toContain("\u001B[38;2;239;118;122m✖ 1 failed\u001B[39m");
 		expect(collapsed).toContain(
-			"\u001B[38;2;239;118;122m❌ 1 failed\u001B[39m",
-		);
-		expect(collapsed).toContain(
-			"\u001B[38;2;199;211;111m🌐 3 visited\u001B[39m",
+			"\u001B[38;2;199;211;111m◉  3 visited\u001B[39m",
 		);
 		expect(collapsed).toContain(
 			"\u001B[38;2;139;145;134m→ frontier 0\u001B[39m",
 		);
+		expect(collapsed).toContain("done");
+		expect(collapsed).toContain("error");
 		expect(collapsed).not.toContain("✓ web_crawl");
-		expect(expanded).toContain("✓ robots checked");
-		expect(expanded).toContain("✓ crawl state saved");
+		expect(expanded).toContain("Per-page details:");
+		expect(expanded).toContain("BLOCKED · fetch · blocked");
 	});
 
 	it("fills collapsed crawl result width after frontier count", () => {
@@ -149,9 +171,19 @@ describe("web tool renderers", () => {
 				{
 					ok: true,
 					url: "https://a.test",
-					result: { cache: { cached: true } },
+					result: {
+						status: 200,
+						mode: "fast",
+						format: "markdown",
+						cache: { cached: true },
+						data: { title: "A Test", text: "Useful batch content." },
+					},
 				},
-				{ ok: false, url: "https://b.test", error: { message: "blocked" } },
+				{
+					ok: false,
+					url: "https://b.test",
+					error: { code: "BLOCKED", phase: "fetch", message: "blocked" },
+				},
 			],
 			responseId: "r-batch",
 		});
@@ -167,12 +199,53 @@ describe("web tool renderers", () => {
 		);
 		expect(doneTitle).toContain("web_batch 2 urls");
 		expect(doneTitle).not.toContain("✓ web_batch");
-		expect(collapsed).toContain("✅ 1 succeeded");
-		expect(collapsed).toContain("❌ 1 failed");
-		expect(collapsed).toContain("🔄 1 cache hits");
+		expect(collapsed).toContain("✓ 1 succeeded");
+		expect(collapsed).toContain("✖ 1 failed");
+		expect(collapsed).toContain("ⓞ  1 cache hits");
 		expect(collapsed).toContain(
-			"\u001B[38;2;199;211;111m🔄 1 cache hits\u001B[39m",
+			"\u001B[38;2;199;211;111mⓞ  1 cache hits\u001B[39m",
 		);
+		const expanded = text(
+			webBatchTool.renderResult?.(result, { expanded: true }),
+		);
+		expect(expanded).toContain("Per-URL details:");
+		expect(expanded).toContain("status 200 · fast · markdown");
+		expect(expanded).toContain("title: A Test");
+		expect(expanded).toContain("BLOCKED · fetch · blocked");
+	});
+
+	it("renders batch progress rows during partial updates", () => {
+		const progress = progressShell({
+			state: "processing",
+			current: 1,
+			total: 3,
+			data: {
+				batchProgress: {
+					total: 3,
+					completed: 1,
+					succeeded: 1,
+					failed: 0,
+					concurrency: 2,
+					items: [
+						{ url: "https://a.test", status: "done" },
+						{ url: "https://b.test", status: "processing" },
+						{ url: "https://c.test", status: "queued" },
+					],
+				},
+			},
+		});
+		const rendered = text(
+			webBatchTool.renderResult?.(progress, { expanded: false }),
+		);
+
+		expect(rendered).toContain("web_batch");
+		expect(rendered).toContain("1/3 done");
+		expect(rendered).toContain("ok 1");
+		expect(rendered).toContain("err 0");
+		expect(rendered).toContain("concurrency 2");
+		expect(rendered).toContain("done");
+		expect(rendered).toContain("loading");
+		expect(rendered).toContain("waiting");
 	});
 
 	it("keeps collapsed batch result within terminal width with emoji icons", () => {
@@ -200,8 +273,8 @@ describe("web tool renderers", () => {
 		);
 
 		expect(collapsed).not.toContain("\u001B[0m");
-		expect(collapsed).toContain("\u001B[35m❌ 0 failed\u001B[39m");
-		expect(collapsed).toContain("\u001B[35m🔄 0 cache hits\u001B[39m");
+		expect(collapsed).toContain("\u001B[35m✖ 0 failed\u001B[39m");
+		expect(collapsed).toContain("\u001B[35mⓞ  0 cache hits\u001B[39m");
 	});
 
 	it("uses failed icon and color even when failed count is zero", () => {
@@ -213,13 +286,11 @@ describe("web tool renderers", () => {
 			webBatchTool.renderResult?.(result, { expanded: false }),
 		);
 
-		expect(collapsed).toContain("❌ 0 failed");
+		expect(collapsed).toContain("✖ 0 failed");
+		expect(collapsed).toContain("\u001B[38;2;239;118;122m✖ 0 failed\u001B[39m");
+		expect(collapsed).toContain("ⓞ  0 cache hits");
 		expect(collapsed).toContain(
-			"\u001B[38;2;239;118;122m❌ 0 failed\u001B[39m",
-		);
-		expect(collapsed).toContain("🔄 0 cache hits");
-		expect(collapsed).toContain(
-			"\u001B[38;2;199;211;111m🔄 0 cache hits\u001B[39m",
+			"\u001B[38;2;199;211;111mⓞ  0 cache hits\u001B[39m",
 		);
 	});
 
@@ -302,15 +373,6 @@ function text(component: RenderComponent | undefined): string {
 	return component?.render(120).join("\n") ?? "";
 }
 
-function widthSafe(
-	component: RenderComponent | undefined,
-	width: number,
-): boolean {
-	return (
-		component?.render(width).every((line) => line.length <= width) ?? false
-	);
-}
-
 function terminalWidthSafe(
 	component: RenderComponent | undefined,
 	width: number,
@@ -343,4 +405,4 @@ function terminalVisibleWidth(text: string): number {
 }
 
 const emojiOrWideCharPattern =
-	/[✅❌🔄🌐⚠]|[\u{1100}-\u{115F}\u{2E80}-\u{A4CF}\u{AC00}-\u{D7A3}\u{F900}-\u{FAFF}\u{FE10}-\u{FE6F}\u{FF00}-\u{FFE6}]/u;
+	/[⚠]|[\u{1100}-\u{115F}\u{2E80}-\u{A4CF}\u{AC00}-\u{D7A3}\u{F900}-\u{FAFF}\u{FE10}-\u{FE6F}\u{FF00}-\u{FFE6}]/u;

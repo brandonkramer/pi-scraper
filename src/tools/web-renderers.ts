@@ -1,19 +1,52 @@
 /**
  * @fileoverview Renderers for Pi web tool calls and results.
  */
-import type {
-	PiToolShell,
-	ProgressDetails,
-	ResultEnvelope,
-	StructuredError,
-} from "../types.js";
+import type { PiToolShell, ProgressDetails, ResultEnvelope } from "../types.js";
 import type {
 	RenderComponent,
 	RenderTheme,
 	ToolRenderContext,
 } from "./define.js";
 import { renderText } from "./render.js";
-import type { BatchItem, CrawlMeta, DiffData } from "./web-renderer-types.js";
+import {
+	accent,
+	activityCountSegment,
+	currentSpinnerFrame,
+	errorTitle,
+	failureCountSegment,
+	formatChecklistItem,
+	formatChecklistText,
+	isProgress,
+	metadataText,
+	neutralText,
+	previewText,
+	progressPillLabel,
+	progressPillState,
+	progressStartedAtMs,
+	renderStatusGlyph,
+	renderStatusPill,
+	renderUrlStatusRow,
+	separator,
+	successCountSegment,
+} from "./shared-renderers.js";
+import {
+	batchExpandedDetails,
+	batchProgressFromCrawlPages,
+	batchProgressFromItems,
+	crawlExpandedDetails,
+	isBatchProgress,
+	isBatchProgressView,
+	renderBatchProgressCard,
+	renderBatchResultCard,
+	renderMapResultCard,
+} from "./web-batch-progress-renderer.js";
+import { renderScrapeResultCard } from "./web-scrape-result-renderer.js";
+import type {
+	BatchItem,
+	CrawlMeta,
+	CrawlPageView,
+	DiffData,
+} from "./web-renderer-types.js";
 
 export type ChecklistState = "done" | "pending" | "failed" | "warning" | "info";
 
@@ -37,35 +70,86 @@ export function renderWebToolCall(
 export function renderWebScrapeResult(
 	result: PiToolShell,
 	expanded = false,
+	theme?: RenderTheme,
 ): RenderComponent {
 	const details = result.details as
 		| Partial<ResultEnvelope<unknown>>
 		| ProgressDetails;
-	if (isProgress(details)) return renderProgress("web_scrape", details);
+	if (isProgress(details))
+		return renderScrapeProgressCard(details, expanded, theme);
 	const envelope = details as Partial<ResultEnvelope<Record<string, unknown>>>;
-	const title = envelope.error
+	const summary = envelope.error
 		? errorTitle("web_scrape", envelope.error)
 		: [
-				`web_scrape ${envelope.status ?? "ok"}`,
+				envelope.status ?? "ok",
 				envelope.mode,
 				envelope.format,
-				cacheLabel(envelope),
+				cacheLabel(envelope) ?? "fresh fetch",
 				freshnessLabel(envelope),
+				!expanded ? metadataText("(ctrl+o to expand)", theme) : undefined,
 			]
 				.filter(Boolean)
-				.join(" · ");
-	return renderChecklistResult(title, expanded, {
-		items: [
-			{ label: "URL validated", state: envelope.url ? "done" : "info" },
-			{ label: "robots checked", state: "info", detail: "when enabled" },
-			fetchChecklistItem(envelope),
-			{ label: "parsed/extracted", state: envelope.data ? "done" : "info" },
-			{ label: "stored result", state: envelope.responseId ? "done" : "info" },
-		],
-		preview: previewText(result, envelope),
-		responseId: envelope.responseId,
-		icons: false,
-	});
+				.join(theme ? separator(theme) : " · ");
+	return renderScrapeResultCard(
+		envelope,
+		{
+			expanded,
+			summary,
+			notice: sessionNotice(envelope),
+			preview: previewText(result, envelope),
+			responseId: envelope.responseId,
+		},
+		theme,
+	);
+}
+
+function renderScrapeProgressCard(
+	details: ProgressDetails,
+	expanded: boolean,
+	theme?: RenderTheme,
+): RenderComponent {
+	const url = details.url ?? "unknown URL";
+	const failed = details.state === "error";
+	const status = failed
+		? "error"
+		: details.state === "done"
+			? "done"
+			: "loading";
+	const startedAtMs = progressStartedAtMs(details) ?? Date.now();
+	return {
+		render(width: number) {
+			const row = renderUrlStatusRow({
+				url,
+				label: status,
+				state: status,
+				width,
+				theme,
+				startedAtMs,
+			});
+			const summary = `web_scrape ${details.state}${
+				theme ? separator(theme) : " · "
+			}${metadataText("(ctrl+o to expand)", theme)}`;
+			const lines = [row, "", summary];
+			if (expanded && details.checklist?.length) {
+				lines.push(
+					"",
+					...details.checklist.map((item) =>
+						formatChecklistText({
+							label: item.label,
+							detail: item.detail,
+						}),
+					),
+				);
+			}
+			if (details.state !== "done" && details.state !== "error") {
+				const frame = currentSpinnerFrame();
+				const text = [...lines, "", `${frame} Working...`].join("\n");
+				return renderText(text, { padToWidth: true }).render(width);
+			}
+			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
+		},
+		invalidate() {},
+	};
 }
 
 export function renderWebCrawlResult(
@@ -76,11 +160,17 @@ export function renderWebCrawlResult(
 	const details = result.details as
 		| Partial<ResultEnvelope<unknown>>
 		| ProgressDetails;
-	if (isProgress(details)) return renderProgress("web_crawl", details, theme);
-	const envelope = details as Partial<ResultEnvelope<{ metadata?: CrawlMeta }>>;
+	if (isProgress(details)) {
+		if (isBatchProgress(details))
+			return renderBatchProgressCard(details, expanded, theme);
+		return renderProgress("web_crawl", details, theme);
+	}
+	const envelope = details as Partial<
+		ResultEnvelope<{ metadata?: CrawlMeta; pages?: unknown[] }>
+	>;
 	const metadata = envelope.data?.metadata;
 	const failed = metadata?.failedCount ?? 0;
-	const title = envelope.error
+	const summary = envelope.error
 		? errorTitle("web_crawl", envelope.error)
 		: [
 				successCountSegment(metadata?.succeededCount ?? 0, "succeeded", theme),
@@ -88,22 +178,79 @@ export function renderWebCrawlResult(
 				activityCountSegment(
 					metadata?.visitedCount ?? 0,
 					"visited",
-					"🌐",
+					"◉",
 					theme,
 				),
 				neutralText(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
-			].join(separator(theme));
-	return renderChecklistResult(title, expanded, {
-		items: [
-			{ label: "robots checked", state: "done" },
-			{ label: "sitemap seeded", state: "info", detail: "when available" },
-			{ label: "pages fetched", state: failed > 0 ? "warning" : "done" },
-			{ label: "results stored", state: envelope.responseId ? "done" : "info" },
-			{ label: "crawl state saved", state: metadata ? "done" : "info" },
-		],
-		preview: envelope.answerContext ?? result.content[0]?.text,
-		responseId: envelope.responseId,
-	});
+				!expanded ? metadataText("(ctrl+o to expand)", theme) : undefined,
+			]
+				.filter(Boolean)
+				.join(separator(theme));
+	const pages = Array.isArray(envelope.data?.pages)
+		? (envelope.data?.pages as CrawlPageView[])
+		: [];
+	const progress = isBatchProgressView(envelope.diagnostics?.batchProgress)
+		? envelope.diagnostics.batchProgress
+		: batchProgressFromCrawlPages(pages);
+	return renderBatchResultCard(
+		{
+			progress,
+			summary,
+			notice: sessionNotice(envelope),
+			preview: crawlExpandedDetails(pages, {
+				jobId: envelope.diagnostics?.jobId,
+				packageResponseId: contextPackageResponseId(envelope),
+			}),
+			responseId: envelope.responseId,
+		},
+		expanded,
+		theme,
+	);
+}
+
+export function renderWebMapResult(
+	result: PiToolShell,
+	expanded = false,
+	theme?: RenderTheme,
+): RenderComponent {
+	const details = result.details as Partial<ResultEnvelope<unknown>>;
+	if (isProgress(details as unknown))
+		return renderProgress("web_map", details as ProgressDetails, theme);
+	const envelope = details as Partial<
+		ResultEnvelope<{
+			urls?: { url: string; source?: string; title?: string }[];
+		}>
+	>;
+	const urls = Array.isArray(envelope.data?.urls) ? envelope.data!.urls : [];
+	const summary = [
+		theme?.bold?.("web_map") ?? "web_map",
+		`${urls.length} URL(s)`,
+		!expanded ? metadataText("(ctrl+o to expand)", theme) : undefined,
+	]
+		.filter(Boolean)
+		.join(theme ? separator(theme) : " · ");
+	if (urls.length === 0) {
+		return renderText(
+			`${summary}\n\n${metadataText("No URLs discovered.", theme)}`,
+			{
+				padToWidth: true,
+			},
+		);
+	}
+	return {
+		render(width: number) {
+			const mapCard = renderMapResultCard(urls, expanded, theme);
+			const mapText = mapCard.render(width).join("\n");
+			const lines = [summary, mapText];
+			if (expanded && envelope.responseId)
+				lines.push(
+					"",
+					metadataText(`responseId: ${envelope.responseId}`, theme),
+				);
+			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
+		},
+		invalidate() {},
+	};
 }
 
 export function renderWebBatchResult(
@@ -114,7 +261,11 @@ export function renderWebBatchResult(
 	const details = result.details as
 		| Partial<ResultEnvelope<unknown>>
 		| ProgressDetails;
-	if (isProgress(details)) return renderProgress("web_batch", details, theme);
+	if (isProgress(details)) {
+		if (isBatchProgress(details))
+			return renderBatchProgressCard(details, expanded, theme);
+		return renderProgress("web_batch", details, theme);
+	}
 	const envelope = details as Partial<ResultEnvelope<BatchItem[]>>;
 	const items = Array.isArray(envelope.data) ? envelope.data : [];
 	const succeeded = items.filter((item) => item.ok === true).length;
@@ -122,38 +273,47 @@ export function renderWebBatchResult(
 	const cacheHits = items.filter(
 		(item) => item.ok === true && item.result?.cache?.cached,
 	).length;
-	const title = envelope.error
+	const summary = envelope.error
 		? errorTitle("web_batch", envelope.error)
 		: [
 				successCountSegment(succeeded, "succeeded", theme),
 				failureCountSegment(failed, "failed", theme),
-				activityCountSegment(cacheHits, "cache hits", "🔄", theme),
+				activityCountSegment(cacheHits, "cache hits", "ⓞ", theme),
 				freshnessLabel(envelope),
+				!expanded ? metadataText("(ctrl+o to expand)", theme) : undefined,
 			]
 				.filter(Boolean)
 				.join(separator(theme));
-	return renderChecklistResult(title, expanded, {
-		items: [
-			{ label: `${succeeded} succeeded`, state: succeeded ? "done" : "info" },
-			{ label: `${failed} failed`, state: failed ? "failed" : "done" },
-			{
-				label: `${cacheHits} cache hits`,
-				state: cacheHits ? "info" : "pending",
-			},
-		],
-		preview: batchPreview(items) || envelope.answerContext,
-		responseId: envelope.responseId,
-	});
+	const progressValue = envelope.diagnostics?.batchProgress;
+	const progress = isBatchProgressView(progressValue)
+		? progressValue
+		: batchProgressFromItems(items);
+	return renderBatchResultCard(
+		{
+			progress,
+			summary,
+			notice: sessionNotice(envelope),
+			preview: batchExpandedDetails(items, {
+				jobId: envelope.diagnostics?.jobId,
+				packageResponseId: contextPackageResponseId(envelope),
+			}),
+			responseId: envelope.responseId,
+			padToWidth: false,
+		},
+		expanded,
+		theme,
+	);
 }
 
 export function renderWebDiffResult(
 	result: PiToolShell,
 	expanded = false,
+	theme?: RenderTheme,
 ): RenderComponent {
 	const details = result.details as
 		| Partial<ResultEnvelope<unknown>>
 		| ProgressDetails;
-	if (isProgress(details)) return renderProgress("web_diff", details);
+	if (isProgress(details)) return renderProgress("web_diff", details, theme);
 	const envelope = details as Partial<ResultEnvelope<DiffData>>;
 	const diff = envelope.data;
 	const title = envelope.error
@@ -182,25 +342,33 @@ function renderChecklistResult(
 	expanded: boolean,
 	options: {
 		items?: ChecklistItem[];
+		notice?: string;
 		preview?: string;
 		responseId?: string;
 		icons?: boolean;
 	},
+	theme?: RenderTheme,
 ): RenderComponent {
 	if (!expanded) {
-		const id = options.responseId
-			? `${separator()}${neutralText(`responseId: ${options.responseId}`)}`
+		const hint = metadataText("(ctrl+o to expand)", theme);
+		const notice = options.notice
+			? `\n\n${metadataText(options.notice, theme)}`
 			: "";
-		return renderText(`${title}${id}`, { padToWidth: true, truncate: true });
+		return renderText(`${title}${separator(theme)}${hint}${notice}`, {
+			padToWidth: true,
+			truncate: true,
+		});
 	}
 	const lines = [title];
+	if (options.notice) lines.push("", metadataText(options.notice, theme));
 	if (options.items?.length) {
 		const formatter =
 			options.icons === false ? formatChecklistText : formatChecklistItem;
 		lines.push("", ...options.items.map(formatter));
 	}
 	if (options.preview) lines.push("", options.preview.slice(0, 500));
-	if (options.responseId) lines.push("", `responseId: ${options.responseId}`);
+	if (options.responseId)
+		lines.push("", metadataText(`responseId: ${options.responseId}`, theme));
 	return renderText(lines.join("\n"), { padToWidth: true });
 }
 
@@ -213,144 +381,67 @@ function renderProgress(
 	details: ProgressDetails,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const count = details.total
-		? ` ${details.current ?? 0}/${details.total}`
-		: "";
-	const message = details.message ? ` · ${details.message}` : "";
-	const url = details.url ? ` · ${details.url}` : "";
-	const icons = toolAllowsIcons(toolName);
-	const prefix = icons && details.state === "error" ? "✕ " : "";
-	const lines = [
-		`${prefix}${toolName} ${details.state}${count}${url}${message}`,
-	];
-	if (details.checklist?.length) {
-		const formatter = icons ? formatChecklistItem : formatChecklistText;
-		lines.push(...details.checklist.map(formatter));
-	}
-	if (details.counts) {
-		const counts = details.counts;
-		lines.push(
-			[
-				counts.succeeded === undefined
-					? undefined
-					: icons
-						? successCountSegment(counts.succeeded, "succeeded", theme)
-						: `${counts.succeeded} succeeded`,
-				counts.failed === undefined
-					? undefined
-					: icons
-						? failureCountSegment(counts.failed, "failed", theme)
-						: `${counts.failed} failed`,
-				counts.cacheHits === undefined
-					? undefined
-					: icons
-						? activityCountSegment(counts.cacheHits, "cache hits", "🔄", theme)
-						: `${counts.cacheHits} cache hits`,
-			]
-				.filter(Boolean)
-				.join(" · "),
-		);
-	}
-	return renderText(lines.filter(Boolean).join("\n"), { padToWidth: true });
-}
-
-function successCountSegment(
-	count: number,
-	label: string,
-	theme?: RenderTheme,
-): string {
-	const text = `${count} ${label}`;
-	if (count <= 0) return neutralText(text, theme);
-	return successText(`✅ ${text}`, theme);
-}
-
-function failureCountSegment(
-	count: number,
-	label: string,
-	theme?: RenderTheme,
-): string {
-	return failureText(`❌ ${count} ${label}`, theme);
-}
-
-function successText(text: string, theme?: RenderTheme): string {
-	const themed = inlineThemeText("success", text, theme);
-	if (themed) return themed;
-	return `\u001B[38;2;148;226;213m${text}\u001B[39m`;
-}
-
-function activityCountSegment(
-	count: number,
-	label: string,
-	icon: string,
-	theme?: RenderTheme,
-): string {
-	return activityText(`${icon} ${count} ${label}`, theme);
-}
-
-function failureText(text: string, theme?: RenderTheme): string {
-	const themed =
-		inlineThemeText("error", text, theme) ??
-		inlineThemeText("danger", text, theme);
-	if (themed) return themed;
-	return `\u001B[38;2;239;118;122m${text}\u001B[39m`;
-}
-
-function activityText(text: string, theme?: RenderTheme): string {
-	const themed =
-		inlineThemeText("warning", text, theme) ??
-		inlineThemeText("accent", text, theme);
-	if (themed) return themed;
-	return `\u001B[38;2;199;211;111m${text}\u001B[39m`;
-}
-
-function neutralText(text: string, theme?: RenderTheme): string {
-	const themed = inlineThemeText("muted", text, theme);
-	if (themed) return themed;
-	return `\u001B[38;2;139;145;134m${text}\u001B[39m`;
-}
-
-function inlineThemeText(
-	name: string,
-	text: string,
-	theme?: RenderTheme,
-): string | undefined {
-	const themed = theme?.fg?.(name, text);
-	return themed?.replaceAll("\u001B[0m", "\u001B[39m");
-}
-
-function separator(theme?: RenderTheme): string {
-	return `${neutralText(" · ", theme)}`;
-}
-
-function formatChecklistItem(item: ChecklistItem): string {
-	const icon =
-		item.state === "done"
-			? "✓"
-			: item.state === "failed"
-				? "✕"
-				: item.state === "warning"
-					? "⚠"
-					: item.state === "pending"
-						? "☐"
-						: "•";
-	return `${icon} ${item.label}${item.detail ? ` — ${item.detail}` : ""}`;
-}
-
-function formatChecklistText(item: ChecklistItem): string {
-	return `${item.label}${item.detail ? ` — ${item.detail}` : ""}`;
-}
-
-function fetchChecklistItem(
-	envelope: Partial<ResultEnvelope<unknown>>,
-): ChecklistItem {
-	if (envelope.cache?.cached) {
-		return {
-			label: "cache hit",
-			state: envelope.freshness?.stale ? "warning" : "done",
-			detail: envelope.cache.staleness,
-		};
-	}
-	return { label: "fetched page", state: envelope.status ? "done" : "info" };
+	const startedAtMs = progressStartedAtMs(details) ?? Date.now();
+	return {
+		render(width: number) {
+			const statusWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
+			const state = progressPillState(details.state);
+			const count = details.total
+				? ` ${details.current ?? 0}/${details.total}`
+				: "";
+			const message = details.message ? ` · ${details.message}` : "";
+			const url = details.url ? ` · ${details.url}` : "";
+			const icons = toolAllowsIcons(toolName);
+			const glyph = renderStatusGlyph(state, theme);
+			const pill = renderStatusPill({
+				label: progressPillLabel(details.state),
+				state,
+				width: statusWidth,
+				theme,
+				startedAtMs,
+			});
+			const lines = [
+				`${glyph} ${toolName} ${details.state}${count}${url}${message} ${pill}`,
+			];
+			if (details.checklist?.length) {
+				const formatter = icons ? formatChecklistItem : formatChecklistText;
+				lines.push(...details.checklist.map(formatter));
+			}
+			if (details.counts) {
+				const counts = details.counts;
+				lines.push(
+					[
+						counts.succeeded === undefined
+							? undefined
+							: icons
+								? successCountSegment(counts.succeeded, "succeeded", theme)
+								: `${counts.succeeded} succeeded`,
+						counts.failed === undefined
+							? undefined
+							: icons
+								? failureCountSegment(counts.failed, "failed", theme)
+								: `${counts.failed} failed`,
+						counts.cacheHits === undefined
+							? undefined
+							: icons
+								? activityCountSegment(
+										counts.cacheHits,
+										"cache hits",
+										"ⓞ",
+										theme,
+									)
+								: `${counts.cacheHits} cache hits`,
+					]
+						.filter(Boolean)
+						.join(" · "),
+				);
+			}
+			return renderText(lines.filter(Boolean).join("\n"), {
+				padToWidth: true,
+			}).render(width);
+		},
+		invalidate() {},
+	};
 }
 
 function cacheLabel(
@@ -366,35 +457,20 @@ function freshnessLabel(
 	return envelope.freshness?.stale ? "⚠ stale" : undefined;
 }
 
-function errorTitle(tool: `web_${string}`, error: StructuredError): string {
-	const prefix = toolAllowsIcons(tool) ? "✕ " : "";
-	return `${prefix}${tool} ${error.code}: ${error.message}`;
+function sessionNotice(
+	envelope: Partial<ResultEnvelope<unknown>>,
+): string | undefined {
+	const notice = envelope.diagnostics?.sessionNotice;
+	return typeof notice === "string" ? notice : undefined;
 }
 
-function previewText(
-	result: PiToolShell,
-	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
-): string {
-	const data = envelope.data;
-	return String(
-		envelope.answerContext ??
-			data?.markdown ??
-			data?.text ??
-			data?.title ??
-			result.content[0]?.text ??
-			"",
-	);
-}
-
-function batchPreview(items: BatchItem[]): string {
-	return items
-		.slice(0, 5)
-		.map((item) =>
-			item.ok
-				? `✓ ${item.url}`
-				: `✕ ${item.url}: ${item.error?.message ?? "failed"}`,
-		)
-		.join("\n");
+function contextPackageResponseId(
+	envelope: Partial<ResultEnvelope<unknown>>,
+): string | undefined {
+	const value = envelope.diagnostics?.contextPackage;
+	if (typeof value !== "object" || value === null) return undefined;
+	const responseId = (value as { responseId?: unknown }).responseId;
+	return typeof responseId === "string" ? responseId : undefined;
 }
 
 function diffTitle(
@@ -405,17 +481,4 @@ function diffTitle(
 	if (summary?.includes("No meaningful") || summary?.includes("No content"))
 		return "no content changes";
 	return `changed: ${diff.diff?.changedCount ?? 0} changed, ${diff.diff?.addedCount ?? 0} added, ${diff.diff?.removedCount ?? 0} removed`;
-}
-
-function accent(text: string, theme?: RenderTheme): string {
-	return theme?.fg?.("accent", text) ?? text;
-}
-
-function isProgress(value: unknown): value is ProgressDetails {
-	return Boolean(
-		value &&
-			typeof value === "object" &&
-			"_progress" in value &&
-			(value as ProgressDetails)._progress,
-	);
 }

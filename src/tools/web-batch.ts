@@ -4,6 +4,13 @@
 import { Type, type Static } from "@earendil-works/pi-ai";
 import { runBatchScrape, type BatchItemResult } from "../batch/run.js";
 import { loadEffectiveConfig } from "../config/settings.js";
+import { DEFAULT_CONCURRENCY } from "../defaults.js";
+import {
+	buildSessionNotice,
+	buildSessionText,
+	deleteSessionAndStorage,
+	saveSessionToStorage,
+} from "../http/session.js";
 import {
 	aggregateFreshness,
 	freshnessFromCache,
@@ -16,6 +23,11 @@ import {
 import { buildStoredContextPackage } from "./context-package.js";
 import { defineWebTool } from "./define.js";
 import { emitProgress } from "./progress.js";
+import {
+	cloneBatchProgress,
+	type BatchProgressView,
+	updateIndexedBatchProgress,
+} from "./web-batch-progress-renderer.js";
 import { renderWebBatchResult, renderWebToolCall } from "./web-renderers.js";
 import { toolResult } from "./result.js";
 import { scrapeOutputOptionSchema, urlProperty } from "./schemas.js";
@@ -59,6 +71,21 @@ export const webBatchTool = defineWebTool({
 	parameters: webBatchSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const config = await loadEffectiveConfig();
+		const concurrency = Math.max(
+			1,
+			Math.min(
+				params.concurrency ?? DEFAULT_CONCURRENCY.global,
+				params.urls.length,
+			),
+		);
+		const batchProgress: BatchProgressView = {
+			total: params.urls.length,
+			completed: 0,
+			succeeded: 0,
+			failed: 0,
+			concurrency,
+			items: params.urls.map((url) => ({ url, status: "queued" })),
+		};
 		const result = await runBatchScrape(
 			params.urls,
 			{
@@ -67,16 +94,18 @@ export const webBatchTool = defineWebTool({
 				mode: params.mode ?? config.scrapeMode,
 				format: params.format ?? config.outputFormat,
 				storeFullResults: true,
-				onProgress: (progress) =>
+				onProgress: (progress) => {
+					updateIndexedBatchProgress(
+						batchProgress,
+						progress.state,
+						progress.current,
+						progress.url,
+					);
 					void emitProgress(onUpdate, {
 						...progress,
-						state:
-							progress.state === "queued"
-								? "queued"
-								: progress.state === "processing"
-									? "processing"
-									: progress.state,
-					}),
+						data: { batchProgress: cloneBatchProgress(batchProgress) },
+					});
+				},
 			},
 			{},
 			signal,
@@ -101,14 +130,23 @@ export const webBatchTool = defineWebTool({
 		const text = contextPackage
 			? `${result.summary} Context package: ${contextPackage.value.package.urlCount} page(s), packageResponseId: ${contextPackage.responseId}.`
 			: result.summary;
+		if (params.sessionId) {
+			if (params.saveSession) await saveSessionToStorage(params.sessionId);
+			if (params.clearSession) await deleteSessionAndStorage(params.sessionId);
+		}
+		const sessionNotice = buildSessionNotice(params);
+		const sessionSuffix = buildSessionText(params);
+		const completedProgress = cloneBatchProgress(batchProgress);
 		return toolResult({
-			text,
+			text: text + sessionSuffix,
 			data: result.items,
 			responseId: result.responseId,
 			fullOutputPath: result.fullOutputPath,
 			truncated: result.truncated,
 			freshness,
 			diagnostics: {
+				sessionNotice: sessionNotice || undefined,
+				batchProgress: completedProgress,
 				jobId: result.jobId,
 				jobManifestPath: result.jobManifestPath,
 				contextPackage: contextPackage && {

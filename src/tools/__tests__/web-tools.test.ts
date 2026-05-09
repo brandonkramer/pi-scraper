@@ -422,6 +422,134 @@ describe("selected web tool handlers", () => {
 		expect(lines.length).toBeGreaterThan(1);
 		expect(lines.every((line) => line.length <= 40)).toBe(true);
 	});
+
+	it("extracts JSONPath-selected values for pattern inspection", async () => {
+		const notebook = {
+			cells: [
+				{ cell_type: "code", source: ["import os\n", "print(1)"] },
+				{ cell_type: "markdown", source: ["# Intro\n", "Welcome."] },
+			],
+		};
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				action: "pattern",
+				content: JSON.stringify(notebook),
+				sourceFormat: "json",
+				jsonPaths: ["$.cells[*].source"],
+				contains: ["import os"],
+				excerpts: [{ needle: "Welcome", after: 10 }],
+			},
+			signal,
+		);
+		const envelope = result.details as ResultEnvelope<{
+			source: {
+				sourceFormat: string;
+				json?: {
+					paths: Array<{ path: string; matched: number; missing: boolean }>;
+					selectedLength: number;
+				};
+			};
+			contains: Array<{ found: boolean }>;
+			excerpts: Array<{ found: boolean; text?: string }>;
+		}>;
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.data?.source.sourceFormat).toBe("json");
+		expect(envelope.data?.source.json?.paths).toEqual([
+			{ path: "$.cells[*].source", matched: 2, missing: false },
+		]);
+		expect(envelope.data?.source.json?.selectedLength).toBeGreaterThan(0);
+		expect(envelope.data?.contains[0]?.found).toBe(true);
+		expect(envelope.data?.excerpts[0]?.found).toBe(true);
+	});
+
+	it("reports structured errors for invalid JSON in pattern mode", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				action: "pattern",
+				content: "not json",
+				sourceFormat: "json",
+				jsonPaths: ["$.a"],
+			},
+			signal,
+		);
+		expect((result.details as ResultEnvelope).error?.code).toBe(
+			"JSON_PARSE_FAILED",
+		);
+	});
+
+	it("reports structured errors for unsupported JSONPath syntax", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				action: "pattern",
+				content: JSON.stringify({ a: 1 }),
+				sourceFormat: "json",
+				jsonPaths: ["$..a"],
+			},
+			signal,
+		);
+		expect((result.details as ResultEnvelope).error?.code).toBe(
+			"JSON_PATH_UNSUPPORTED",
+		);
+	});
+
+	it("reports no-match error when all JSONPaths miss", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				action: "pattern",
+				content: JSON.stringify({ a: 1 }),
+				sourceFormat: "json",
+				jsonPaths: ["$.missing"],
+			},
+			signal,
+		);
+		expect((result.details as ResultEnvelope).error?.code).toBe(
+			"JSON_PATH_NO_MATCH",
+		);
+	});
+
+	it("runs JSON pattern inspection from scraped URL", async () => {
+		const tool = createWebExtractTool({
+			scrapeDeps: {
+				httpClient: {
+					async fetchUrl() {
+						const json = JSON.stringify({ items: [{ name: "alpha" }] });
+						return {
+							url: "https://example.com/api",
+							finalUrl: "https://example.com/api",
+							status: 200,
+							headers: { "content-type": "application/json" },
+							contentType: "application/json",
+							text: json,
+							downloadedBytes: Buffer.byteLength(json),
+						};
+					},
+				},
+			},
+		});
+		const result = await tool.execute(
+			"call",
+			{
+				action: "pattern",
+				url: "https://example.com/api",
+				sourceFormat: "json",
+				jsonPaths: ["$.items[*].name"],
+				contains: ["alpha"],
+			},
+			signal,
+		);
+		const envelope = result.details as ResultEnvelope<{
+			source: { source: string; sourceFormat: string };
+			contains: Array<{ found: boolean }>;
+		}>;
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.data?.source.source).toBe("scrape");
+		expect(envelope.data?.source.sourceFormat).toBe("json");
+		expect(envelope.data?.contains[0]?.found).toBe(true);
+	});
 });
 
 function renderComponentText(component: RenderComponent | undefined): string {

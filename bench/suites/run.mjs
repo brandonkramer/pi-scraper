@@ -22,6 +22,7 @@ const suites = {
 	"parsers linkedom": ["parsers/profile-linkedom.mjs"],
 	"serializers compare": ["serializers/compare.mjs"],
 	"serializers markdown": ["serializers/profile-turndown.mjs"],
+	"tool-contract tokens": ["tool-contract/tokens.mjs"],
 	"tool-registration": ["tool-registration/timing.mjs"],
 };
 
@@ -35,6 +36,7 @@ const aliases = {
 	"profile:linkedom": "parsers linkedom",
 	"profile:markdown": "serializers markdown",
 	"spike:cheerio": "dom prototype",
+	"tokens:tools": "tool-contract tokens",
 };
 
 const args = process.argv.slice(2);

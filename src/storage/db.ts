@@ -4,6 +4,7 @@
 import { DatabaseSync, type StatementSync } from "node:sqlite";
 import path from "node:path";
 import { migrateLegacyFiles } from "./migrate-from-files.js";
+import { migrateElementFingerprints } from "./element-fingerprints.js";
 import {
 	ensureDir,
 	type ResolveStorageOptions,
@@ -81,12 +82,63 @@ function wrapEntry(entry: DbEntry): StorageDb {
 	};
 }
 
+function migrateHttpSessions(db: StorageDb): void {
+	db.db.exec(`
+CREATE TABLE IF NOT EXISTS http_sessions (
+	id TEXT PRIMARY KEY,
+	created_at TEXT NOT NULL,
+	last_used_at TEXT NOT NULL,
+	cookies_json TEXT NOT NULL,
+	default_headers_json TEXT,
+	default_browser_profile TEXT,
+	default_os_profile TEXT,
+	default_proxy TEXT,
+	default_mode TEXT
+);
+`);
+}
+
 function runMigrations(db: DatabaseSync): void {
 	const current = db.prepare("PRAGMA user_version").get() as {
 		user_version: number;
 	};
-	if (current.user_version >= 1) return;
-	db.exec(SCHEMA_V1);
+	if (current.user_version < 1) {
+		db.exec(SCHEMA_V1);
+	}
+	if (current.user_version < 2) {
+		migrateElementFingerprints(wrapDb(db));
+		db.exec("PRAGMA user_version = 2");
+	}
+	if (current.user_version < 3) {
+		migrateHttpSessions(wrapDb(db));
+		db.exec("PRAGMA user_version = 3");
+	}
+}
+
+function wrapDb(db: DatabaseSync): StorageDb {
+	const statements = new Map<string, StatementSync>();
+	return {
+		db,
+		prepare(sql: string) {
+			let st = statements.get(sql);
+			if (!st) {
+				st = db.prepare(sql);
+				statements.set(sql, st);
+			}
+			return st;
+		},
+		transaction<T>(work: () => T): T {
+			db.exec("BEGIN IMMEDIATE");
+			try {
+				const result = work();
+				db.exec("COMMIT");
+				return result;
+			} catch (error) {
+				db.exec("ROLLBACK");
+				throw error;
+			}
+		},
+	};
 }
 
 const SCHEMA_V1 = `

@@ -30,6 +30,7 @@ import {
 	scrapeInputToolResult,
 } from "./scrape-input-result.js";
 import { runApiSurfaceExtraction } from "./web-extract-surface.js";
+import { runSelectorExtraction } from "./web-extract-selector.js";
 
 const extractActions = [
 	"list",
@@ -37,6 +38,7 @@ const extractActions = [
 	"adhoc",
 	"pattern",
 	"surface",
+	"selector",
 ] as const;
 export const webExtractSchema = Type.Object({
 	action: Type.Optional(Type.Any()),
@@ -83,8 +85,33 @@ export const webExtractSchema = Type.Object({
 			}),
 		),
 	),
+	sections: Type.Optional(
+		Type.Array(
+			Type.Unsafe({
+				properties: {
+					name: Type.Optional(Type.Any()),
+					start: Type.Optional(Type.Any()),
+					end: Type.Optional(Type.Any()),
+					includeStart: Type.Optional(Type.Any()),
+					includeEnd: Type.Optional(Type.Any()),
+					caseSensitive: Type.Optional(Type.Any()),
+					maxChars: Type.Optional(Type.Any()),
+				},
+			}),
+		),
+	),
+	jsonPaths: Type.Optional(Type.Array(Type.String())),
 	mode: Type.Optional(Type.Any()),
 	extract: Type.Optional(Type.Any()),
+	// Selector extraction (Task 27)
+	selector: Type.Optional(Type.Any()),
+	selectorType: Type.Optional(Type.Any()),
+	attribute: Type.Optional(Type.Any()),
+	identifier: Type.Optional(Type.Any()),
+	adaptive: Type.Optional(Type.Any()),
+	autoSave: Type.Optional(Type.Any()),
+	threshold: Type.Optional(Type.Any()),
+	limit: Type.Optional(Type.Any()),
 });
 
 type Params = Static<typeof webExtractSchema>;
@@ -112,6 +139,8 @@ export function createWebExtractTool(
 				return runPatternInspection(params, options, signal, onUpdate);
 			if (action === "surface")
 				return runApiSurfaceExtraction(params, options, signal, onUpdate);
+			if (action === "selector")
+				return runSelectorExtraction(params, options, signal, onUpdate);
 			return runAdHocExtraction(params, options, signal);
 		},
 		renderCall: (args, theme) =>
@@ -125,6 +154,7 @@ export const webExtractTool = createWebExtractTool();
 
 function inferExtractAction(params: Params): ExtractAction {
 	if (params.action) return params.action as ExtractAction;
+	if (params.selector) return "selector";
 	if (!params.url && !params.content && !params.extractor) return "list";
 	if (params.extract === "api-surface") return "surface";
 	if (params.extractor) return "vertical";
@@ -135,6 +165,12 @@ function inferExtractAction(params: Params): ExtractAction {
 function renderExtractCallParts(params: Params): string[] {
 	const action = inferExtractAction(params);
 	if (action === "list") return ["list"];
+	if (action === "selector")
+		return [
+			"selector",
+			params.selector,
+			params.url ?? "provided content",
+		].filter(Boolean) as string[];
 	return [action, params.extractor, params.url ?? "provided content"].filter(
 		Boolean,
 	) as string[];
@@ -149,7 +185,8 @@ function hasPatternRequest(params: Params): boolean {
 			params.markers?.length ||
 			params.contains?.length ||
 			params.excerpts?.length ||
-			params.regexes?.length,
+			params.regexes?.length ||
+			params.sections?.length,
 	);
 }
 
@@ -310,7 +347,9 @@ async function runPatternInspection(
 		const matchCount =
 			result.regexes?.reduce((total, item) => total + item.matches.length, 0) ??
 			0;
-		const summary = `Pattern inspection complete: ${result.source.length} chars, ${foundMarkers} marker(s), ${foundContains} contains hit(s), ${matchCount} regex match(es).`;
+		const sectionCount =
+			result.sections?.filter((item) => item.found).length ?? 0;
+		const summary = `Pattern inspection complete: ${result.source.length} chars, ${foundMarkers} marker(s), ${foundContains} contains hit(s), ${matchCount} regex match(es), ${sectionCount} section(s).`;
 		return toolResult({
 			text: summarizePatternInspection(result),
 			data: result,

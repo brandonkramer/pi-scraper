@@ -1,6 +1,11 @@
 /**
  * @fileoverview http client module.
  */
+import {
+	getOrCreateSession,
+	mergeSessionHeaders,
+	updateSessionCookies,
+} from "./session.js";
 import { request, type Dispatcher } from "undici";
 import {
 	DEFAULT_MAX_BYTES,
@@ -55,6 +60,8 @@ export interface FetchUrlOptions extends CommonRequestOptions {
 	downloadBinary?: boolean;
 	forceText?: boolean;
 	maxRedirects?: number;
+	sessionId?: string;
+	cookies?: Record<string, string>;
 }
 
 export class HttpClient {
@@ -218,6 +225,29 @@ export class HttpClient {
 			(options.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1_000;
 		const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
 		const { signal, cleanup } = withTimeout(parentSignal, timeoutMs);
+
+		// Session support: load cookies for this request
+		const session = options.sessionId
+			? await getOrCreateSession(options.sessionId, this.options.storage)
+			: undefined;
+		const urlObj = new URL(url);
+		const cookieHeader = options.cookies
+			? Object.entries(options.cookies)
+					.map(([name, value]) => `${name}=${value}`)
+					.join("; ")
+			: "";
+		const mergedHeaders = mergeSessionHeaders(
+			session,
+			urlObj.hostname,
+			urlObj.pathname,
+			options.headers,
+		);
+		if (cookieHeader) {
+			mergedHeaders["cookie"] = mergedHeaders["cookie"]
+				? `${mergedHeaders["cookie"]}; ${cookieHeader}`
+				: cookieHeader;
+		}
+
 		try {
 			const response = await request(url, {
 				method: options.method ?? "GET",
@@ -225,11 +255,11 @@ export class HttpClient {
 				headers: {
 					"user-agent": this.userAgent,
 					accept: "*/*",
-					...(options.headers ?? {}),
+					...mergedHeaders,
 				},
 				signal,
 			});
-			return await materializeFetchStreamResponse({
+			const result = await materializeFetchStreamResponse({
 				url,
 				status: response.statusCode,
 				headers: normalizeHeaders(response.headers),
@@ -238,6 +268,20 @@ export class HttpClient {
 				options,
 				discardBody: () => response.body.dump(),
 			});
+
+			// Update session cookies from Set-Cookie headers
+			if (session) {
+				const setCookie = result.headers["set-cookie"];
+				if (setCookie) {
+					updateSessionCookies(
+						session,
+						Array.isArray(setCookie) ? setCookie : [setCookie],
+						urlObj.hostname,
+					);
+				}
+			}
+
+			return result;
 		} finally {
 			cleanup();
 		}
