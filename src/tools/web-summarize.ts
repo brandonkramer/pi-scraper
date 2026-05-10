@@ -84,8 +84,8 @@ export function createWebSummarizeTool(
 				],
 				theme,
 			),
-		renderResult: (result, { expanded }) =>
-			renderEnvelopeResult(result, expanded),
+		renderResult: (result, { expanded }, theme) =>
+			renderEnvelopeResult(result, expanded, theme),
 	});
 }
 

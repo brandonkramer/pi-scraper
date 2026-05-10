@@ -135,11 +135,7 @@ function renderScrapeResultCard(
 			expandedSections: (width) =>
 				scrapeExpandedSections(envelope, options, width, theme),
 			markdownPreview: (_width) =>
-				markdownPreviewComponent(
-					envelope.format,
-					options.preview,
-					theme,
-				),
+				markdownPreviewComponent(envelope.format, options.preview, theme),
 			responseId: options.responseId,
 		},
 		theme,
@@ -167,7 +163,8 @@ function markdownPreviewComponent(
 	preview: string | undefined,
 	theme?: RenderTheme,
 ): RenderComponent | undefined {
-	if (format !== "markdown" || !preview || preview.length <= 100) return undefined;
+	if (format !== "markdown" || !preview || preview.length <= 100)
+		return undefined;
 	return new Markdown(preview.slice(0, 1200), 0, 0, getMarkdownTheme(theme));
 }
 

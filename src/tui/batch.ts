@@ -48,6 +48,7 @@ export function renderBatchResultCard(
 		summary: string;
 		notice?: string;
 		preview?: string;
+		markdownPreview?: (width: number) => RenderComponent | undefined;
 		responseId?: string;
 		padToWidth?: boolean;
 	},
@@ -62,6 +63,7 @@ export function renderBatchResultCard(
 			expanded,
 			notice: options.notice,
 			expandedSections: () => [options.preview?.slice(0, 500)],
+			markdownPreview: options.markdownPreview,
 			responseId: options.responseId,
 			padToWidth: options.padToWidth,
 		},

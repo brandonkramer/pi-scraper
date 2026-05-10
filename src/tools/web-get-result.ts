@@ -50,8 +50,8 @@ export const webGetResultTool = defineWebTool({
 			],
 			theme,
 		),
-	renderResult: (result, { expanded }) =>
-		renderEnvelopeResult(result, expanded),
+	renderResult: (result, { expanded }, theme) =>
+		renderEnvelopeResult(result, expanded, theme),
 });
 
 async function getJob(jobId: string) {

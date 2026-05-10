@@ -1,9 +1,11 @@
 /**
  * @fileoverview ResultEnvelope helpers — label formatters and generic summary card.
  */
+import { Markdown } from "@earendil-works/pi-tui";
 import type { PiToolShell, ResultEnvelope, StructuredError } from "../types.ts";
-import type { RenderComponent } from "./types.ts";
+import type { RenderComponent, RenderTheme } from "./types.ts";
 import { renderText } from "./text.ts";
+import { getMarkdownTheme } from "./theme.ts";
 
 export function errorLabel(
 	tool: string,
@@ -46,6 +48,7 @@ export function contextPackageResponseId(
 export function renderEnvelopeResult(
 	result: PiToolShell,
 	expanded = false,
+	theme?: RenderTheme,
 ): RenderComponent {
 	const details = result.details as
 		| Partial<ResultEnvelope<unknown>>
@@ -57,10 +60,27 @@ export function renderEnvelopeResult(
 	const freshness = details?.freshness?.stale ? " · stale" : "";
 	const summary =
 		details?.summary ?? `${status}${url ? ` · ${url}` : ""}${id}${freshness}`;
-	return renderText(
-		expanded ? expandedEnvelopeText(summary, preview, details) : summary,
-		{ padToWidth: true },
-	);
+	const body = expanded
+		? expandedEnvelopeText(summary, preview, details)
+		: summary;
+	if (!expanded || details?.format !== "markdown" || preview.length <= 100) {
+		return renderText(body, { padToWidth: true });
+	}
+	return {
+		render(width: number): string[] {
+			const text = renderText(body, { padToWidth: true }).render(width);
+			const md = new Markdown(
+				preview.slice(0, 800),
+				0,
+				0,
+				getMarkdownTheme(theme),
+			);
+			return [...text, "", ...md.render(width)];
+		},
+		invalidate(): void {
+			// Markdown component has its own caching.
+		},
+	};
 }
 
 function expandedEnvelopeText(

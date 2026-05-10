@@ -63,7 +63,7 @@ export const webCrawlTool = defineWebTool({
 	renderResult: (result, { expanded }, theme) =>
 		isRunCrawlResult(result.details)
 			? renderWebCrawlResult(result, expanded, theme)
-			: renderEnvelopeResult(result, expanded),
+			: renderEnvelopeResult(result, expanded, theme),
 });
 
 function inferCrawlAction(params: Params): CrawlAction {

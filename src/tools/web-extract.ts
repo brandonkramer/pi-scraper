@@ -133,8 +133,8 @@ export function createWebExtractTool(
 		},
 		renderCall: (args, theme) =>
 			renderSimpleCall("web_extract", renderExtractCallParts(args), theme),
-		renderResult: (result, { expanded }) =>
-			renderEnvelopeResult(result, expanded),
+		renderResult: (result, { expanded }, theme) =>
+			renderEnvelopeResult(result, expanded, theme),
 	});
 }
 
