@@ -15,6 +15,7 @@ export interface AdHocExtractResult<T = unknown> {
 	input: { url?: string; source: "provided" | "scrape"; scrape?: ScrapeResult };
 	data: T;
 	raw?: unknown;
+	usage?: import("../adhoc/model.ts").ModelUsage;
 }
 
 export class MissingExtractInputError extends Error {

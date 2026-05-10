@@ -1,6 +1,8 @@
 /**
  * @fileoverview types module.
  */
+import type { ModelUsage } from "./extract/adhoc/model.ts";
+
 export type ScrapeMode =
 	| "fast"
 	| "fingerprint"
@@ -175,6 +177,7 @@ export interface ResultEnvelope<TData = unknown> {
 	citations?: Citation[];
 	summary?: string;
 	answerContext?: string;
+	modelUsage?: ModelUsage;
 	sourceNotes?: AgenticSourceNote[];
 	qualitySignals?: AgenticQualitySignals;
 	nextActions?: AgenticNextAction[];

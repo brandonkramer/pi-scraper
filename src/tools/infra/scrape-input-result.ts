@@ -2,6 +2,7 @@
  * @fileoverview Shared result shaping for model-backed scrape-input tools.
  */
 import type { OutputFormat, ResultEnvelope, TimingInfo } from "../../types.ts";
+import type { ModelUsage } from "../../extract/adhoc/model.ts";
 import { qualityFromCache, storedResultGuidance } from "./agentic-context.ts";
 import { toolResult } from "./result.ts";
 
@@ -31,6 +32,7 @@ export interface ScrapeInputToolResultOptions<TData> {
 	summary: string;
 	answerContext: string;
 	formatFallback?: OutputFormat | string;
+	modelUsage?: ModelUsage;
 }
 
 export function scrapeInputToolResult<TData>({
@@ -41,6 +43,7 @@ export function scrapeInputToolResult<TData>({
 	summary,
 	answerContext,
 	formatFallback,
+	modelUsage,
 }: ScrapeInputToolResultOptions<TData>) {
 	const scrape = input.scrape;
 	return toolResult({
@@ -58,6 +61,7 @@ export function scrapeInputToolResult<TData>({
 		cache: scrape?.cache,
 		summary,
 		answerContext,
+		modelUsage,
 		qualitySignals: qualityFromCache(scrape?.cache),
 		assistantGuidance: storedResultGuidance(),
 	});
@@ -74,7 +78,12 @@ export function scrapeInputSummary(
 }
 
 export function buildSummarizeToolResult(
-	result: { input: ScrapeInputSource; summary: string; raw?: unknown },
+	result: {
+		input: ScrapeInputSource;
+		summary: string;
+		raw?: unknown;
+		usage?: ModelUsage;
+	},
 	fallbackUrl?: string,
 ) {
 	const summary = scrapeInputSummary(
@@ -89,7 +98,9 @@ export function buildSummarizeToolResult(
 		input: result.input,
 		fallbackUrl,
 		summary,
-		answerContext: `${summary} Refresh the source page before summarizing time-sensitive facts.`,
+		answerContext:
+			"Refresh the source page before summarizing time-sensitive facts.",
 		formatFallback: "markdown",
+		modelUsage: result.usage,
 	});
 }

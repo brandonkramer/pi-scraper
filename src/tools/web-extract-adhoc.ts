@@ -96,7 +96,8 @@ export async function runAdHocExtraction(
 			input: result.input,
 			fallbackUrl: params.url,
 			summary,
-			answerContext: `${summary} Refresh the source page before extraction when the requested facts are time-sensitive.`,
+			answerContext:
+				"Refresh the source page before extraction when the requested facts are time-sensitive.",
 		});
 	} catch (error) {
 		return toolErrorResult(

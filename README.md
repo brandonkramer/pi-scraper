@@ -222,9 +222,7 @@ Includes the compact `web-scraping` Pi skill for tool routing.
 
 ## Model adapters
 
-`web_summarize` and `web_extract action="adhoc"` need an LLM transport. Pi-scraper exposes a generic `pi:model-adapter/*` event protocol over `pi.events` so any other Pi extension can register itself as a provider — without either side importing the other.
-
-When a provider is registered, the tools route through it automatically. When none is registered, the tools return `MODEL_ADAPTER_MISSING` and the LLM can fall back to `web_scrape` + summarize-in-reply.
+`web_summarize` and `web_extract action="adhoc"` need an LLM transport. Any Pi extension can supply one via `pi.events` — no imports between sides. With one registered, the tools route through it; with none, they return `MODEL_ADAPTER_MISSING` and the LLM falls back to `web_scrape` + summarize-in-reply.
 
 ### Capabilities
 
@@ -235,25 +233,9 @@ When a provider is registered, the tools route through it automatically. When no
 | `analyze`   | (reserved for future tools)  |
 | `chat`      | (reserved for future tools)  |
 
-### Event protocol
+### Configuration
 
-| Event                         | Direction             | Payload             | Purpose                                         |
-| ----------------------------- | --------------------- | ------------------- | ----------------------------------------------- |
-| `pi:model-adapter/register`   | provider → pi-scraper | `RegisteredAdapter` | Announce availability                           |
-| `pi:model-adapter/unregister` | provider → pi-scraper | `{ id: string }`    | Withdraw (hot-reload / dispose)                 |
-| `pi:model-adapter/discover`   | pi-scraper → provider | `{}`                | Ask any already-loaded providers to re-announce |
-
-```ts
-interface RegisteredAdapter {
-  id: string; // unique kebab-case, e.g. "gemini-acp"
-  label: string; // human-readable
-  capabilities: ModelCapability[]; // declared honestly
-  priority: number; // higher wins in "auto"
-  adapter: { run(req, signal): Promise<ModelResponse> };
-}
-```
-
-### Configuration (highest priority wins)
+Highest layer wins:
 
 | Layer       | Mechanism                                                           | Use                      |
 | ----------- | ------------------------------------------------------------------- | ------------------------ |
@@ -261,67 +243,68 @@ interface RegisteredAdapter {
 | Pi flag     | `--web-model-provider=auto\|<id>\|off`                              | Per Pi session           |
 | Env var     | `PI_WEB_MODEL_PROVIDER`                                             | Shell / scripts          |
 | Config file | `modelProvider` (string or `{ summarize, extract, analyze, chat }`) | Persistent default       |
-| Hardcoded   | `"auto"`                                                            | Out-of-box               |
+| Default     | `"auto"`                                                            | Out-of-box               |
 
-`"auto"` picks the highest-priority registered adapter that supports the requested capability. `"off"` returns `MODEL_ADAPTER_MISSING` (and, if set at config-level, hides the model-backed tools from Pi's tool list).
+`"auto"` picks the highest-priority adapter that supports the requested capability. `"off"` returns `MODEL_ADAPTER_MISSING` and (at config level) hides the model-backed tools from Pi's tool list.
 
-### Error codes
+Errors: `MODEL_ADAPTER_MISSING` (none registered, LLM redirected to `web_scrape`), `MODEL_ADAPTER_NOT_FOUND` (explicit ID unknown — error lists known IDs), `MODEL_ADAPTER_INCOMPATIBLE` (ID registered but lacks the requested capability).
 
-| Code                         | Meaning                                                               |
-| ---------------------------- | --------------------------------------------------------------------- |
-| `MODEL_ADAPTER_MISSING`      | No adapter resolved; LLM is redirected to `web_scrape`                |
-| `MODEL_ADAPTER_NOT_FOUND`    | Explicit ID requested but not registered (error lists registered IDs) |
-| `MODEL_ADAPTER_INCOMPATIBLE` | Adapter is registered but does not declare the requested capability   |
+### Event protocol
+
+| Event                         | Direction             | Payload                                 | Purpose                         |
+| ----------------------------- | --------------------- | --------------------------------------- | ------------------------------- |
+| `pi:model-adapter/register`   | provider → pi-scraper | `entry` (shape in the example below)    | Announce availability           |
+| `pi:model-adapter/unregister` | provider → pi-scraper | `{ id }`                                | Withdraw (hot-reload / dispose) |
+| `pi:model-adapter/discover`   | pi-scraper → provider | `{ capabilities?, minPriority? } \| {}` | Ask providers to re-announce    |
+
+Adapters **SHOULD** honor the discover filter (capability overlap, `priority >= minPriority`) but **MAY** re-register unconditionally — pi-scraper's resolver filters by capability anyway, so the unfiltered path is harmless, just noisier.
 
 ### Implementing an adapter
 
+**Simple** — works for any single-adapter setup:
+
 ```ts
-// In your extension's default factory:
-pi.events?.emit?.("pi:model-adapter/register", {
+const entry = {
   id: "my-adapter",
   label: "My Adapter",
-  capabilities: ["summarize"],
-  priority: 50,
+  capabilities: ["summarize"] as const, // summarize | extract | analyze | chat
+  priority: 50, // higher wins in "auto"
   adapter: {
     async run(req, signal) {
-      // req.task: "summarize" | "extract"
-      // req.input: page text
-      // req.prompt: optional instructions
+      // req.task | req.input | req.prompt | req.schema (extract only)
       // Return: { data, text?, raw? }
     },
   },
-});
+};
 
-// Re-announce when pi-scraper requests discovery (handles load order):
+pi.events?.emit?.("pi:model-adapter/register", entry);
+pi.events?.on?.("pi:model-adapter/discover", () => {
+  pi.events?.emit?.("pi:model-adapter/register", entry);
+});
+```
+
+**Advanced** — honors the discover filter (cuts re-registration noise in multi-adapter setups) and tidies up on unload:
+
+```ts
 pi.events?.on?.("pi:model-adapter/discover", (payload) => {
-  const filter = payload as {
+  const filter = ((payload as object | null) ?? {}) as {
     capabilities?: readonly string[];
     minPriority?: number;
   };
-  if (
-    filter.capabilities &&
-    !["summarize"].some((c) => filter.capabilities!.includes(c))
-  ) {
-    return; // skip re-register — we don't match the filter
+
+  if (filter.capabilities?.length) {
+    const overlap = entry.capabilities.some((c) => filter.capabilities!.includes(c));
+    if (!overlap) return;
   }
-  pi.events?.emit?.("pi:model-adapter/register" /* same payload */);
+  if (typeof filter.minPriority === "number" && entry.priority < filter.minPriority) return;
+
+  pi.events?.emit?.("pi:model-adapter/register", entry);
 });
+
+pi.events?.emit?.("pi:model-adapter/unregister", { id: entry.id }); // on unload
 ```
 
-### Discover filtering
-
-`pi:model-adapter/discover` accepts an optional capability/priority filter so pi-scraper can scope adapter announcements to what it needs:
-
-```ts
-interface DiscoverPayload {
-  capabilities?: readonly ModelCapability[]; // adapters SHOULD match at least one
-  minPriority?: number;                       // adapters SHOULD have priority >= this
-}
-```
-
-Adapters **SHOULD** honor the filter if present and **MAY** re-register unconditionally for backwards compatibility — pi-scraper's `resolve()` already filters by capability anyway, so unconditional re-registration is harmless but slightly noisier.
-
-`web_summarize` uses this today: when no matching adapter is registered, it emits `{ capabilities: ["summarize"] }` before falling back to `MODEL_ADAPTER_MISSING`. Other model-backed tools will adopt the same pattern in follow-ups.
+`web_summarize` issues a filtered discover (`{ capabilities: ["summarize"] }`) on its first invocation when no `summarize`-capable adapter is registered, then caches per capability so subsequent invocations don't re-emit. `web_extract action="adhoc"` will adopt the same pattern.
 
 ## Development and release checks
 

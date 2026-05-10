@@ -29,5 +29,5 @@ export async function extractAdHoc<T = unknown>(
 		},
 		signal,
 	);
-	return { input: prepared.input, data: response.data, raw: response.raw };
+	return { input: prepared.input, data: response.data, raw: response.raw, usage: response.usage };
 }

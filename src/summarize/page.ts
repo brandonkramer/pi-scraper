@@ -17,6 +17,7 @@ export interface PageSummaryResult {
 	input: { url?: string; source: "provided" | "scrape"; scrape?: ScrapeResult };
 	summary: string;
 	raw?: unknown;
+	usage?: import("../extract/adhoc/model.ts").ModelUsage;
 }
 
 export async function summarizePage(
@@ -39,6 +40,7 @@ export async function summarizePage(
 		input: prepared.input,
 		summary: response.text ?? String(response.data ?? ""),
 		raw: response.raw,
+		usage: response.usage,
 	};
 }
 

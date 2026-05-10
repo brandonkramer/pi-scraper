@@ -9,10 +9,26 @@ export interface ModelRequest {
   options?: Record<string, unknown>;
 }
 
+export interface ModelUsage {
+  /** Human-readable provider/adapter identifier. */
+  provider?: string;
+  /** Underlying model name, e.g. "gemini-2.0-flash". */
+  model?: string;
+  /** Input/prompt tokens consumed. */
+  inputTokens?: number;
+  /** Output/completion tokens generated. */
+  outputTokens?: number;
+  /** Convenience; may be supplied by adapter or computed from in+out. */
+  totalTokens?: number;
+  /** Cost in USD. Adapter computes from its own pricing. */
+  costUSD?: number;
+}
+
 export interface ModelResponse<T = unknown> {
   data: T;
   text?: string;
   raw?: unknown;
+  usage?: ModelUsage;
 }
 
 export interface ModelAdapter {

@@ -74,7 +74,9 @@ describe("web_summarize lazy filtered discover", () => {
 		expect(discovers.length).toBeGreaterThanOrEqual(1);
 		const lazy = discovers[discovers.length - 1];
 		expect(lazy?.payload).toEqual({ capabilities: ["summarize"] });
-		expect((result.details as { error?: { code: string } }).error?.code).toBe("MODEL_ADAPTER_MISSING");
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_MISSING",
+		);
 	});
 
 	it("lazy discover causes a matching provider to re-register and route", async () => {
@@ -150,7 +152,9 @@ describe("web_summarize lazy filtered discover", () => {
 			{ getFlag: () => undefined },
 		);
 
-		expect((result.details as { error?: { code: string } }).error?.code).toBe("MODEL_ADAPTER_MISSING");
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_MISSING",
+		);
 		expect(modelRegistry.list().map((e) => e.id)).toEqual([]);
 	});
 

@@ -91,7 +91,10 @@ export const modelRegistry = new ModelRegistry();
 
 /** Stored events reference for lazy discover calls without an explicit pi. */
 let adapterProtocolEvents:
-	| { on(event: string, handler: (payload: unknown) => void): void; emit(event: string, payload?: unknown): void }
+	| {
+			on(event: string, handler: (payload: unknown) => void): void;
+			emit(event: string, payload?: unknown): void;
+	  }
 	| undefined;
 
 /** Wire the singleton to a Pi registrar's event bus. */

@@ -8,6 +8,7 @@ import type {
 	StructuredError,
 	TimingInfo,
 } from "../../types.ts";
+import type { ModelUsage } from "../../extract/adhoc/model.ts";
 import { structuredErrorFromUnknown } from "../../http/errors.ts";
 import {
 	freshnessFromCache,
@@ -33,6 +34,7 @@ export interface ResultShellOptions<TData> {
 	citations?: ResultEnvelope<TData>["citations"];
 	summary?: string;
 	answerContext?: string;
+	modelUsage?: ModelUsage;
 	sourceNotes?: ResultEnvelope<TData>["sourceNotes"];
 	qualitySignals?: ResultEnvelope<TData>["qualitySignals"];
 	nextActions?: ResultEnvelope<TData>["nextActions"];
@@ -67,6 +69,7 @@ export function toolResult<TData>(
 			citations: options.citations,
 			summary: options.summary,
 			answerContext: options.answerContext,
+			modelUsage: options.modelUsage,
 			sourceNotes: options.sourceNotes,
 			qualitySignals: options.qualitySignals,
 			nextActions: options.nextActions,
