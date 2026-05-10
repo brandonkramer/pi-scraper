@@ -5,10 +5,10 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { resolvePiStoragePaths } from "../paths.ts";
-import { readResponse } from "../responses/read.ts";
-import { storeResponse } from "../responses/store.ts";
-import { truncateAndStore } from "../responses/truncate.ts";
+import { resolvePiStoragePaths } from "../../paths.ts";
+import { readResponse } from "../read.ts";
+import { storeResponse } from "../store.ts";
+import { truncateAndStore } from "../truncate.ts";
 
 let rootDir: string;
 
