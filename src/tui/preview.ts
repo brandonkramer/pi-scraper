@@ -4,7 +4,6 @@
 import type { PiToolShell, ResultEnvelope } from "../types.ts";
 import type { RenderTheme } from "./types.ts";
 
-
 export function formatPreview(
 	format: string | undefined,
 	content: string,

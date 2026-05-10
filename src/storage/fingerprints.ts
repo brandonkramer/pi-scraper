@@ -5,8 +5,8 @@
  * Uses the existing Node SQLite boundary rather than a separate dependency.
  * Fingerprints are keyed by (site scope + identifier).
  */
-import { openStorageDb } from "../db/open.ts";
-import type { ResolveStorageOptions } from "../paths.ts";
+import { openStorageDb } from "./db/open.ts";
+import type { ResolveStorageOptions } from "./paths.ts";
 
 export interface StoredFingerprint {
 	/** User-provided stable identifier. */
