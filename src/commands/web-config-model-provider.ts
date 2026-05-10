@@ -1,7 +1,7 @@
 /**
  * @fileoverview Model-provider sub-action for /web-config.
  */
-import { loadEffectiveConfig, updateConfig } from "../config/settings.ts";
+import { updateConfig, type ConfigOptions } from "../config/settings.ts";
 import { modelRegistry } from "../tools/infra/model-registry.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
@@ -10,8 +10,8 @@ import type { Params } from "./web-config.ts";
 export async function runWebConfigModelProvider(
 	params: Params,
 	ctx?: CommandContext,
+	configOptions: ConfigOptions = {},
 ) {
-	const config = await loadEffectiveConfig();
 	let provider = params.provider;
 
 	if (!provider) {
@@ -35,7 +35,10 @@ export async function runWebConfigModelProvider(
 		}
 	}
 
-	const updated = await updateConfig({ modelProvider: provider });
+	const updated = await updateConfig(
+		{ modelProvider: provider },
+		configOptions,
+	);
 	return toolResult({
 		text: `Model provider set to "${updated.modelProvider}".`,
 		data: updated,

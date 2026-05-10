@@ -1,13 +1,21 @@
 /**
  * @fileoverview Robots sub-action for /web-config.
  */
-import { loadEffectiveConfig, updateConfig } from "../config/settings.ts";
+import {
+	loadEffectiveConfig,
+	updateConfig,
+	type ConfigOptions,
+} from "../config/settings.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
 import type { Params } from "./web-config.ts";
 
-export async function runWebConfigRobots(params: Params, ctx?: CommandContext) {
-	const config = await loadEffectiveConfig();
+export async function runWebConfigRobots(
+	params: Params,
+	ctx?: CommandContext,
+	configOptions: ConfigOptions = {},
+) {
+	const config = await loadEffectiveConfig(configOptions);
 	const current = config.scrapeDefaults.respectRobots ?? true;
 
 	let value: boolean;
@@ -40,9 +48,12 @@ export async function runWebConfigRobots(params: Params, ctx?: CommandContext) {
 		}
 	}
 
-	const updated = await updateConfig({
-		scrapeDefaults: { respectRobots: value },
-	});
+	const updated = await updateConfig(
+		{
+			scrapeDefaults: { respectRobots: value },
+		},
+		configOptions,
+	);
 	return toolResult({
 		text: `Robots compliance ${value ? "enabled" : "disabled"}.`,
 		data: { respectRobots: value, config: updated },
