@@ -8,15 +8,22 @@ import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { summarizePage } from "../summarize/page.ts";
 import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
+import { modelRegistry } from "./infra/model-registry.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import {
 	errorResult,
 	missingModelResult,
 	missingModelError,
+	adapterNotFoundError,
+	adapterIncompatibleError,
 	structuredToolError,
 	toolErrorResult,
 } from "./infra/result.ts";
+import {
+	resolveAdapterFromRegistry,
+	resolveProviderPreference,
+} from "./infra/model-adapter.ts";
 import { scrapeModeOptionSchema, urlProperty } from "./infra/schemas.ts";
 
 export const webSummarizeSchema = Type.Object({
@@ -24,6 +31,9 @@ export const webSummarizeSchema = Type.Object({
 	content: Type.Optional(Type.String()),
 	sentences: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
 	bullets: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
+	provider: Type.Optional(
+		Type.Union([Type.Literal("auto"), Type.Literal("off"), Type.String()]),
+	),
 	...scrapeModeOptionSchema,
 });
 
@@ -42,9 +52,48 @@ export function createWebSummarizeTool(
 		label: "Sum",
 		description: "Summarize URL no multi-source",
 		parameters: webSummarizeSchema,
-		async execute(_toolCallId, params: Params, signal) {
+		async execute(
+			_toolCallId,
+			params: Params,
+			signal,
+			_onUpdate,
+			context,
+		) {
 			const config = await loadEffectiveConfig();
-			if (!options.modelAdapter) {
+			const preference = resolveProviderPreference({
+				paramProvider: params.provider,
+				flagProvider: context?.getFlag?.("web-model-provider"),
+				configProvider: config.modelProvider,
+				capability: "summarize",
+			});
+			const adapter =
+				options.modelAdapter ??
+				resolveAdapterFromRegistry(preference, "summarize");
+			if (!adapter) {
+				if (preference === "off") {
+					return missingModelResult(
+						"summarize",
+						params.url,
+						"web_summarize is disabled (provider=off). Use web_scrape to read source text locally.",
+					);
+				}
+				if (
+					preference !== "auto" &&
+					resolveAdapterFromRegistry(preference, "summarize") === undefined
+				) {
+					const registered = modelRegistry
+						.list()
+						.map((e) => e.id);
+					return errorResult(
+						adapterNotFoundError(
+							"summarize",
+							preference,
+							registered,
+							params.url,
+						),
+						`Model adapter "${preference}" is not registered.`,
+					);
+				}
 				return missingModelResult(
 					"summarize",
 					params.url,
@@ -59,7 +108,7 @@ export function createWebSummarizeTool(
 						mode: params.mode ?? config.scrapeMode,
 						format: config.outputFormat,
 					},
-					options.modelAdapter,
+					adapter,
 					options.scrapeDeps ?? {},
 					signal,
 				);

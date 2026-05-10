@@ -35,6 +35,9 @@ export const webExtractSchema = Type.Object({
 	content: Type.Optional(Type.Any()),
 	prompt: Type.Optional(Type.Any()),
 	schema: Type.Optional(Type.Any()),
+	provider: Type.Optional(
+		Type.Union([Type.Literal("auto"), Type.Literal("off"), Type.String()]),
+	),
 	sourceFormat: Type.Optional(Type.Any()),
 	include: Type.Optional(Type.Array(Type.Any())),
 	extractSchema: Type.Optional(Type.Any()),
@@ -118,7 +121,7 @@ export function createWebExtractTool(
 		label: "Extract",
 		description: "Vertical regex JSON/schema",
 		parameters: webExtractSchema,
-		async execute(_toolCallId, params: Params, signal, onUpdate) {
+		async execute(_toolCallId, params: Params, signal, onUpdate, context) {
 			const action = inferExtractAction(params);
 			if (action === "list") return listDeterministicExtractors();
 			if (action === "vertical")
@@ -129,7 +132,7 @@ export function createWebExtractTool(
 				return runApiSurfaceExtraction(params, options, signal, onUpdate);
 			if (action === "selector")
 				return runSelectorExtractionTool(params, options, signal, onUpdate);
-			return runAdHocExtraction(params, options, signal);
+			return runAdHocExtraction(params, options, signal, context);
 		},
 		renderCall: (args, theme) =>
 			renderSimpleCall("web_extract", renderExtractCallParts(args), theme),

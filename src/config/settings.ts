@@ -20,15 +20,21 @@ type PersistedScrapeDefaults = Partial<
 	Omit<CommonScrapeOptions, "mode" | "format">
 >;
 
+export type ModelProviderConfig =
+	| string
+	| { summarize?: string; extract?: string; analyze?: string; chat?: string };
+
 export interface WebConfig {
 	scrapeMode?: ScrapeMode;
 	outputFormat?: OutputFormat;
 	scrapeDefaults?: PersistedScrapeDefaults;
+	modelProvider?: ModelProviderConfig;
 }
 
 export interface EffectiveWebConfig
 	extends Required<Pick<WebConfig, "scrapeMode" | "outputFormat">> {
 	scrapeDefaults: PersistedScrapeDefaults;
+	modelProvider?: ModelProviderConfig;
 }
 
 export interface ConfigOptions extends ResolveStorageOptions {}
@@ -37,6 +43,7 @@ export const DEFAULT_WEB_CONFIG: EffectiveWebConfig = {
 	scrapeMode: DEFAULT_SCRAPE_MODE,
 	outputFormat: DEFAULT_OUTPUT_FORMAT,
 	scrapeDefaults: {},
+	modelProvider: undefined,
 };
 
 export function configFilePath(options: ConfigOptions = {}): string {
@@ -59,7 +66,11 @@ export async function loadStoredConfig(
 export async function loadEffectiveConfig(
 	options: ConfigOptions = {},
 ): Promise<EffectiveWebConfig> {
-	return mergeConfig(await loadStoredConfig(options));
+	const stored = await loadStoredConfig(options);
+	if (!stored.modelProvider && process.env.PI_WEB_MODEL_PROVIDER) {
+		stored.modelProvider = process.env.PI_WEB_MODEL_PROVIDER;
+	}
+	return mergeConfig(stored);
 }
 
 export async function saveConfig(
@@ -104,6 +115,7 @@ export function mergeConfig(config: WebConfig): EffectiveWebConfig {
 			...DEFAULT_WEB_CONFIG.scrapeDefaults,
 			...config.scrapeDefaults,
 		},
+		modelProvider: config.modelProvider ?? DEFAULT_WEB_CONFIG.modelProvider,
 	};
 }
 
@@ -114,7 +126,23 @@ function normalizeConfig(input: unknown): WebConfig {
 		scrapeMode: raw.scrapeMode,
 		outputFormat: raw.outputFormat,
 		scrapeDefaults: normalizeScrapeDefaults(raw.scrapeDefaults),
+		modelProvider: normalizeModelProvider(raw.modelProvider),
 	};
+}
+
+function normalizeModelProvider(
+	input: unknown,
+): ModelProviderConfig | undefined {
+	if (typeof input === "string") return input;
+	if (typeof input === "object" && input !== null) {
+		const raw = input as Record<string, unknown>;
+		const entries = Object.entries(raw).filter(
+			([, v]) => typeof v === "string",
+		);
+		if (entries.length > 0)
+			return Object.fromEntries(entries) as ModelProviderConfig;
+	}
+	return undefined;
 }
 
 function normalizeScrapeDefaults(

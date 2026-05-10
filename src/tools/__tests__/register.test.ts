@@ -22,9 +22,9 @@ describe("web tool registration", () => {
 		expect(webTools.every((tool) => tool.name.startsWith("web_"))).toBe(true);
 	});
 
-	it("registers each tool through the loop", () => {
+	it("registers each tool through the loop", async () => {
 		const registered: WebTool[] = [];
-		registerWebTools({ registerTool: (tool) => registered.push(tool) });
+		await registerWebTools({ registerTool: (tool) => registered.push(tool) });
 		expect(registered.map((tool) => tool.name)).toEqual(expectedNames);
 	});
 

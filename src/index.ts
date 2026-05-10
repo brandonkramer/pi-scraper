@@ -14,10 +14,15 @@ type PiScraperRegistrar = PiToolRegistrar &
 	PiCommandRegistrar &
 	PiHealthRegistrar;
 
-export default function registerPiScraperExtension(
+export default async function registerPiScraperExtension(
 	pi: PiScraperRegistrar,
-): void {
-	registerWebTools(pi);
+): Promise<void> {
+	pi.registerFlag?.("web-model-provider", {
+		description:
+			"Override the model-adapter provider for web_summarize and web_extract action=adhoc (auto|off|<id>).",
+		type: "string",
+	});
+	await registerWebTools(pi);
 	registerWebCommands(pi);
 	registerSessionStartHealthChecks(pi);
 }

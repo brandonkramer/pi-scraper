@@ -153,6 +153,35 @@ export function missingModelError(
 	};
 }
 
+export function adapterNotFoundError(
+	task: "extract" | "summarize",
+	requestedId: string,
+	registeredIds: readonly string[],
+	url?: string,
+): StructuredError {
+	return {
+		code: "MODEL_ADAPTER_NOT_FOUND",
+		phase: task,
+		message: `Model adapter "${requestedId}" is not registered. Registered adapters: ${registeredIds.join(", ") || "none"}.`,
+		retryable: false,
+		url,
+	};
+}
+
+export function adapterIncompatibleError(
+	task: "extract" | "summarize",
+	requestedId: string,
+	url?: string,
+): StructuredError {
+	return {
+		code: "MODEL_ADAPTER_INCOMPATIBLE",
+		phase: task,
+		message: `Model adapter "${requestedId}" does not support ${task}.`,
+		retryable: false,
+		url,
+	};
+}
+
 function withTiming(timing: Partial<TimingInfo> = {}): TimingInfo {
 	const startedAt = timing.startedAt ?? new Date().toISOString();
 	return { startedAt, ...timing };

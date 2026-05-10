@@ -3,21 +3,58 @@
  */
 import { loadEffectiveConfig } from "../config/settings.ts";
 import { extractAdHoc, MissingExtractInputError } from "../extract/adhoc/index.ts";
-import { missingModelResult } from "./infra/result.ts";
+import {
+	missingModelResult,
+	errorResult,
+	adapterNotFoundError,
+} from "./infra/result.ts";
 import {
 	scrapeInputSummary,
 	scrapeInputToolResult,
 } from "./infra/scrape-input-result.ts";
 import { toolErrorResult } from "./infra/result.ts";
+import {
+	resolveAdapterFromRegistry,
+	resolveProviderPreference,
+} from "./infra/model-adapter.ts";
+import { modelRegistry } from "./infra/model-registry.ts";
 import type { Params, WebExtractToolOptions } from "./web-extract.ts";
+import type { ToolExecutionContext } from "./infra/define.ts";
 
 export async function runAdHocExtraction(
 	params: Params,
 	options: WebExtractToolOptions,
 	signal: AbortSignal,
+	context?: ToolExecutionContext,
 ) {
 	const config = await loadEffectiveConfig();
-	if (!options.modelAdapter) {
+	const preference = resolveProviderPreference({
+		paramProvider: params.provider as string | undefined,
+		flagProvider: context?.getFlag?.("web-model-provider"),
+		configProvider: config.modelProvider,
+		capability: "extract",
+	});
+	const adapter =
+		options.modelAdapter ??
+		resolveAdapterFromRegistry(preference, "extract");
+	if (!adapter) {
+		if (preference === "off") {
+			return missingModelResult(
+				"extract",
+				params.url,
+				"web_extract action=adhoc is disabled (provider=off). Use action=list or action=vertical for deterministic extractors.",
+			);
+		}
+		if (
+			preference !== "auto" &&
+			resolveAdapterFromRegistry(preference, "extract") === undefined
+		) {
+			const registered = modelRegistry.list().map((e) => e.id);
+			return errorResult(
+				adapterNotFoundError("extract", preference, registered, params.url),
+				`Model adapter "${preference}" is not registered.`,
+			);
+		}
 		return missingModelResult(
 			"extract",
 			params.url,
@@ -35,7 +72,7 @@ export async function runAdHocExtraction(
 				mode: params.mode ?? config.scrapeMode,
 				format: config.outputFormat,
 			},
-			options.modelAdapter,
+			adapter,
 			options.scrapeDeps ?? {},
 			signal,
 		);

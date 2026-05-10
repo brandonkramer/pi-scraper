@@ -4,6 +4,7 @@
 import type { PiToolRegistrar, WebTool } from "./define.ts";
 import { initModelAdapterProtocol } from "./model-registry.ts";
 import { resolveToolModelAdapter } from "./model-adapter.ts";
+import { loadEffectiveConfig } from "../../config/settings.ts";
 import { webBatchTool } from "../web-batch.ts";
 import { webCrawlTool } from "../web-crawl.ts";
 import { webDiffTool } from "../web-diff.ts";
@@ -24,9 +25,11 @@ export const webTools: readonly WebTool[] = [
 	webGetResultTool,
 ];
 
-export function registerWebTools(pi: PiToolRegistrar): void {
+export async function registerWebTools(pi: PiToolRegistrar): Promise<void> {
 	initModelAdapterProtocol(pi);
+	const config = await loadEffectiveConfig();
 	const modelAdapter = resolveToolModelAdapter(pi);
+	const hideModelBacked = config.modelProvider === "off";
 	const tools = modelAdapter
 		? webTools.map((tool) => {
 				if (tool.name === "web_scrape")
@@ -39,6 +42,12 @@ export function registerWebTools(pi: PiToolRegistrar): void {
 			})
 		: webTools;
 	for (const tool of tools) {
+		if (
+			hideModelBacked &&
+			(tool.name === "web_summarize" || tool.name === "web_extract")
+		) {
+			continue;
+		}
 		pi.registerTool(tool);
 	}
 }

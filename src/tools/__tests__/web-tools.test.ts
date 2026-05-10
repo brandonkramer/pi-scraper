@@ -299,7 +299,7 @@ describe("selected web tool handlers", () => {
 				registered.push(tool);
 			},
 		};
-		registerWebTools(registrar);
+		await registerWebTools(registrar);
 		const scrape = registered.find((tool) => tool.name === "web_scrape");
 		const extract = registered.find((tool) => tool.name === "web_extract");
 		const summarize = registered.find((tool) => tool.name === "web_summarize");

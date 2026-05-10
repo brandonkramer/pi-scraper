@@ -7,6 +7,11 @@ import type {
 	ModelResponse,
 } from "../../extract/adhoc/model.ts";
 import { isUnknownRecord, type UnknownRecord } from "../../types.ts";
+import {
+	modelRegistry,
+	type ModelCapability,
+	type ResolvePreference,
+} from "./model-registry.ts";
 type Runner = (
 	payload: unknown,
 	signal?: AbortSignal,
@@ -128,4 +133,39 @@ function parseJsonOrText<T>(text: string): T {
 
 function isModelAdapter(value: unknown): value is ModelAdapter {
 	return isUnknownRecord(value) && typeof value.run === "function";
+}
+
+/**
+ * Resolve a model adapter from the cross-extension registry.
+ */
+export function resolveAdapterFromRegistry(
+	preference: ResolvePreference,
+	capability: ModelCapability,
+): ModelAdapter | undefined {
+	return modelRegistry.resolve(preference, capability);
+}
+
+/**
+ * Resolve provider preference from the precedence chain:
+ * per-call param → Pi flag → env var → config → "auto".
+ */
+export function resolveProviderPreference(opts: {
+	paramProvider?: string;
+	flagProvider?: string;
+	envProvider?: string;
+	configProvider?: string | { summarize?: string; extract?: string; analyze?: string; chat?: string };
+	capability: ModelCapability;
+}): ResolvePreference {
+	const layers = [
+		opts.paramProvider,
+		opts.flagProvider,
+		opts.envProvider,
+		typeof opts.configProvider === "object" && opts.configProvider !== null
+			? opts.configProvider[opts.capability]
+			: opts.configProvider,
+	] as const;
+	for (const layer of layers) {
+		if (layer && typeof layer === "string") return layer as ResolvePreference;
+	}
+	return "auto";
 }

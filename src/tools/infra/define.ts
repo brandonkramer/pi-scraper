@@ -12,6 +12,7 @@ export interface ToolExecutionContext {
 	model?: unknown;
 	modelRegistry?: unknown;
 	ui?: unknown;
+	getFlag?: (name: string) => string | undefined;
 }
 
 export type ToolExecute<TParams> = (

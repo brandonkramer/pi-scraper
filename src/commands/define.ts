@@ -29,6 +29,10 @@ export interface WebCommand<TParameters extends TSchema = TSchema> {
 
 export interface PiCommandRegistrar {
 	registerCommand(name: string, options: RegisteredCommandOptions): void;
+	registerFlag?(
+		name: string,
+		options: { description: string; type: string },
+	): void;
 }
 
 export function defineWebCommand<TParameters extends TSchema>(
