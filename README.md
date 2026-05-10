@@ -42,15 +42,15 @@ Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` when browsers are managed externally. `
 ## Public tools
 
 | Tool             | Capability                                      | Use it for                                                                                                                                                 | Description / Contract token ≈ | Input overhead ≈ |
-| ---------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------: | -------: |
-| `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, including raw Markdown, MDX, RST, and source docstrings.                                                 |                2 / 115 |     +140 |
-| `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                                        |                 8 / 94 |     +100 |
-| `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, list prior crawl metadata, or compile crawled docs into API-surface/context packages. |                5 / 126 |     +158 |
-| `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.                           |                 9 / 58 |      +67 |
-| `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results and optional context-package compilation.                                        |                2 / 140 |     +166 |
-| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                                          |                 4 / 91 |      +82 |
-| `web_extract`    | Local/model depending on action                 | List/run deterministic extractors, inspect patterns, compile API surfaces, run selector extraction with adaptive repair, or extract via schema/prompt.     |                7 / 253 |     +289 |
-| `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                      |                10 / 56 |      +74 |
+| ---------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -----------------------------: | ---------------: |
+| `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, including raw Markdown, MDX, RST, and source docstrings.                                                 |                        2 / 115 |             +140 |
+| `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                                        |                         8 / 94 |             +100 |
+| `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, list prior crawl metadata, or compile crawled docs into API-surface/context packages. |                        5 / 126 |             +158 |
+| `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.                           |                         9 / 58 |              +67 |
+| `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results and optional context-package compilation.                                        |                        2 / 140 |             +166 |
+| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                                          |                         4 / 91 |              +82 |
+| `web_extract`    | Local/model depending on action                 | List/run deterministic extractors, inspect patterns, compile API surfaces, run selector extraction with adaptive repair, or extract via schema/prompt.     |                        7 / 253 |             +289 |
+| `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                      |                        10 / 56 |              +74 |
 
 Token counts are approximate: **Description** is lightweight public-facing prose only; **Contract** is the full serialized declaration including schema; **Input overhead** is the empirical Pi JSON-mode input token delta against a no-tools baseline, which includes provider serialization and hidden wrapper metadata and varies by provider/model.
 
@@ -70,50 +70,50 @@ When a provider is registered, the tools route through it automatically. When no
 
 ### Capabilities
 
-| Capability  | Used by                          |
-| ----------- | -------------------------------- |
-| `summarize` | `web_summarize`                  |
-| `extract`   | `web_extract action="adhoc"`     |
-| `analyze`   | (reserved for future tools)      |
-| `chat`      | (reserved for future tools)      |
+| Capability  | Used by                      |
+| ----------- | ---------------------------- |
+| `summarize` | `web_summarize`              |
+| `extract`   | `web_extract action="adhoc"` |
+| `analyze`   | (reserved for future tools)  |
+| `chat`      | (reserved for future tools)  |
 
 ### Event protocol
 
-| Event                          | Direction         | Payload                       | Purpose                                              |
-| ------------------------------ | ----------------- | ----------------------------- | ---------------------------------------------------- |
-| `pi:model-adapter/register`    | provider → pi-scraper | `RegisteredAdapter`       | Announce availability                                |
-| `pi:model-adapter/unregister`  | provider → pi-scraper | `{ id: string }`          | Withdraw (hot-reload / dispose)                      |
-| `pi:model-adapter/discover`    | pi-scraper → provider | `{}`                      | Ask any already-loaded providers to re-announce      |
+| Event                         | Direction             | Payload             | Purpose                                         |
+| ----------------------------- | --------------------- | ------------------- | ----------------------------------------------- |
+| `pi:model-adapter/register`   | provider → pi-scraper | `RegisteredAdapter` | Announce availability                           |
+| `pi:model-adapter/unregister` | provider → pi-scraper | `{ id: string }`    | Withdraw (hot-reload / dispose)                 |
+| `pi:model-adapter/discover`   | pi-scraper → provider | `{}`                | Ask any already-loaded providers to re-announce |
 
 ```ts
 interface RegisteredAdapter {
-  id: string;                          // unique kebab-case, e.g. "gemini-acp"
-  label: string;                       // human-readable
-  capabilities: ModelCapability[];     // declared honestly
-  priority: number;                    // higher wins in "auto"
+  id: string; // unique kebab-case, e.g. "gemini-acp"
+  label: string; // human-readable
+  capabilities: ModelCapability[]; // declared honestly
+  priority: number; // higher wins in "auto"
   adapter: { run(req, signal): Promise<ModelResponse> };
 }
 ```
 
 ### Configuration (highest priority wins)
 
-| Layer            | Mechanism                                                | Use                                |
-| ---------------- | -------------------------------------------------------- | ---------------------------------- |
-| Per-call         | `provider` param on the tool call                        | LLM routes a single call           |
-| Pi flag          | `--web-model-provider=auto\|<id>\|off`                   | Per Pi session                     |
-| Env var          | `PI_WEB_MODEL_PROVIDER`                                  | Shell / scripts                    |
-| Config file      | `modelProvider` (string or `{ summarize, extract, analyze, chat }`) | Persistent default                 |
-| Hardcoded        | `"auto"`                                                 | Out-of-box                         |
+| Layer       | Mechanism                                                           | Use                      |
+| ----------- | ------------------------------------------------------------------- | ------------------------ |
+| Per-call    | `provider` param on the tool call                                   | LLM routes a single call |
+| Pi flag     | `--web-model-provider=auto\|<id>\|off`                              | Per Pi session           |
+| Env var     | `PI_WEB_MODEL_PROVIDER`                                             | Shell / scripts          |
+| Config file | `modelProvider` (string or `{ summarize, extract, analyze, chat }`) | Persistent default       |
+| Hardcoded   | `"auto"`                                                            | Out-of-box               |
 
 `"auto"` picks the highest-priority registered adapter that supports the requested capability. `"off"` returns `MODEL_ADAPTER_MISSING` (and, if set at config-level, hides the model-backed tools from Pi's tool list).
 
 ### Error codes
 
-| Code                          | Meaning                                                                          |
-| ----------------------------- | -------------------------------------------------------------------------------- |
-| `MODEL_ADAPTER_MISSING`       | No adapter resolved; LLM is redirected to `web_scrape`                           |
-| `MODEL_ADAPTER_NOT_FOUND`     | Explicit ID requested but not registered (error lists registered IDs)            |
-| `MODEL_ADAPTER_INCOMPATIBLE`  | Adapter is registered but does not declare the requested capability              |
+| Code                         | Meaning                                                               |
+| ---------------------------- | --------------------------------------------------------------------- |
+| `MODEL_ADAPTER_MISSING`      | No adapter resolved; LLM is redirected to `web_scrape`                |
+| `MODEL_ADAPTER_NOT_FOUND`    | Explicit ID requested but not registered (error lists registered IDs) |
+| `MODEL_ADAPTER_INCOMPATIBLE` | Adapter is registered but does not declare the requested capability   |
 
 ### Implementing an adapter (for extension authors)
 
@@ -136,7 +136,7 @@ pi.events?.emit?.("pi:model-adapter/register", {
 
 // Re-announce when pi-scraper requests discovery (handles load order):
 pi.events?.on?.("pi:model-adapter/discover", () => {
-  pi.events?.emit?.("pi:model-adapter/register", /* same payload */);
+  pi.events?.emit?.("pi:model-adapter/register" /* same payload */);
 });
 ```
 

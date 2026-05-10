@@ -8,6 +8,7 @@ import {
 	initModelAdapterProtocol,
 	type RegisteredAdapter,
 } from "../infra/model-registry.ts";
+import { resolveProviderPreference } from "../infra/model-adapter.ts";
 
 function fakeAdapter(id: string): RegisteredAdapter {
 	return {
@@ -180,5 +181,26 @@ describe("initModelAdapterProtocol", () => {
 
 	it("ignores registrars without events", () => {
 		expect(() => initModelAdapterProtocol({})).not.toThrow();
+	});
+});
+
+describe("resolveProviderPreference", () => {
+	it("trims whitespace from preference values", () => {
+		expect(
+			resolveProviderPreference({
+				paramProvider: "  ollama  ",
+				capability: "summarize",
+			}),
+		).toBe("ollama");
+	});
+
+	it("treats whitespace-only preference as empty and falls through", () => {
+		expect(
+			resolveProviderPreference({
+				paramProvider: "   ",
+				configProvider: "ollama",
+				capability: "summarize",
+			}),
+		).toBe("ollama");
 	});
 });
