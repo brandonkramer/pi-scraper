@@ -36,5 +36,3 @@ export function extractTopComments(
 		});
 	return topComments.length ? topComments : undefined;
 }
-
-

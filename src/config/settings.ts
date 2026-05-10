@@ -9,7 +9,7 @@ import {
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
 } from "../storage/paths.ts";
-import { stripUndefined } from "../extract/shared/text.ts";
+
 import type {
 	CommonScrapeOptions,
 	OutputFormat,
@@ -80,7 +80,9 @@ export async function updateConfig(
 	options: ConfigOptions = {},
 ): Promise<EffectiveWebConfig> {
 	const current = await loadStoredConfig(options);
-	const cleaned = stripUndefined(patch);
+	const cleaned = Object.fromEntries(
+		Object.entries(patch).filter(([, v]) => v !== undefined && v !== ""),
+	) as WebConfig;
 	return saveConfig(
 		{
 			...current,
@@ -120,10 +122,11 @@ function normalizeScrapeDefaults(
 ): PersistedScrapeDefaults | undefined {
 	if (typeof input !== "object" || input === null) return undefined;
 	const raw = input as PersistedScrapeDefaults;
-	return stripUndefined({
-		timeoutSeconds: raw.timeoutSeconds,
-		maxBytes: raw.maxBytes,
-		maxChars: raw.maxChars,
+	return Object.fromEntries(
+		Object.entries({
+			timeoutSeconds: raw.timeoutSeconds,
+			maxBytes: raw.maxBytes,
+			maxChars: raw.maxChars,
 		headers:
 			raw.headers && typeof raw.headers === "object"
 				? Object.fromEntries(
@@ -149,7 +152,8 @@ function normalizeScrapeDefaults(
 		cookies: raw.cookies,
 		browserProfile: raw.browserProfile,
 		osProfile: raw.osProfile,
-	}) as PersistedScrapeDefaults;
+	}).filter(([, v]) => v !== undefined && v !== ""),
+	) as PersistedScrapeDefaults;
 }
 
 function boundedNumber(

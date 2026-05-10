@@ -1,5 +1,9 @@
 /** @fileoverview Surface-level docstring extraction for source files without typechecking. */
-import { stripUndefined } from "../../extract/shared/text.ts";
+function withoutUndefined<T extends object>(value: T): T {
+	return Object.fromEntries(
+		Object.entries(value).filter(([, v]) => v !== undefined && v !== ""),
+	) as T;
+}
 
 export type DocstringKind = "function" | "class" | "interface" | "variable";
 
@@ -167,7 +171,7 @@ function parseDocBlock(text: string): Omit<ParsedDocExport, "name" | "kind"> {
 		else params.push(parseParam(body));
 	}
 	if (currentExample) examples.push(currentExample.join("\n").trim());
-	return stripUndefined({
+	return withoutUndefined({
 		description: description.join("\n"),
 		parameters: params.length ? params : undefined,
 		returns,
@@ -177,7 +181,7 @@ function parseDocBlock(text: string): Omit<ParsedDocExport, "name" | "kind"> {
 
 function parseParam(text: string): ParsedDocParam {
 	const match = text.match(/^(?:\{([^}]+)\}\s*)?([\w$.[\]-]+)\s*-?\s*(.*)$/u);
-	return stripUndefined({
+	return withoutUndefined({
 		name: match?.[2] ?? text.trim(),
 		type: match?.[1],
 		description: match?.[3]?.trim(),
@@ -186,7 +190,7 @@ function parseParam(text: string): ParsedDocParam {
 
 function parseReturn(text: string): ParsedDocReturn {
 	const match = text.match(/^(?:\{([^}]+)\}\s*)?(.*)$/u);
-	return stripUndefined({ type: match?.[1], description: match?.[2]?.trim() });
+	return withoutUndefined({ type: match?.[1], description: match?.[2]?.trim() });
 }
 
 function symbolFromSignature(signature: string): {

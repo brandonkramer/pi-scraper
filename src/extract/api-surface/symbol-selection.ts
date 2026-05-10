@@ -293,9 +293,7 @@ function isCodeDeclaration(
 	return false;
 }
 
-function matchesForType<
-	T extends import("./types.ts").SymbolIncludeType,
->(
+function matchesForType<T extends import("./types.ts").SymbolIncludeType>(
 	parsed: ParsedContent,
 	include: SymbolIncludeFilter[],
 	type: T,
@@ -309,19 +307,19 @@ function matchesForType<
 		) as ExtractedFor<T>[];
 }
 
-type ExtractedFor<
-	T extends import("./types.ts").SymbolIncludeType,
-> = T extends "code-block"
-	? SelectedCodeBlock
-	: T extends "table"
-		? SelectedTable
-		: T extends "symbol"
-			? SelectedSymbol
-			: SelectedSection;
+type ExtractedFor<T extends import("./types.ts").SymbolIncludeType> =
+	T extends "code-block"
+		? SelectedCodeBlock
+		: T extends "table"
+			? SelectedTable
+			: T extends "symbol"
+				? SelectedSymbol
+				: SelectedSection;
 
-function collectionForType<
-	T extends import("./types.ts").SymbolIncludeType,
->(parsed: ParsedContent, type: T): ExtractedFor<T>[] {
+function collectionForType<T extends import("./types.ts").SymbolIncludeType>(
+	parsed: ParsedContent,
+	type: T,
+): ExtractedFor<T>[] {
 	if (type === "heading") return parsed.headings as ExtractedFor<T>[];
 	if (type === "section") return parsed.sections as ExtractedFor<T>[];
 	if (type === "code-block") return parsed.codeBlocks as ExtractedFor<T>[];

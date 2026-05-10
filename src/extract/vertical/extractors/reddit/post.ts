@@ -241,5 +241,3 @@ function isRedditListing(value: unknown): value is RedditListing<unknown> {
 			),
 	);
 }
-
-
