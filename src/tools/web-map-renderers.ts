@@ -11,7 +11,7 @@ import type { RenderComponent, RenderTheme } from "../tui/types.ts";
 import { renderText } from "../tui/text.ts";
 import { muted, separator } from "../tui/theme.ts";
 import { renderUrlBadgeRow } from "../tui/rows.ts";
-import { renderProgressCard } from "../tui/progress-card.ts";
+import { renderProgressCard } from "../tui/progress.ts";
 export interface MapUrlEntryView {
 	url: string;
 	source?: string;

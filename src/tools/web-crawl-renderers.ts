@@ -8,7 +8,7 @@ import {
 	type ResultEnvelope,
 } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import { renderProgressCard } from "../tui/progress-card.ts";
+import { renderProgressCard } from "../tui/progress.ts";
 import {
 	renderBatchProgressCard,
 	renderBatchResultCard,

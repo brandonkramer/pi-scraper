@@ -57,7 +57,7 @@ import {
 	sessionNotice,
 	contextPackageResponseId,
 } from "../tui/envelope.ts";
-import { renderProgressCard } from "../tui/progress-card.ts";
+import { renderProgressCard } from "../tui/progress.ts";
 
 export function batchExpandedDetails(
 	items: readonly BatchItem[],

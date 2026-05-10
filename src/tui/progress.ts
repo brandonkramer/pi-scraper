@@ -1,21 +1,41 @@
 /**
- * @fileoverview Generic progress fallback card used by every Pi web tool when no tool-specific progress card applies.
+ * @fileoverview Pi terminal UI progress primitives — bar, status bridge, and fallback card.
  */
 import type { ProgressDetails } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 import { renderText } from "./text.ts";
 import { renderStatusGlyph, renderStatusPill } from "./status-pill.ts";
 import {
-	progressPillLabel,
-	progressPillState,
-	progressStartedAtMs,
-} from "./progress-status.ts";
-import {
 	activityCountSegment,
 	failureCountSegment,
 	successCountSegment,
 } from "./count-segments.ts";
 import { formatChecklistItem, formatChecklistText } from "./checklist.ts";
+import type { StatusPillState } from "./status-pill.ts";
+
+export function renderProgressBar(progress: number, width = 12): string {
+	const clamped = Math.max(0, Math.min(1, progress));
+	const filled = Math.round(clamped * width);
+	const empty = width - filled;
+	return `[${"=".repeat(Math.max(0, filled - 1))}${filled > 0 ? ">" : ""}${" ".repeat(Math.max(0, empty))}]`;
+}
+
+export function progressStartedAtMs(
+	details: ProgressDetails,
+): number | undefined {
+	const ms = Date.parse(details.timing?.startedAt ?? "");
+	return Number.isFinite(ms) ? ms : undefined;
+}
+
+export function progressPillState(state: string): StatusPillState {
+	if (state === "done" || state === "error") return state;
+	return state === "queued" || state === "waiting" ? "waiting" : "loading";
+}
+
+export function progressPillLabel(state: string): string {
+	if (state === "queued") return "waiting";
+	return state === "processing" || state === "connecting" ? "loading" : state;
+}
 
 export function renderProgressCard(
 	toolName: `web_${string}`,
@@ -73,9 +93,9 @@ export function renderProgressCard(
 										theme,
 									)
 								: `${counts.cacheHits} cache hits`,
-					]
-						.filter(Boolean)
-						.join(" · "),
+						]
+							.filter(Boolean)
+							.join(" · "),
 				);
 			}
 			return renderText(lines.filter(Boolean).join("\n"), {
