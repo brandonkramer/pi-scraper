@@ -5,7 +5,7 @@ import { parseDocument } from "htmlparser2";
 import {
 	loadFingerprint,
 	saveFingerprint,
-} from "../storage/migrations/002-element-fingerprints.ts";
+} from "../storage/fingerprints/store.ts";
 import {
 	runAdaptiveSelector,
 	type AdaptiveSelectorOptions,
