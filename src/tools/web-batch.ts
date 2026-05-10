@@ -101,7 +101,7 @@ export const webBatchTool = defineWebTool({
 			result.jobId,
 		);
 		const text = contextPackage
-			? `${result.summary} Context package: ${contextPackage.value.package.urlCount} page(s), packageResponseId: ${contextPackage.responseId}.`
+			? `${result.summary} Context: ${contextPackage.value.package.urlCount} page(s), responseId: ${contextPackage.responseId}.`
 			: result.summary;
 		const { notice: sessionNotice, suffix: sessionSuffix } =
 			await sessionLifecycle(params);
@@ -144,7 +144,7 @@ export const webBatchTool = defineWebTool({
 				contextPackage
 					? retrieveResultAction(
 							contextPackage.responseId,
-							"Retrieve the compiled context package.",
+							"Retrieve the compiled context.",
 						)
 					: undefined,
 			].filter(Boolean) as NonNullable<

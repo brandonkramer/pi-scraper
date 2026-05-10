@@ -1,5 +1,5 @@
 /**
- * @fileoverview Context-package types.
+ * @fileoverview Context compilation types.
  */
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 
