@@ -1,28 +1,55 @@
 /**
  * @fileoverview Compile completed scrape outputs into bounded context.
  *
- * context are local, deterministic summaries of already-fetched pages.
+ * Context files are local, deterministic summaries of already-fetched pages.
  * They never fetch or infer beyond the scrape payload; each entry keeps enough
  * path/title/excerpt structure for downstream LLM context without replacing the
  * raw stored crawl or batch result.
  */
-import { PI_TRUNCATION_LIMITS } from "../../defaults.ts";
-import type { ScrapeResult } from "../../scrape/pipeline.ts";
-import type {
-	CompiledContext,
-	CompileContextInput,
-	ContextNode,
-	ContextPage,
-} from "./types.ts";
+import { PI_TRUNCATION_LIMITS } from "../defaults.ts";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
 
-export {
-	CompiledContext,
-	CompileContextInput,
-	ContextNode,
-	ContextPage,
-	ContextMetadata,
-	ContextSource,
-} from "./types.ts";
+export type ContextSource = "crawl" | "batch";
+
+export interface ContextPage {
+	url: string;
+	result: ScrapeResult;
+	responseId?: string;
+}
+
+export interface ContextMetadata {
+	source: ContextSource;
+	crawlId?: string;
+	batchId?: string;
+	createdAt: string;
+	urlCount: number;
+	totalChars: number;
+	truncated: boolean;
+}
+
+export interface ContextNode {
+	url: string;
+	title?: string;
+	breadcrumbs?: string[];
+	summary?: string;
+	children?: Array<{ url: string; title?: string }>;
+	contentRef?: string;
+	excerpt?: string;
+}
+
+export interface CompiledContext {
+	package: ContextMetadata;
+	tree: ContextNode[];
+}
+
+export interface CompileContextInput {
+	source: ContextSource;
+	crawlId?: string;
+	batchId?: string;
+	pages: readonly ContextPage[];
+	createdAt?: string;
+	maxBytes?: number;
+}
 
 const DEFAULT_EXCERPT_CHARS = 800;
 const MIN_EXCERPT_CHARS = 120;

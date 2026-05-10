@@ -205,4 +205,3 @@ function scrapeExpandedDetails(
 	}
 	return lines.join("\n");
 }
-

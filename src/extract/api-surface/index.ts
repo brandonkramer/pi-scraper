@@ -24,4 +24,4 @@ export {
 	type ApiSurfaceInput,
 	type ApiSurfaceRunResult,
 } from "./runner.ts";
-export { selectSymbolContent } from "./symbol-selection.ts";
+export { selectSymbolContent } from "./selection.ts";

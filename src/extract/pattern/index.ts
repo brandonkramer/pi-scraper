@@ -2,7 +2,7 @@
  * @fileoverview Pattern extraction public entrypoint.
  */
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
-import { selectSymbolContent } from "../api-surface/symbol-selection.ts";
+import { selectSymbolContent } from "../api-surface/selection.ts";
 import type {
 	ExtractSchemaPreset,
 	SymbolIncludeFilter,

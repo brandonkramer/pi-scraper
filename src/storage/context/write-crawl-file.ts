@@ -8,7 +8,7 @@
  */
 import { rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { CompiledContext } from "../../extract/context/index.ts";
+import type { CompiledContext } from "../../extract/context.ts";
 import {
 	ensureDir,
 	resolvePiStoragePaths,
