@@ -9,7 +9,12 @@ import type { AnyNode } from "domhandler";
 import * as domutils from "domutils";
 import { parseDocument } from "htmlparser2";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
-import { cleanText, stripUndefined, titleCase, truncateText } from "../shared/text.ts";
+import {
+	cleanText,
+	stripUndefined,
+	titleCase,
+	truncateText,
+} from "../shared/text.ts";
 import { parseMarkdown as sharedMarkdownParse } from "../../parse/markup/doc.ts";
 import {
 	extractHeadingSections,
@@ -195,9 +200,7 @@ function parseMarkdownPage(
 	const sections: SectionLike[] = [];
 	let cbIdx = 0;
 
-	const relevantHeadings = doc.headings.filter(
-		(heading) => heading.level <= 4,
-	);
+	const relevantHeadings = doc.headings.filter((heading) => heading.level <= 4);
 	for (let index = 0; index < relevantHeadings.length; index += 1) {
 		const heading = relevantHeadings[index];
 		const nextLine = relevantHeadings[index + 1]?.line ?? lines.length + 1;

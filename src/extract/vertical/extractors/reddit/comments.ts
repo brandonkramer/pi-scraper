@@ -8,14 +8,16 @@ const COMMENT_LIMIT = 5;
 
 export function extractTopComments(
 	listing: RedditListing<RedditCommentData> | undefined,
-): Array<{
-	id: string;
-	author?: string;
-	body?: string;
-	score?: number;
-	createdUtc?: number;
-	permalink?: string;
-}> | undefined {
+):
+	| Array<{
+			id: string;
+			author?: string;
+			body?: string;
+			score?: number;
+			createdUtc?: number;
+			permalink?: string;
+	  }>
+	| undefined {
 	const comments = listing?.data?.children ?? [];
 	const topComments = comments
 		.filter((child) => child.kind === "t1" && child.data?.id)

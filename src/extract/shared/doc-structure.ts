@@ -4,11 +4,7 @@
 import * as cssSelect from "css-select";
 import type { AnyNode, Element } from "domhandler";
 import * as domutils from "domutils";
-import {
-	cleanText,
-	stripUndefined,
-	truncateText,
-} from "./text.ts";
+import { cleanText, stripUndefined, truncateText } from "./text.ts";
 import { followingSectionNodes } from "./html.ts";
 
 export interface ExtractedCodeBlock {

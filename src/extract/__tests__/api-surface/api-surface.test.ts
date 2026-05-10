@@ -2,7 +2,10 @@
  * @fileoverview extract __tests__ api-surface.test module.
  */
 import { describe, expect, it } from "vitest";
-import { buildApiSurface, buildApiSurfaceFromScrapes } from "../../api-surface/index.ts";
+import {
+	buildApiSurface,
+	buildApiSurfaceFromScrapes,
+} from "../../api-surface/index.ts";
 import type { ScrapeResult } from "../../../scrape/pipeline.ts";
 
 const typedocHtml = `<!doctype html><html><body><main>

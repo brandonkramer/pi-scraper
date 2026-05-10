@@ -198,9 +198,7 @@ function selectCodeBlocks(
 		});
 	}
 	if (sourceFormat === "html") {
-		for (const match of content.matchAll(
-			/<pre\b[^>]*>([\s\S]*?)<\/pre>/giu,
-		)) {
+		for (const match of content.matchAll(/<pre\b[^>]*>([\s\S]*?)<\/pre>/giu)) {
 			const start = match.index ?? 0;
 			blocks.push({
 				type: "code-block",
@@ -295,7 +293,9 @@ function isCodeDeclaration(
 	return false;
 }
 
-function matchesForType<T extends import("./symbol-selection-types.ts").SymbolIncludeType>(
+function matchesForType<
+	T extends import("./symbol-selection-types.ts").SymbolIncludeType,
+>(
 	parsed: ParsedContent,
 	include: SymbolIncludeFilter[],
 	type: T,
@@ -309,19 +309,19 @@ function matchesForType<T extends import("./symbol-selection-types.ts").SymbolIn
 		) as ExtractedFor<T>[];
 }
 
-type ExtractedFor<T extends import("./symbol-selection-types.ts").SymbolIncludeType> =
-	T extends "code-block"
-		? SelectedCodeBlock
-		: T extends "table"
-			? SelectedTable
-			: T extends "symbol"
-				? SelectedSymbol
-				: SelectedSection;
+type ExtractedFor<
+	T extends import("./symbol-selection-types.ts").SymbolIncludeType,
+> = T extends "code-block"
+	? SelectedCodeBlock
+	: T extends "table"
+		? SelectedTable
+		: T extends "symbol"
+			? SelectedSymbol
+			: SelectedSection;
 
-function collectionForType<T extends import("./symbol-selection-types.ts").SymbolIncludeType>(
-	parsed: ParsedContent,
-	type: T,
-): ExtractedFor<T>[] {
+function collectionForType<
+	T extends import("./symbol-selection-types.ts").SymbolIncludeType,
+>(parsed: ParsedContent, type: T): ExtractedFor<T>[] {
 	if (type === "heading") return parsed.headings as ExtractedFor<T>[];
 	if (type === "section") return parsed.sections as ExtractedFor<T>[];
 	if (type === "code-block") return parsed.codeBlocks as ExtractedFor<T>[];
@@ -339,11 +339,7 @@ function matchCountForFilter(
 }
 
 function matchesFilter(
-	item:
-		| SelectedSection
-		| SelectedCodeBlock
-		| SelectedTable
-		| SelectedSymbol,
+	item: SelectedSection | SelectedCodeBlock | SelectedTable | SelectedSymbol,
 	filter: SymbolIncludeFilter,
 ): boolean {
 	if (
@@ -378,11 +374,7 @@ function safePattern(pattern: string): RegExp {
 }
 
 function searchableText(
-	item:
-		| SelectedSection
-		| SelectedCodeBlock
-		| SelectedTable
-		| SelectedSymbol,
+	item: SelectedSection | SelectedCodeBlock | SelectedTable | SelectedSymbol,
 ): string {
 	if ("title" in item) return `${item.title}\n${item.text}`;
 	if ("code" in item) return `${item.language ?? ""}\n${item.code}`;

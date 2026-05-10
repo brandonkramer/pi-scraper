@@ -126,7 +126,11 @@ function errorRetryable(error: Error): boolean {
 		: false;
 }
 
-function hasStructuredError(error: unknown): error is { structured: { code: string; message: string; retryable?: boolean } } {
+function hasStructuredError(
+	error: unknown,
+): error is {
+	structured: { code: string; message: string; retryable?: boolean };
+} {
 	return (
 		typeof error === "object" &&
 		error !== null &&

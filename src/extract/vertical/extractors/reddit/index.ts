@@ -5,7 +5,10 @@ import {
 	createStructuredError,
 	hasStructuredError,
 } from "../../../../http/errors.ts";
-import { capability, type VerticalExtractor } from "../../../vertical/capabilities.ts";
+import {
+	capability,
+	type VerticalExtractor,
+} from "../../../vertical/capabilities.ts";
 import { fetchFirstAllowedRedditEndpoint } from "./post.ts";
 
 export interface RedditPostData {

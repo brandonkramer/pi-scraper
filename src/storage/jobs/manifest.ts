@@ -126,10 +126,4 @@ function safeJobId(jobId: string): string {
 	return jobId.replace(/[^a-zA-Z0-9._-]/gu, "_").slice(0, 160) || "job";
 }
 
-function mergeUnique(
-	left: string[] | undefined,
-	right: string[] | undefined,
-): string[] | undefined {
-	const merged = [...(left ?? []), ...(right ?? [])].filter(Boolean);
-	return merged.length ? [...new Set(merged)] : undefined;
-}
+import { mergeUnique } from "./merge.ts";

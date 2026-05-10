@@ -5,7 +5,10 @@ import * as cssSelect from "css-select";
 import type { AnyNode, Element } from "domhandler";
 import * as domutils from "domutils";
 import { parseDocument } from "htmlparser2";
-import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
+import {
+	capability,
+	type VerticalExtractor,
+} from "../../vertical/capabilities.ts";
 import {
 	cleanText,
 	stripUndefined,
