@@ -111,7 +111,7 @@ function extractTextSections(text: string): string[] {
 	const endIdx = text.indexOf("Glossary", startIdx);
 	const segment =
 		endIdx === -1 ? text.slice(startIdx) : text.slice(startIdx, endIdx);
-	return uniqueSections(splitSectionSegment(segment));
+	return dedupeCleanedSections(splitSectionSegment(segment));
 }
 
 function splitSectionSegment(segment: string): string[] {
@@ -177,7 +177,7 @@ function matchKnownSection(
 	return undefined;
 }
 
-function uniqueSections(sections: string[]): string[] {
+function dedupeCleanedSections(sections: string[]): string[] {
 	const seen = new Set<string>();
 	const result: string[] = [];
 	for (const section of sections) {

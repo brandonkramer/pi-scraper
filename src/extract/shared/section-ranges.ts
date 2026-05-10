@@ -73,7 +73,7 @@ function extractSectionRange(
 		section.includeEnd && rawEndIndex >= 0 && section.end
 			? rawEndIndex + section.end.length
 			: sectionEnd;
-	const maxChars = boundedInteger(section.maxChars ?? MAX_SECTION_CHARS);
+	const maxChars = clampSectionMaxChars(section.maxChars ?? MAX_SECTION_CHARS);
 	const boundedEnd = Math.min(contentEnd, contentStart + maxChars);
 	return {
 		name: section.name,
@@ -106,7 +106,7 @@ function missingSection(section: SectionRangeRequest): SectionRangeResult {
 	};
 }
 
-function boundedInteger(value: number): number {
+function clampSectionMaxChars(value: number): number {
 	if (!Number.isInteger(value) || value < 1 || value > MAX_SECTION_CHARS) {
 		throw new SectionRangeError(
 			`section maxChars must be an integer between 1 and ${MAX_SECTION_CHARS}.`,

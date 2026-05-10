@@ -49,7 +49,7 @@ export async function indexSearchText(
 	options: ResolveStorageOptions = {},
 ): Promise<void> {
 	if (!(await fts5Available(options))) return;
-	const text = searchableText(value);
+	const text = searchableJobText(value);
 	if (!text) return;
 	const db = await openStorageDb(options);
 	ensureFtsTable(db.db, cacheKey(options));
@@ -108,7 +108,7 @@ function ensureFtsTable(db: { exec(sql: string): void }, key: string): void {
 	initialized.add(key);
 }
 
-function searchableText(value: unknown): string | undefined {
+function searchableJobText(value: unknown): string | undefined {
 	if (typeof value === "string") return value;
 	if (typeof value !== "object" || value === null) return undefined;
 	const source = value as Partial<ResultEnvelope<Record<string, unknown>>>;

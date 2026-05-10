@@ -66,8 +66,8 @@ export interface ElementFingerprint {
 export function fingerprintElement(element: Element): ElementFingerprint {
 	const tag = element.name.toLowerCase();
 	const attributes = cleanAttributes(element.attribs);
-	const text = cleanText(domutils.getText(element));
-	const fullText = cleanText(domutils.textContent(element));
+	const text = collapseWhitespace(domutils.getText(element));
+	const fullText = collapseWhitespace(domutils.textContent(element));
 	const path = buildPath(element);
 	const parent = buildParent(element);
 	const siblings = buildSiblings(element);
@@ -102,7 +102,7 @@ function cleanAttributes(
 /**
  * Collapse whitespace and trim.
  */
-function cleanText(text: string | undefined | null): string | undefined {
+function collapseWhitespace(text: string | undefined | null): string | undefined {
 	if (!text) return undefined;
 	const collapsed = text.replace(/\s+/gu, " ").trim();
 	return collapsed.length > 0 ? collapsed : undefined;
@@ -134,7 +134,7 @@ function buildParent(
 	return {
 		tag: parent.name.toLowerCase(),
 		attributes: cleanAttributes(parent.attribs),
-		text: cleanText(domutils.textContent(parent)) ?? undefined,
+		text: collapseWhitespace(domutils.textContent(parent)) ?? undefined,
 	};
 }
 

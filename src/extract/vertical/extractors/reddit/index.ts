@@ -170,6 +170,7 @@ export function redditError(
 	);
 }
 
+export { hasStructuredError } from "../../../../http/errors.ts";
 export {
 	fetchFirstAllowedRedditEndpoint,
 	shouldTryNextEndpoint,

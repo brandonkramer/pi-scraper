@@ -10,6 +10,7 @@ import {
 	type RedditPostResult,
 	redditError,
 	errorCode,
+	errorRetryable,
 	normalizeRedditError,
 } from "./index.ts";
 import { extractTopComments } from "./comments.ts";
@@ -117,26 +118,6 @@ export function withAttemptContext(
 		errorCode(error),
 		`${error.message} attempted: ${attempted}`,
 		errorRetryable(error),
-	);
-}
-
-function errorRetryable(error: Error): boolean {
-	return hasStructuredError(error)
-		? Boolean(error.structured.retryable)
-		: false;
-}
-
-function hasStructuredError(
-	error: unknown,
-): error is {
-	structured: { code: string; message: string; retryable?: boolean };
-} {
-	return (
-		typeof error === "object" &&
-		error !== null &&
-		"structured" in error &&
-		typeof (error as { structured?: unknown }).structured === "object" &&
-		(error as { structured?: { code?: string } }).structured?.code !== undefined
 	);
 }
 
