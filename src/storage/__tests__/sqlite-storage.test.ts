@@ -7,11 +7,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createCrawlState, loadCrawlState } from "../../crawl/state.ts";
-import { closeStorageDbs } from "../db.ts";
+import { closeStorageDbs } from "../db/open.ts";
 import { writeBlob } from "../blobs.ts";
 import { readResponse } from "../responses/read.ts";
 import { storeResponse } from "../responses/store.ts";
-import { searchResponses, setFtsAvailabilityForTests } from "../search.ts";
+import { searchResponses, setFtsAvailabilityForTests } from "../search/fts.ts";
 
 let rootDir: string;
 

@@ -3,7 +3,7 @@
  */
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { openStorageDb, type StorageDb } from "../storage/db.ts";
+import { openStorageDb, type StorageDb } from "../storage/db/open.ts";
 import type { ResolveStorageOptions } from "../storage/paths.ts";
 import { resolvePiStoragePaths } from "../storage/paths.ts";
 import type { StructuredError } from "../types.ts";

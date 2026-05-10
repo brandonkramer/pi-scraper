@@ -3,7 +3,7 @@
  */
 import type { ResponseStorageMetadata } from "../../types.ts";
 import { readBlob } from "../blobs.ts";
-import { openStorageDb } from "../db.ts";
+import { openStorageDb } from "../db/open.ts";
 import type { ResolveStorageOptions } from "../paths.ts";
 
 export interface StoredResponse<T = unknown> {

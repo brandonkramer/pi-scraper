@@ -13,7 +13,7 @@ import {
 	freshnessFromTimestamp,
 } from "../storage/cache/freshness.ts";
 import type { ScrapeResult } from "../scrape/pipeline.ts";
-import { updateJobManifest } from "../storage/jobs.ts";
+import { updateJobManifest } from "../storage/jobs/manifest.ts";
 import { storeResponseWithId } from "../storage/responses/store.ts";
 import type { FreshnessMetadata } from "../types.ts";
 import { storedResultGuidance } from "./agentic-context.ts";

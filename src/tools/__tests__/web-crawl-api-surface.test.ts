@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
-import { closeStorageDbs } from "../../storage/db.ts";
+import { closeStorageDbs } from "../../storage/db/open.ts";
 import { readResponse } from "../../storage/responses/read.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import { webCrawlTool } from "../web-crawl.ts";
@@ -20,7 +20,7 @@ vi.mock("../../crawl/runner.ts", () => ({
 			"../../crawl/state.ts"
 		);
 		const { createJobManifest, writeJobManifest } = await import(
-			"../../storage/jobs.ts"
+			"../../storage/jobs/manifest.ts"
 		);
 		const crawlId = `crawl-api-surface-${++crawlRunCount}`;
 		const state = createCrawlState(seedUrl, crawlId);

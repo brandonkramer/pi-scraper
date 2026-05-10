@@ -5,7 +5,7 @@ import type { FetchUrlResult } from "../../http/client.ts";
 import { isTextLikeContentType } from "../../http/download.ts";
 import { normalizeUrl } from "../../url/normalize.ts";
 import { readBlob, writeBlob } from "../blobs.ts";
-import { openStorageDb } from "../db.ts";
+import { openStorageDb } from "../db/open.ts";
 import {
 	DEFAULT_MAX_FRESHNESS_AGE_SECONDS,
 	freshnessMetadata,

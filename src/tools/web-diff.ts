@@ -12,14 +12,16 @@ import {
 import { scrapeUrl } from "../scrape/pipeline.ts";
 import { freshnessFromTimestamp } from "../storage/cache/freshness.ts";
 import {
-	appendJobError,
 	createJobManifest,
-	structuredErrorToJobError,
-	unknownToJobError,
 	updateJobManifest,
 	writeJobManifest,
+} from "../storage/jobs/manifest.ts";
+import {
+	appendJobError,
+	structuredErrorToJobError,
+	unknownToJobError,
 	type JobError,
-} from "../storage/jobs.ts";
+} from "../storage/jobs/errors.ts";
 import { storeResponseWithId } from "../storage/responses/store.ts";
 import { storedTraceContext } from "./agentic-context.ts";
 import { formatAge } from "../scrape/describe.ts";

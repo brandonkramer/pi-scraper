@@ -2,7 +2,7 @@
  * @fileoverview storage search module.
  */
 import type { ResultEnvelope } from "../../types.ts";
-import { openStorageDb } from "../db.ts";
+import { openStorageDb } from "../db/open.ts";
 import { stringField } from "../db/row-fields.ts";
 import type { ResolveStorageOptions } from "../paths.ts";
 

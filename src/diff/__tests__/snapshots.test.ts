@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
-import { openStorageDb, closeStorageDbs } from "../../storage/db.ts";
+import { openStorageDb, closeStorageDbs } from "../../storage/db/open.ts";
 import { storeResponse } from "../../storage/responses/store.ts";
 import { compareSnapshotText } from "../compare.ts";
 import { normalizeVolatileSnapshotText } from "../normalize.ts";

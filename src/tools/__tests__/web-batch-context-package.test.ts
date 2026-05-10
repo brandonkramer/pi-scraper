@@ -7,8 +7,8 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BatchScrapeResult } from "../../batch/run.ts";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
-import { closeStorageDbs } from "../../storage/db.ts";
-import { getJobManifest } from "../../storage/jobs.ts";
+import { closeStorageDbs } from "../../storage/db/open.ts";
+import { getJobManifest } from "../../storage/jobs/manifest.ts";
 import { readResponse } from "../../storage/responses/read.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import { webBatchTool } from "../web-batch.ts";
@@ -17,7 +17,7 @@ import { webGetResultTool } from "../web-get-result.ts";
 vi.mock("../../batch/run.ts", () => ({
 	runBatchScrape: vi.fn(async (): Promise<BatchScrapeResult> => {
 		const { createJobManifest, writeJobManifest } = await import(
-			"../../storage/jobs.ts"
+			"../../storage/jobs/manifest.ts"
 		);
 		const { storeResponse } = await import("../../storage/responses/store.ts");
 		const jobId = "batch-context-package";

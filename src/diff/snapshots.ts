@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ScrapeResult } from "../scrape/pipeline.ts";
-import { openStorageDb } from "../storage/db.ts";
+import { openStorageDb } from "../storage/db/open.ts";
 import {
 	ensureDir,
 	type ResolveStorageOptions,

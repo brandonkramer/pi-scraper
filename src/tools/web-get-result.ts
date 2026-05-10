@@ -3,7 +3,7 @@
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
 import { listSnapshots } from "../diff/snapshots.ts";
-import { getJobManifest } from "../storage/jobs.ts";
+import { getJobManifest } from "../storage/jobs/manifest.ts";
 import { readResponse } from "../storage/responses/read.ts";
 import { defineWebTool } from "./define.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";

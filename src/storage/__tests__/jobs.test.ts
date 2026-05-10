@@ -10,7 +10,7 @@ import {
 	getJobManifest,
 	updateJobManifest,
 	writeJobManifest,
-} from "../jobs.ts";
+} from "../jobs/manifest.ts";
 
 let rootDir: string;
 

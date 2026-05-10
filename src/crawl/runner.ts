@@ -16,10 +16,10 @@ import { hasStructuredError } from "../http/retry.ts";
 import type { CommonScrapeOptions, StructuredError } from "../types.ts";
 import {
 	appendJobError,
-	setupScrapeJob,
 	structuredErrorToJobError,
 	unknownToJobError,
-} from "../storage/jobs.ts";
+} from "../storage/jobs/errors.ts";
+import { setupScrapeJob } from "../storage/jobs/setup.ts";
 import { CrawlFrontier, type FrontierItem } from "./frontier.ts";
 import {
 	type CrawlMetadata,

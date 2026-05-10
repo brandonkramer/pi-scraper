@@ -33,7 +33,7 @@ import {
 	type FetchUrlResult,
 } from "./response.ts";
 import { withTimeout } from "./timeout.ts";
-import { findFreshFetch, recordFetch } from "../storage/cache.ts";
+import { findFreshFetch, recordFetch } from "../storage/cache/fetch-cache.ts";
 import type { ResolveStorageOptions } from "../storage/paths.ts";
 import {
 	assertSafeFetchUrl,

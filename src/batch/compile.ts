@@ -3,7 +3,7 @@
  */
 import type { BatchItemResult } from "./run.ts";
 import { buildStoredContextPackage } from "../storage/context-packages/build.ts";
-import { updateJobManifest } from "../storage/jobs.ts";
+import { updateJobManifest } from "../storage/jobs/manifest.ts";
 
 export async function buildBatchContextPackage(
 	params: { compile?: boolean },

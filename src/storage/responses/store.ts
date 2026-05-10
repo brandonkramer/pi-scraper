@@ -4,10 +4,10 @@
 import { randomUUID } from "node:crypto";
 import type { ResponseStorageMetadata } from "../../types.ts";
 import { readBlob, writeBlob } from "../blobs.ts";
-import { openStorageDb } from "../db.ts";
+import { openStorageDb } from "../db/open.ts";
 import { normalizeMaybe, numberField, stringField } from "../db/row-fields.ts";
 import type { ResolveStorageOptions } from "../paths.ts";
-import { indexSearchText } from "../search.ts";
+import { indexSearchText } from "../search/fts.ts";
 import { responseFields } from "./fields.ts";
 
 export interface StoreResponseOptions extends ResolveStorageOptions {
