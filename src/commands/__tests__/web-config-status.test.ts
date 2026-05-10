@@ -20,8 +20,8 @@ describe("runWebConfigStatus", () => {
 			capabilities: ["summarize"],
 			priority: 50,
 			adapter: {
-				async run() {
-					return { data: "" };
+				async run<T>(_req: unknown, _signal?: unknown) {
+					return { data: "" as T };
 				},
 			},
 		});

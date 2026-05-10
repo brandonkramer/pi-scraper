@@ -310,6 +310,22 @@ pi.events?.emit?.("pi:model-adapter/unregister", { id: entry.id }); // on unload
 
 When an adapter returns `usage`, `web_summarize` (and `web_extract action="adhoc"`) render a compact footer in the expanded view, for example: `gemini-acp · gemini-2.0-flash · 234 in · 187 out · $0.0023`. Adapters supply only the fields they have; pi-scraper hides absent fields automatically. Cost is in USD and is the adapter's responsibility to compute — pi-scraper ships no pricing table.
 
+## Configuration command
+
+Use `/web-config` to inspect effective settings and persist defaults interactively or via direct arguments.
+
+| Sub-action | What it does |
+|------------|-------------|
+| (no args) | Interactive picker (falls back to `status` when UI unavailable) |
+| `status` | Effective config + live adapter-resolution preview |
+| `model-provider <value>` | Set `modelProvider` (`auto` / `off` / `<adapter-id>`) |
+| `scrape-mode <mode> [format]` | Set `scrapeMode` + `outputFormat` |
+| `cache stats` | Inspect response cache size and entry counts |
+| `cache clear` | Clear response cache (confirm prompt) |
+| `robots on/off` | Toggle `respectRobots` default |
+
+`/web-set-mode` remains as an alias for `scrape-mode`.
+
 ## Development and release checks
 
 Install dependencies from a checkout:

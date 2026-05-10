@@ -6,7 +6,7 @@ import {
 	parseWebConfigCommandArgs,
 	runWebConfigCommand,
 } from "../web-config.ts";
-import { toolResult } from "../../tools/infra/result.ts";
+
 
 describe("parseWebConfigCommandArgs", () => {
 	it("returns empty for no args (picker path)", () => {
@@ -70,6 +70,7 @@ describe("runWebConfigCommand dispatch", () => {
 		let selectCalled = false;
 		const ctx = {
 			ui: {
+				notify() {},
 				async select(_title: string, choices: readonly string[]) {
 					selectCalled = true;
 					return choices[0]; // "Status"
@@ -89,6 +90,7 @@ describe("runWebConfigCommand dispatch", () => {
 	it("cancels when picker returns undefined", async () => {
 		const ctx = {
 			ui: {
+				notify() {},
 				async select() {
 					return undefined;
 				},
