@@ -9,7 +9,7 @@ import { defineWebTool } from "./define.ts";
 import { emitProgress } from "./progress.ts";
 import { renderSimpleCall } from "./render.ts";
 import { toolResult } from "./result.ts";
-import { renderWebMapResult } from "./web-renderers.ts";
+import { renderWebMapResult } from "./web-map-renderers.ts";
 import { urlProperty } from "./schemas.ts";
 
 export const webMapSchema = Type.Object({

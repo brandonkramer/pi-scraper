@@ -1,7 +1,35 @@
 /**
- * @fileoverview Pi web_crawl renderer details — expanded per-page lines used by web-renderers.ts when assembling the result card.
+ * @fileoverview Pi web_crawl renderer — top-level result/progress card and per-page expanded details.
  */
-import type { CrawlPageView } from "./web-renderer-views.ts";
+import {
+	isProgress,
+	type PiToolShell,
+	type ProgressDetails,
+	type ResultEnvelope,
+} from "../types.ts";
+import type { RenderComponent, RenderTheme } from "../tui/types.ts";
+import { renderProgress } from "../tui/progress-card.ts";
+import {
+	renderBatchProgressCard,
+	renderBatchResultCard,
+} from "./web-batch-renderers.ts";
+import {
+	batchProgressFromCrawlPages,
+	isBatchProgress,
+	isBatchProgressView,
+} from "../batch/progress-state.ts";
+import {
+	activityCountSegment,
+	failureCountSegment,
+	successCountSegment,
+} from "../tui/counts.ts";
+import { metadataText, neutralText, separator } from "../tui/theme.ts";
+import {
+	errorTitle,
+	sessionNotice,
+	contextPackageResponseId,
+} from "../tui/envelope-labels.ts";
+import type { CrawlMeta, CrawlPageView } from "./web-renderer-views.ts";
 import { formatResourceFields } from "../tui/resource-fields.ts";
 
 export function crawlExpandedDetails(
@@ -57,4 +85,62 @@ function crawlPageDetails(page: CrawlPageView): string[] {
 			`  excerpt: ${String(excerpt).replace(/\s+/g, " ").trim().slice(0, 180)}`,
 		);
 	return lines;
+}
+
+export function renderWebCrawlResult(
+	result: PiToolShell,
+	expanded = false,
+	theme?: RenderTheme,
+): RenderComponent {
+	const details = result.details as
+		| Partial<ResultEnvelope<unknown>>
+		| ProgressDetails;
+	if (isProgress(details)) {
+		if (isBatchProgress(details))
+			return renderBatchProgressCard(details, expanded, theme);
+		return renderProgress("web_crawl", details, theme, {
+			allowIcons: true,
+		});
+	}
+	const envelope = details as Partial<
+		ResultEnvelope<{ metadata?: CrawlMeta; pages?: unknown[] }>
+	>;
+	const metadata = envelope.data?.metadata;
+	const failed = metadata?.failedCount ?? 0;
+	const summary = envelope.error
+		? errorTitle("web_crawl", envelope.error, { allowIcons: true })
+		: [
+				successCountSegment(metadata?.succeededCount ?? 0, "succeeded", theme),
+				failureCountSegment(failed, "failed", theme),
+				activityCountSegment(
+					metadata?.visitedCount ?? 0,
+					"visited",
+					"◉",
+					theme,
+				),
+				neutralText(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
+				!expanded ? metadataText("(ctrl+o to expand)", theme) : undefined,
+			]
+				.filter(Boolean)
+				.join(separator(theme));
+	const pages = Array.isArray(envelope.data?.pages)
+		? (envelope.data?.pages as CrawlPageView[])
+		: [];
+	const progress = isBatchProgressView(envelope.diagnostics?.batchProgress)
+		? envelope.diagnostics.batchProgress
+		: batchProgressFromCrawlPages(pages);
+	return renderBatchResultCard(
+		{
+			progress,
+			summary,
+			notice: sessionNotice(envelope),
+			preview: crawlExpandedDetails(pages, {
+				jobId: envelope.diagnostics?.jobId,
+				packageResponseId: contextPackageResponseId(envelope),
+			}),
+			responseId: envelope.responseId,
+		},
+		expanded,
+		theme,
+	);
 }

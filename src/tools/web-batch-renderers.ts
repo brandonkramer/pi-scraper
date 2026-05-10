@@ -1,10 +1,15 @@
 /**
- * @fileoverview Batch progress and result card UI rendering, plus per-URL expanded details composer.
+ * @fileoverview Pi web_batch renderer — top-level result/progress card, batch progress state UI, and per-URL expanded details composer.
  */
-import type { ProgressDetails } from "../types.ts";
+import {
+	isProgress,
+	type PiToolShell,
+	type ProgressDetails,
+	type ResultEnvelope,
+} from "../types.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import { renderText } from "./render.ts";
-import { muted } from "../tui/theme.ts";
+import { renderText } from "../tui/text.ts";
+import { metadataText, muted, separator } from "../tui/theme.ts";
 import { renderProgressBar } from "../tui/progress-bar.ts";
 import { renderStatusPill } from "../tui/status-pill.ts";
 import { renderUrlStatusRow } from "../tui/rows.ts";
@@ -15,8 +20,25 @@ import type {
 	BatchProgressStatus,
 	BatchProgressView,
 } from "../batch/progress-state.ts";
+import {
+	batchProgressFromItems,
+	isBatchProgress,
+	isBatchProgressView,
+} from "../batch/progress-state.ts";
 import type { BatchItem } from "./web-renderer-views.ts";
 import { formatResourceFields } from "../tui/resource-fields.ts";
+import {
+	activityCountSegment,
+	failureCountSegment,
+	successCountSegment,
+} from "../tui/counts.ts";
+import {
+	errorTitle,
+	freshnessLabel,
+	sessionNotice,
+	contextPackageResponseId,
+} from "../tui/envelope-labels.ts";
+import { renderProgress } from "../tui/progress-card.ts";
 
 export function renderBatchProgressCard(
 	details: ProgressDetails<{
@@ -202,4 +224,60 @@ function resultExcerpt(result: BatchItem["result"]): string | undefined {
 		result?.data?.route;
 	if (!value) return undefined;
 	return String(value).replace(/\s+/g, " ").trim().slice(0, 180);
+}
+
+export function renderWebBatchResult(
+	result: PiToolShell,
+	expanded = false,
+	theme?: RenderTheme,
+): RenderComponent {
+	const details = result.details as
+		| Partial<ResultEnvelope<unknown>>
+		| ProgressDetails;
+	if (isProgress(details)) {
+		if (isBatchProgress(details))
+			return renderBatchProgressCard(details, expanded, theme);
+		return renderProgress("web_batch", details, theme, {
+			allowIcons: true,
+		});
+	}
+	const envelope = details as Partial<
+		ResultEnvelope<import("../batch/run.ts").BatchItemResult[]>
+	>;
+	const items = Array.isArray(envelope.data) ? envelope.data : [];
+	const succeeded = items.filter((item) => item.ok === true).length;
+	const failed = items.length - succeeded;
+	const cacheHits = items.filter(
+		(item) => item.ok === true && item.result?.cache?.cached,
+	).length;
+	const summary = envelope.error
+		? errorTitle("web_batch", envelope.error, { allowIcons: true })
+		: [
+				successCountSegment(succeeded, "succeeded", theme),
+				failureCountSegment(failed, "failed", theme),
+				activityCountSegment(cacheHits, "cache hits", "ⓞ", theme),
+				freshnessLabel(envelope),
+				!expanded ? metadataText("(ctrl+o to expand)", theme) : undefined,
+			]
+				.filter(Boolean)
+				.join(separator(theme));
+	const progressValue = envelope.diagnostics?.batchProgress;
+	const progress = isBatchProgressView(progressValue)
+		? progressValue
+		: batchProgressFromItems(items);
+	return renderBatchResultCard(
+		{
+			progress,
+			summary,
+			notice: sessionNotice(envelope),
+			preview: batchExpandedDetails(items, {
+				jobId: envelope.diagnostics?.jobId,
+				packageResponseId: contextPackageResponseId(envelope),
+			}),
+			responseId: envelope.responseId,
+			padToWidth: false,
+		},
+		expanded,
+		theme,
+	);
 }

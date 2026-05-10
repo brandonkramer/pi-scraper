@@ -37,7 +37,7 @@ import {
 	updateUrlBatchProgress,
 } from "../batch/progress-state.ts";
 import { renderEnvelopeResult } from "./render.ts";
-import { renderWebCrawlResult } from "./web-renderers.ts";
+import { renderWebCrawlResult } from "./web-crawl-renderers.ts";
 import { renderSimpleCall } from "./render.ts";
 import { inputErrorResult, toolResult } from "./result.ts";
 import { sessionOptionSchema, urlProperty } from "./schemas.ts";

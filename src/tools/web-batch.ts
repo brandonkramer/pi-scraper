@@ -22,7 +22,7 @@ import {
 	type BatchProgressView,
 	updateIndexedBatchProgress,
 } from "../batch/progress-state.ts";
-import { renderWebBatchResult } from "./web-renderers.ts";
+import { renderWebBatchResult } from "./web-batch-renderers.ts";
 import { renderSimpleCall } from "./render.ts";
 import { toolResult } from "./result.ts";
 import { scrapeOutputOptionSchema, urlProperty } from "./schemas.ts";

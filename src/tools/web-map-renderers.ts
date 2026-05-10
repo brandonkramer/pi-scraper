@@ -1,10 +1,17 @@
 /**
- * @fileoverview Map result card and URL badge row rendering.
+ * @fileoverview Pi web_map renderer — top-level result/progress card and URL badge rows.
  */
+import {
+	isProgress,
+	type PiToolShell,
+	type ProgressDetails,
+	type ResultEnvelope,
+} from "../types.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import { renderText } from "./render.ts";
-import { muted } from "../tui/theme.ts";
+import { renderText } from "../tui/text.ts";
+import { metadataText, muted, separator } from "../tui/theme.ts";
 import { renderUrlBadgeRow } from "../tui/rows.ts";
+import { renderProgress } from "../tui/progress-card.ts";
 import type { MapUrlEntryView } from "./web-renderer-views.ts";
 
 export function renderMapResultCard(
@@ -41,4 +48,53 @@ function renderMapRow(
 		width,
 		theme,
 	});
+}
+
+export function renderWebMapResult(
+	result: PiToolShell,
+	expanded = false,
+	theme?: RenderTheme,
+): RenderComponent {
+	const details = result.details as
+		| Partial<ResultEnvelope<unknown>>
+		| ProgressDetails;
+	if (isProgress(details))
+		return renderProgress("web_map", details, theme, {
+			allowIcons: false,
+		});
+	const envelope = details as Partial<
+		ResultEnvelope<{
+			urls?: { url: string; source?: string; title?: string }[];
+		}>
+	>;
+	const urls = Array.isArray(envelope.data?.urls) ? envelope.data!.urls : [];
+	const summary = [
+		theme?.bold?.("web_map") ?? "web_map",
+		`${urls.length} URL(s)`,
+		!expanded ? metadataText("(ctrl+o to expand)", theme) : undefined,
+	]
+		.filter(Boolean)
+		.join(theme ? separator(theme) : " · ");
+	if (urls.length === 0) {
+		return renderText(
+			`${summary}\n\n${metadataText("No URLs discovered.", theme)}`,
+			{
+				padToWidth: true,
+			},
+		);
+	}
+	return {
+		render(width: number) {
+			const mapCard = renderMapResultCard(urls, expanded, theme);
+			const mapText = mapCard.render(width).join("\n");
+			const lines = [summary, mapText];
+			if (expanded && envelope.responseId)
+				lines.push(
+					"",
+					metadataText(`responseId: ${envelope.responseId}`, theme),
+				);
+			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
+		},
+		invalidate() {},
+	};
 }
