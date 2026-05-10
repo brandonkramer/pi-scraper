@@ -29,62 +29,92 @@ import {
 	sessionNotice,
 	contextPackageResponseId,
 } from "../tui/envelope-labels.ts";
-import type { CrawlMeta, CrawlPageView } from "./web-renderer-views.ts";
-import { formatResourceFields } from "../tui/resource-fields.ts";
+export interface CrawlMeta {
+	succeededCount: number;
+	failedCount: number;
+	visitedCount: number;
+	frontierCount: number;
+}
+
+export interface CrawlPageView {
+	ok?: boolean;
+	url?: string;
+	finalUrl?: string;
+	status?: number;
+	mode?: string;
+	format?: string;
+	contentType?: string;
+	downloadedBytes?: number;
+	truncated?: boolean;
+	timing?: { durationMs?: number };
+	cache?: { cached?: boolean; staleness?: string };
+	data?: {
+		title?: string;
+		description?: string;
+		markdown?: string;
+		text?: string;
+	};
+	error?: { code?: string; phase?: string; message?: string };
+}
+import {
+	type ResourceListItem,
+	renderResourceItemList,
+} from "../tui/resource-fields.ts";
 
 export function crawlExpandedDetails(
 	pages: readonly CrawlPageView[],
 	metadata: { jobId?: unknown; packageResponseId?: unknown } = {},
 ): string {
-	const lines = ["Per-page details:"];
-	for (const page of pages.slice(0, 20)) {
-		lines.push(...crawlPageDetails(page));
-	}
-	if (pages.length > 20) lines.push(`… ${pages.length - 20} more page(s)`);
-	const jobId = typeof metadata.jobId === "string" ? metadata.jobId : undefined;
-	const packageResponseId =
-		typeof metadata.packageResponseId === "string"
-			? metadata.packageResponseId
-			: undefined;
-	if (jobId || packageResponseId) {
-		lines.push("", "Stored handles:");
-		if (jobId) lines.push(`jobId: ${jobId}`);
-		if (packageResponseId)
-			lines.push(`packageResponseId: ${packageResponseId}`);
-	}
-	return lines.join("\n");
+	return renderResourceItemList(pages.map(toCrawlListItem), {
+		header: "Per-page details:",
+		metadata,
+	});
 }
 
-function crawlPageDetails(page: CrawlPageView): string[] {
+function toCrawlListItem(page: CrawlPageView): ResourceListItem {
 	if (page.error) {
-		return [
-			`✕ ${page.finalUrl ?? page.url ?? "unknown URL"}`,
-			`  ${[page.error.code, page.error.phase, page.error.message ?? "failed"].filter(Boolean).join(" · ")}`,
-		];
+		return {
+			ok: false,
+			url: page.finalUrl ?? page.url ?? "unknown URL",
+			fields: {},
+			error: page.error,
+		};
 	}
 	const url = page.finalUrl ?? page.url ?? "unknown URL";
-	const fields = formatResourceFields({
-		status: page.status,
-		mode: page.mode,
-		format: page.format,
-		contentType: page.contentType,
-		downloadedBytes: page.downloadedBytes,
-		durationMs: page.timing?.durationMs,
-		cached: page.cache?.cached,
-		staleness: page.cache?.staleness,
-		truncated: page.truncated,
-	});
-	const lines = [`✓ ${url}`, `  ${fields}`];
-	if (page.finalUrl && page.url && page.finalUrl !== page.url)
-		lines.push(`  final: ${page.finalUrl}`);
-	if (page.data?.title) lines.push(`  title: ${page.data.title}`);
-	const excerpt =
-		page.data?.description ?? page.data?.markdown ?? page.data?.text;
-	if (excerpt)
-		lines.push(
-			`  excerpt: ${String(excerpt).replace(/\s+/g, " ").trim().slice(0, 180)}`,
-		);
-	return lines;
+	return {
+		ok: true,
+		url,
+		finalUrl:
+			page.finalUrl && page.url && page.finalUrl !== page.url
+				? page.finalUrl
+				: undefined,
+		title: page.data?.title,
+		excerpt: pickExcerpt(
+			page.data?.description,
+			page.data?.markdown,
+			page.data?.text,
+		),
+		fields: {
+			status: page.status,
+			mode: page.mode,
+			format: page.format,
+			contentType: page.contentType,
+			downloadedBytes: page.downloadedBytes,
+			durationMs: page.timing?.durationMs,
+			cached: page.cache?.cached,
+			staleness: page.cache?.staleness,
+			truncated: page.truncated,
+		},
+	};
+}
+
+function pickExcerpt(
+	...candidates: ReadonlyArray<string | undefined>
+): string | undefined {
+	for (const value of candidates) {
+		if (value) return String(value).replace(/\s+/g, " ").trim().slice(0, 180);
+	}
+	return undefined;
 }
 
 export function renderWebCrawlResult(

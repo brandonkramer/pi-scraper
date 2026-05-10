@@ -25,8 +25,34 @@ import {
 	isBatchProgress,
 	isBatchProgressView,
 } from "../batch/progress-state.ts";
-import type { BatchItem } from "./web-renderer-views.ts";
-import { formatResourceFields } from "../tui/resource-fields.ts";
+export interface BatchItem {
+	ok?: boolean;
+	url?: string;
+	result?: {
+		url?: string;
+		finalUrl?: string;
+		status?: number;
+		mode?: string;
+		format?: string;
+		contentType?: string;
+		downloadedBytes?: number;
+		truncated?: boolean;
+		timing?: { durationMs?: number; fetchMs?: number; parseMs?: number };
+		cache?: { cached?: boolean; staleness?: string; ageSeconds?: number };
+		data?: {
+			title?: string;
+			description?: string;
+			markdown?: string;
+			text?: string;
+			route?: string;
+		};
+	};
+	error?: { code?: string; phase?: string; message?: string };
+}
+import {
+	type ResourceListItem,
+	renderResourceItemList,
+} from "../tui/resource-fields.ts";
 import {
 	activityCountSegment,
 	failureCountSegment,
@@ -167,63 +193,55 @@ export function batchExpandedDetails(
 	items: readonly BatchItem[],
 	metadata: { jobId?: unknown; packageResponseId?: unknown } = {},
 ): string {
-	const lines = ["Per-URL details:"];
-	for (const item of items.slice(0, 20)) {
-		lines.push(...batchItemDetails(item));
-	}
-	if (items.length > 20) lines.push(`… ${items.length - 20} more URL(s)`);
-	const jobId = typeof metadata.jobId === "string" ? metadata.jobId : undefined;
-	const packageResponseId =
-		typeof metadata.packageResponseId === "string"
-			? metadata.packageResponseId
-			: undefined;
-	if (jobId || packageResponseId) {
-		lines.push("", "Stored handles:");
-		if (jobId) lines.push(`jobId: ${jobId}`);
-		if (packageResponseId)
-			lines.push(`packageResponseId: ${packageResponseId}`);
-	}
-	return lines.join("\n");
+	return renderResourceItemList(items.map(toBatchListItem), {
+		header: "Per-URL details:",
+		metadata,
+	});
 }
 
-function batchItemDetails(item: BatchItem): string[] {
+function toBatchListItem(item: BatchItem): ResourceListItem {
 	if (!item.ok) {
-		const error = item.error;
-		return [
-			`✕ ${item.url ?? "unknown URL"}`,
-			`  ${[error?.code, error?.phase, error?.message ?? "failed"].filter(Boolean).join(" · ")}`,
-		];
+		return {
+			ok: false,
+			url: item.url ?? "unknown URL",
+			fields: {},
+			error: item.error,
+		};
 	}
 	const result = item.result;
 	const url = item.url ?? result?.url ?? "unknown URL";
-	const fields = formatResourceFields({
-		status: result?.status,
-		mode: result?.mode,
-		format: result?.format,
-		contentType: result?.contentType,
-		downloadedBytes: result?.downloadedBytes,
-		durationMs: result?.timing?.durationMs,
-		cached: result?.cache?.cached,
-		staleness: result?.cache?.staleness,
-		truncated: result?.truncated,
-	});
-	const lines = [`✓ ${url}`, `  ${fields}`];
-	if (result?.finalUrl && result.finalUrl !== url)
-		lines.push(`  final: ${result.finalUrl}`);
-	if (result?.data?.title) lines.push(`  title: ${result.data.title}`);
-	const excerpt = resultExcerpt(result);
-	if (excerpt) lines.push(`  excerpt: ${excerpt}`);
-	return lines;
+	return {
+		ok: true,
+		url,
+		finalUrl: result?.finalUrl,
+		title: result?.data?.title,
+		excerpt: pickExcerpt(
+			result?.data?.description,
+			result?.data?.markdown,
+			result?.data?.text,
+			result?.data?.route,
+		),
+		fields: {
+			status: result?.status,
+			mode: result?.mode,
+			format: result?.format,
+			contentType: result?.contentType,
+			downloadedBytes: result?.downloadedBytes,
+			durationMs: result?.timing?.durationMs,
+			cached: result?.cache?.cached,
+			staleness: result?.cache?.staleness,
+			truncated: result?.truncated,
+		},
+	};
 }
 
-function resultExcerpt(result: BatchItem["result"]): string | undefined {
-	const value =
-		result?.data?.description ??
-		result?.data?.markdown ??
-		result?.data?.text ??
-		result?.data?.route;
-	if (!value) return undefined;
-	return String(value).replace(/\s+/g, " ").trim().slice(0, 180);
+function pickExcerpt(
+	...candidates: ReadonlyArray<string | undefined>
+): string | undefined {
+	for (const value of candidates) {
+		if (value) return String(value).replace(/\s+/g, " ").trim().slice(0, 180);
+	}
+	return undefined;
 }
 
 export function renderWebBatchResult(

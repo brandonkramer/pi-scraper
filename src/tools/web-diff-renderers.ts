@@ -13,7 +13,11 @@ import { metadataText, separator } from "../tui/theme.ts";
 import { formatChecklistItem, formatChecklistText } from "../tui/checklist.ts";
 import { renderProgress } from "../tui/progress-card.ts";
 import { errorTitle, freshnessLabel } from "../tui/envelope-labels.ts";
-import type { DiffData } from "./web-renderer-views.ts";
+export interface DiffData {
+	previous?: unknown;
+	current?: unknown;
+	diff?: { changedCount?: number; addedCount?: number; removedCount?: number };
+}
 
 export type ChecklistState = "done" | "pending" | "failed" | "warning" | "info";
 

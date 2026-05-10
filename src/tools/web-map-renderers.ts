@@ -12,7 +12,11 @@ import { renderText } from "../tui/text.ts";
 import { metadataText, muted, separator } from "../tui/theme.ts";
 import { renderUrlBadgeRow } from "../tui/rows.ts";
 import { renderProgress } from "../tui/progress-card.ts";
-import type { MapUrlEntryView } from "./web-renderer-views.ts";
+export interface MapUrlEntryView {
+	url: string;
+	source?: string;
+	title?: string;
+}
 
 export function renderMapResultCard(
 	urls: readonly MapUrlEntryView[],
