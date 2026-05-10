@@ -7,7 +7,7 @@
  * - web-map-renderers.ts
  * - web-batch-renderers.ts
  * - web-diff-renderers.ts
- * - web-progress-renderers.ts
+ * - src/tui/progress-card.ts (generic progress fallback)
  */
 import {
 	isProgress,

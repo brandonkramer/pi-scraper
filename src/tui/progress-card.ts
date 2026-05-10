@@ -3,7 +3,7 @@
  */
 import type { ProgressDetails } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
-import { renderText } from "../tools/render.ts";
+import { renderText } from "./text.ts";
 import { renderStatusGlyph, renderStatusPill } from "./status-pill.ts";
 import {
 	progressPillLabel,
