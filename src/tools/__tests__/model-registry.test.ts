@@ -6,6 +6,7 @@ import {
 	ModelRegistry,
 	validateAdapterPayload,
 	initModelAdapterProtocol,
+	requestAdapterDiscovery,
 	type RegisteredAdapter,
 } from "../infra/model-registry.ts";
 import { resolveProviderPreference } from "../infra/model-adapter.ts";
@@ -202,5 +203,52 @@ describe("resolveProviderPreference", () => {
 				capability: "summarize",
 			}),
 		).toBe("ollama");
+	});
+});
+
+describe("requestAdapterDiscovery", () => {
+	it("emits discover with {} when no filter passed", () => {
+		const emitted: Array<{ event: string; payload: unknown }> = [];
+		const pi = {
+			events: {
+				emit(event: string, payload: unknown) {
+					emitted.push({ event, payload });
+				},
+			},
+		};
+		requestAdapterDiscovery(pi);
+		expect(emitted).toHaveLength(1);
+		expect(emitted[0]?.event).toBe("pi:model-adapter/discover");
+		expect(emitted[0]?.payload).toEqual({});
+	});
+
+	it("emits discover with capability filter", () => {
+		const emitted: Array<{ event: string; payload: unknown }> = [];
+		const pi = {
+			events: {
+				emit(event: string, payload: unknown) {
+					emitted.push({ event, payload });
+				},
+			},
+		};
+		requestAdapterDiscovery(pi, { capabilities: ["summarize"] });
+		expect(emitted[0]?.payload).toEqual({ capabilities: ["summarize"] });
+	});
+
+	it("emits discover with minPriority filter", () => {
+		const emitted: Array<{ event: string; payload: unknown }> = [];
+		const pi = {
+			events: {
+				emit(event: string, payload: unknown) {
+					emitted.push({ event, payload });
+				},
+			},
+		};
+		requestAdapterDiscovery(pi, { minPriority: 50 });
+		expect(emitted[0]?.payload).toEqual({ minPriority: 50 });
+	});
+
+	it("is a no-op when pi.events is missing", () => {
+		expect(() => requestAdapterDiscovery({})).not.toThrow();
 	});
 });

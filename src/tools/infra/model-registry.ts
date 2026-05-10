@@ -19,6 +19,18 @@ export interface RegisteredAdapter {
 
 export type ResolvePreference = "auto" | "off" | string;
 
+/**
+ * Optional filter for `pi:model-adapter/discover`.
+ *
+ * @remarks
+ * Adapters SHOULD only re-register when they match the filter;
+ * MAY re-register unconditionally for backwards compatibility.
+ */
+export interface DiscoverPayload {
+	capabilities?: readonly ModelCapability[];
+	minPriority?: number;
+}
+
 /** In-memory registry of adapters announced over pi.events. */
 export class ModelRegistry {
 	private entries = new Map<string, RegisteredAdapter>();
@@ -95,6 +107,20 @@ export function initModelAdapterProtocol(pi: {
 		}
 	});
 	pi.events.emit?.("pi:model-adapter/discover", {});
+}
+
+/**
+ * Emit a `pi:model-adapter/discover` event, optionally scoped by capability
+ * or minimum priority. A no-op when `pi.events.emit` is unavailable.
+ */
+export function requestAdapterDiscovery(
+	pi: {
+		events?: { emit(event: string, payload?: unknown): void };
+	},
+	filter?: DiscoverPayload,
+): void {
+	if (typeof pi.events?.emit !== "function") return;
+	pi.events.emit("pi:model-adapter/discover", filter ?? {});
 }
 
 /** Duck-type an incoming payload; return null if malformed. */
