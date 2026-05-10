@@ -26,7 +26,7 @@ import {
 } from "./web-batch-renderers.ts";
 import { crawlExpandedDetails } from "./web-crawl-renderers.ts";
 import { renderMapResultCard } from "./web-map-renderers.ts";
-import { batchProgressFromCrawlPages } from "./web-batch-progress.ts";
+import { batchProgressFromCrawlPages } from "../batch/progress-state.ts";
 import {
 	batchProgressFromItems,
 	isBatchProgress,

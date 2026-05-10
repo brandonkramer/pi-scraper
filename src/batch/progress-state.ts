@@ -107,6 +107,32 @@ function recountBatchProgress(progress: BatchProgressView): void {
 	).length;
 }
 
+interface CrawlPageLike {
+	url?: string;
+	finalUrl?: string;
+	error?: { message?: string };
+}
+
+export function batchProgressFromCrawlPages(
+	pages: readonly CrawlPageLike[],
+	concurrency?: number,
+): BatchProgressView {
+	const succeeded = pages.filter((p) => !p.error).length;
+	const failed = pages.length - succeeded;
+	return {
+		total: pages.length,
+		completed: pages.length,
+		succeeded,
+		failed,
+		concurrency: concurrency ?? pages.length,
+		items: pages.map((page) => ({
+			url: page.finalUrl ?? page.url ?? "unknown URL",
+			status: page.error ? "error" : "done",
+			error: page.error?.message,
+		})),
+	};
+}
+
 export function batchProgressFromItems(
 	items: readonly BatchItemResult[],
 	concurrency?: number,

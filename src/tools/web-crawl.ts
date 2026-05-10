@@ -33,9 +33,9 @@ import { emitProgress } from "./progress.ts";
 import {
 	cloneBatchProgress,
 	type BatchProgressView,
+	batchProgressFromCrawlPages,
 	updateUrlBatchProgress,
 } from "../batch/progress-state.ts";
-import { batchProgressFromCrawlPages } from "./web-batch-progress.ts";
 import { renderEnvelopeResult } from "./render.ts";
 import { renderWebCrawlResult } from "./web-renderers.ts";
 import { renderSimpleCall } from "./render.ts";

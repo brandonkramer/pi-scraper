@@ -14,7 +14,7 @@ import type {
 	BatchProgressItemView,
 	BatchProgressStatus,
 	BatchProgressView,
-} from "./web-batch-progress.ts";
+} from "../batch/progress-state.ts";
 import type { BatchItem } from "./web-renderer-views.ts";
 import { formatResourceFields } from "../tui/resource-fields.ts";
 
