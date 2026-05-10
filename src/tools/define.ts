@@ -22,7 +22,6 @@ export type ToolExecute<TParams> = (
 	context?: ToolExecutionContext,
 ) => Promise<PiToolShell>;
 
-export { RenderComponent, RenderTheme } from "../tui/types.ts";
 
 export interface RenderOptions {
 	expanded?: boolean;

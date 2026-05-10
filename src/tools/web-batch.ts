@@ -23,7 +23,7 @@ import {
 	updateIndexedBatchProgress,
 } from "../batch/progress-state.ts";
 import { renderWebBatchResult } from "./web-batch-renderers.ts";
-import { renderSimpleCall } from "./render.ts";
+import { renderSimpleCall } from "../tui/simple-call.ts";
 import { toolResult } from "./result.ts";
 import { scrapeOutputOptionSchema, urlProperty } from "./schemas.ts";
 

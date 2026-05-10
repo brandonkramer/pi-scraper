@@ -36,9 +36,9 @@ import {
 	batchProgressFromCrawlPages,
 	updateUrlBatchProgress,
 } from "../batch/progress-state.ts";
-import { renderEnvelopeResult } from "./render.ts";
+import { renderEnvelopeResult } from "../tui/envelope-card.ts";
 import { renderWebCrawlResult } from "./web-crawl-renderers.ts";
-import { renderSimpleCall } from "./render.ts";
+import { renderSimpleCall } from "../tui/simple-call.ts";
 import { inputErrorResult, toolResult } from "./result.ts";
 import { sessionOptionSchema, urlProperty } from "./schemas.ts";
 

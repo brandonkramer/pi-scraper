@@ -15,7 +15,8 @@ import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { storedResultGuidance } from "./agentic-context.ts";
 import { defineWebTool, type WebTool } from "./define.ts";
 import { emitProgress } from "./progress.ts";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.ts";
+import { renderEnvelopeResult } from "../tui/envelope-card.ts";
+import { renderSimpleCall } from "../tui/simple-call.ts";
 import {
 	errorResult,
 	inputErrorResult,

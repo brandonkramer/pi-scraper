@@ -1,20 +1,9 @@
 /**
- * @fileoverview Tool-specific result renderers built on shared TUI primitives.
+ * @fileoverview Generic ResultEnvelope summary card used by tools whose result has no bespoke renderer.
  */
 import type { PiToolShell, ResultEnvelope } from "../types.ts";
-import type { RenderComponent, RenderTheme } from "./define.ts";
-import { renderText } from "../tui/text.ts";
-
-export { renderText } from "../tui/text.ts";
-
-export function renderSimpleCall(
-	name: string,
-	parts: Array<string | undefined>,
-	theme?: RenderTheme,
-): RenderComponent {
-	const text = `${name} ${parts.filter(Boolean).join(" ")}`.trim();
-	return renderText(theme?.fg?.("accent", text) ?? text);
-}
+import type { RenderComponent } from "./types.ts";
+import { renderText } from "./text.ts";
 
 export function renderEnvelopeResult(
 	result: PiToolShell,
@@ -63,12 +52,4 @@ function expandedEnvelopeText(
 		);
 	}
 	return lines.join("\n");
-}
-
-export function summarizeData(value: unknown): string {
-	if (Array.isArray(value))
-		return `${value.length} item${value.length === 1 ? "" : "s"}`;
-	if (value && typeof value === "object")
-		return `${Object.keys(value).length} field${Object.keys(value).length === 1 ? "" : "s"}`;
-	return String(value ?? "done");
 }

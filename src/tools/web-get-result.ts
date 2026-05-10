@@ -6,11 +6,8 @@ import { listSnapshots } from "../diff/snapshots.ts";
 import { getJobManifest } from "../storage/jobs.ts";
 import { getStoredResult } from "../storage/results.ts";
 import { defineWebTool } from "./define.ts";
-import {
-	renderEnvelopeResult,
-	renderSimpleCall,
-	summarizeData,
-} from "./render.ts";
+import { renderEnvelopeResult } from "../tui/envelope-card.ts";
+import { renderSimpleCall } from "../tui/simple-call.ts";
 import { errorResult, structuredToolError, toolResult } from "./result.ts";
 
 export const webGetResultSchema = Type.Object({
@@ -127,4 +124,12 @@ async function getResponse(responseId: string) {
 			structuredToolError(error, "STORED_RESULT_NOT_FOUND", "retrieve"),
 		);
 	}
+}
+
+function summarizeData(value: unknown): string {
+	if (Array.isArray(value))
+		return `${value.length} item${value.length === 1 ? "" : "s"}`;
+	if (value && typeof value === "object")
+		return `${Object.keys(value).length} field${Object.keys(value).length === 1 ? "" : "s"}`;
+	return String(value ?? "done");
 }

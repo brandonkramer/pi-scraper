@@ -8,7 +8,7 @@ import {
 	type ProgressDetails,
 } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import { renderText } from "./render.ts";
+import { renderText } from "../tui/text.ts";
 import { metadataText, separator } from "../tui/theme.ts";
 import { formatChecklistItem, formatChecklistText } from "../tui/checklist.ts";
 import { renderProgress } from "../tui/progress-card.ts";

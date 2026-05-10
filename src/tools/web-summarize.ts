@@ -8,7 +8,8 @@ import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { summarizePage } from "../summarize/page.ts";
 import { buildSummarizeToolResult } from "./scrape-input-result.ts";
 import { defineWebTool, type WebTool } from "./define.ts";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.ts";
+import { renderEnvelopeResult } from "../tui/envelope-card.ts";
+import { renderSimpleCall } from "../tui/simple-call.ts";
 import {
 	errorResult,
 	missingModelResult,
