@@ -17,7 +17,7 @@ import { updateJobManifest } from "../storage/jobs.ts";
 import { storeResponseWithId } from "../storage/responses/store.ts";
 import type { FreshnessMetadata } from "../types.ts";
 import { storedResultGuidance } from "./agentic-context.ts";
-import { buildStoredContextPackage } from "../storage/context-package-results.ts";
+import { buildStoredContextPackage } from "../storage/context-packages/build.ts";
 import { sessionLifecycle } from "./session-lifecycle.ts";
 import { emitProgress } from "./progress.ts";
 import {

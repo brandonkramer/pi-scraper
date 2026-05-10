@@ -2,7 +2,7 @@
  * @fileoverview Batch context-package compilation workflow.
  */
 import type { BatchItemResult } from "./run.ts";
-import { buildStoredContextPackage } from "../storage/context-package-results.ts";
+import { buildStoredContextPackage } from "../storage/context-packages/build.ts";
 import { updateJobManifest } from "../storage/jobs.ts";
 
 export async function buildBatchContextPackage(
