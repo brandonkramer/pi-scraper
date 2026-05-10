@@ -54,8 +54,7 @@ export function renderResourceItemList(
 	for (const item of items.slice(0, max)) {
 		lines.push(...renderResourceItemLines(item));
 	}
-	if (items.length > max)
-		lines.push(`… ${items.length - max} more item(s)`);
+	if (items.length > max) lines.push(`… ${items.length - max} more item(s)`);
 	const jobId =
 		typeof options.metadata?.jobId === "string"
 			? options.metadata.jobId

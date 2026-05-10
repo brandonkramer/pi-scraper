@@ -22,7 +22,6 @@ export type ToolExecute<TParams> = (
 	context?: ToolExecutionContext,
 ) => Promise<PiToolShell>;
 
-
 export interface RenderOptions {
 	expanded?: boolean;
 	isPartial?: boolean;

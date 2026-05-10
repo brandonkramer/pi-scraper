@@ -12,7 +12,7 @@ import { renderProgress } from "../tui/progress-card.ts";
 import {
 	renderBatchProgressCard,
 	renderBatchResultCard,
-} from "./web-batch-renderers.ts";
+} from "../tui/batch-progress-card.ts";
 import {
 	batchProgressFromCrawlPages,
 	isBatchProgress,
