@@ -98,6 +98,7 @@ export async function runAdHocExtraction(
 			summary,
 			answerContext:
 				"Refresh the source page before extraction when the requested facts are time-sensitive.",
+			modelUsage: result.usage,
 		});
 	} catch (error) {
 		return toolErrorResult(
