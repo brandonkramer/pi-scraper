@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createCrawlState, saveCrawlState } from "../../crawl/state.ts";
 import { closeStorageDbs } from "../../storage/db.ts";
-import { storeResult } from "../../storage/results.ts";
+import { storeResponse } from "../../storage/responses/store.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import { diffInterpretation } from "../web-diff.ts";
 import { webCrawlTool } from "../web-crawl.ts";
@@ -31,7 +31,7 @@ afterEach(async () => {
 
 describe("agentic response shaping", () => {
 	it("web_crawl action=list summarizes recommended actions", async () => {
-		await storeResult(
+		await storeResponse(
 			{ url: "https://example.com", data: "crawl" },
 			{ responseId: "crawl-result-1" },
 		);

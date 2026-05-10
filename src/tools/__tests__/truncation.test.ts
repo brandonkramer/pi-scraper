@@ -6,7 +6,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { PI_TRUNCATION_LIMITS } from "../../defaults.ts";
-import { getStoredResult, truncateAndStore } from "../../storage/results.ts";
+import { readResponse } from "../../storage/responses/read.ts";
+import { truncateAndStore } from "../../storage/responses/truncate.ts";
 
 let homeDir: string;
 let originalHome: string | undefined;
@@ -37,7 +38,7 @@ describe("truncated full output storage", () => {
 			path.join(homeDir, ".pi", "scraper", "blobs"),
 		);
 
-		const retrieved = await getStoredResult<typeof payload>(
+		const retrieved = await readResponse<typeof payload>(
 			truncated.metadata?.responseId ?? "",
 		);
 

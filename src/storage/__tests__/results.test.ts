@@ -6,7 +6,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolvePiStoragePaths } from "../paths.ts";
-import { getStoredResult, storeResult, truncateAndStore } from "../results.ts";
+import { readResponse } from "../responses/read.ts";
+import { storeResponse } from "../responses/store.ts";
+import { truncateAndStore } from "../responses/truncate.ts";
 
 let rootDir: string;
 
@@ -37,11 +39,11 @@ describe("storage paths and results", () => {
 	});
 
 	it("stores and retrieves values by responseId", async () => {
-		const metadata = await storeResult(
+		const metadata = await storeResponse(
 			{ ok: true },
 			{ rootDir, responseId: "abc" },
 		);
-		const stored = await getStoredResult<{ ok: boolean }>("abc", { rootDir });
+		const stored = await readResponse<{ ok: boolean }>("abc", { rootDir });
 		expect(metadata.responseId).toBe("abc");
 		expect(stored.value.ok).toBe(true);
 	});

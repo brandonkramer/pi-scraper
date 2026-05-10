@@ -11,7 +11,7 @@ import {
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
 } from "../storage/paths.ts";
-import { getStoredResult } from "../storage/results.ts";
+import { readResponse } from "../storage/responses/read.ts";
 import type { ResponseStorageMetadata, StructuredError } from "../types.ts";
 import { normalizeUrl } from "../url/normalize.ts";
 import { compareSnapshotText, type TextDiffSummary } from "./compare.ts";
@@ -300,7 +300,7 @@ async function loadIndexedSnapshot(
 			| { response_id: string }
 			| undefined;
 		if (!row) return undefined;
-		const stored = await getStoredResult<SnapshotDiffResult>(
+		const stored = await readResponse<SnapshotDiffResult>(
 			row.response_id,
 			options,
 		);

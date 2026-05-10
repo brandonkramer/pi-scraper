@@ -8,7 +8,7 @@ import {
 } from "../extract/context-package.ts";
 import type { ScrapeResult } from "../scrape/pipeline.ts";
 import { writeCrawlContextPackage } from "./context-packages.ts";
-import { storeResult } from "./results.ts";
+import { storeResponse } from "./responses/store.ts";
 
 export interface ContextPackagePageInput {
 	url: string;
@@ -36,7 +36,7 @@ export async function buildStoredContextPackage(input: {
 		batchId: input.batchId,
 		pages: input.pages,
 	});
-	const stored = await storeResult(value);
+	const stored = await storeResponse(value);
 	const crawlFile = input.persistCrawlPackage
 		? await writeCrawlContextPackage(requiredCrawlId(input), value)
 		: undefined;

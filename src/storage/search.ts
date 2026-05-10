@@ -43,7 +43,7 @@ export async function fts5Available(
 	}
 }
 
-export async function recordStoredSearchText(
+export async function indexSearchText(
 	responseId: string,
 	value: unknown,
 	options: ResolveStorageOptions = {},
@@ -67,7 +67,7 @@ export async function recordStoredSearchText(
 	);
 }
 
-export async function searchStoredScrapes(
+export async function searchResponses(
 	query: string,
 	options: ResolveStorageOptions & { limit?: number } = {},
 ): Promise<SearchResult> {

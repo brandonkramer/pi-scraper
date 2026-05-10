@@ -20,10 +20,10 @@ import {
 	unknownToJobError,
 } from "../storage/jobs.ts";
 import {
-	storeResult,
-	truncateAndStore,
-	type StoreResultOptions,
-} from "../storage/results.ts";
+	storeResponse,
+	type StoreResponseOptions,
+} from "../storage/responses/store.ts";
+import { truncateAndStore } from "../storage/responses/truncate.ts";
 import { normalizeMaybe } from "../storage/db/row-fields.ts";
 
 export interface BatchProgress {
@@ -35,7 +35,7 @@ export interface BatchProgress {
 
 export interface BatchScrapeOptions
 	extends CommonScrapeOptions,
-		StoreResultOptions {
+		StoreResponseOptions {
 	concurrency?: number;
 	perHostConcurrency?: number;
 	storeFullResults?: boolean;
@@ -198,7 +198,7 @@ export async function runBatchScrape(
 	const completed = items.filter(Boolean) as BatchItemResult[];
 	const summary = summarize(completed);
 	if (options.storeFullResults === true) {
-		const metadata = await storeResult(completed, options);
+		const metadata = await storeResponse(completed, options);
 		await updateBatchJob(
 			"done",
 			completed.length,

@@ -169,8 +169,8 @@ async function readScrape(
 			{ id: "store", label: "storing result", state: "pending" },
 		],
 	});
-	const { storeResult } = await import("../storage/results.ts");
-	const stored = await storeResult(result);
+	const { storeResponse } = await import("../storage/responses/store.ts");
+	const stored = await storeResponse(result);
 	const shaped = shapeScrapeResult(result, stored.responseId);
 	const { notice: sessionNotice, suffix: sessionSuffix } =
 		await sessionLifecycle(params);

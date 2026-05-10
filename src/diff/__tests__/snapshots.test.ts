@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { openStorageDb, closeStorageDbs } from "../../storage/db.ts";
-import { storeResult } from "../../storage/results.ts";
+import { storeResponse } from "../../storage/responses/store.ts";
 import { compareSnapshotText } from "../compare.ts";
 import { normalizeVolatileSnapshotText } from "../normalize.ts";
 import {
@@ -183,7 +183,7 @@ describe("snapshot diffing", () => {
 		);
 		await updateSnapshotReference(
 			"https://example.com",
-			await storeResult(first, { rootDir, responseId: "diff-1" }),
+			await storeResponse(first, { rootDir, responseId: "diff-1" }),
 			{ rootDir, snapshotName: "homepage" },
 		);
 		const second = await diffScrapeResult(
@@ -195,7 +195,7 @@ describe("snapshot diffing", () => {
 		);
 		await updateSnapshotReference(
 			"https://example.com",
-			await storeResult(second, { rootDir, responseId: "diff-2" }),
+			await storeResponse(second, { rootDir, responseId: "diff-2" }),
 			{ rootDir, snapshotName: "homepage" },
 		);
 		const db = await openStorageDb({ rootDir });

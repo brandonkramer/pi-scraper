@@ -20,7 +20,7 @@ import {
 	writeJobManifest,
 	type JobError,
 } from "../storage/jobs.ts";
-import { storeResultWithResponseId } from "../storage/results.ts";
+import { storeResponseWithId } from "../storage/responses/store.ts";
 import { storedTraceContext } from "./agentic-context.ts";
 import { formatAge } from "../scrape/describe.ts";
 import { defineWebTool } from "./define.ts";
@@ -90,7 +90,7 @@ export const webDiffTool = defineWebTool({
 				snapshotTag: params.snapshotTag,
 				compareTag: params.compareTag,
 			});
-			const { metadata: stored } = await storeResultWithResponseId(
+			const { metadata: stored } = await storeResponseWithId(
 				(responseId) => {
 					diff.current.metadata.responseId = responseId;
 					return diff;

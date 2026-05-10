@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { closeStorageDbs } from "../../storage/db.ts";
-import { getStoredResult } from "../../storage/results.ts";
+import { readResponse } from "../../storage/responses/read.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import { webCrawlTool } from "../web-crawl.ts";
 import { webGetResultTool } from "../web-get-result.ts";
@@ -101,7 +101,7 @@ describe("web_crawl api-surface extraction", () => {
 			"fetchMetrics",
 		);
 
-		const stored = await getStoredResult<{
+		const stored = await readResponse<{
 			package: { source: string; crawlId?: string };
 			tree: Array<{ title?: string }>;
 		}>(diagnostics.contextPackage!.responseId);
@@ -143,7 +143,7 @@ describe("web_crawl api-surface extraction", () => {
 		);
 		expect(requested.content[0]?.text).toContain("apiSurface: 1 module(s).");
 
-		const stored = await getStoredResult<{
+		const stored = await readResponse<{
 			apiSurface?: { modules: Array<{ functions: Array<{ name: string }> }> };
 		}>(requestedEnvelope.responseId!);
 		expect(stored.value.apiSurface?.modules[0]?.functions[0]?.name).toBe(

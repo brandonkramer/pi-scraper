@@ -9,8 +9,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createCrawlState, loadCrawlState } from "../../crawl/state.ts";
 import { closeStorageDbs } from "../db.ts";
 import { writeBlob } from "../blobs.ts";
-import { getStoredResult, storeResult } from "../results.ts";
-import { searchStoredScrapes, setFtsAvailabilityForTests } from "../search.ts";
+import { readResponse } from "../responses/read.ts";
+import { storeResponse } from "../responses/store.ts";
+import { searchResponses, setFtsAvailabilityForTests } from "../search.ts";
 
 let rootDir: string;
 
@@ -26,11 +27,11 @@ afterEach(async () => {
 
 describe("SQLite-backed storage", () => {
 	it("stores result metadata in index.db and payload in content-addressed blobs", async () => {
-		const metadata = await storeResult(
+		const metadata = await storeResponse(
 			{ url: "https://example.com", ok: true },
 			{ rootDir, responseId: "r1" },
 		);
-		const stored = await getStoredResult<{ ok: boolean }>("r1", { rootDir });
+		const stored = await readResponse<{ ok: boolean }>("r1", { rootDir });
 
 		expect(existsSync(path.join(rootDir, "index.db"))).toBe(true);
 		expect(metadata.fullOutputPath).toContain(path.join(rootDir, "blobs"));
@@ -46,8 +47,8 @@ describe("SQLite-backed storage", () => {
 	});
 
 	it("indexes stored scrape text when FTS5 is available", async () => {
-		if (!(await searchStoredScrapes("probe", { rootDir })).supported) return;
-		await storeResult(
+		if (!(await searchResponses("probe", { rootDir })).supported) return;
+		await storeResponse(
 			{
 				url: "https://example.com/docs",
 				data: { title: "Docs", markdown: "alpha beta searchable needle" },
@@ -55,7 +56,7 @@ describe("SQLite-backed storage", () => {
 			{ rootDir, responseId: "searchable" },
 		);
 
-		const result = await searchStoredScrapes("needle", { rootDir });
+		const result = await searchResponses("needle", { rootDir });
 
 		expect(result.supported).toBe(true);
 		expect(result.hits[0]?.responseId).toBe("searchable");
@@ -64,7 +65,7 @@ describe("SQLite-backed storage", () => {
 	it("returns an unsupported search result when FTS5 is unavailable", async () => {
 		setFtsAvailabilityForTests(false);
 
-		const result = await searchStoredScrapes("needle", { rootDir });
+		const result = await searchResponses("needle", { rootDir });
 
 		expect(result.supported).toBe(false);
 		expect(result.hits).toEqual([]);
@@ -85,11 +86,11 @@ describe("SQLite-backed storage", () => {
 			}),
 		);
 
-		const first = await getStoredResult<{ body: string }>("legacy", {
+		const first = await readResponse<{ body: string }>("legacy", {
 			rootDir,
 		});
 		closeStorageDbs();
-		const second = await getStoredResult<{ body: string }>("legacy", {
+		const second = await readResponse<{ body: string }>("legacy", {
 			rootDir,
 		});
 

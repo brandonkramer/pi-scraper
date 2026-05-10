@@ -4,7 +4,7 @@
 import { type Static, Type } from "@earendil-works/pi-ai";
 import { listSnapshots } from "../diff/snapshots.ts";
 import { getJobManifest } from "../storage/jobs.ts";
-import { getStoredResult } from "../storage/results.ts";
+import { readResponse } from "../storage/responses/read.ts";
 import { defineWebTool } from "./define.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { renderSimpleCall } from "../tui/simple-call.ts";
@@ -107,7 +107,7 @@ async function getSnapshotList(
 
 async function getResponse(responseId: string) {
 	try {
-		const stored = await getStoredResult(responseId);
+		const stored = await readResponse(responseId);
 		return toolResult({
 			text: `Stored result ${responseId}: ${summarizeData(stored.value)}`,
 			data: stored.value,

@@ -14,7 +14,7 @@ import {
 } from "../storage/cache/freshness.ts";
 import type { ScrapeResult } from "../scrape/pipeline.ts";
 import { updateJobManifest } from "../storage/jobs.ts";
-import { storeResultWithResponseId } from "../storage/results.ts";
+import { storeResponseWithId } from "../storage/responses/store.ts";
 import type { FreshnessMetadata } from "../types.ts";
 import { storedResultGuidance } from "./agentic-context.ts";
 import { buildStoredContextPackage } from "../storage/context-package-results.ts";
@@ -81,7 +81,7 @@ export async function crawlRun(
 		signal,
 	);
 	const apiSurface = await maybeBuildApiSurface(params, crawl.pages);
-	const { metadata: finalStored } = await storeResultWithResponseId(
+	const { metadata: finalStored } = await storeResponseWithId(
 		(responseId) => {
 			crawl.metadata = { ...crawl.metadata, responseId };
 			return apiSurface ? { ...crawl, apiSurface } : crawl;

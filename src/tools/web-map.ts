@@ -4,7 +4,7 @@
 import { Type, type Static } from "@earendil-works/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.ts";
 import { discoverSiteUrls } from "../map/discover.ts";
-import { storeResult } from "../storage/results.ts";
+import { storeResponse } from "../storage/responses/store.ts";
 import { defineWebTool } from "./define.ts";
 import { emitProgress } from "./progress.ts";
 import { renderSimpleCall } from "../tui/simple-call.ts";
@@ -42,7 +42,7 @@ export const webMapTool = defineWebTool({
 			{},
 			signal,
 		);
-		const metadata = await storeResult(map);
+		const metadata = await storeResponse(map);
 		await emitProgress(onUpdate, {
 			state: "done",
 			url: params.url,

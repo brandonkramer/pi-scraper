@@ -9,7 +9,7 @@ import type { BatchScrapeResult } from "../../batch/run.ts";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { closeStorageDbs } from "../../storage/db.ts";
 import { getJobManifest } from "../../storage/jobs.ts";
-import { getStoredResult } from "../../storage/results.ts";
+import { readResponse } from "../../storage/responses/read.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import { webBatchTool } from "../web-batch.ts";
 import { webGetResultTool } from "../web-get-result.ts";
@@ -19,7 +19,7 @@ vi.mock("../../batch/run.ts", () => ({
 		const { createJobManifest, writeJobManifest } = await import(
 			"../../storage/jobs.ts"
 		);
-		const { storeResult } = await import("../../storage/results.ts");
+		const { storeResponse } = await import("../../storage/responses/store.ts");
 		const jobId = "batch-context-package";
 		await writeJobManifest(
 			createJobManifest({
@@ -37,7 +37,7 @@ vi.mock("../../batch/run.ts", () => ({
 				result: docsPage("https://docs.example.com/guide"),
 			},
 		];
-		const stored = await storeResult(items);
+		const stored = await storeResponse(items);
 		return {
 			items,
 			responseId: stored.responseId,
@@ -87,7 +87,7 @@ describe("web_batch context packages", () => {
 		expect(diagnostics.contextPackage?.package.urlCount).toBe(1);
 
 		const packageResponseId = diagnostics.contextPackage!.responseId;
-		const stored = await getStoredResult<{
+		const stored = await readResponse<{
 			package: { source: string; batchId?: string };
 			tree: Array<{ title?: string; excerpt?: string }>;
 		}>(packageResponseId);
