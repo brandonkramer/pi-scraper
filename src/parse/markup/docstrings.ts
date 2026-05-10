@@ -190,7 +190,10 @@ function parseParam(text: string): ParsedDocParam {
 
 function parseReturn(text: string): ParsedDocReturn {
 	const match = text.match(/^(?:\{([^}]+)\}\s*)?(.*)$/u);
-	return withoutUndefined({ type: match?.[1], description: match?.[2]?.trim() });
+	return withoutUndefined({
+		type: match?.[1],
+		description: match?.[2]?.trim(),
+	});
 }
 
 function symbolFromSignature(signature: string): {

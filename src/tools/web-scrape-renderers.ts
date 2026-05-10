@@ -193,7 +193,10 @@ function scrapeExpandedDetails(
 	if (envelope.url) lines.push(`  url: ${envelope.url}`);
 	if (envelope.finalUrl && envelope.finalUrl !== envelope.url)
 		lines.push(`  final: ${envelope.finalUrl}`);
-	const title = stringField(envelope.data, "title");
+	const title =
+		typeof envelope.data?.title === "string" && envelope.data.title
+			? envelope.data.title
+			: undefined;
 	if (title) lines.push(`  title: ${title}`);
 	if (envelope.error) {
 		lines.push(
@@ -203,10 +206,3 @@ function scrapeExpandedDetails(
 	return lines.join("\n");
 }
 
-function stringField(
-	data: Record<string, unknown> | undefined,
-	key: string,
-): string | undefined {
-	const value = data?.[key];
-	return typeof value === "string" && value ? value : undefined;
-}

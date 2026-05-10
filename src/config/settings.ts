@@ -127,32 +127,32 @@ function normalizeScrapeDefaults(
 			timeoutSeconds: raw.timeoutSeconds,
 			maxBytes: raw.maxBytes,
 			maxChars: raw.maxChars,
-		headers:
-			raw.headers && typeof raw.headers === "object"
-				? Object.fromEntries(
-						Object.entries(raw.headers).filter(
-							(entry): entry is [string, string] =>
-								typeof entry[1] === "string",
-						),
-					)
-				: undefined,
-		proxy: raw.proxy,
-		respectRobots: raw.respectRobots,
-		cacheTtlSeconds: raw.cacheTtlSeconds,
-		maxAgeSeconds: raw.maxAgeSeconds,
-		refresh: raw.refresh,
-		retryAttempts: boundedNumber(raw.retryAttempts, 0, 10),
-		retryBaseDelayMs: boundedNumber(raw.retryBaseDelayMs, 0, 60_000),
-		retryMaxDelayMs: boundedNumber(raw.retryMaxDelayMs, 0, 300_000),
-		retryJitterMs: boundedNumber(raw.retryJitterMs, 0, 60_000),
-		include: raw.include,
-		exclude: raw.exclude,
-		onlyMainContent: raw.onlyMainContent,
-		removeImages: raw.removeImages,
-		cookies: raw.cookies,
-		browserProfile: raw.browserProfile,
-		osProfile: raw.osProfile,
-	}).filter(([, v]) => v !== undefined && v !== ""),
+			headers:
+				raw.headers && typeof raw.headers === "object"
+					? Object.fromEntries(
+							Object.entries(raw.headers).filter(
+								(entry): entry is [string, string] =>
+									typeof entry[1] === "string",
+							),
+						)
+					: undefined,
+			proxy: raw.proxy,
+			respectRobots: raw.respectRobots,
+			cacheTtlSeconds: raw.cacheTtlSeconds,
+			maxAgeSeconds: raw.maxAgeSeconds,
+			refresh: raw.refresh,
+			retryAttempts: boundedNumber(raw.retryAttempts, 0, 10),
+			retryBaseDelayMs: boundedNumber(raw.retryBaseDelayMs, 0, 60_000),
+			retryMaxDelayMs: boundedNumber(raw.retryMaxDelayMs, 0, 300_000),
+			retryJitterMs: boundedNumber(raw.retryJitterMs, 0, 60_000),
+			include: raw.include,
+			exclude: raw.exclude,
+			onlyMainContent: raw.onlyMainContent,
+			removeImages: raw.removeImages,
+			cookies: raw.cookies,
+			browserProfile: raw.browserProfile,
+			osProfile: raw.osProfile,
+		}).filter(([, v]) => v !== undefined && v !== ""),
 	) as PersistedScrapeDefaults;
 }
 

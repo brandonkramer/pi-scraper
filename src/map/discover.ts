@@ -5,8 +5,12 @@ import type { HttpClient } from "../http/client.ts";
 import { createHttpClient } from "../http/client.ts";
 import { normalizeUrl } from "../url/normalize.ts";
 import { llmsUrlForSite, parseLlmsLinks } from "./llms.ts";
-import { parseRobotsSitemaps, robotsUrlForSite } from "./robots.ts";
-import { defaultSitemapUrl, parseSitemapXml } from "./sitemaps.ts";
+import {
+  defaultSitemapUrl,
+  parseRobotsSitemaps,
+  parseSitemapXml,
+  robotsUrlForSite,
+} from "./sitemaps.ts";
 
 export interface MapUrlEntry {
   url: string;

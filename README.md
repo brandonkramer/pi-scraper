@@ -41,7 +41,7 @@ Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` when browsers are managed externally. `
 
 ## Public tools
 
-| Tool             | Capability                                      | Use it for                                                                                                                                                 | Description / Contract | Overhead |
+| Tool             | Capability                                      | Use it for                                                                                                                                                 | Description / Contract token ≈ | Input overhead ≈ |
 | ---------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------: | -------: |
 | `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, including raw Markdown, MDX, RST, and source docstrings.                                                 |                2 / 115 |     +140 |
 | `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                                        |                 8 / 94 |     +100 |
@@ -52,7 +52,7 @@ Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` when browsers are managed externally. `
 | `web_extract`    | Local/model depending on action                 | List/run deterministic extractors, inspect patterns, compile API surfaces, run selector extraction with adaptive repair, or extract via schema/prompt.     |                7 / 253 |     +289 |
 | `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                      |                10 / 56 |      +74 |
 
-Token counts are approximate: **Description** is lightweight public-facing prose only; **Contract** is the full serialized declaration including schema; **Overhead** is the empirical Pi JSON-mode input token delta against a no-tools baseline, which includes provider serialization and hidden wrapper metadata and varies by provider/model.
+Token counts are approximate: **Description** is lightweight public-facing prose only; **Contract** is the full serialized declaration including schema; **Input overhead** is the empirical Pi JSON-mode input token delta against a no-tools baseline, which includes provider serialization and hidden wrapper metadata and varies by provider/model.
 
 Capability labels:
 
