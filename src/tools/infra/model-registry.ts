@@ -89,6 +89,11 @@ export class ModelRegistry {
 /** Module-level singleton consumed by model-backed tools. */
 export const modelRegistry = new ModelRegistry();
 
+/** Stored events reference for lazy discover calls without an explicit pi. */
+let adapterProtocolEvents:
+	| { on(event: string, handler: (payload: unknown) => void): void; emit(event: string, payload?: unknown): void }
+	| undefined;
+
 /** Wire the singleton to a Pi registrar's event bus. */
 export function initModelAdapterProtocol(pi: {
 	events?: {
@@ -97,6 +102,7 @@ export function initModelAdapterProtocol(pi: {
 	};
 }): void {
 	if (typeof pi.events?.on !== "function") return;
+	adapterProtocolEvents = pi.events;
 	pi.events.on("pi:model-adapter/register", (payload) => {
 		const entry = validateAdapterPayload(payload);
 		if (entry) modelRegistry.register(entry);
@@ -112,15 +118,21 @@ export function initModelAdapterProtocol(pi: {
 /**
  * Emit a `pi:model-adapter/discover` event, optionally scoped by capability
  * or minimum priority. A no-op when `pi.events.emit` is unavailable.
+ *
+ * @remarks
+ * Callers that lack an explicit `pi` reference (e.g. inside tool `execute`)
+ * can pass `undefined` for `pi`; the helper falls back to the events reference
+ * captured during `initModelAdapterProtocol`.
  */
 export function requestAdapterDiscovery(
-	pi: {
+	pi?: {
 		events?: { emit(event: string, payload?: unknown): void };
 	},
 	filter?: DiscoverPayload,
 ): void {
-	if (typeof pi.events?.emit !== "function") return;
-	pi.events.emit("pi:model-adapter/discover", filter ?? {});
+	const events = pi?.events ?? adapterProtocolEvents;
+	if (typeof events?.emit !== "function") return;
+	events.emit("pi:model-adapter/discover", filter ?? {});
 }
 
 /** Duck-type an incoming payload; return null if malformed. */

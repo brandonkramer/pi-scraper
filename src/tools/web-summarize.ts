@@ -8,7 +8,11 @@ import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { summarizePage } from "../summarize/page.ts";
 import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
-import { modelRegistry } from "./infra/model-registry.ts";
+import {
+	modelRegistry,
+	requestAdapterDiscovery,
+	type ModelCapability,
+} from "./infra/model-registry.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import {
@@ -49,6 +53,9 @@ export interface WebSummarizeToolOptions {
 	scrapeDeps?: ScrapePipelineDeps;
 }
 
+/** Tracks which capabilities have already triggered a lazy discover this session. */
+const lazyDiscoverRequested = new Set<ModelCapability>();
+
 export function createWebSummarizeTool(
 	options: WebSummarizeToolOptions = {},
 ): WebTool<typeof webSummarizeSchema> {
@@ -66,9 +73,16 @@ export function createWebSummarizeTool(
 				configProvider: config.modelProvider,
 				capability: "summarize",
 			});
-			const adapter =
+			let adapter =
 				options.modelAdapter ??
 				resolveAdapterFromRegistry(preference, "summarize");
+			if (!adapter && !lazyDiscoverRequested.has("summarize")) {
+				requestAdapterDiscovery(undefined, { capabilities: ["summarize"] });
+				lazyDiscoverRequested.add("summarize");
+				adapter =
+					options.modelAdapter ??
+					resolveAdapterFromRegistry(preference, "summarize");
+			}
 			if (!adapter) {
 				if (preference === "off") {
 					return missingModelResult(
