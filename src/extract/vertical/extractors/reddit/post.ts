@@ -8,6 +8,7 @@ import {
 	type RedditPostData,
 	type RedditPostMatch,
 	type RedditPostResult,
+	absoluteRedditUrl,
 	redditError,
 	errorCode,
 	errorRetryable,
@@ -241,7 +242,4 @@ function isRedditListing(value: unknown): value is RedditListing<unknown> {
 	);
 }
 
-function absoluteRedditUrl(value?: string): string | undefined {
-	if (!value) return undefined;
-	return value.startsWith("/") ? `https://www.reddit.com${value}` : value;
-}
+

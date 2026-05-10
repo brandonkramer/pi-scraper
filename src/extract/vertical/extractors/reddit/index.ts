@@ -154,6 +154,11 @@ export function errorRetryable(error: Error): boolean {
 		: false;
 }
 
+export function absoluteRedditUrl(value?: string): string | undefined {
+	if (!value) return undefined;
+	return value.startsWith("/") ? `https://www.reddit.com${value}` : value;
+}
+
 export function redditError(
 	code: string,
 	message: string,

@@ -2,6 +2,7 @@
  * @fileoverview Reddit comment extraction helpers.
  */
 import { stripUndefined } from "../../../shared/text.ts";
+import { absoluteRedditUrl } from "./index.ts";
 import type { RedditCommentData, RedditListing } from "./index.ts";
 
 const COMMENT_LIMIT = 5;
@@ -36,7 +37,4 @@ export function extractTopComments(
 	return topComments.length ? topComments : undefined;
 }
 
-function absoluteRedditUrl(value?: string): string | undefined {
-	if (!value) return undefined;
-	return value.startsWith("/") ? `https://www.reddit.com${value}` : value;
-}
+
