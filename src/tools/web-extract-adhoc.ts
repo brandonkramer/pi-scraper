@@ -54,21 +54,12 @@ export async function runAdHocExtraction(
 			if (!entry) {
 				const registered = modelRegistry.list().map((e) => e.id);
 				return errorResult(
-					adapterNotFoundError(
-						"extract",
-						preference,
-						registered,
-						params.url,
-					),
+					adapterNotFoundError("extract", preference, registered, params.url),
 					`Model adapter "${preference}" is not registered.`,
 				);
 			}
 			return errorResult(
-				adapterIncompatibleError(
-					"extract",
-					preference,
-					params.url,
-				),
+				adapterIncompatibleError("extract", preference, params.url),
 				`Model adapter "${preference}" does not support extract.`,
 			);
 		}

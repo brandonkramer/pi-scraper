@@ -102,7 +102,7 @@ interface RegisteredAdapter {
 | Per-call         | `provider` param on the tool call                        | LLM routes a single call           |
 | Pi flag          | `--web-model-provider=auto\|<id>\|off`                   | Per Pi session                     |
 | Env var          | `PI_WEB_MODEL_PROVIDER`                                  | Shell / scripts                    |
-| Config file      | `modelProvider` (string or `{ summarize, extract }`)     | Persistent default                 |
+| Config file      | `modelProvider` (string or `{ summarize, extract, analyze, chat }`) | Persistent default                 |
 | Hardcoded        | `"auto"`                                                 | Out-of-box                         |
 
 `"auto"` picks the highest-priority registered adapter that supports the requested capability. `"off"` returns `MODEL_ADAPTER_MISSING` (and, if set at config-level, hides the model-backed tools from Pi's tool list).

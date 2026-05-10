@@ -35,6 +35,8 @@ export const webSummarizeSchema = Type.Object({
 		Type.String({
 			description:
 				"Model adapter id, 'auto' (default), or 'off'. Known values: auto, off, plus any registered adapter id.",
+			minLength: 1,
+			maxLength: 100,
 		}),
 	),
 	...scrapeModeOptionSchema,
@@ -90,11 +92,7 @@ export function createWebSummarizeTool(
 						);
 					}
 					return errorResult(
-						adapterIncompatibleError(
-							"summarize",
-							preference,
-							params.url,
-						),
+						adapterIncompatibleError("summarize", preference, params.url),
 						`Model adapter "${preference}" does not support summarize.`,
 					);
 				}

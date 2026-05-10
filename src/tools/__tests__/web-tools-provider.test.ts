@@ -141,6 +141,37 @@ describe("web_extract action=adhoc provider routing", () => {
 		expect((result.details as { error?: unknown }).error).toBeUndefined();
 	});
 
+	it("routes to explicit provider id", async () => {
+		fakeAdapter("ollama", ["extract"]);
+		fakeAdapter("gemini", ["extract"]);
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ content: "page text", prompt: "extract", provider: "ollama" },
+			signal,
+			undefined,
+			{ getFlag: () => undefined },
+		);
+		expect((result.details as { error?: unknown }).error).toBeUndefined();
+	});
+
+	it("programmatic adapter beats registry", async () => {
+		fakeAdapter("gemini", ["extract"]);
+		const tool = createWebExtractTool({
+			modelAdapter: {
+				async run<T>() {
+					return { data: "injected" as T };
+				},
+			},
+		});
+		const result = await tool.execute(
+			"call",
+			{ content: "page text", prompt: "extract" },
+			signal,
+		);
+		expect((result.details as { error?: unknown }).error).toBeUndefined();
+	});
+
 	it("returns MODEL_ADAPTER_MISSING with provider=off", async () => {
 		fakeAdapter("gemini", ["extract"]);
 		const tool = createWebExtractTool();

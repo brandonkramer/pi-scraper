@@ -38,7 +38,9 @@ export const webExtractSchema = Type.Object({
 	provider: Type.Optional(
 		Type.String({
 			description:
-				"Model adapter id, 'auto' (default), or 'off'. Known values: auto, off, plus any registered adapter id.",
+				"Model adapter id, 'auto' (default), or 'off' (applies to action='adhoc' only). Known values: auto, off, plus any registered adapter id.",
+			minLength: 1,
+			maxLength: 100,
 		}),
 	),
 	sourceFormat: Type.Optional(Type.Any()),

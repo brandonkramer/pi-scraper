@@ -73,6 +73,16 @@ describe("ModelRegistry", () => {
 		expect(registry.resolve("a", "summarize")).toBeUndefined();
 	});
 
+	it("get returns entry by id", () => {
+		const entry = fakeAdapter("a");
+		registry.register(entry);
+		expect(registry.get("a")?.id).toBe("a");
+	});
+
+	it("get returns undefined for missing id", () => {
+		expect(registry.get("missing")).toBeUndefined();
+	});
+
 	it("returns undefined for off", () => {
 		registry.register(fakeAdapter("a"));
 		expect(registry.resolve("off", "summarize")).toBeUndefined();

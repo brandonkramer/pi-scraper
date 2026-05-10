@@ -167,7 +167,10 @@ export function resolveProviderPreference(opts: {
 			: opts.configProvider,
 	] as const;
 	for (const layer of layers) {
-		if (layer && typeof layer === "string") return layer as ResolvePreference;
+		if (layer && typeof layer === "string") {
+			const trimmed = layer.trim();
+			if (trimmed) return trimmed as ResolvePreference;
+		}
 	}
 	return "auto";
 }

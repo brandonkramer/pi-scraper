@@ -10,6 +10,7 @@ export type ToolUpdate = (result: PiToolShell) => void | Promise<void>;
 export interface ToolExecutionContext {
 	hasUI?: boolean;
 	model?: unknown;
+	/** Reserved for future Pi host injection of a model-adapter registry. Currently unused; pi-scraper consumes its own singleton. */
 	modelRegistry?: unknown;
 	ui?: unknown;
 	getFlag?: (name: string) => string | undefined;
