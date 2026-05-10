@@ -5,80 +5,29 @@
  * cache, SSRF, and mode policy remain in the shared scrape/http boundary. It is a
  * lightweight structural pass, not semantic code analysis.
  */
-
 import type { PatternSourceFormat } from "../pattern/index.ts";
+import type {
+	ExtractSchemaPreset,
+	SymbolIncludeFilter,
+	SymbolSelectionOptions,
+	SymbolSelectionResult,
+	SelectedSection,
+	SelectedCodeBlock,
+	SelectedTable,
+	SelectedSymbol,
+} from "./symbol-selection-types.ts";
 
-export type SymbolIncludeType =
-	| "heading"
-	| "code-block"
-	| "symbol"
-	| "table"
-	| "section";
-
-export type ExtractSchemaPreset =
-	| "api-reference"
-	| "changelog"
-	| "faq"
-	| "compatibility-table";
-
-export interface SymbolIncludeFilter {
-	type: SymbolIncludeType;
-	name?: string;
-	pattern?: string;
-	level?: number;
-	language?: string;
-}
-
-export interface SymbolSelectionOptions {
-	include?: SymbolIncludeFilter[];
-	extractSchema?: ExtractSchemaPreset;
-	sourceFormat?: PatternSourceFormat;
-}
-
-export interface SelectedSection {
-	type: "heading" | "section";
-	title: string;
-	level: number;
-	start: number;
-	end: number;
-	text: string;
-}
-
-export interface SelectedCodeBlock {
-	type: "code-block";
-	language?: string;
-	start: number;
-	end: number;
-	code: string;
-}
-
-export interface SelectedTable {
-	type: "table";
-	start: number;
-	end: number;
-	text: string;
-}
-
-export interface SelectedSymbol {
-	type: "symbol";
-	name: string;
-	kind: "function" | "class" | "interface" | "variable" | "type";
-	signature?: string;
-	description?: string;
-	language?: string;
-	start: number;
-	end: number;
-}
-
-export interface SymbolSelectionResult {
-	extractSchema?: ExtractSchemaPreset;
-	include: SymbolIncludeFilter[];
-	sections: SelectedSection[];
-	codeBlocks: SelectedCodeBlock[];
-	tables: SelectedTable[];
-	symbols: SelectedSymbol[];
-	unmatched: SymbolIncludeFilter[];
-}
+export {
+	SymbolIncludeType,
+	ExtractSchemaPreset,
+	SymbolIncludeFilter,
+	SymbolSelectionOptions,
+	SelectedSection,
+	SelectedCodeBlock,
+	SelectedTable,
+	SelectedSymbol,
+	SymbolSelectionResult,
+} from "./symbol-selection-types.ts";
 
 interface ParsedContent {
 	headings: SelectedSection[];
@@ -138,13 +87,19 @@ function presetInclude(
 		];
 	if (preset === "changelog")
 		return [
-			{ type: "section", pattern: "(^|\\b)(v?\\d+\\.\\d+|changelog|release)" },
+			{
+				type: "section",
+				pattern: "(^|\\b)(v?\\d+\\.\\d+|changelog|release)",
+			},
 		];
 	if (preset === "faq")
 		return [{ type: "section", pattern: "(faq|question|\\?)$" }];
 	if (preset === "compatibility-table")
 		return [
-			{ type: "table", pattern: "(browser|version|node|support|compat)" },
+			{
+				type: "table",
+				pattern: "(browser|version|node|support|compat)",
+			},
 		];
 	return [];
 }
@@ -243,7 +198,9 @@ function selectCodeBlocks(
 		});
 	}
 	if (sourceFormat === "html") {
-		for (const match of content.matchAll(/<pre\b[^>]*>([\s\S]*?)<\/pre>/giu)) {
+		for (const match of content.matchAll(
+			/<pre\b[^>]*>([\s\S]*?)<\/pre>/giu,
+		)) {
 			const start = match.index ?? 0;
 			blocks.push({
 				type: "code-block",
@@ -338,7 +295,7 @@ function isCodeDeclaration(
 	return false;
 }
 
-function matchesForType<T extends SymbolIncludeType>(
+function matchesForType<T extends import("./symbol-selection-types.ts").SymbolIncludeType>(
 	parsed: ParsedContent,
 	include: SymbolIncludeFilter[],
 	type: T,
@@ -352,15 +309,16 @@ function matchesForType<T extends SymbolIncludeType>(
 		) as ExtractedFor<T>[];
 }
 
-type ExtractedFor<T extends SymbolIncludeType> = T extends "code-block"
-	? SelectedCodeBlock
-	: T extends "table"
-		? SelectedTable
-		: T extends "symbol"
-			? SelectedSymbol
-			: SelectedSection;
+type ExtractedFor<T extends import("./symbol-selection-types.ts").SymbolIncludeType> =
+	T extends "code-block"
+		? SelectedCodeBlock
+		: T extends "table"
+			? SelectedTable
+			: T extends "symbol"
+				? SelectedSymbol
+				: SelectedSection;
 
-function collectionForType<T extends SymbolIncludeType>(
+function collectionForType<T extends import("./symbol-selection-types.ts").SymbolIncludeType>(
 	parsed: ParsedContent,
 	type: T,
 ): ExtractedFor<T>[] {
@@ -381,7 +339,11 @@ function matchCountForFilter(
 }
 
 function matchesFilter(
-	item: SelectedSection | SelectedCodeBlock | SelectedTable | SelectedSymbol,
+	item:
+		| SelectedSection
+		| SelectedCodeBlock
+		| SelectedTable
+		| SelectedSymbol,
 	filter: SymbolIncludeFilter,
 ): boolean {
 	if (
@@ -416,7 +378,11 @@ function safePattern(pattern: string): RegExp {
 }
 
 function searchableText(
-	item: SelectedSection | SelectedCodeBlock | SelectedTable | SelectedSymbol,
+	item:
+		| SelectedSection
+		| SelectedCodeBlock
+		| SelectedTable
+		| SelectedSymbol,
 ): string {
 	if ("title" in item) return `${item.title}\n${item.text}`;
 	if ("code" in item) return `${item.language ?? ""}\n${item.code}`;

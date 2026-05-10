@@ -34,7 +34,7 @@ import { ossInsightCollectionsExtractor } from "../vertical/extractors/ossinsigh
 import { ossInsightRepoAnalyticsExtractor } from "../vertical/extractors/ossinsight-repo-analytics.ts";
 import { ossInsightTrendingReposExtractor } from "../vertical/extractors/ossinsight-trending-repos.ts";
 import { pypiPackageExtractor } from "../vertical/extractors/pypi.ts";
-import { redditExtractor } from "../vertical/extractors/reddit.ts";
+import { redditExtractor } from "../vertical/extractors/reddit/index.ts";
 
 export const verticalExtractors = [
 	githubRepoExtractor,

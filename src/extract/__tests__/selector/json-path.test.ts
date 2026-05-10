@@ -8,7 +8,7 @@ import {
 	flattenJsonValues,
 	isSupportedJsonPath,
 	parseJsonSafe,
-} from "../selector/json-path.ts";
+} from "../../selector/json-path.ts";
 
 describe("evaluateJsonPath", () => {
 	it("selects root with $", () => {
