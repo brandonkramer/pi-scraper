@@ -1,0 +1,115 @@
+/**
+ * @fileoverview Cross-extension model-adapter registry over pi.events.
+ *
+ * Implements the `pi:model-adapter/*` protocol so any Pi extension can
+ * register an LLM transport without either side importing the other.
+ */
+import type { ModelAdapter } from "../../extract/adhoc/model.ts";
+import { isUnknownRecord } from "../../types.ts";
+
+export type ModelCapability = "summarize" | "extract" | "analyze" | "chat";
+
+export interface RegisteredAdapter {
+	id: string;
+	label: string;
+	capabilities: readonly ModelCapability[];
+	priority: number;
+	adapter: ModelAdapter;
+}
+
+export type ResolvePreference = "auto" | "off" | string;
+
+/** In-memory registry of adapters announced over pi.events. */
+export class ModelRegistry {
+	private entries = new Map<string, RegisteredAdapter>();
+	private order: string[] = [];
+
+	register(entry: RegisteredAdapter): void {
+		this.entries.set(entry.id, entry);
+		if (!this.order.includes(entry.id)) this.order.push(entry.id);
+	}
+
+	unregister(id: string): void {
+		this.entries.delete(id);
+		this.order = this.order.filter((x) => x !== id);
+	}
+
+	resolve(
+		preference: ResolvePreference,
+		capability: ModelCapability,
+	): ModelAdapter | undefined {
+		if (preference === "off") return undefined;
+		if (preference === "auto") {
+			const candidates = this.order
+				.map((id) => this.entries.get(id))
+				.filter((e): e is RegisteredAdapter =>
+					Boolean(e && e.capabilities.includes(capability)),
+				);
+			if (candidates.length === 0) return undefined;
+			let best = candidates[0];
+			for (const c of candidates) {
+				if (c.priority > best.priority) best = c;
+			}
+			return best.adapter;
+		}
+		const entry = this.entries.get(preference);
+		if (!entry || !entry.capabilities.includes(capability)) return undefined;
+		return entry.adapter;
+	}
+
+	list(): RegisteredAdapter[] {
+		return this.order.map((id) => this.entries.get(id)).filter(Boolean) as RegisteredAdapter[];
+	}
+
+	/** Test helper. */
+	clear(): void {
+		this.entries.clear();
+		this.order.length = 0;
+	}
+}
+
+/** Module-level singleton consumed by model-backed tools. */
+export const modelRegistry = new ModelRegistry();
+
+/** Wire the singleton to a Pi registrar's event bus. */
+export function initModelAdapterProtocol(pi: {
+	events?: { on(event: string, handler: (payload: unknown) => void): void; emit(event: string, payload?: unknown): void };
+}): void {
+	if (typeof pi.events?.on !== "function") return;
+	pi.events.on("pi:model-adapter/register", (payload) => {
+		const entry = validateAdapterPayload(payload);
+		if (entry) modelRegistry.register(entry);
+	});
+	pi.events.on("pi:model-adapter/unregister", (payload) => {
+		if (isUnknownRecord(payload) && typeof payload.id === "string") {
+			modelRegistry.unregister(payload.id);
+		}
+	});
+	pi.events.emit?.("pi:model-adapter/discover", {});
+}
+
+/** Duck-type an incoming payload; return null if malformed. */
+export function validateAdapterPayload(
+	payload: unknown,
+): RegisteredAdapter | null {
+	if (!isUnknownRecord(payload)) return null;
+	if (typeof payload.id !== "string" || payload.id.length === 0) return null;
+	if (typeof payload.label !== "string") return null;
+	if (!Array.isArray(payload.capabilities)) return null;
+	if (typeof payload.priority !== "number") return null;
+	if (!isUnknownRecord(payload.adapter) || typeof payload.adapter.run !== "function") {
+		return null;
+	}
+	const capabilities = payload.capabilities.filter(
+		(c): c is ModelCapability =>
+			typeof c === "string" &&
+			["summarize", "extract", "analyze", "chat"].includes(c),
+	);
+	return {
+		id: payload.id,
+		label: payload.label,
+		capabilities,
+		priority: payload.priority,
+		adapter: payload.adapter as unknown as ModelAdapter,
+	};
+}

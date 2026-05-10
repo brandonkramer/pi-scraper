@@ -2,6 +2,7 @@
  * @fileoverview tools register module.
  */
 import type { PiToolRegistrar, WebTool } from "./define.ts";
+import { initModelAdapterProtocol } from "./model-registry.ts";
 import { resolveToolModelAdapter } from "./model-adapter.ts";
 import { webBatchTool } from "../web-batch.ts";
 import { webCrawlTool } from "../web-crawl.ts";
@@ -24,6 +25,7 @@ export const webTools: readonly WebTool[] = [
 ];
 
 export function registerWebTools(pi: PiToolRegistrar): void {
+	initModelAdapterProtocol(pi);
 	const modelAdapter = resolveToolModelAdapter(pi);
 	const tools = modelAdapter
 		? webTools.map((tool) => {

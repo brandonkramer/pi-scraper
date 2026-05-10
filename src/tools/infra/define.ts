@@ -57,8 +57,14 @@ export interface WebTool<TParameters extends TSchema = TSchema> {
 	) => RenderComponent;
 }
 
+export interface PiToolEvents {
+	on(event: string, handler: (payload: unknown) => void): void;
+	emit(event: string, payload: unknown): void;
+}
+
 export interface PiToolRegistrar {
 	registerTool(tool: WebTool): void;
+	events?: PiToolEvents;
 }
 
 export function defineWebTool<TParameters extends TSchema>(
