@@ -8,7 +8,7 @@ import { muted } from "./theme.ts";
 import { renderProgressBar } from "./progress-bar.ts";
 import { renderStatusPill } from "./status-pill.ts";
 import { renderUrlStatusRow } from "./rows.ts";
-import { renderStackedResultCard } from "./cards.ts";
+import { renderStackedResultCard } from "./stacked-result-card.ts";
 import { withSpinnerFooter } from "./spinner.ts";
 import type {
 	BatchProgressItemView,

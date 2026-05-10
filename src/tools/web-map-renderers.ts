@@ -9,7 +9,7 @@ import {
 } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
 import { renderText } from "../tui/text.ts";
-import { metadataText, muted, separator } from "../tui/theme.ts";
+import { muted, separator } from "../tui/theme.ts";
 import { renderUrlBadgeRow } from "../tui/rows.ts";
 import { renderProgress } from "../tui/progress-card.ts";
 export interface MapUrlEntryView {
@@ -75,13 +75,13 @@ export function renderWebMapResult(
 	const summary = [
 		theme?.bold?.("web_map") ?? "web_map",
 		`${urls.length} URL(s)`,
-		!expanded ? metadataText("(ctrl+o to expand)", theme) : undefined,
+		!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
 	]
 		.filter(Boolean)
 		.join(theme ? separator(theme) : " · ");
 	if (urls.length === 0) {
 		return renderText(
-			`${summary}\n\n${metadataText("No URLs discovered.", theme)}`,
+			`${summary}\n\n${muted("No URLs discovered.", theme)}`,
 			{
 				padToWidth: true,
 			},
@@ -95,7 +95,7 @@ export function renderWebMapResult(
 			if (expanded && envelope.responseId)
 				lines.push(
 					"",
-					metadataText(`responseId: ${envelope.responseId}`, theme),
+					muted(`responseId: ${envelope.responseId}`, theme),
 				);
 			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
 		},

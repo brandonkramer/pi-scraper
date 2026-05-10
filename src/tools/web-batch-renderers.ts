@@ -8,7 +8,7 @@ import {
 	type ResultEnvelope,
 } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import { metadataText, separator } from "../tui/theme.ts";
+import { muted, separator } from "../tui/theme.ts";
 import {
 	batchProgressFromItems,
 	isBatchProgress,
@@ -56,7 +56,7 @@ import {
 	freshnessLabel,
 	sessionNotice,
 	contextPackageResponseId,
-} from "../tui/envelope-labels.ts";
+} from "../tui/envelope.ts";
 import { renderProgress } from "../tui/progress-card.ts";
 
 export function batchExpandedDetails(
@@ -145,7 +145,7 @@ export function renderWebBatchResult(
 				failureCountSegment(failed, "failed", theme),
 				activityCountSegment(cacheHits, "cache hits", "ⓞ", theme),
 				freshnessLabel(envelope),
-				!expanded ? metadataText("(ctrl+o to expand)", theme) : undefined,
+				!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
 			]
 				.filter(Boolean)
 				.join(separator(theme));

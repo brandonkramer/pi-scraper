@@ -1,9 +1,47 @@
 /**
- * @fileoverview Generic ResultEnvelope summary card used by tools whose result has no bespoke renderer.
+ * @fileoverview ResultEnvelope helpers — label formatters and generic summary card.
  */
-import type { PiToolShell, ResultEnvelope } from "../types.ts";
+import type { PiToolShell, ResultEnvelope, StructuredError } from "../types.ts";
 import type { RenderComponent } from "./types.ts";
 import { renderText } from "./text.ts";
+
+export function errorTitle(
+	tool: string,
+	error: StructuredError,
+	options?: { allowIcons?: boolean },
+): string {
+	const prefix = options?.allowIcons ? "✕ " : "";
+	return `${prefix}${tool} ${error.code}: ${error.message}`;
+}
+
+export function cacheLabel(
+	envelope: Partial<ResultEnvelope<unknown>>,
+): string | undefined {
+	if (!envelope.cache?.cached) return undefined;
+	return `↻ cache hit${envelope.cache.staleness ? ` ${envelope.cache.staleness}` : ""}`;
+}
+
+export function freshnessLabel(
+	envelope: Partial<ResultEnvelope<unknown>>,
+): string | undefined {
+	return envelope.freshness?.stale ? "⚠ stale" : undefined;
+}
+
+export function sessionNotice(
+	envelope: Partial<ResultEnvelope<unknown>>,
+): string | undefined {
+	const notice = envelope.diagnostics?.sessionNotice;
+	return typeof notice === "string" ? notice : undefined;
+}
+
+export function contextPackageResponseId(
+	envelope: Partial<ResultEnvelope<unknown>>,
+): string | undefined {
+	const value = envelope.diagnostics?.contextPackage;
+	if (typeof value !== "object" || value === null) return undefined;
+	const responseId = (value as { responseId?: unknown }).responseId;
+	return typeof responseId === "string" ? responseId : undefined;
+}
 
 export function renderEnvelopeResult(
 	result: PiToolShell,

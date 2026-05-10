@@ -3,7 +3,7 @@
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
 import { defineWebTool } from "./define.ts";
-import { renderEnvelopeResult } from "../tui/envelope-card.ts";
+import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { renderWebCrawlResult } from "./web-crawl-renderers.ts";
 import { renderSimpleCall } from "../tui/simple-call.ts";
 import { sessionOptionSchema, urlProperty } from "./schemas.ts";

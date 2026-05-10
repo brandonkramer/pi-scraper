@@ -9,10 +9,10 @@ import {
 } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
 import { renderText } from "../tui/text.ts";
-import { metadataText, separator } from "../tui/theme.ts";
+import { muted, separator } from "../tui/theme.ts";
 import { formatChecklistItem, formatChecklistText } from "../tui/checklist.ts";
 import { renderProgress } from "../tui/progress-card.ts";
-import { errorTitle, freshnessLabel } from "../tui/envelope-labels.ts";
+import { errorTitle, freshnessLabel } from "../tui/envelope.ts";
 export interface DiffData {
 	previous?: unknown;
 	current?: unknown;
@@ -89,9 +89,9 @@ export function renderChecklistResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	if (!expanded) {
-		const hint = metadataText("(ctrl+o to expand)", theme);
+		const hint = muted("(ctrl+o to expand)", theme);
 		const notice = options.notice
-			? `\n\n${metadataText(options.notice, theme)}`
+			? `\n\n${muted(options.notice, theme)}`
 			: "";
 		return renderText(`${title}${separator(theme)}${hint}${notice}`, {
 			padToWidth: true,
@@ -99,7 +99,7 @@ export function renderChecklistResult(
 		});
 	}
 	const lines = [title];
-	if (options.notice) lines.push("", metadataText(options.notice, theme));
+	if (options.notice) lines.push("", muted(options.notice, theme));
 	if (options.items?.length) {
 		const formatter =
 			options.icons === false ? formatChecklistText : formatChecklistItem;
@@ -107,7 +107,7 @@ export function renderChecklistResult(
 	}
 	if (options.preview) lines.push("", options.preview.slice(0, 500));
 	if (options.responseId)
-		lines.push("", metadataText(`responseId: ${options.responseId}`, theme));
+		lines.push("", muted(`responseId: ${options.responseId}`, theme));
 	return renderText(lines.join("\n"), { padToWidth: true });
 }
 

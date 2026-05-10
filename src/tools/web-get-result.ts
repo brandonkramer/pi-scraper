@@ -6,7 +6,7 @@ import { listSnapshots } from "../diff/snapshots.ts";
 import { getJobManifest } from "../storage/jobs.ts";
 import { getStoredResult } from "../storage/results.ts";
 import { defineWebTool } from "./define.ts";
-import { renderEnvelopeResult } from "../tui/envelope-card.ts";
+import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { renderSimpleCall } from "../tui/simple-call.ts";
 import { errorResult, structuredToolError, toolResult } from "./result.ts";
 

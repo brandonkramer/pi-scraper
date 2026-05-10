@@ -9,7 +9,7 @@ import {
 } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
 import { renderText } from "../tui/text.ts";
-import { metadataText, separator } from "../tui/theme.ts";
+import { muted, separator } from "../tui/theme.ts";
 import { currentSpinnerFrame } from "../tui/spinner.ts";
 import { progressStartedAtMs } from "../tui/progress-status.ts";
 import { renderUrlStatusRow } from "../tui/rows.ts";
@@ -20,8 +20,8 @@ import {
 	errorTitle,
 	freshnessLabel,
 	sessionNotice,
-} from "../tui/envelope-labels.ts";
-import { renderStackedResultCard } from "../tui/cards.ts";
+} from "../tui/envelope.ts";
+import { renderStackedResultCard } from "../tui/stacked-result-card.ts";
 import { formatPreview, renderMetadataLines } from "../tui/preview.ts";
 import { isFileResult, renderFileResultCard } from "../tui/file-result-card.ts";
 import { formatBytes, formatDuration } from "../tui/format.ts";
@@ -45,7 +45,7 @@ export function renderWebScrapeResult(
 				envelope.format,
 				cacheLabel(envelope) ?? "fresh fetch",
 				freshnessLabel(envelope),
-				!expanded ? metadataText("(ctrl+o to expand)", theme) : undefined,
+				!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
 			]
 				.filter(Boolean)
 				.join(theme ? separator(theme) : " · ");
@@ -87,7 +87,7 @@ function renderScrapeProgressCard(
 			});
 			const summary = `web_scrape ${details.state}${
 				theme ? separator(theme) : " · "
-			}${metadataText("(ctrl+o to expand)", theme)}`;
+			}${muted("(ctrl+o to expand)", theme)}`;
 			const lines = [row, "", summary];
 			if (expanded && details.checklist?.length) {
 				lines.push(

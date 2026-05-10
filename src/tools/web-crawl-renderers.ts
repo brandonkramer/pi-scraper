@@ -23,12 +23,12 @@ import {
 	failureCountSegment,
 	successCountSegment,
 } from "../tui/counts.ts";
-import { metadataText, neutralText, separator } from "../tui/theme.ts";
+import { muted, neutralText, separator } from "../tui/theme.ts";
 import {
 	errorTitle,
 	sessionNotice,
 	contextPackageResponseId,
-} from "../tui/envelope-labels.ts";
+} from "../tui/envelope.ts";
 export interface CrawlMeta {
 	succeededCount: number;
 	failedCount: number;
@@ -149,7 +149,7 @@ export function renderWebCrawlResult(
 					theme,
 				),
 				neutralText(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
-				!expanded ? metadataText("(ctrl+o to expand)", theme) : undefined,
+				!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
 			]
 				.filter(Boolean)
 				.join(separator(theme));

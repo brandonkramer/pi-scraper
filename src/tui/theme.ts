@@ -20,10 +20,6 @@ export function accent(text: string, theme?: RenderTheme): string {
 	return theme?.fg?.("accent", text) ?? text;
 }
 
-export function metadataText(text: string, theme?: RenderTheme): string {
-	return theme ? neutralText(text, theme) : text;
-}
-
 export function neutralText(text: string, theme?: RenderTheme): string {
 	const themed = inlineThemeText("muted", text, theme);
 	if (themed) return themed;
