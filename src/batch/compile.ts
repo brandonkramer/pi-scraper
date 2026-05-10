@@ -1,5 +1,5 @@
 /**
- * @fileoverview Batch context-package compilation workflow.
+ * @fileoverview Batch context compilation workflow.
  */
 import type { BatchItemResult } from "./run.ts";
 import { storeCompiledContext } from "../storage/context/build.ts";

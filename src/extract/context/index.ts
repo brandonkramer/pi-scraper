@@ -1,7 +1,7 @@
 /**
- * @fileoverview Compile completed scrape outputs into bounded context packages.
+ * @fileoverview Compile completed scrape outputs into bounded context.
  *
- * Context packages are local, deterministic summaries of already-fetched pages.
+ * context are local, deterministic summaries of already-fetched pages.
  * They never fetch or infer beyond the scrape payload; each entry keeps enough
  * path/title/excerpt structure for downstream LLM context without replacing the
  * raw stored crawl or batch result.

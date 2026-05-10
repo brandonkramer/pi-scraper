@@ -1,5 +1,5 @@
 /**
- * @fileoverview Pi tool adapter for crawling, crawl state, and context packages.
+ * @fileoverview Pi tool adapter for crawling, crawl state, and context.
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
 import { defineWebTool } from "./define.ts";

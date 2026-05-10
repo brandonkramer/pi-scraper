@@ -1,5 +1,5 @@
 /**
- * @fileoverview Tool-level regression coverage for web_batch context packages.
+ * @fileoverview Tool-level regression coverage for web_batch context.
  */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -20,7 +20,7 @@ vi.mock("../../batch/run.ts", () => ({
 			"../../storage/jobs/manifest.ts"
 		);
 		const { storeResponse } = await import("../../storage/responses/store.ts");
-		const jobId = "batch-context-package";
+		const jobId = "batch-context";
 		await writeJobManifest(
 			createJobManifest({
 				jobId,
@@ -66,7 +66,7 @@ afterEach(async () => {
 	await rm(homeDir, { recursive: true, force: true });
 });
 
-describe("web_batch context packages", () => {
+describe("web_batch context", () => {
 	it("stores and retrieves a compiled package when requested", async () => {
 		const result = await webBatchTool.execute(
 			"call",
@@ -91,7 +91,7 @@ describe("web_batch context packages", () => {
 			package: { source: string; batchId?: string };
 			tree: Array<{ title?: string; excerpt?: string }>;
 		}>(packageResponseId);
-		expect(stored.value.package.batchId).toBe("batch-context-package");
+		expect(stored.value.package.batchId).toBe("batch-context");
 		expect(stored.value.tree[0]?.title).toBe("Guide");
 		expect(stored.value.tree[0]?.excerpt).toContain("Install the package");
 
@@ -104,7 +104,7 @@ describe("web_batch context packages", () => {
 			package: { source: "batch" },
 		});
 
-		const manifest = await getJobManifest("batch-context-package");
+		const manifest = await getJobManifest("batch-context");
 		expect(manifest.manifest.responseIds).toContain(packageResponseId);
 	});
 });

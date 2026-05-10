@@ -1,7 +1,7 @@
 /**
- * @fileoverview Storage helpers for compiled context-package artifacts.
+ * @fileoverview Storage helpers for compiled context artifacts.
  *
- * Context packages are stored through the normal response blob path for
+ * context are stored through the normal response blob path for
  * responseId retrieval. Crawl-scoped copies live under the configured Pi crawl
  * directory so humans can inspect them beside crawl state without bypassing the
  * central storage path resolver.

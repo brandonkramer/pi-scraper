@@ -1,5 +1,5 @@
 /**
- * @fileoverview Shared context-package storage flow for web tools.
+ * @fileoverview Shared context storage flow for web tools.
  */
 import {
 	compileContext,
