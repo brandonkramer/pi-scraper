@@ -7,9 +7,9 @@ import { discoverSiteUrls } from "../map/discover.ts";
 import { storeResult } from "../storage/results.ts";
 import { defineWebTool } from "./define.ts";
 import { emitProgress } from "./progress.ts";
-import { renderSimpleCall } from "./render.ts";
+import { renderSimpleCall } from "../tui/simple-call.ts";
 import { toolResult } from "./result.ts";
-import { renderWebMapResult } from "./web-renderers.ts";
+import { renderWebMapResult } from "./web-map-renderers.ts";
 import { urlProperty } from "./schemas.ts";
 
 export const webMapSchema = Type.Object({

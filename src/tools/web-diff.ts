@@ -25,8 +25,8 @@ import { storedTraceContext } from "./agentic-context.ts";
 import { formatAge } from "../scrape/describe.ts";
 import { defineWebTool } from "./define.ts";
 import { emitProgress } from "./progress.ts";
-import { renderWebDiffResult } from "./web-renderers.ts";
-import { renderSimpleCall } from "./render.ts";
+import { renderWebDiffResult } from "./web-diff-renderers.ts";
+import { renderSimpleCall } from "../tui/simple-call.ts";
 import { errorResult, structuredToolError, toolResult } from "./result.ts";
 import { scrapeModeOptionSchema, urlProperty } from "./schemas.ts";
 

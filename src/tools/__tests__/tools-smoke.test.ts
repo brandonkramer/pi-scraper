@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { PiToolShell, ResultEnvelope } from "../../types.ts";
-import type { RenderComponent } from "../define.ts";
+import type { RenderComponent } from "../../tui/types.ts";
 import { webTools } from "../register.ts";
 
 let homeDir: string;

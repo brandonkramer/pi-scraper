@@ -26,8 +26,8 @@ import { getOrCreateSession } from "../http/session.ts";
 import { sessionLifecycle } from "./session-lifecycle.ts";
 import { sessionOptionSchema, urlProperty } from "./schemas.ts";
 import { buildSummarizeToolResult } from "./scrape-input-result.ts";
-import { renderWebScrapeResult } from "./web-renderers.ts";
-import { renderSimpleCall } from "./render.ts";
+import { renderWebScrapeResult } from "./web-scrape-renderers.ts";
+import { renderSimpleCall } from "../tui/simple-call.ts";
 
 const scrapeTasks = ["read", "summarize"] as const;
 

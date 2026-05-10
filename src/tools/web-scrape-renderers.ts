@@ -8,7 +8,7 @@ import {
 	type ResultEnvelope,
 } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import { renderText } from "./render.ts";
+import { renderText } from "../tui/text.ts";
 import { metadataText, separator } from "../tui/theme.ts";
 import { currentSpinnerFrame } from "../tui/spinner.ts";
 import { progressStartedAtMs } from "../tui/progress-status.ts";
