@@ -62,7 +62,7 @@ export function renderBatchResultCard(
 			summary: options.summary,
 			expanded,
 			notice: options.notice,
-			expandedSections: () => [options.preview?.slice(0, 500)],
+			expandedSections: () => [options.preview],
 			markdownPreview: options.markdownPreview,
 			responseId: options.responseId,
 			padToWidth: options.padToWidth,

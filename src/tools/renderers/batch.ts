@@ -65,10 +65,13 @@ export function batchExpandedDetails(
 	metadata: { jobId?: unknown; packageResponseId?: unknown } = {},
 ): string {
 	const cap = excerptCapForCount(items.length);
-	return renderResourceItemList(items.map((item) => toBatchListItem(item, cap)), {
-		header: "Per-URL details:",
-		metadata,
-	});
+	return renderResourceItemList(
+		items.map((item) => toBatchListItem(item, cap)),
+		{
+			header: "Per-URL details:",
+			metadata,
+		},
+	);
 }
 
 function excerptCapForCount(count: number): number {
