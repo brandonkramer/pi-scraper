@@ -20,19 +20,19 @@ export function accent(text: string, theme?: RenderTheme): string {
 	return theme?.fg?.("accent", text) ?? text;
 }
 
-export function neutralText(text: string, theme?: RenderTheme): string {
+export function neutral(text: string, theme?: RenderTheme): string {
 	const themed = inlineThemeText("muted", text, theme);
 	if (themed) return themed;
 	return `\u001B[38;2;139;145;134m${text}\u001B[39m`;
 }
 
-export function successText(text: string, theme?: RenderTheme): string {
+export function success(text: string, theme?: RenderTheme): string {
 	const themed = inlineThemeText("success", text, theme);
 	if (themed) return themed;
 	return `\u001B[38;2;148;226;213m${text}\u001B[39m`;
 }
 
-export function failureText(text: string, theme?: RenderTheme): string {
+export function failure(text: string, theme?: RenderTheme): string {
 	const themed =
 		inlineThemeText("error", text, theme) ??
 		inlineThemeText("danger", text, theme);
@@ -40,7 +40,7 @@ export function failureText(text: string, theme?: RenderTheme): string {
 	return `\u001B[38;2;239;118;122m${text}\u001B[39m`;
 }
 
-export function activityText(text: string, theme?: RenderTheme): string {
+export function activity(text: string, theme?: RenderTheme): string {
 	const themed =
 		inlineThemeText("warning", text, theme) ??
 		inlineThemeText("accent", text, theme);
@@ -49,5 +49,5 @@ export function activityText(text: string, theme?: RenderTheme): string {
 }
 
 export function separator(theme?: RenderTheme): string {
-	return `${neutralText(" · ", theme)}`;
+	return `${neutral(" · ", theme)}`;
 }

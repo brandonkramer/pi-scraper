@@ -17,7 +17,7 @@ import {
 import {
 	renderBatchProgressCard,
 	renderBatchResultCard,
-} from "../tui/batch-progress-card.ts";
+} from "../tui/batch-cards.ts";
 export interface BatchItem {
 	ok?: boolean;
 	url?: string;
@@ -50,14 +50,14 @@ import {
 	activityCountSegment,
 	failureCountSegment,
 	successCountSegment,
-} from "../tui/counts.ts";
+} from "../tui/count-segments.ts";
 import {
-	errorTitle,
+	errorLabel,
 	freshnessLabel,
 	sessionNotice,
 	contextPackageResponseId,
 } from "../tui/envelope.ts";
-import { renderProgress } from "../tui/progress-card.ts";
+import { renderProgressCard } from "../tui/progress-card.ts";
 
 export function batchExpandedDetails(
 	items: readonly BatchItem[],
@@ -125,7 +125,7 @@ export function renderWebBatchResult(
 	if (isProgress(details)) {
 		if (isBatchProgress(details))
 			return renderBatchProgressCard(details, expanded, theme);
-		return renderProgress("web_batch", details, theme, {
+		return renderProgressCard("web_batch", details, theme, {
 			allowIcons: true,
 		});
 	}
@@ -139,7 +139,7 @@ export function renderWebBatchResult(
 		(item) => item.ok === true && item.result?.cache?.cached,
 	).length;
 	const summary = envelope.error
-		? errorTitle("web_batch", envelope.error, { allowIcons: true })
+		? errorLabel("web_batch", envelope.error, { allowIcons: true })
 		: [
 				successCountSegment(succeeded, "succeeded", theme),
 				failureCountSegment(failed, "failed", theme),

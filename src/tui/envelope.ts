@@ -5,7 +5,7 @@ import type { PiToolShell, ResultEnvelope, StructuredError } from "../types.ts";
 import type { RenderComponent } from "./types.ts";
 import { renderText } from "./text.ts";
 
-export function errorTitle(
+export function errorLabel(
 	tool: string,
 	error: StructuredError,
 	options?: { allowIcons?: boolean },

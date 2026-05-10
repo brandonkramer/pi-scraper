@@ -62,7 +62,7 @@ export function renderUrlStatusRow(options: UrlStatusRowOptions): string {
 	return `${glyph} ${renderedUrl} ${box}`;
 }
 
-export function truncateMiddle(value: string, width: number): string {
+function truncateMiddle(value: string, width: number): string {
 	if (value.length <= width) return value.padEnd(width, " ");
 	if (width <= 1) return "…";
 	const left = Math.ceil((width - 1) / 2);

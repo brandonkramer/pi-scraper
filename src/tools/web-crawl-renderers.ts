@@ -8,11 +8,11 @@ import {
 	type ResultEnvelope,
 } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import { renderProgress } from "../tui/progress-card.ts";
+import { renderProgressCard } from "../tui/progress-card.ts";
 import {
 	renderBatchProgressCard,
 	renderBatchResultCard,
-} from "../tui/batch-progress-card.ts";
+} from "../tui/batch-cards.ts";
 import {
 	batchProgressFromCrawlPages,
 	isBatchProgress,
@@ -22,10 +22,10 @@ import {
 	activityCountSegment,
 	failureCountSegment,
 	successCountSegment,
-} from "../tui/counts.ts";
-import { muted, neutralText, separator } from "../tui/theme.ts";
+} from "../tui/count-segments.ts";
+import { muted, neutral, separator } from "../tui/theme.ts";
 import {
-	errorTitle,
+	errorLabel,
 	sessionNotice,
 	contextPackageResponseId,
 } from "../tui/envelope.ts";
@@ -128,7 +128,7 @@ export function renderWebCrawlResult(
 	if (isProgress(details)) {
 		if (isBatchProgress(details))
 			return renderBatchProgressCard(details, expanded, theme);
-		return renderProgress("web_crawl", details, theme, {
+		return renderProgressCard("web_crawl", details, theme, {
 			allowIcons: true,
 		});
 	}
@@ -138,7 +138,7 @@ export function renderWebCrawlResult(
 	const metadata = envelope.data?.metadata;
 	const failed = metadata?.failedCount ?? 0;
 	const summary = envelope.error
-		? errorTitle("web_crawl", envelope.error, { allowIcons: true })
+		? errorLabel("web_crawl", envelope.error, { allowIcons: true })
 		: [
 				successCountSegment(metadata?.succeededCount ?? 0, "succeeded", theme),
 				failureCountSegment(failed, "failed", theme),
@@ -148,7 +148,7 @@ export function renderWebCrawlResult(
 					"◉",
 					theme,
 				),
-				neutralText(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
+				neutral(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
 				!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
 			]
 				.filter(Boolean)

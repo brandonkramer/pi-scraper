@@ -17,7 +17,7 @@ import { formatChecklistText } from "../tui/checklist.ts";
 import { previewText } from "../tui/preview.ts";
 import {
 	cacheLabel,
-	errorTitle,
+	errorLabel,
 	freshnessLabel,
 	sessionNotice,
 } from "../tui/envelope.ts";
@@ -38,7 +38,7 @@ export function renderWebScrapeResult(
 		return renderScrapeProgressCard(details, expanded, theme);
 	const envelope = details as Partial<ResultEnvelope<Record<string, unknown>>>;
 	const summary = envelope.error
-		? errorTitle("web_scrape", envelope.error, { allowIcons: false })
+		? errorLabel("web_scrape", envelope.error, { allowIcons: false })
 		: [
 				envelope.status ?? "ok",
 				envelope.mode,

@@ -5,7 +5,7 @@
  * dark cells after `]` and background bleed past the pill boundary.
  */
 import type { RenderTheme } from "./types.ts";
-import { inlineThemeText, neutralText } from "./theme.ts";
+import { inlineThemeText, neutral } from "./theme.ts";
 import { currentSpinnerFrame } from "./spinner.ts";
 
 export type StatusPillState = "waiting" | "loading" | "done" | "error";
@@ -25,7 +25,7 @@ export function renderStatusPill(options: StatusPillOptions): string {
 	);
 	const text = `[${inner}]`;
 	const theme = options.theme;
-	if (!theme?.bg) return neutralText(text, theme);
+	if (!theme?.bg) return neutral(text, theme);
 	const tail = backgroundStart(statusTailBackground(options.state), theme);
 	if (options.state === "done")
 		return `${backgroundText("toolSuccessBg", text, theme)}${tail}`;
@@ -33,7 +33,7 @@ export function renderStatusPill(options: StatusPillOptions): string {
 		return `${backgroundText("toolErrorBg", text, theme)}${tail}`;
 	if (options.state === "loading")
 		return `${renderLoadingStatusFill(options, text)}${tail}`;
-	return `${backgroundText("toolPendingBg", neutralText(text, theme), theme)}${tail}`;
+	return `${backgroundText("toolPendingBg", neutral(text, theme), theme)}${tail}`;
 }
 
 export function renderStatusGlyph(
@@ -61,7 +61,7 @@ function renderLoadingStatusFill(
 	const filled = text.slice(0, filledWidth);
 	const rest = text.slice(filledWidth);
 	return `${backgroundText("selectedBg", filled, theme)}${
-		rest ? backgroundText("toolPendingBg", neutralText(rest, theme), theme) : ""
+		rest ? backgroundText("toolPendingBg", neutral(rest, theme), theme) : ""
 	}`;
 }
 

@@ -3,10 +3,10 @@
  */
 import type { RenderTheme } from "./types.ts";
 import {
-	activityText,
-	failureText,
-	neutralText,
-	successText,
+	activity,
+	failure,
+	neutral,
+	success,
 } from "./theme.ts";
 
 export function successCountSegment(
@@ -15,8 +15,8 @@ export function successCountSegment(
 	theme?: RenderTheme,
 ): string {
 	const text = `${count} ${label}`;
-	if (count <= 0) return neutralText(text, theme);
-	return successText(`✓ ${text}`, theme);
+	if (count <= 0) return neutral(text, theme);
+	return success(`✓ ${text}`, theme);
 }
 
 export function failureCountSegment(
@@ -24,7 +24,7 @@ export function failureCountSegment(
 	label: string,
 	theme?: RenderTheme,
 ): string {
-	return failureText(`✖ ${count} ${label}`, theme);
+	return failure(`✖ ${count} ${label}`, theme);
 }
 
 export function activityCountSegment(
@@ -33,5 +33,5 @@ export function activityCountSegment(
 	icon: string,
 	theme?: RenderTheme,
 ): string {
-	return activityText(`${icon}  ${count} ${label}`, theme);
+	return activity(`${icon}  ${count} ${label}`, theme);
 }

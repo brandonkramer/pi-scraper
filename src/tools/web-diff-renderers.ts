@@ -11,8 +11,8 @@ import type { RenderComponent, RenderTheme } from "../tui/types.ts";
 import { renderText } from "../tui/text.ts";
 import { muted, separator } from "../tui/theme.ts";
 import { formatChecklistItem, formatChecklistText } from "../tui/checklist.ts";
-import { renderProgress } from "../tui/progress-card.ts";
-import { errorTitle, freshnessLabel } from "../tui/envelope.ts";
+import { renderProgressCard } from "../tui/progress-card.ts";
+import { errorLabel, freshnessLabel } from "../tui/envelope.ts";
 export interface DiffData {
 	previous?: unknown;
 	current?: unknown;
@@ -36,13 +36,13 @@ export function renderWebDiffResult(
 		| Partial<ResultEnvelope<unknown>>
 		| ProgressDetails;
 	if (isProgress(details))
-		return renderProgress("web_diff", details as ProgressDetails, theme, {
+		return renderProgressCard("web_diff", details as ProgressDetails, theme, {
 			allowIcons: false,
 		});
 	const envelope = details as Partial<ResultEnvelope<DiffData>>;
 	const diff = envelope.data;
 	const title = envelope.error
-		? errorTitle("web_diff", envelope.error, { allowIcons: false })
+		? errorLabel("web_diff", envelope.error, { allowIcons: false })
 		: [diffTitle(diff, envelope.summary), freshnessLabel(envelope)]
 				.filter(Boolean)
 				.join(separator());

@@ -14,10 +14,10 @@ import {
 	activityCountSegment,
 	failureCountSegment,
 	successCountSegment,
-} from "./counts.ts";
+} from "./count-segments.ts";
 import { formatChecklistItem, formatChecklistText } from "./checklist.ts";
 
-export function renderProgress(
+export function renderProgressCard(
 	toolName: `web_${string}`,
 	details: ProgressDetails,
 	theme?: RenderTheme,
