@@ -31,7 +31,7 @@ const SOURCE_FORMATS = ["text", "markdown", "html", "json"] as const;
 export type PatternSourceFormat = (typeof SOURCE_FORMATS)[number];
 
 export type PatternSectionRequest =
-	import("../shared/section-ranges.ts").SectionRangeRequest;
+	import("./section-ranges.ts").SectionRangeRequest;
 
 export interface PatternInspectOptions
 	extends Omit<CommonScrapeOptions, "include"> {
@@ -94,7 +94,7 @@ export interface PatternInspectResult {
 		totalMatches: number;
 		truncated: boolean;
 	}>;
-	sections?: import("../shared/section-ranges.ts").SectionRangeResult[];
+	sections?: import("./section-ranges.ts").SectionRangeResult[];
 	selection?: SymbolSelectionResult;
 }
 

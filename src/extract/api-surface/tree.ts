@@ -14,12 +14,12 @@ import {
 	stripUndefined,
 	titleCase,
 	truncateText,
-} from "../shared/text.ts";
+} from "../text.ts";
 import { parseMarkdown as sharedMarkdownParse } from "../../parse/markup/doc.ts";
 import {
 	extractHeadingSections,
 	firstTextBySelector,
-} from "../shared/doc-structure.ts";
+} from "../doc-structure.ts";
 
 import type {
 	ApiSurfaceParameter,

@@ -1,7 +1,7 @@
 /**
  * @fileoverview Reddit comment extraction helpers.
  */
-import { stripUndefined } from "../../../shared/text.ts";
+import { stripUndefined } from "../../../text.ts";
 import { absoluteRedditUrl } from "./index.ts";
 import type { RedditCommentData, RedditListing } from "./index.ts";
 

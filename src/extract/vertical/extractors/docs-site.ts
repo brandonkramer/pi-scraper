@@ -14,13 +14,13 @@ import {
 	stripUndefined,
 	titleCase,
 	truncateText,
-} from "../../shared/text.ts";
+} from "../../text.ts";
 import {
 	extractHeadingSections,
 	firstTextBySelector,
 	sectionFromHeading,
 	type ExtractedDocSection,
-} from "../../shared/doc-structure.ts";
+} from "../../doc-structure.ts";
 
 export type DocsPlatform =
 	| "docusaurus"

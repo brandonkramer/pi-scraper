@@ -1,7 +1,7 @@
 /**
  * @fileoverview Reddit post fetch and parse logic.
  */
-import { stripUndefined } from "../../../shared/text.ts";
+import { stripUndefined } from "../../../text.ts";
 import {
 	type RedditCommentData,
 	type RedditListing,

@@ -5,7 +5,7 @@ import {
 	extractSectionRanges,
 	SectionRangeError,
 	type SectionRangeRequest,
-} from "../../shared/section-ranges.ts";
+} from "../section-ranges.ts";
 import { PatternInspectError } from "../errors.ts";
 
 export function inspectSections(

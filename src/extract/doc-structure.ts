@@ -5,7 +5,6 @@ import * as cssSelect from "css-select";
 import type { AnyNode, Element } from "domhandler";
 import * as domutils from "domutils";
 import { cleanText, stripUndefined, truncateText } from "./text.ts";
-import { followingSectionNodes } from "./html.ts";
 
 export interface ExtractedCodeBlock {
 	language?: string;
@@ -100,4 +99,21 @@ function sectionContent(
 
 function extractLanguage(className?: string): string | undefined {
 	return className?.match(/(?:language|lang)-([A-Za-z0-9_+-]+)/u)?.[1];
+}
+
+function followingSectionNodes(
+	heading: AnyNode,
+	level: number,
+): AnyNode[] {
+	const nodes: AnyNode[] = [];
+	let next = (heading as { next?: AnyNode }).next;
+	while (next) {
+		if (domutils.isTag(next) && /^h[1-6]$/u.test(next.name)) {
+			const nextLevel = Number.parseInt(next.name.slice(1), 10);
+			if (nextLevel <= level) break;
+		}
+		nodes.push(next);
+		next = (next as { next?: AnyNode }).next;
+	}
+	return nodes;
 }
