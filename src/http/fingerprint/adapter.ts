@@ -5,11 +5,11 @@ import {
 	DEFAULT_MAX_BYTES,
 	DEFAULT_TIMEOUT_SECONDS,
 	DEFAULT_USER_AGENT,
-} from "../defaults.ts";
-import type { FetchUrlResult, HttpClientOptions } from "./client.ts";
-import { HttpClient } from "./client.ts";
-import { normalizeHeaders } from "./download.ts";
-import { httpClientErrorFromUnknown } from "./errors.ts";
+} from "../../defaults.ts";
+import type { FetchUrlResult, HttpClientOptions } from "../client.ts";
+import { HttpClient } from "../client.ts";
+import { normalizeHeaders } from "../download.ts";
+import { httpClientErrorFromUnknown } from "../errors.ts";
 import {
 	assertSupportedFingerprintOptions,
 	type FingerprintBackendFactory,
@@ -18,14 +18,14 @@ import {
 	type FingerprintFetchOptions,
 	type FingerprintProfile,
 	type FingerprintRequestBackend,
-} from "./fingerprint-types.ts";
-import { PolitenessController } from "./politeness.ts";
-import { followRedirects } from "./redirects.ts";
-import { fetchWithRequestPolicy } from "./request-policy.ts";
-import { loadRobotsText, RobotsCache } from "./robots.ts";
-import { materializeFetchBufferResponse } from "./response.ts";
-import { withTimeout } from "./timeout.ts";
-import { assertSafeFetchUrl, type SafeUrlResult } from "./url-safety.ts";
+} from "./types.ts";
+import { PolitenessController } from "../politeness.ts";
+import { followRedirects } from "../redirects.ts";
+import { fetchWithRequestPolicy } from "../request-policy.ts";
+import { loadRobotsText, RobotsCache } from "../robots.ts";
+import { materializeFetchBufferResponse } from "../response.ts";
+import { withTimeout } from "../timeout.ts";
+import { assertSafeFetchUrl, type SafeUrlResult } from "../url-safety.ts";
 
 export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 	private readonly backends = new Map<

@@ -10,7 +10,7 @@ import {
 	type BrowserRenderer,
 } from "../../browser/playwright.ts";
 import type { FetchUrlResult } from "../../http/client.ts";
-import type { FingerprintFetchAdapter } from "../../http/fingerprint.ts";
+import type { FingerprintFetchAdapter } from "../../http/fingerprint/index.ts";
 import { type ScrapePipelineDeps, scrapeUrl } from "../pipeline.ts";
 
 const URL = "https://example.com/page";

@@ -2,11 +2,11 @@
  * @fileoverview scrape modes fingerprint module.
  */
 import type { FetchUrlResult } from "../../http/client.ts";
-import type { FingerprintFetchAdapter } from "../../http/fingerprint.ts";
+import type { FingerprintFetchAdapter } from "../../http/fingerprint/index.ts";
 import {
 	getFingerprintFetchAdapter,
 	isFingerprintFetchError,
-} from "../../http/fingerprint.ts";
+} from "../../http/fingerprint/index.ts";
 import type { CommonScrapeOptions, OutputFormat } from "../../types.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
 import { responseScrape } from "./fast.ts";

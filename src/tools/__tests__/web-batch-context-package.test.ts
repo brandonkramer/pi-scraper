@@ -81,7 +81,7 @@ describe("web_batch context", () => {
 			};
 		};
 
-		expect(result.content[0]?.text).toContain("Context package: 1 page(s)");
+		expect(result.content[0]?.text).toContain("Context: 1 page(s)");
 		expect(Array.isArray(envelope.data)).toBe(true);
 		expect(diagnostics.contextPackage?.package.source).toBe("batch");
 		expect(diagnostics.contextPackage?.package.urlCount).toBe(1);

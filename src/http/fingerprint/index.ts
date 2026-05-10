@@ -1,8 +1,8 @@
 /**
  * @fileoverview http fingerprint module.
  */
-import type { HttpClientOptions } from "./client.ts";
-import { SafeFingerprintAdapter } from "./fingerprint-adapter.ts";
+import type { HttpClientOptions } from "../client.ts";
+import { SafeFingerprintAdapter } from "./adapter.ts";
 import {
 	assertSupportedFingerprintOptions,
 	MissingFingerprintBackendError,
@@ -16,7 +16,7 @@ import {
 	type FingerprintFetchOptions,
 	type FingerprintProfile,
 	type FingerprintRequestBackend,
-} from "./fingerprint-types.ts";
+} from "./types.ts";
 
 export {
 	MissingFingerprintBackendError,
