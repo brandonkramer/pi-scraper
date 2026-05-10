@@ -8,7 +8,7 @@ import {
 	updateConfig,
 } from "../config/settings.ts";
 import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.ts";
-import { toolResult } from "../tools/result.ts";
+import { toolResult } from "../tools/infra/result.ts";
 import { defineWebCommand } from "./define.ts";
 
 export const webSetModeSchema = Type.Object({

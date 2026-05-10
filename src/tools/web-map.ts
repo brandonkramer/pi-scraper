@@ -5,12 +5,12 @@ import { Type, type Static } from "@earendil-works/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.ts";
 import { discoverSiteUrls } from "../map/discover.ts";
 import { storeResponse } from "../storage/responses/store.ts";
-import { defineWebTool } from "./define.ts";
-import { emitProgress } from "./progress.ts";
+import { defineWebTool } from "./infra/define.ts";
+import { emitProgress } from "./infra/progress.ts";
 import { renderSimpleCall } from "../tui/call.ts";
-import { toolResult } from "./result.ts";
-import { renderWebMapResult } from "./web-map-renderers.ts";
-import { urlProperty } from "./schemas.ts";
+import { toolResult } from "./infra/result.ts";
+import { renderWebMapResult } from "./renderers/map.ts";
+import { urlProperty } from "./infra/schemas.ts";
 
 export const webMapSchema = Type.Object({
 	url: urlProperty(),

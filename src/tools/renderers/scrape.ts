@@ -6,25 +6,25 @@ import {
 	type PiToolShell,
 	type ProgressDetails,
 	type ResultEnvelope,
-} from "../types.ts";
-import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import { renderText } from "../tui/text.ts";
-import { muted, separator } from "../tui/theme.ts";
-import { currentSpinnerFrame } from "../tui/spinner.ts";
-import { progressStartedAtMs } from "../tui/progress.ts";
-import { renderUrlStatusRow } from "../tui/rows.ts";
-import { formatChecklistText } from "../tui/checklist.ts";
-import { previewText } from "../tui/preview.ts";
+} from "../../types.ts";
+import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
+import { renderText } from "../../tui/text.ts";
+import { muted, separator } from "../../tui/theme.ts";
+import { currentSpinnerFrame } from "../../tui/spinner.ts";
+import { progressStartedAtMs } from "../../tui/progress.ts";
+import { renderUrlStatusRow } from "../../tui/rows.ts";
+import { formatChecklistText } from "../../tui/checklist.ts";
+import { previewText } from "../../tui/preview.ts";
 import {
 	cacheLabel,
 	errorLabel,
 	freshnessLabel,
 	sessionNotice,
-} from "../tui/envelope.ts";
-import { renderStackedResultCard } from "../tui/stacked.ts";
-import { formatPreview, renderMetadataLines } from "../tui/preview.ts";
-import { isFileResult, renderFileResultCard } from "../tui/file.ts";
-import { formatBytes, formatDuration } from "../tui/format.ts";
+} from "../../tui/envelope.ts";
+import { renderStackedResultCard } from "../../tui/stacked.ts";
+import { formatPreview, renderMetadataLines } from "../../tui/preview.ts";
+import { isFileResult, renderFileResultCard } from "../../tui/file.ts";
+import { formatBytes, formatDuration } from "../../tui/format.ts";
 
 export function renderWebScrapeResult(
 	result: PiToolShell,

@@ -4,10 +4,10 @@
 import { type Static, Type } from "@earendil-works/pi-ai";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
-import { defineWebTool, type WebTool } from "./define.ts";
+import { defineWebTool, type WebTool } from "./infra/define.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { renderSimpleCall } from "../tui/call.ts";
-import { urlProperty } from "./schemas.ts";
+import { urlProperty } from "./infra/schemas.ts";
 import { runApiSurfaceExtraction } from "./web-extract-surface.ts";
 import { runSelectorExtractionTool } from "./web-extract-selector.ts";
 import {

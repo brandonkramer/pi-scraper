@@ -6,19 +6,19 @@ import {
 	type PiToolShell,
 	type ProgressDetails,
 	type ResultEnvelope,
-} from "../types.ts";
-import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import { muted, separator } from "../tui/theme.ts";
-import { pickExcerpt } from "../tui/preview.ts";
+} from "../../types.ts";
+import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
+import { muted, separator } from "../../tui/theme.ts";
+import { pickExcerpt } from "../../tui/preview.ts";
 import {
 	batchProgressFromItems,
 	isBatchProgress,
 	isBatchProgressView,
-} from "../batch/progress-state.ts";
+} from "../../batch/progress-state.ts";
 import {
 	renderBatchProgressCard,
 	renderBatchResultCard,
-} from "../tui/batch.ts";
+} from "../../tui/batch.ts";
 export interface BatchItem {
 	ok?: boolean;
 	url?: string;
@@ -46,19 +46,19 @@ export interface BatchItem {
 import {
 	type ResourceListItem,
 	renderResourceItemList,
-} from "../tui/resource.ts";
+} from "../../tui/resource.ts";
 import {
 	activityCountSegment,
 	failureCountSegment,
 	successCountSegment,
-} from "../tui/counts.ts";
+} from "../../tui/counts.ts";
 import {
 	errorLabel,
 	freshnessLabel,
 	sessionNotice,
 	contextPackageResponseId,
-} from "../tui/envelope.ts";
-import { renderProgressCard } from "../tui/progress.ts";
+} from "../../tui/envelope.ts";
+import { renderProgressCard } from "../../tui/progress.ts";
 
 export function batchExpandedDetails(
 	items: readonly BatchItem[],
@@ -122,7 +122,7 @@ export function renderWebBatchResult(
 		});
 	}
 	const envelope = details as Partial<
-		ResultEnvelope<import("../batch/run.ts").BatchItemResult[]>
+		ResultEnvelope<import("../../batch/run.ts").BatchItemResult[]>
 	>;
 	const items = Array.isArray(envelope.data) ? envelope.data : [];
 	const succeeded = items.filter((item) => item.ok === true).length;

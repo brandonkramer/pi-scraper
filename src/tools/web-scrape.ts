@@ -8,11 +8,11 @@ import {
 	qualityFromCache,
 	refreshUrlAction,
 	storedTraceContext,
-} from "./agentic-context.ts";
+} from "./infra/agentic-context.ts";
 import { resolveScrapeOptions } from "../scrape/options.ts";
 import { describeScrapeResult, formatAge } from "../scrape/describe.ts";
-import { defineWebTool, type WebTool } from "./define.ts";
-import { emitProgress } from "./progress.ts";
+import { defineWebTool, type WebTool } from "./infra/define.ts";
+import { emitProgress } from "./infra/progress.ts";
 import {
 	errorResult,
 	inputErrorResult,
@@ -21,12 +21,12 @@ import {
 	structuredToolError,
 	toolErrorResult,
 	toolResult,
-} from "./result.ts";
+} from "./infra/result.ts";
 import { getOrCreateSession } from "../http/session.ts";
-import { sessionLifecycle } from "./session-lifecycle.ts";
-import { sessionOptionSchema, urlProperty } from "./schemas.ts";
-import { buildSummarizeToolResult } from "./scrape-input-result.ts";
-import { renderWebScrapeResult } from "./web-scrape-renderers.ts";
+import { sessionLifecycle } from "./infra/session-lifecycle.ts";
+import { sessionOptionSchema, urlProperty } from "./infra/schemas.ts";
+import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
+import { renderWebScrapeResult } from "./renderers/scrape.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 
 const scrapeTasks = ["read", "summarize"] as const;

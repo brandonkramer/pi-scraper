@@ -5,7 +5,7 @@ import { Type, type Static } from "@earendil-works/pi-ai";
 import { runBatchScrape } from "../batch/run.ts";
 import { loadEffectiveConfig } from "../config/settings.ts";
 import { DEFAULT_CONCURRENCY } from "../defaults.ts";
-import { sessionLifecycle } from "./session-lifecycle.ts";
+import { sessionLifecycle } from "./infra/session-lifecycle.ts";
 import {
 	aggregateFreshness,
 	freshnessFromCache,
@@ -13,19 +13,19 @@ import {
 import {
 	retrieveResultAction,
 	storedResultGuidance,
-} from "./agentic-context.ts";
+} from "./infra/agentic-context.ts";
 import { compileBatchContext } from "../batch/compile.ts";
-import { defineWebTool } from "./define.ts";
-import { emitProgress } from "./progress.ts";
+import { defineWebTool } from "./infra/define.ts";
+import { emitProgress } from "./infra/progress.ts";
 import {
 	cloneBatchProgress,
 	type BatchProgressView,
 	updateIndexedBatchProgress,
 } from "../batch/progress-state.ts";
-import { renderWebBatchResult } from "./web-batch-renderers.ts";
+import { renderWebBatchResult } from "./renderers/batch.ts";
 import { renderSimpleCall } from "../tui/call.ts";
-import { toolResult } from "./result.ts";
-import { scrapeOutputOptionSchema, urlProperty } from "./schemas.ts";
+import { toolResult } from "./infra/result.ts";
+import { scrapeOutputOptionSchema, urlProperty } from "./infra/schemas.ts";
 
 export const webBatchSchema = Type.Object({
 	urls: Type.Array(urlProperty(), { minItems: 1 }),

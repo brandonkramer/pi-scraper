@@ -7,10 +7,10 @@ import {
 	PatternInspectError,
 	type PatternInspectOptions,
 } from "../extract/pattern/index.ts";
-import { storedResultGuidance } from "./agentic-context.ts";
-import type { ToolUpdate } from "./define.ts";
-import { emitProgress } from "./progress.ts";
-import { toolResult, toolErrorResult } from "./result.ts";
+import { storedResultGuidance } from "./infra/agentic-context.ts";
+import type { ToolUpdate } from "./infra/define.ts";
+import { emitProgress } from "./infra/progress.ts";
+import { toolResult, toolErrorResult } from "./infra/result.ts";
 import type { Params, WebExtractToolOptions } from "./web-extract.ts";
 
 export function hasPatternRequest(params: Params): boolean {

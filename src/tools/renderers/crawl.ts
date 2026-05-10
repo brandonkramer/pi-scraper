@@ -6,30 +6,30 @@ import {
 	type PiToolShell,
 	type ProgressDetails,
 	type ResultEnvelope,
-} from "../types.ts";
-import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import { renderProgressCard } from "../tui/progress.ts";
+} from "../../types.ts";
+import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
+import { renderProgressCard } from "../../tui/progress.ts";
 import {
 	renderBatchProgressCard,
 	renderBatchResultCard,
-} from "../tui/batch.ts";
+} from "../../tui/batch.ts";
 import {
 	batchProgressFromCrawlPages,
 	isBatchProgress,
 	isBatchProgressView,
-} from "../batch/progress-state.ts";
+} from "../../batch/progress-state.ts";
 import {
 	activityCountSegment,
 	failureCountSegment,
 	successCountSegment,
-} from "../tui/counts.ts";
-import { pickExcerpt } from "../tui/preview.ts";
-import { muted, neutral, separator } from "../tui/theme.ts";
+} from "../../tui/counts.ts";
+import { pickExcerpt } from "../../tui/preview.ts";
+import { muted, neutral, separator } from "../../tui/theme.ts";
 import {
 	errorLabel,
 	sessionNotice,
 	contextPackageResponseId,
-} from "../tui/envelope.ts";
+} from "../../tui/envelope.ts";
 export interface CrawlMeta {
 	succeededCount: number;
 	failedCount: number;
@@ -60,7 +60,7 @@ export interface CrawlPageView {
 import {
 	type ResourceListItem,
 	renderResourceItemList,
-} from "../tui/resource.ts";
+} from "../../tui/resource.ts";
 
 export function crawlExpandedDetails(
 	pages: readonly CrawlPageView[],

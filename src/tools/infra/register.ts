@@ -3,14 +3,14 @@
  */
 import type { PiToolRegistrar, WebTool } from "./define.ts";
 import { resolveToolModelAdapter } from "./model-adapter.ts";
-import { webBatchTool } from "./web-batch.ts";
-import { webCrawlTool } from "./web-crawl.ts";
-import { webDiffTool } from "./web-diff.ts";
-import { createWebExtractTool, webExtractTool } from "./web-extract.ts";
-import { webGetResultTool } from "./web-get-result.ts";
-import { webMapTool } from "./web-map.ts";
-import { createWebScrapeTool, webScrapeTool } from "./web-scrape.ts";
-import { createWebSummarizeTool, webSummarizeTool } from "./web-summarize.ts";
+import { webBatchTool } from "../web-batch.ts";
+import { webCrawlTool } from "../web-crawl.ts";
+import { webDiffTool } from "../web-diff.ts";
+import { createWebExtractTool, webExtractTool } from "../web-extract.ts";
+import { webGetResultTool } from "../web-get-result.ts";
+import { webMapTool } from "../web-map.ts";
+import { createWebScrapeTool, webScrapeTool } from "../web-scrape.ts";
+import { createWebSummarizeTool, webSummarizeTool } from "../web-summarize.ts";
 
 export const webTools: readonly WebTool[] = [
 	webScrapeTool,

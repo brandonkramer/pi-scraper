@@ -7,12 +7,12 @@ import type {
 	ResultEnvelope,
 	StructuredError,
 	TimingInfo,
-} from "../types.ts";
-import { structuredErrorFromUnknown } from "../http/errors.ts";
+} from "../../types.ts";
+import { structuredErrorFromUnknown } from "../../http/errors.ts";
 import {
 	freshnessFromCache,
 	guidanceWithFreshness,
-} from "../storage/cache/freshness.ts";
+} from "../../storage/cache/freshness.ts";
 
 export interface ResultShellOptions<TData> {
 	text: string;

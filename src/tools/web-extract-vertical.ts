@@ -3,10 +3,10 @@
  */
 import { loadEffectiveConfig } from "../config/settings.ts";
 import type { VerticalExtractionResult } from "../extract/vertical/capabilities.ts";
-import { storedResultGuidance } from "./agentic-context.ts";
-import type { ToolUpdate } from "./define.ts";
-import { emitProgress } from "./progress.ts";
-import { inputErrorResult, toolResult } from "./result.ts";
+import { storedResultGuidance } from "./infra/agentic-context.ts";
+import type { ToolUpdate } from "./infra/define.ts";
+import { emitProgress } from "./infra/progress.ts";
+import { inputErrorResult, toolResult } from "./infra/result.ts";
 import type { Params } from "./web-extract.ts";
 
 export async function listDeterministicExtractors() {

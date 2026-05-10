@@ -1,7 +1,7 @@
 /**
  * @fileoverview Shared result shaping for model-backed scrape-input tools.
  */
-import type { OutputFormat, ResultEnvelope, TimingInfo } from "../types.ts";
+import type { OutputFormat, ResultEnvelope, TimingInfo } from "../../types.ts";
 import { qualityFromCache, storedResultGuidance } from "./agentic-context.ts";
 import { toolResult } from "./result.ts";
 

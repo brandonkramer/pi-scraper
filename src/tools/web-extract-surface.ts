@@ -1,8 +1,8 @@
 /** @fileoverview API-surface execution path for web_extract kept outside the thin tool adapter. */
-import type { ToolUpdate } from "./define.ts";
-import { emitProgress } from "./progress.ts";
-import { inputErrorResult, toolResult } from "./result.ts";
-import { storedResultGuidance } from "./agentic-context.ts";
+import type { ToolUpdate } from "./infra/define.ts";
+import { emitProgress } from "./infra/progress.ts";
+import { inputErrorResult, toolResult } from "./infra/result.ts";
+import { storedResultGuidance } from "./infra/agentic-context.ts";
 import {
 	runApiSurfaceFromInput,
 	type ApiSurfaceInput,

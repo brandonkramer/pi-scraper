@@ -10,9 +10,9 @@ import {
 	runSelectorExtraction,
 	type SelectorRunParams,
 } from "../extract/selector/runner.ts";
-import type { ToolUpdate } from "./define.ts";
-import { emitProgress } from "./progress.ts";
-import { inputErrorResult, toolResult } from "./result.ts";
+import type { ToolUpdate } from "./infra/define.ts";
+import { emitProgress } from "./infra/progress.ts";
+import { inputErrorResult, toolResult } from "./infra/result.ts";
 import type { WebExtractToolOptions } from "./web-extract.ts";
 
 export interface SelectorParams {

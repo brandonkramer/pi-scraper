@@ -2,11 +2,11 @@
  * @fileoverview Renderer contract tests for Pi web tool cards.
  */
 import { describe, expect, it } from "vitest";
-import type { ToolRenderContext } from "../define.ts";
+import type { ToolRenderContext } from "../infra/define.ts";
 import type { RenderComponent } from "../../tui/types.ts";
-import { progressShell } from "../progress.ts";
+import { progressShell } from "../infra/progress.ts";
 import { renderEnvelopeResult } from "../../tui/envelope.ts";
-import { toolResult } from "../result.ts";
+import { toolResult } from "../infra/result.ts";
 import { webBatchTool } from "../web-batch.ts";
 import { webCrawlTool } from "../web-crawl.ts";
 import { webDiffTool } from "../web-diff.ts";

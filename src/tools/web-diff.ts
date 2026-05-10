@@ -23,14 +23,14 @@ import {
 	type JobError,
 } from "../storage/jobs/errors.ts";
 import { storeResponseWithId } from "../storage/responses/store.ts";
-import { storedTraceContext } from "./agentic-context.ts";
+import { storedTraceContext } from "./infra/agentic-context.ts";
 import { formatAge } from "../scrape/describe.ts";
-import { defineWebTool } from "./define.ts";
-import { emitProgress } from "./progress.ts";
-import { renderWebDiffResult } from "./web-diff-renderers.ts";
+import { defineWebTool } from "./infra/define.ts";
+import { emitProgress } from "./infra/progress.ts";
+import { renderWebDiffResult } from "./renderers/diff.ts";
 import { renderSimpleCall } from "../tui/call.ts";
-import { errorResult, structuredToolError, toolResult } from "./result.ts";
-import { scrapeModeOptionSchema, urlProperty } from "./schemas.ts";
+import { errorResult, structuredToolError, toolResult } from "./infra/result.ts";
+import { scrapeModeOptionSchema, urlProperty } from "./infra/schemas.ts";
 
 export const webDiffSchema = Type.Object({
 	url: urlProperty(),

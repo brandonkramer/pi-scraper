@@ -13,9 +13,9 @@ import type {
 	AgenticQualitySignals,
 	FreshnessMetadata,
 } from "../types.ts";
-import { crawlAction, storedResultGuidance } from "./agentic-context.ts";
+import { crawlAction, storedResultGuidance } from "./infra/agentic-context.ts";
 import { formatAge } from "../scrape/describe.ts";
-import { inputErrorResult, toolResult } from "./result.ts";
+import { inputErrorResult, toolResult } from "./infra/result.ts";
 import { crawlFreshness } from "./web-crawl-run.ts";
 import type { Params } from "./web-crawl.ts";
 

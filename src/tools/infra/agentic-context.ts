@@ -6,8 +6,8 @@ import type {
 	AgenticQualitySignals,
 	AgenticSourceNote,
 	CacheMetadata,
-} from "../types.ts";
-import { formatAge } from "../scrape/describe.ts";
+} from "../../types.ts";
+import { formatAge } from "../../scrape/describe.ts";
 
 export function retrieveResultAction(
 	responseId: string,

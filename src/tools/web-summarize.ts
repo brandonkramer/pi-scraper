@@ -6,8 +6,8 @@ import { loadEffectiveConfig } from "../config/settings.ts";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { summarizePage } from "../summarize/page.ts";
-import { buildSummarizeToolResult } from "./scrape-input-result.ts";
-import { defineWebTool, type WebTool } from "./define.ts";
+import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
+import { defineWebTool, type WebTool } from "./infra/define.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import {
@@ -16,8 +16,8 @@ import {
 	missingModelError,
 	structuredToolError,
 	toolErrorResult,
-} from "./result.ts";
-import { scrapeModeOptionSchema, urlProperty } from "./schemas.ts";
+} from "./infra/result.ts";
+import { scrapeModeOptionSchema, urlProperty } from "./infra/schemas.ts";
 
 export const webSummarizeSchema = Type.Object({
 	url: Type.Optional(urlProperty()),

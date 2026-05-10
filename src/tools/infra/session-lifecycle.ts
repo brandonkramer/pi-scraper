@@ -6,7 +6,7 @@ import {
 	buildSessionText,
 	deleteSessionAndStorage,
 	saveSessionToStorage,
-} from "../http/session.ts";
+} from "../../http/session.ts";
 
 export interface SessionLifecycleParams {
 	sessionId?: string;

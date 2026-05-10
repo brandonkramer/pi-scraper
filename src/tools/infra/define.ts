@@ -2,8 +2,8 @@
  * @fileoverview Shared Pi tool adapter contracts for web tools.
  */
 import type { Static, TSchema } from "@earendil-works/pi-ai";
-import type { PiToolShell } from "../types.ts";
-import type { RenderComponent, RenderTheme } from "../tui/types.ts";
+import type { PiToolShell } from "../../types.ts";
+import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 
 export type ToolUpdate = (result: PiToolShell) => void | Promise<void>;
 

@@ -2,8 +2,8 @@
  * @fileoverview tools __tests__ tool-contract.test module.
  */
 import { describe, expect, it } from "vitest";
-import type { WebTool } from "../define.ts";
-import { webTools } from "../register.ts";
+import type { WebTool } from "../infra/define.ts";
+import { webTools } from "../infra/register.ts";
 
 const expectedNames = [
 	"web_scrape",

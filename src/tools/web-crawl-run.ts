@@ -16,18 +16,18 @@ import type { ScrapeResult } from "../scrape/pipeline.ts";
 import { updateJobManifest } from "../storage/jobs/manifest.ts";
 import { storeResponseWithId } from "../storage/responses/store.ts";
 import type { FreshnessMetadata } from "../types.ts";
-import { storedResultGuidance } from "./agentic-context.ts";
+import { storedResultGuidance } from "./infra/agentic-context.ts";
 import { storeCompiledContext } from "../storage/context/build.ts";
-import { sessionLifecycle } from "./session-lifecycle.ts";
-import { emitProgress } from "./progress.ts";
+import { sessionLifecycle } from "./infra/session-lifecycle.ts";
+import { emitProgress } from "./infra/progress.ts";
 import {
 	cloneBatchProgress,
 	type BatchProgressView,
 	batchProgressFromCrawlPages,
 	updateUrlBatchProgress,
 } from "../batch/progress-state.ts";
-import { inputErrorResult, toolResult } from "./result.ts";
-import type { ToolUpdate } from "./define.ts";
+import { inputErrorResult, toolResult } from "./infra/result.ts";
+import type { ToolUpdate } from "./infra/define.ts";
 import type { Params } from "./web-crawl.ts";
 
 export async function crawlRun(

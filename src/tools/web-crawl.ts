@@ -2,11 +2,11 @@
  * @fileoverview Pi tool adapter for crawling, crawl state, and context.
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
-import { defineWebTool } from "./define.ts";
+import { defineWebTool } from "./infra/define.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
-import { renderWebCrawlResult } from "./web-crawl-renderers.ts";
+import { renderWebCrawlResult } from "./renderers/crawl.ts";
 import { renderSimpleCall } from "../tui/call.ts";
-import { sessionOptionSchema, urlProperty } from "./schemas.ts";
+import { sessionOptionSchema, urlProperty } from "./infra/schemas.ts";
 import { crawlRun } from "./web-crawl-run.ts";
 import { crawlStatus, crawlList } from "./web-crawl-status.ts";
 

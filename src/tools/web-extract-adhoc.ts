@@ -3,12 +3,12 @@
  */
 import { loadEffectiveConfig } from "../config/settings.ts";
 import { extractAdHoc, MissingExtractInputError } from "../extract/adhoc/index.ts";
-import { missingModelResult } from "./result.ts";
+import { missingModelResult } from "./infra/result.ts";
 import {
 	scrapeInputSummary,
 	scrapeInputToolResult,
-} from "./scrape-input-result.ts";
-import { toolErrorResult } from "./result.ts";
+} from "./infra/scrape-input-result.ts";
+import { toolErrorResult } from "./infra/result.ts";
 import type { Params, WebExtractToolOptions } from "./web-extract.ts";
 
 export async function runAdHocExtraction(
