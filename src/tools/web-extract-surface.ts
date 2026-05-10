@@ -1,12 +1,15 @@
 /** @fileoverview API-surface execution path for web_extract kept outside the thin tool adapter. */
-import { loadEffectiveConfig } from "../config/settings.js";
-import type { ApiSurfaceTree } from "../extract/api-surface.js";
-import type { ScrapePipelineDeps } from "../scrape/pipeline.js";
-import type { CommonScrapeOptions } from "../types.js";
-import { storedResultGuidance } from "./agentic-context.js";
-import type { ToolUpdate } from "./define.js";
-import { emitProgress } from "./progress.js";
-import { toolResult } from "./result.js";
+import type { ToolUpdate } from "./define.ts";
+import { emitProgress } from "./progress.ts";
+import { inputErrorResult, toolResult } from "./result.ts";
+import { storedResultGuidance } from "./agentic-context.ts";
+import {
+	runApiSurfaceFromInput,
+	type ApiSurfaceInput,
+} from "../extract/api-surface-runner.ts";
+import type { ApiSurfaceTree } from "../extract/api-surface.ts";
+import type { CommonScrapeOptions } from "../types.ts";
+import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 
 export interface WebExtractSurfaceOptions {
 	scrapeDeps?: ScrapePipelineDeps;
@@ -29,82 +32,28 @@ export async function runApiSurfaceExtraction(
 	onUpdate?: ToolUpdate,
 ) {
 	if (!params.url && !params.content) {
-		return toolResult({
-			text: "Provide url or content for web_extract extract=api-surface.",
-			data: undefined,
-			error: {
-				code: "API_SURFACE_INPUT_MISSING",
-				phase: "api_surface_extract",
-				message: "web_extract extract=api-surface requires url or content.",
-				retryable: false,
-			},
-		});
+		return inputErrorResult(
+			"API_SURFACE_INPUT_MISSING",
+			"api_surface_extract",
+			"web_extract extract=api-surface requires url or content.",
+			"Provide url or content for web_extract extract=api-surface.",
+		);
 	}
-	const { buildApiSurface } = await import("../extract/api-surface.js");
-	if (params.content) {
-		const tree = buildApiSurface([
-			{
-				url: params.url ?? "provided-content",
-				title: "Provided content",
-				markdown: params.sourceFormat === "html" ? undefined : params.content,
-				html: params.sourceFormat === "html" ? params.content : undefined,
-				text: params.content,
-			},
-		]);
-		return apiSurfaceResult(tree, params.url, "provided content");
-	}
-	const config = await loadEffectiveConfig();
 	await emitProgress(onUpdate, {
 		state: "processing",
 		url: params.url,
 		message: "api-surface extraction",
 	});
-	const { scrapeUrl } = await import("../scrape/pipeline.js");
-	const {
-		include,
-		extractSchema,
-		extract,
-		content,
-		sourceFormat,
-		...scrapeParams
-	} = params;
+	const { include, extractSchema, extract, ...rest } = params;
 	void include;
 	void extractSchema;
 	void extract;
-	void content;
-	void sourceFormat;
-	const scrape = await scrapeUrl(
-		params.url as string,
-		{
-			...config.scrapeDefaults,
-			...scrapeParams,
-			mode: params.mode ?? config.scrapeMode,
-			format: config.outputFormat,
-		},
-		options.scrapeDeps ?? {},
+	const { tree, source, url } = await runApiSurfaceFromInput(
+		rest as ApiSurfaceInput,
+		options.scrapeDeps,
 		signal,
 	);
-	const tree = buildApiSurface([
-		{
-			url: scrape.url ?? (params.url as string),
-			finalUrl: scrape.finalUrl,
-			title: scrape.data.title,
-			description: scrape.data.description,
-			html: scrape.data.html,
-			markdown: scrape.data.markdown,
-			text: scrape.data.text,
-			data: scrape.data.json,
-			error: scrape.error && {
-				code: scrape.error.code,
-				message: scrape.error.message,
-			},
-		},
-	]);
-	return apiSurfaceResult(
-		tree,
-		params.url,
-		scrape.cache?.cached ? "cached scrape" : "fresh scrape",
-	);
+	return apiSurfaceResult(tree, url, source);
 }
 
 function apiSurfaceResult(

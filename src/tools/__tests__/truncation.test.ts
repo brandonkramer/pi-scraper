@@ -5,8 +5,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { PI_TRUNCATION_LIMITS } from "../../defaults.js";
-import { getStoredResult, truncateAndStore } from "../../storage/results.js";
+import { PI_TRUNCATION_LIMITS } from "../../defaults.ts";
+import { getStoredResult, truncateAndStore } from "../../storage/results.ts";
 
 let homeDir: string;
 let originalHome: string | undefined;

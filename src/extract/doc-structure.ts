@@ -9,7 +9,7 @@ import {
 	followingSectionNodes,
 	stripUndefined,
 	truncateText,
-} from "./_html.js";
+} from "./_html.ts";
 
 export interface ExtractedCodeBlock {
 	language?: string;

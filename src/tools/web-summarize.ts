@@ -2,24 +2,21 @@
  * @fileoverview Pi tool adapter for model-backed page summaries.
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
-import { loadEffectiveConfig } from "../config/settings.js";
-import type { ModelAdapter } from "../extract/model.js";
-import type { ScrapePipelineDeps } from "../scrape/pipeline.js";
-import { summarizePage } from "../summarize/page.js";
-import {
-	scrapeInputSummary,
-	scrapeInputToolResult,
-} from "./scrape-input-result.js";
-import { defineWebTool, type WebTool } from "./define.js";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
+import { loadEffectiveConfig } from "../config/settings.ts";
+import type { ModelAdapter } from "../extract/model.ts";
+import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
+import { summarizePage } from "../summarize/page.ts";
+import { buildSummarizeToolResult } from "./scrape-input-result.ts";
+import { defineWebTool, type WebTool } from "./define.ts";
+import { renderEnvelopeResult, renderSimpleCall } from "./render.ts";
 import {
 	errorResult,
 	missingModelResult,
 	missingModelError,
 	structuredToolError,
 	toolErrorResult,
-} from "./result.js";
-import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
+} from "./result.ts";
+import { scrapeModeOptionSchema, urlProperty } from "./schemas.ts";
 
 export const webSummarizeSchema = Type.Object({
 	url: Type.Optional(urlProperty()),
@@ -65,21 +62,7 @@ export function createWebSummarizeTool(
 					options.scrapeDeps ?? {},
 					signal,
 				);
-				const summary = scrapeInputSummary(
-					"Summarized",
-					result.input,
-					" from fresh scrape input",
-					" from cached scrape input",
-				);
-				return scrapeInputToolResult({
-					text: result.summary,
-					data: result,
-					input: result.input,
-					fallbackUrl: params.url,
-					summary,
-					answerContext: `${summary} Refresh the source page before summarizing time-sensitive facts.`,
-					formatFallback: "markdown",
-				});
+				return buildSummarizeToolResult(result, params.url);
 			} catch (error) {
 				return toolErrorResult(
 					error,

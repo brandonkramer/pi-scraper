@@ -5,12 +5,12 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createCrawlState, saveCrawlState } from "../../crawl/state.js";
-import { closeStorageDbs } from "../../storage/db.js";
-import { storeResult } from "../../storage/results.js";
-import type { ResultEnvelope } from "../../types.js";
-import { diffInterpretation } from "../web-diff.js";
-import { webCrawlTool } from "../web-crawl.js";
+import { createCrawlState, saveCrawlState } from "../../crawl/state.ts";
+import { closeStorageDbs } from "../../storage/db.ts";
+import { storeResult } from "../../storage/results.ts";
+import type { ResultEnvelope } from "../../types.ts";
+import { diffInterpretation } from "../web-diff.ts";
+import { webCrawlTool } from "../web-crawl.ts";
 
 const signal = new AbortController().signal;
 let homeDir: string;

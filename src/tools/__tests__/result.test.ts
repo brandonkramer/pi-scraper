@@ -2,8 +2,8 @@
  * @fileoverview tools __tests__ result.test module.
  */
 import { describe, expect, it } from "vitest";
-import { progressShell } from "../progress.js";
-import { errorResult, toolResult } from "../result.js";
+import { progressShell } from "../progress.ts";
+import { errorResult, toolResult } from "../result.ts";
 
 describe("tool result helpers", () => {
 	it("builds the standard Pi shell and envelope", () => {

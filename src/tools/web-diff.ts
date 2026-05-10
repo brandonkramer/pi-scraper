@@ -3,14 +3,14 @@
  */
 import { randomUUID } from "node:crypto";
 import { type Static, Type } from "@earendil-works/pi-ai";
-import { loadEffectiveConfig } from "../config/settings.js";
+import { loadEffectiveConfig } from "../config/settings.ts";
 import {
 	diffScrapeResult,
 	type SnapshotDiffResult,
 	updateSnapshotReference,
-} from "../diff/snapshots.js";
-import { scrapeUrl } from "../scrape/pipeline.js";
-import { freshnessFromTimestamp } from "../storage/freshness.js";
+} from "../diff/snapshots.ts";
+import { scrapeUrl } from "../scrape/pipeline.ts";
+import { freshnessFromTimestamp } from "../storage/freshness.ts";
 import {
 	appendJobError,
 	createJobManifest,
@@ -19,14 +19,16 @@ import {
 	updateJobManifest,
 	writeJobManifest,
 	type JobError,
-} from "../storage/jobs.js";
-import { storeResultWithResponseId } from "../storage/results.js";
-import { formatAge, storedTraceContext } from "./agentic-context.js";
-import { defineWebTool } from "./define.js";
-import { emitProgress } from "./progress.js";
-import { renderWebDiffResult, renderWebToolCall } from "./web-renderers.js";
-import { errorResult, structuredToolError, toolResult } from "./result.js";
-import { scrapeModeOptionSchema, urlProperty } from "./schemas.js";
+} from "../storage/jobs.ts";
+import { storeResultWithResponseId } from "../storage/results.ts";
+import { storedTraceContext } from "./agentic-context.ts";
+import { formatAge } from "../scrape/describe.ts";
+import { defineWebTool } from "./define.ts";
+import { emitProgress } from "./progress.ts";
+import { renderWebDiffResult } from "./web-renderers.ts";
+import { renderSimpleCall } from "./render.ts";
+import { errorResult, structuredToolError, toolResult } from "./result.ts";
+import { scrapeModeOptionSchema, urlProperty } from "./schemas.ts";
 
 export const webDiffSchema = Type.Object({
 	url: urlProperty(),
@@ -167,8 +169,8 @@ export const webDiffTool = defineWebTool({
 			throw error;
 		}
 	},
-	renderCall: (args, theme, context) =>
-		renderWebToolCall(
+	renderCall: (args, theme, _context) =>
+		renderSimpleCall(
 			"web_diff",
 			[
 				args.url,
@@ -177,7 +179,6 @@ export const webDiffTool = defineWebTool({
 				args.compareTag ? `compare:${args.compareTag}` : undefined,
 			],
 			theme,
-			context,
 		),
 	renderResult: (result, { expanded }, theme) =>
 		renderWebDiffResult(result, expanded, theme),

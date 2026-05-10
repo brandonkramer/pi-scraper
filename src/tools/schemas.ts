@@ -2,7 +2,7 @@
  * @fileoverview Shared TypeBox parameter schemas for Pi web tools.
  */
 import { StringEnum, Type } from "@earendil-works/pi-ai";
-import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.js";
+import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.ts";
 
 export const scrapeModeSchema = StringEnum(SCRAPE_MODES);
 export const outputFormatSchema = StringEnum(OUTPUT_FORMATS);

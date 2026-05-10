@@ -6,7 +6,7 @@
  * lightweight structural pass, not semantic code analysis.
  */
 
-import type { PatternSourceFormat } from "./pattern.js";
+import type { PatternSourceFormat } from "./pattern.ts";
 
 export type SymbolIncludeType =
 	| "heading"

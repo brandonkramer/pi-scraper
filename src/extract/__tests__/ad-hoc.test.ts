@@ -2,8 +2,8 @@
  * @fileoverview extract __tests__ ad-hoc.test module.
  */
 import { describe, expect, it } from "vitest";
-import { extractAdHoc, MissingExtractInputError, prepareExtractionInput } from "../ad-hoc.js";
-import { MissingModelAdapterError, type ModelAdapter } from "../model.js";
+import { extractAdHoc, MissingExtractInputError, prepareExtractionInput } from "../ad-hoc.ts";
+import { MissingModelAdapterError, type ModelAdapter } from "../model.ts";
 
 const model: ModelAdapter = {
   run: async <T>(request: Parameters<ModelAdapter["run"]>[0]) => ({ data: { title: request.input.includes("Widget") ? "Widget" : "Unknown", prompt: request.prompt, schema: request.schema } as T }),

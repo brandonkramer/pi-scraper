@@ -3,15 +3,15 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { ModelAdapter, ModelRequest } from "../../extract/model.js";
-import type { ScrapePipelineDeps } from "../../scrape/pipeline.js";
-import type { ResultEnvelope } from "../../types.js";
-import type { RenderComponent, WebTool } from "../define.js";
-import { registerWebTools } from "../register.js";
-import { renderText } from "../render.js";
-import { createWebExtractTool, webExtractTool } from "../web-extract.js";
-import { createWebScrapeTool } from "../web-scrape.js";
-import { createWebSummarizeTool } from "../web-summarize.js";
+import type { ModelAdapter, ModelRequest } from "../../extract/model.ts";
+import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
+import type { ResultEnvelope } from "../../types.ts";
+import type { RenderComponent, WebTool } from "../define.ts";
+import { registerWebTools } from "../register.ts";
+import { renderText } from "../render.ts";
+import { createWebExtractTool, webExtractTool } from "../web-extract.ts";
+import { createWebScrapeTool } from "../web-scrape.ts";
+import { createWebSummarizeTool } from "../web-summarize.ts";
 
 const signal = new AbortController().signal;
 

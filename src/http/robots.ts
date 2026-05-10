@@ -2,7 +2,7 @@
  * @fileoverview http robots module.
  */
 import { createRequire } from "node:module";
-import { DEFAULT_USER_AGENT } from "../defaults.js";
+import { DEFAULT_USER_AGENT } from "../defaults.ts";
 
 interface RobotsTextFetchResult {
 	status: number;

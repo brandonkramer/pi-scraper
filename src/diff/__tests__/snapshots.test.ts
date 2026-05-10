@@ -5,17 +5,17 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { ScrapeResult } from "../../scrape/pipeline.js";
-import { openStorageDb, closeStorageDbs } from "../../storage/db.js";
-import { storeResult } from "../../storage/results.js";
-import { compareSnapshotText } from "../compare.js";
-import { normalizeVolatileSnapshotText } from "../normalize.js";
+import type { ScrapeResult } from "../../scrape/pipeline.ts";
+import { openStorageDb, closeStorageDbs } from "../../storage/db.ts";
+import { storeResult } from "../../storage/results.ts";
+import { compareSnapshotText } from "../compare.ts";
+import { normalizeVolatileSnapshotText } from "../normalize.ts";
 import {
 	diffScrapeResult,
 	listSnapshots,
 	loadSnapshot,
 	updateSnapshotReference,
-} from "../snapshots.js";
+} from "../snapshots.ts";
 
 let rootDir: string;
 

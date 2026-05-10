@@ -2,35 +2,36 @@
  * @fileoverview Pi tool adapter for vertical, pattern, ad hoc, and surface extraction.
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
-import { loadEffectiveConfig } from "../config/settings.js";
-import { extractAdHoc, MissingExtractInputError } from "../extract/ad-hoc.js";
-import type { ModelAdapter } from "../extract/model.js";
+import { loadEffectiveConfig } from "../config/settings.ts";
+import { extractAdHoc, MissingExtractInputError } from "../extract/ad-hoc.ts";
+import type { ModelAdapter } from "../extract/model.ts";
 import {
 	inspectPatterns,
 	PatternInspectError,
 	type PatternInspectOptions,
-} from "../extract/pattern.js";
-import type { VerticalExtractionResult } from "../extract/capabilities.js";
-import type { ScrapePipelineDeps } from "../scrape/pipeline.js";
-import { storedResultGuidance } from "./agentic-context.js";
-import { defineWebTool, type WebTool } from "./define.js";
-import { emitProgress } from "./progress.js";
-import { renderEnvelopeResult, renderSimpleCall } from "./render.js";
+} from "../extract/pattern.ts";
+import type { VerticalExtractionResult } from "../extract/capabilities.ts";
+import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
+import { storedResultGuidance } from "./agentic-context.ts";
+import { defineWebTool, type WebTool } from "./define.ts";
+import { emitProgress } from "./progress.ts";
+import { renderEnvelopeResult, renderSimpleCall } from "./render.ts";
 import {
 	errorResult,
+	inputErrorResult,
 	missingModelResult,
 	missingModelError,
 	structuredToolError,
 	toolErrorResult,
 	toolResult,
-} from "./result.js";
-import { urlProperty } from "./schemas.js";
+} from "./result.ts";
+import { urlProperty } from "./schemas.ts";
 import {
 	scrapeInputSummary,
 	scrapeInputToolResult,
-} from "./scrape-input-result.js";
-import { runApiSurfaceExtraction } from "./web-extract-surface.js";
-import { runSelectorExtraction } from "./web-extract-selector.js";
+} from "./scrape-input-result.ts";
+import { runApiSurfaceExtraction } from "./web-extract-surface.ts";
+import { runSelectorExtractionTool } from "./web-extract-selector.ts";
 
 const extractActions = [
 	"list",
@@ -140,7 +141,7 @@ export function createWebExtractTool(
 			if (action === "surface")
 				return runApiSurfaceExtraction(params, options, signal, onUpdate);
 			if (action === "selector")
-				return runSelectorExtraction(params, options, signal, onUpdate);
+				return runSelectorExtractionTool(params, options, signal, onUpdate);
 			return runAdHocExtraction(params, options, signal);
 		},
 		renderCall: (args, theme) =>
@@ -191,7 +192,7 @@ function hasPatternRequest(params: Params): boolean {
 }
 
 async function listDeterministicExtractors() {
-	const { listExtractorCapabilities } = await import("../extract/registry.js");
+	const { listExtractorCapabilities } = await import("../extract/registry.ts");
 	const capabilities = listExtractorCapabilities();
 	return toolResult({
 		text: `${capabilities.length} extractor(s): ${capabilities.map((item) => item.name).join(", ")}`,
@@ -209,16 +210,12 @@ async function runDeterministicExtractor(
 	onUpdate?: Parameters<WebTool<typeof webExtractSchema>["execute"]>[3],
 ) {
 	if (!params.extractor || !params.url) {
-		return toolResult({
-			text: "Provide extractor and url for vertical extraction.",
-			data: undefined,
-			error: {
-				code: "EXTRACT_INPUT_MISSING",
-				phase: "vertical_extract",
-				message: "web_extract action=vertical requires both extractor and url.",
-				retryable: false,
-			},
-		});
+		return inputErrorResult(
+			"EXTRACT_INPUT_MISSING",
+			"vertical_extract",
+			"web_extract action=vertical requires both extractor and url.",
+			"Provide extractor and url for vertical extraction.",
+		);
 	}
 	const config = await loadEffectiveConfig();
 	await emitProgress(onUpdate, {
@@ -226,7 +223,7 @@ async function runDeterministicExtractor(
 		url: params.url,
 		message: `extractor ${params.extractor}`,
 	});
-	const { runVerticalExtractor } = await import("../extract/registry.js");
+	const { runVerticalExtractor } = await import("../extract/registry.ts");
 	const result = await runVerticalExtractor(
 		params.extractor,
 		params.url,

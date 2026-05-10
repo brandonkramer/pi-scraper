@@ -4,15 +4,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { htmlToMarkdown } from "../../serialize/markdown.js";
-import { discoverAlternateLinksFromDom } from "../alternates.js";
-import { loadDom } from "../dom-adapter.js";
+import { htmlToMarkdown } from "../../serialize/markdown.ts";
+import { discoverAlternateLinksFromDom } from "../alternates.ts";
+import { loadDom } from "../dom-adapter.ts";
 import {
 	extractFastPage,
 	extractFastPageFromDom,
 	type FastExtractOptions,
-} from "../fast.js";
-import { loadHtmlparser2Dom } from "../htmlparser2-dom-adapter.js";
+} from "../fast.ts";
+import { loadHtmlparser2Dom } from "../htmlparser2-dom-adapter.ts";
 
 const baseUrl = "https://example.com/docs/page";
 

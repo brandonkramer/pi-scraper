@@ -6,7 +6,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 import { MockAgent } from "undici";
-import { createHttpClient, HttpClientError } from "../client.js";
+import { createHttpClient, HttpClientError } from "../client.ts";
 
 let agents: MockAgent[] = [];
 

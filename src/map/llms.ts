@@ -1,8 +1,8 @@
 /**
  * @fileoverview map llms module.
  */
-import { dedupeBy } from "../url/dedupe.js";
-import { normalizeUrl } from "../url/normalize.js";
+import { dedupeBy } from "../url/dedupe.ts";
+import { normalizeUrl } from "../url/normalize.ts";
 
 export interface LlmsLinkEntry {
 	url: string;

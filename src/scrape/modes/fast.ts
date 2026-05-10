@@ -1,33 +1,33 @@
 /**
  * @fileoverview scrape modes fast module.
  */
-import type { FetchUrlResult, HttpClient } from "../../http/client.js";
-import { createHttpClient } from "../../http/client.js";
-import { parseDocstrings } from "../../parse/docstrings.js";
-import { extractFastPage } from "../../parse/fast.js";
-import { parseMarkdown, parseMdx, parseRst } from "../../parse/markup-doc.js";
+import type { FetchUrlResult, HttpClient } from "../../http/client.ts";
+import { createHttpClient } from "../../http/client.ts";
+import { parseDocstrings } from "../../parse/docstrings.ts";
+import { extractFastPage } from "../../parse/fast.ts";
+import { parseMarkdown, parseMdx, parseRst } from "../../parse/markup-doc.ts";
 import {
 	binaryAttachmentInfo,
 	parseJsonText,
 	type RoutedContentKind,
 	routeContentType,
-} from "../../parse/passthrough.js";
+} from "../../parse/passthrough.ts";
 import {
 	docstringsToText,
 	markupDocumentToMarkdown,
 	markupDocumentToText,
-} from "../../serialize/structured-doc.js";
-import { normalizeWhitespace } from "../../serialize/text.js";
+} from "../../serialize/structured-doc.ts";
+import { normalizeWhitespace } from "../../serialize/text.ts";
 import type {
 	CommonScrapeOptions,
 	OutputFormat,
 	ScrapeMode,
-} from "../../types.js";
-import { pdfResult } from "../pdf-route.js";
-import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.js";
-import { renderFormat } from "../render.js";
-import { analyzeFastResult, combineRecoveredText } from "../signals.js";
-import { fetchOptions, resultBase } from "./shared.js";
+} from "../../types.ts";
+import { pdfResult } from "../pdf-route.ts";
+import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
+import { renderFormat } from "../render.ts";
+import { analyzeFastResult, combineRecoveredText } from "../signals.ts";
+import { fetchOptions, resultBase } from "./shared.ts";
 
 export async function httpScrape(
 	input: string | URL,

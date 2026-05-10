@@ -1,10 +1,10 @@
 /**
  * @fileoverview Shared robots and politeness policy wrapper for HTTP requests.
  */
-import { DEFAULT_RESPECT_ROBOTS } from "../defaults.js";
-import type { PolitenessController } from "./politeness.js";
-import type { RobotsCache } from "./robots.js";
-import type { SafeUrlResult } from "./url-safety.js";
+import { DEFAULT_RESPECT_ROBOTS } from "../defaults.ts";
+import type { PolitenessController } from "./politeness.ts";
+import type { RobotsCache } from "./robots.ts";
+import type { SafeUrlResult } from "./url-safety.ts";
 
 export interface RequestPolicyOptions<T> {
 	safe: SafeUrlResult;

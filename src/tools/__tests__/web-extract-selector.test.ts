@@ -5,7 +5,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runSelectorExtraction } from "../web-extract-selector.js";
+import { runSelectorExtractionTool } from "../web-extract-selector.ts";
 
 let homeDir: string;
 let originalHome: string | undefined;
@@ -24,7 +24,7 @@ afterEach(async () => {
 
 describe("web_extract action=selector", () => {
 	it("extracts matching CSS selectors from content", async () => {
-		const result = await runSelectorExtraction(
+		const result = await runSelectorExtractionTool(
 			{
 				action: "selector",
 				selector: ".product-card",
@@ -50,7 +50,7 @@ describe("web_extract action=selector", () => {
 			"\u003chtml\u003e\u003cbody\u003e\u003cdiv class='card'\u003e\u003ch2\u003eProduct 1\u003c/h2\u003e\u003c/div\u003e\u003c/body\u003e\u003c/html\u003e";
 
 		// First call with autoSave
-		const first = await runSelectorExtraction(
+		const first = await runSelectorExtractionTool(
 			{
 				action: "selector",
 				selector: ".card",
@@ -68,7 +68,7 @@ describe("web_extract action=selector", () => {
 		expect(first.details?.data?.saved).toBe(true);
 
 		// Second call with adaptive + changed content
-		const second = await runSelectorExtraction(
+		const second = await runSelectorExtractionTool(
 			{
 				action: "selector",
 				selector: ".card",
@@ -90,7 +90,7 @@ describe("web_extract action=selector", () => {
 	});
 
 	it("returns structured none when selector doesn't match", async () => {
-		const result = await runSelectorExtraction(
+		const result = await runSelectorExtractionTool(
 			{
 				action: "selector",
 				selector: ".does-not-exist",
@@ -112,7 +112,7 @@ describe("web_extract action=selector", () => {
 	});
 
 	it("errors when selector is missing", async () => {
-		const result = await runSelectorExtraction(
+		const result = await runSelectorExtractionTool(
 			{
 				action: "selector",
 				identifier: "missing-test",
@@ -125,7 +125,7 @@ describe("web_extract action=selector", () => {
 	});
 
 	it("handles text selector", async () => {
-		const result = await runSelectorExtraction(
+		const result = await runSelectorExtractionTool(
 			{
 				action: "selector",
 				selector: "Product 1",

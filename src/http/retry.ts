@@ -1,11 +1,11 @@
 /**
  * @fileoverview http retry module.
  */
-import { DEFAULT_RETRY } from "../defaults.js";
-import type { CommonRequestOptions } from "../types.js";
-import { BodySizeLimitError } from "./download.js";
-import { hasStructuredError, type HttpClientError } from "./errors.js";
-import { RobotsDeniedError } from "./robots.js";
+import { DEFAULT_RETRY } from "../defaults.ts";
+import type { CommonRequestOptions } from "../types.ts";
+import { BodySizeLimitError } from "./download.ts";
+import { hasStructuredError, type HttpClientError } from "./errors.ts";
+import { RobotsDeniedError } from "./robots.ts";
 
 export function isRetryableStatus(status: number): boolean {
 	return [408, 429, 500, 502, 503, 504].includes(status);
@@ -54,7 +54,7 @@ export function parseRetryAfterMs(
 	return parseRetryAfter(value);
 }
 
-export { hasStructuredError } from "./errors.js";
+export { hasStructuredError } from "./errors.ts";
 
 function parseRetryAfter(value: string | undefined): number | undefined {
 	if (!value) {

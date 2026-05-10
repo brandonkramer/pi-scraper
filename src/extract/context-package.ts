@@ -6,8 +6,8 @@
  * path/title/excerpt structure for downstream LLM context without replacing the
  * raw stored crawl or batch result.
  */
-import { PI_TRUNCATION_LIMITS } from "../defaults.js";
-import type { ScrapeResult } from "../scrape/pipeline.js";
+import { PI_TRUNCATION_LIMITS } from "../defaults.ts";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
 
 const DEFAULT_EXCERPT_CHARS = 800;
 const MIN_EXCERPT_CHARS = 120;

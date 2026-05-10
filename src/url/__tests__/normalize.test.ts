@@ -2,7 +2,7 @@
  * @fileoverview url __tests__ normalize.test module.
  */
 import { describe, expect, it } from "vitest";
-import { normalizeUrl } from "../normalize.js";
+import { normalizeUrl } from "../normalize.ts";
 
 describe("normalizeUrl", () => {
   it("normalizes host, ports, tracking params, query order, fragments, and trailing slash", () => {

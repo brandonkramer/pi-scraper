@@ -5,9 +5,9 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { PiToolShell, ResultEnvelope } from "../../types.js";
-import type { RenderComponent } from "../define.js";
-import { webTools } from "../register.js";
+import type { PiToolShell, ResultEnvelope } from "../../types.ts";
+import type { RenderComponent } from "../define.ts";
+import { webTools } from "../register.ts";
 
 let homeDir: string;
 let originalHome: string | undefined;

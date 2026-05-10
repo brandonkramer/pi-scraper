@@ -3,13 +3,13 @@
  */
 import { DatabaseSync, type StatementSync } from "node:sqlite";
 import path from "node:path";
-import { migrateLegacyFiles } from "./migrate-from-files.js";
-import { migrateElementFingerprints } from "./element-fingerprints.js";
+import { migrateLegacyFiles } from "./migrate-from-files.ts";
+import { migrateElementFingerprints } from "./element-fingerprints.ts";
 import {
 	ensureDir,
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
-} from "./paths.js";
+} from "./paths.ts";
 
 interface DbEntry {
 	db: DatabaseSync;

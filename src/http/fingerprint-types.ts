@@ -1,9 +1,9 @@
 /**
  * @fileoverview http fingerprint-types module.
  */
-import type { StructuredError } from "../types.js";
-import type { FetchUrlOptions, FetchUrlResult } from "./client.js";
-import { HttpClientError } from "./errors.js";
+import type { StructuredError } from "../types.ts";
+import type { FetchUrlOptions, FetchUrlResult } from "./client.ts";
+import { HttpClientError } from "./errors.ts";
 
 export interface FingerprintProfile {
 	browserProfile?: string;

@@ -3,8 +3,8 @@
  */
 import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { discoverSiteUrls } from "../discover.js";
-import type { FetchUrlResult } from "../../http/client.js";
+import { discoverSiteUrls } from "../discover.ts";
+import type { FetchUrlResult } from "../../http/client.ts";
 
 function textResult(url: string, text: string): FetchUrlResult {
   return { url, finalUrl: url, status: 200, headers: {}, contentType: "text/plain", text, downloadedBytes: text.length };

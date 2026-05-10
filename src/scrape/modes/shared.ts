@@ -1,15 +1,15 @@
 /**
  * @fileoverview scrape modes shared module.
  */
-import type { FetchUrlOptions } from "../../http/client.js";
-import { structuredErrorFromUnknown } from "../../http/errors.js";
+import type { FetchUrlOptions } from "../../http/client.ts";
+import { structuredErrorFromUnknown } from "../../http/errors.ts";
 import type {
 	CommonScrapeOptions,
 	OutputFormat,
 	ScrapeMode,
 	StructuredError,
-} from "../../types.js";
-import type { ScrapeResult } from "../pipeline.js";
+} from "../../types.ts";
+import type { ScrapeResult } from "../pipeline.ts";
 
 export function fetchOptions(options: CommonScrapeOptions): FetchUrlOptions {
 	return {

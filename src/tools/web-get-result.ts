@@ -2,16 +2,16 @@
  * @fileoverview Pi tool adapter for stored result, job, and snapshot lookup.
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
-import { listSnapshots } from "../diff/snapshots.js";
-import { getJobManifest } from "../storage/jobs.js";
-import { getStoredResult } from "../storage/results.js";
-import { defineWebTool } from "./define.js";
+import { listSnapshots } from "../diff/snapshots.ts";
+import { getJobManifest } from "../storage/jobs.ts";
+import { getStoredResult } from "../storage/results.ts";
+import { defineWebTool } from "./define.ts";
 import {
 	renderEnvelopeResult,
 	renderSimpleCall,
 	summarizeData,
-} from "./render.js";
-import { errorResult, structuredToolError, toolResult } from "./result.js";
+} from "./render.ts";
+import { errorResult, structuredToolError, toolResult } from "./result.ts";
 
 export const webGetResultSchema = Type.Object({
 	responseId: Type.Optional(Type.Any()),

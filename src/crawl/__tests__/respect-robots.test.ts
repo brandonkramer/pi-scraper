@@ -8,8 +8,8 @@ import {
 } from "node:http";
 import type { AddressInfo } from "node:net";
 import { describe, expect, it } from "vitest";
-import { createHttpClient } from "../../http/client.js";
-import { runCrawl } from "../runner.js";
+import { createHttpClient } from "../../http/client.ts";
+import { runCrawl } from "../runner.ts";
 
 interface ServedSite {
 	origin: string;

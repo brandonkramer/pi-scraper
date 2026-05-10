@@ -1,7 +1,7 @@
 /**
  * @fileoverview Shared scrape/crawl helpers.
  */
-import type { ScrapeResult } from "./pipeline.js";
+import type { ScrapeResult } from "./pipeline.ts";
 
 export function resultChars(result: ScrapeResult): number {
 	return (

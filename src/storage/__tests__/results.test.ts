@@ -5,8 +5,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { resolvePiStoragePaths } from "../paths.js";
-import { getStoredResult, storeResult, truncateAndStore } from "../results.js";
+import { resolvePiStoragePaths } from "../paths.ts";
+import { getStoredResult, storeResult, truncateAndStore } from "../results.ts";
 
 let rootDir: string;
 

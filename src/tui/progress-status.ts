@@ -1,8 +1,8 @@
 /**
  * @fileoverview Pi terminal UI progress-to-status-pill bridge helpers.
  */
-import type { ProgressDetails } from "../types.js";
-import type { StatusPillState } from "./status-pill.js";
+import type { ProgressDetails } from "../types.ts";
+import type { StatusPillState } from "./status-pill.ts";
 
 export function progressStartedAtMs(
 	details: ProgressDetails,

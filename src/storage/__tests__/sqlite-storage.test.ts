@@ -6,11 +6,11 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createCrawlState, loadCrawlState } from "../../crawl/state.js";
-import { closeStorageDbs } from "../db.js";
-import { writeBlob } from "../blobs.js";
-import { getStoredResult, storeResult } from "../results.js";
-import { searchStoredScrapes, setFtsAvailabilityForTests } from "../search.js";
+import { createCrawlState, loadCrawlState } from "../../crawl/state.ts";
+import { closeStorageDbs } from "../db.ts";
+import { writeBlob } from "../blobs.ts";
+import { getStoredResult, storeResult } from "../results.ts";
+import { searchStoredScrapes, setFtsAvailabilityForTests } from "../search.ts";
 
 let rootDir: string;
 

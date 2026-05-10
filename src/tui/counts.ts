@@ -1,13 +1,13 @@
 /**
  * @fileoverview Pi terminal UI count segment primitives for success/failure/activity.
  */
-import type { RenderTheme } from "../tools/define.js";
+import type { RenderTheme } from "./types.ts";
 import {
 	activityText,
 	failureText,
 	neutralText,
 	successText,
-} from "./theme.js";
+} from "./theme.ts";
 
 export function successCountSegment(
 	count: number,

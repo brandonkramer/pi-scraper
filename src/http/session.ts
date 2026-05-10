@@ -6,8 +6,8 @@
  * multiple requests. They are persisted in memory by default and optionally
  * saved to SQLite when `saveSession` is set.
  */
-import { openStorageDb, type StorageDb } from "../storage/db.js";
-import type { ResolveStorageOptions } from "../storage/paths.js";
+import { openStorageDb, type StorageDb } from "../storage/db.ts";
+import type { ResolveStorageOptions } from "../storage/paths.ts";
 
 export interface FetchSession {
 	id: string;

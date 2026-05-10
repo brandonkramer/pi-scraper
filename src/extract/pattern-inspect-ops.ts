@@ -8,8 +8,8 @@ import {
 	extractSectionRanges,
 	SectionRangeError,
 	type SectionRangeRequest,
-} from "./section-ranges.js";
-import type { StructuredError } from "../types.js";
+} from "./section-ranges.ts";
+import type { StructuredError } from "../types.ts";
 
 export const MAX_INSPECT_CHARS = 250_000;
 export const MAX_MARKERS = 50;

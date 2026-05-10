@@ -1,9 +1,9 @@
 /**
  * @fileoverview crawl frontier module.
  */
-import { compactQueue } from "../url/dedupe.js";
-import { normalizeUrl } from "../url/normalize.js";
-import { matchesAny } from "../url/patterns.js";
+import { compactQueue } from "../url/dedupe.ts";
+import { normalizeUrl } from "../url/normalize.ts";
+import { matchesAny } from "../url/patterns.ts";
 
 export interface FrontierItem {
 	url: string;

@@ -1,11 +1,11 @@
 /**
  * @fileoverview index module.
  */
-import type { PiCommandRegistrar } from "./commands/define.js";
-import { registerWebCommands } from "./commands/register.js";
-import { registerSessionStartHealthChecks, type PiHealthRegistrar } from "./health/session-start.js";
-import type { PiToolRegistrar } from "./tools/define.js";
-import { registerWebTools } from "./tools/register.js";
+import type { PiCommandRegistrar } from "./commands/define.ts";
+import { registerWebCommands } from "./commands/register.ts";
+import { registerSessionStartHealthChecks, type PiHealthRegistrar } from "./health/session-start.ts";
+import type { PiToolRegistrar } from "./tools/define.ts";
+import { registerWebTools } from "./tools/register.ts";
 
 type PiScraperRegistrar = PiToolRegistrar & PiCommandRegistrar & PiHealthRegistrar;
 

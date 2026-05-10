@@ -2,52 +2,45 @@
  * @fileoverview Pi tool adapter for crawling, crawl state, and context packages.
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
-import { loadEffectiveConfig } from "../config/settings.js";
-import { runCrawl } from "../crawl/runner.js";
+import { loadEffectiveConfig } from "../config/settings.ts";
+import { runCrawl } from "../crawl/runner.ts";
 import {
 	loadCrawlMetadata,
 	listCrawlMetadata,
 	type CrawlMetadata,
 	type CrawlStatus,
 	updateCrawlMetadata,
-} from "../crawl/state.js";
+} from "../crawl/state.ts";
 import {
 	aggregateFreshness,
 	crawlStaleness,
 	freshnessFromTimestamp,
-} from "../storage/freshness.js";
-import type { ScrapeResult } from "../scrape/pipeline.js";
-import { updateJobManifest } from "../storage/jobs.js";
-import { storeResultWithResponseId } from "../storage/results.js";
+} from "../storage/freshness.ts";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
+import { updateJobManifest } from "../storage/jobs.ts";
+import { storeResultWithResponseId } from "../storage/results.ts";
 import type {
 	AgenticNextAction,
 	AgenticQualitySignals,
 	FreshnessMetadata,
-} from "../types.js";
+} from "../types.ts";
+import { crawlAction, storedResultGuidance } from "./agentic-context.ts";
+import { formatAge } from "../scrape/describe.ts";
+import { buildStoredContextPackage } from "../storage/context-package-results.ts";
+import { sessionLifecycle } from "./session-lifecycle.ts";
+import { defineWebTool } from "./define.ts";
+import { emitProgress } from "./progress.ts";
 import {
-	crawlAction,
-	formatAge,
-	storedResultGuidance,
-} from "./agentic-context.js";
-import { buildStoredContextPackage } from "./context-package.js";
-import {
-	buildSessionNotice,
-	buildSessionText,
-	deleteSessionAndStorage,
-	saveSessionToStorage,
-} from "../http/session.js";
-import { defineWebTool } from "./define.js";
-import { emitProgress } from "./progress.js";
-import {
-	batchProgressFromCrawlPages,
 	cloneBatchProgress,
 	type BatchProgressView,
 	updateUrlBatchProgress,
-} from "./web-batch-progress-renderer.js";
-import { renderEnvelopeResult } from "./render.js";
-import { renderWebCrawlResult, renderWebToolCall } from "./web-renderers.js";
-import { toolResult } from "./result.js";
-import { sessionOptionSchema, urlProperty } from "./schemas.js";
+} from "../batch/progress-state.ts";
+import { batchProgressFromCrawlPages } from "./web-batch-progress.ts";
+import { renderEnvelopeResult } from "./render.ts";
+import { renderWebCrawlResult } from "./web-renderers.ts";
+import { renderSimpleCall } from "./render.ts";
+import { inputErrorResult, toolResult } from "./result.ts";
+import { sessionOptionSchema, urlProperty } from "./schemas.ts";
 
 const crawlActions = ["run", "status", "list"] as const;
 
@@ -96,8 +89,8 @@ export const webCrawlTool = defineWebTool({
 		if (action === "list") return crawlList(params);
 		return crawlRun(params, signal, onUpdate);
 	},
-	renderCall: (args, theme, context) =>
-		renderWebToolCall(
+	renderCall: (args, theme, _context) =>
+		renderSimpleCall(
 			"web_crawl",
 			[
 				args.action,
@@ -105,7 +98,6 @@ export const webCrawlTool = defineWebTool({
 				args.maxPages ? `max ${args.maxPages}` : undefined,
 			].filter(Boolean) as string[],
 			theme,
-			context,
 		),
 	renderResult: (result, { expanded }, theme) =>
 		isRunCrawlResult(result.details)
@@ -133,17 +125,12 @@ async function crawlRun(
 ) {
 	const url = await resolveRunUrl(params);
 	if (!url) {
-		return toolResult({
-			text: "Provide url, or crawlId with resume=true, to run a crawl.",
-			data: undefined,
-			error: {
-				code: "CRAWL_INPUT_MISSING",
-				phase: "crawl",
-				message:
-					"web_crawl action=run requires url, or crawlId plus resume=true for a stored crawl.",
-				retryable: false,
-			},
-		});
+		return inputErrorResult(
+			"CRAWL_INPUT_MISSING",
+			"crawl",
+			"web_crawl action=run requires url, or crawlId plus resume=true for a stored crawl.",
+			"Provide url, or crawlId with resume=true, to run a crawl.",
+		);
 	}
 	const config = await loadEffectiveConfig();
 	const progressView: BatchProgressView = {
@@ -212,12 +199,8 @@ async function crawlRun(
 		? ` package: ${contextPackage.value.package.urlCount} page(s), packageResponseId: ${contextPackage.responseId}.`
 		: "";
 	const text = `Crawl ${crawl.crawlId}: ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}.${surfaceText}${packageText} responseId: ${finalStored.responseId}`;
-	if (params.sessionId) {
-		if (params.saveSession) await saveSessionToStorage(params.sessionId);
-		if (params.clearSession) await deleteSessionAndStorage(params.sessionId);
-	}
-	const sessionNotice = buildSessionNotice(params);
-	const sessionSuffix = buildSessionText(params);
+	const { notice: sessionNotice, suffix: sessionSuffix } =
+		await sessionLifecycle(params);
 	return toolResult({
 		text: text + sessionSuffix,
 		data: {
@@ -252,7 +235,7 @@ async function crawlRun(
 async function maybeBuildApiSurface(params: Params, pages: ScrapeResult[]) {
 	if (params.extract !== "api-surface") return undefined;
 	const { buildApiSurfaceFromScrapes } = await import(
-		"../extract/api-surface.js"
+		"../extract/api-surface.ts"
 	);
 	return buildApiSurfaceFromScrapes(pages);
 }
@@ -287,16 +270,12 @@ async function resolveRunUrl(params: Params): Promise<string | undefined> {
 
 async function crawlStatus(params: Params) {
 	if (!params.crawlId) {
-		return toolResult({
-			text: "Provide crawlId for crawl status.",
-			data: undefined,
-			error: {
-				code: "CRAWL_STATUS_ID_MISSING",
-				phase: "crawl",
-				message: "web_crawl action=status requires crawlId.",
-				retryable: false,
-			},
-		});
+		return inputErrorResult(
+			"CRAWL_STATUS_ID_MISSING",
+			"crawl",
+			"web_crawl action=status requires crawlId.",
+			"Provide crawlId for crawl status.",
+		);
 	}
 	try {
 		const metadata = await loadCrawlMetadata(params.crawlId);
@@ -317,17 +296,12 @@ async function crawlStatus(params: Params) {
 			assistantGuidance: storedResultGuidance(),
 		});
 	} catch (error) {
-		return toolResult({
-			text: `Crawl status not found: ${params.crawlId}`,
-			data: undefined,
-			error: {
-				code: "CRAWL_STATUS_NOT_FOUND",
-				phase: "crawl",
-				message:
-					error instanceof Error ? error.message : "Crawl status not found.",
-				retryable: false,
-			},
-		});
+		return inputErrorResult(
+			"CRAWL_STATUS_NOT_FOUND",
+			"crawl",
+			error instanceof Error ? error.message : "Crawl status not found.",
+			`Crawl status not found: ${params.crawlId}`,
+		);
 	}
 }
 

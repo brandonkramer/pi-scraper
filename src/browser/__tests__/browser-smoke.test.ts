@@ -5,8 +5,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { webScrapeTool } from "../../tools/web-scrape.js";
-import type { ResultEnvelope } from "../../types.js";
+import { webScrapeTool } from "../../tools/web-scrape.ts";
+import type { ResultEnvelope } from "../../types.ts";
 
 const browserEnabled = process.env.PI_SCRAPER_BROWSER === "1";
 let homeDir: string;

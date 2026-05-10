@@ -4,9 +4,9 @@
  * The background reset stripping is intentionally conservative to avoid trailing
  * dark cells after `]` and background bleed past the pill boundary.
  */
-import type { RenderTheme } from "../tools/define.js";
-import { inlineThemeText, neutralText } from "./theme.js";
-import { currentSpinnerFrame } from "./spinner.js";
+import type { RenderTheme } from "./types.ts";
+import { inlineThemeText, neutralText } from "./theme.ts";
+import { currentSpinnerFrame } from "./spinner.ts";
 
 export type StatusPillState = "waiting" | "loading" | "done" | "error";
 

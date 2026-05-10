@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadDom } from "../dom-adapter.js";
+import { loadDom } from "../dom-adapter.ts";
 
 const staticHtml = `<!doctype html><html><head>
 <title>Adapter Fixture</title>

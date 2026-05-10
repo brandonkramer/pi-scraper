@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
 	registerSessionStartHealthChecks,
 	runSessionStartHealthChecks,
-} from "../session-start.js";
+} from "../session-start.ts";
 
 describe("session-start health checks", () => {
 	it("registers a non-blocking session_start listener", async () => {

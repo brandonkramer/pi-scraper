@@ -8,13 +8,13 @@ import * as cssSelect from "css-select";
 import type { AnyNode } from "domhandler";
 import * as domutils from "domutils";
 import { parseDocument } from "htmlparser2";
-import type { ScrapeResult } from "../scrape/pipeline.js";
-import { cleanText, stripUndefined, titleCase, truncateText } from "./_html.js";
-import { parseMarkdown as sharedMarkdownParse } from "../parse/markup-doc.js";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
+import { cleanText, stripUndefined, titleCase, truncateText } from "./_html.ts";
+import { parseMarkdown as sharedMarkdownParse } from "../parse/markup-doc.ts";
 import {
 	extractHeadingSections,
 	firstTextBySelector,
-} from "./doc-structure.js";
+} from "./doc-structure.ts";
 
 export interface ApiSurfaceParameter {
 	name: string;

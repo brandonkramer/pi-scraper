@@ -6,11 +6,8 @@ import type {
 	AgenticQualitySignals,
 	AgenticSourceNote,
 	CacheMetadata,
-} from "../types.js";
-
-const MINUTE_SECONDS = 60;
-const HOUR_SECONDS = 60 * MINUTE_SECONDS;
-const DAY_SECONDS = 24 * HOUR_SECONDS;
+} from "../types.ts";
+import { formatAge } from "../scrape/describe.ts";
 
 export function retrieveResultAction(
 	responseId: string,
@@ -92,16 +89,6 @@ export function qualityFromCache(
 			? [`Cached fetch age: ${formatAge(cache.ageSeconds)}.`]
 			: undefined,
 	};
-}
-
-export function formatAge(ageSeconds: number | undefined): string {
-	if (ageSeconds === undefined) return "unknown age";
-	if (ageSeconds < MINUTE_SECONDS) return `${ageSeconds}s ago`;
-	if (ageSeconds < HOUR_SECONDS)
-		return `${Math.floor(ageSeconds / MINUTE_SECONDS)}m ago`;
-	if (ageSeconds < DAY_SECONDS)
-		return `${Math.floor(ageSeconds / HOUR_SECONDS)}h ago`;
-	return `${Math.floor(ageSeconds / DAY_SECONDS)}d ago`;
 }
 
 export function storedResultGuidance(): string {

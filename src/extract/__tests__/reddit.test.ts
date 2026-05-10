@@ -2,8 +2,8 @@
  * @fileoverview extract __tests__ reddit.test module.
  */
 import { describe, expect, it } from "vitest";
-import type { VerticalExtractorContext } from "../capabilities.js";
-import { runVerticalExtractor } from "../registry.js";
+import type { VerticalExtractorContext } from "../capabilities.ts";
+import { runVerticalExtractor } from "../registry.ts";
 
 const redditJson = JSON.stringify([
 	{

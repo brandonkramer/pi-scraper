@@ -2,7 +2,8 @@
  * @fileoverview Shared Pi tool adapter contracts for web tools.
  */
 import type { Static, TSchema } from "@earendil-works/pi-ai";
-import type { PiToolShell } from "../types.js";
+import type { PiToolShell } from "../types.ts";
+import type { RenderComponent, RenderTheme } from "../tui/types.ts";
 
 export type ToolUpdate = (result: PiToolShell) => void | Promise<void>;
 
@@ -21,11 +22,7 @@ export type ToolExecute<TParams> = (
 	context?: ToolExecutionContext,
 ) => Promise<PiToolShell>;
 
-export interface RenderTheme {
-	fg?: (name: string, text: string) => string;
-	bg?: (name: string, text: string) => string;
-	bold?: (text: string) => string;
-}
+export { RenderComponent, RenderTheme } from "../tui/types.ts";
 
 export interface RenderOptions {
 	expanded?: boolean;
@@ -41,19 +38,6 @@ export interface ToolRenderContext<TParams = unknown> {
 	invalidate?: () => void;
 	lastComponent?: RenderComponent;
 	state?: Record<string, unknown>;
-}
-
-/**
- * Minimal pi-tui-compatible component returned by custom tool renderers.
- *
- * @remarks
- * Pi's interactive renderer calls `child.render(width)` on custom render output;
- * returning plain strings crashes the TUI. Keeping this small structural type
- * avoids a runtime dependency on pi-tui while matching the component contract.
- */
-export interface RenderComponent {
-	render(width: number): string[];
-	invalidate(): void;
 }
 
 export interface WebTool<TParameters extends TSchema = TSchema> {

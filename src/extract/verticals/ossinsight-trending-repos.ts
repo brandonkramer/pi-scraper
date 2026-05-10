@@ -1,8 +1,8 @@
 /**
  * @fileoverview extract verticals ossinsight-trending-repos module.
  */
-import { capability, type VerticalExtractor } from "../capabilities.js";
-import { isOneOf, rowsOf, type OssInsightRows } from "./ossinsight-shared.js";
+import { capability, type VerticalExtractor } from "../capabilities.ts";
+import { isOneOf, rowsOf, type OssInsightRows } from "./ossinsight-shared.ts";
 
 const periods = ["past_24_hours", "past_week", "past_month"] as const;
 type OssInsightTrendingPeriod = (typeof periods)[number];

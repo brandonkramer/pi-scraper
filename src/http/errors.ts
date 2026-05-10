@@ -1,10 +1,10 @@
 /**
  * @fileoverview Shared structured error carriers for HTTP-adjacent workflows.
  */
-import { DEFAULT_TIMEOUT_SECONDS } from "../defaults.js";
-import type { StructuredError } from "../types.js";
-import { BodySizeLimitError } from "./download.js";
-import { RobotsDeniedError } from "./robots.js";
+import { DEFAULT_TIMEOUT_SECONDS } from "../defaults.ts";
+import type { StructuredError } from "../types.ts";
+import { BodySizeLimitError } from "./download.ts";
+import { RobotsDeniedError } from "./robots.ts";
 
 export interface StructuredErrorCarrier extends Error {
 	structured: StructuredError;

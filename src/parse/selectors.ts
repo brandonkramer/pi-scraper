@@ -1,8 +1,8 @@
 /**
  * @fileoverview parse selectors module.
  */
-import { normalizeWhitespace } from "../serialize/text.js";
-import type { DomAdapter, DomSelection } from "./dom-adapter.js";
+import { normalizeWhitespace } from "../serialize/text.ts";
+import type { DomAdapter, DomSelection } from "./dom-adapter.ts";
 
 export interface SelectorOptions {
 	include?: string[];

@@ -1,7 +1,7 @@
 /**
  * @fileoverview extract verticals deepwiki module.
  */
-import { capability, type VerticalExtractor } from "../capabilities.js";
+import { capability, type VerticalExtractor } from "../capabilities.ts";
 
 interface DeepWikiResult {
 	owner: string;

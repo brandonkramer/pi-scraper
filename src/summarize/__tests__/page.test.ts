@@ -2,8 +2,8 @@
  * @fileoverview summarize __tests__ page.test module.
  */
 import { describe, expect, it } from "vitest";
-import { summarizePage } from "../page.js";
-import type { ModelAdapter } from "../../extract/model.js";
+import { summarizePage } from "../page.ts";
+import type { ModelAdapter } from "../../extract/model.ts";
 
 const model: ModelAdapter = {
   run: async <T>(request: Parameters<ModelAdapter["run"]>[0]) => ({ data: "" as T, text: `${request.prompt} ${request.input.slice(0, 6)}` }),

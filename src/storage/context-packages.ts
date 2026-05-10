@@ -8,12 +8,12 @@
  */
 import { rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ContextPackage } from "../extract/context-package.js";
+import type { ContextPackage } from "../extract/context-package.ts";
 import {
 	ensureDir,
 	resolvePiStoragePaths,
 	type ResolveStorageOptions,
-} from "./paths.js";
+} from "./paths.ts";
 
 export interface StoredContextPackageFile {
 	path: string;

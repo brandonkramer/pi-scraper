@@ -1,8 +1,8 @@
 /**
  * @fileoverview http redirects module.
  */
-import { HttpClientError } from "./errors.js";
-import type { SafeUrlResult } from "./url-safety.js";
+import { HttpClientError } from "./errors.ts";
+import type { SafeUrlResult } from "./url-safety.ts";
 
 export interface RedirectableResponse {
 	status: number;

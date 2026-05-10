@@ -1,16 +1,16 @@
 /**
  * @fileoverview scrape modes browser module.
  */
-import type { BrowserRenderer } from "../../browser/playwright.js";
+import type { BrowserRenderer } from "../../browser/playwright.ts";
 import {
 	BrowserRenderError,
 	createPlaywrightRenderer,
-} from "../../browser/playwright.js";
-import type { FetchUrlResult } from "../../http/client.js";
-import type { CommonScrapeOptions, OutputFormat } from "../../types.js";
-import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.js";
-import { responseScrape } from "./fast.js";
-import { scrapeErrorResult, scrapeStructuredError } from "./shared.js";
+} from "../../browser/playwright.ts";
+import type { FetchUrlResult } from "../../http/client.ts";
+import type { CommonScrapeOptions, OutputFormat } from "../../types.ts";
+import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
+import { responseScrape } from "./fast.ts";
+import { scrapeErrorResult, scrapeStructuredError } from "./shared.ts";
 
 export async function browserScrape(
 	input: string | URL,

@@ -1,7 +1,7 @@
 /**
  * @fileoverview extract verticals docker-hub module.
  */
-import { capability, type VerticalExtractor } from "../capabilities.js";
+import { capability, type VerticalExtractor } from "../capabilities.ts";
 
 interface DockerHubRepository {
 	namespace?: string;

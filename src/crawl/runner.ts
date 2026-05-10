@@ -1,33 +1,33 @@
 /**
  * @fileoverview crawl runner module.
  */
-import { DEFAULT_CONCURRENCY, DEFAULT_CRAWL_LIMITS } from "../defaults.js";
-import { isAbortError } from "../http/abort.js";
-import { createHttpClient } from "../http/client.js";
-import { KeyedSemaphore } from "../http/politeness.js";
-import { discoverSiteUrls, type SiteMapDeps } from "../map/discover.js";
+import { DEFAULT_CONCURRENCY, DEFAULT_CRAWL_LIMITS } from "../defaults.ts";
+import { isAbortError } from "../http/abort.ts";
+import { createHttpClient } from "../http/client.ts";
+import { KeyedSemaphore } from "../http/politeness.ts";
+import { discoverSiteUrls, type SiteMapDeps } from "../map/discover.ts";
 import {
 	type ScrapePipelineDeps,
 	type ScrapeResult,
 	scrapeUrl,
-} from "../scrape/pipeline.js";
-import { resultChars } from "../scrape/_utils.js";
-import { hasStructuredError } from "../http/retry.js";
-import type { CommonScrapeOptions, StructuredError } from "../types.js";
+} from "../scrape/pipeline.ts";
+import { resultChars } from "../scrape/_utils.ts";
+import { hasStructuredError } from "../http/retry.ts";
+import type { CommonScrapeOptions, StructuredError } from "../types.ts";
 import {
 	appendJobError,
 	setupScrapeJob,
 	structuredErrorToJobError,
 	unknownToJobError,
-} from "../storage/jobs.js";
-import { CrawlFrontier, type FrontierItem } from "./frontier.js";
+} from "../storage/jobs.ts";
+import { CrawlFrontier, type FrontierItem } from "./frontier.ts";
 import {
 	type CrawlMetadata,
 	type CrawlStateOptions,
 	createCrawlState,
 	loadCrawlState,
 	saveCrawlState,
-} from "./state.js";
+} from "./state.ts";
 
 export interface CrawlProgress {
 	state: "queued" | "processing" | "done" | "error";

@@ -4,22 +4,22 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ScrapeResult } from "../scrape/pipeline.js";
-import { openStorageDb } from "../storage/db.js";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
+import { openStorageDb } from "../storage/db.ts";
 import {
 	ensureDir,
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
-} from "../storage/paths.js";
-import { getStoredResult } from "../storage/results.js";
-import type { ResponseStorageMetadata, StructuredError } from "../types.js";
-import { normalizeUrl } from "../url/normalize.js";
-import { compareSnapshotText, type TextDiffSummary } from "./compare.js";
+} from "../storage/paths.ts";
+import { getStoredResult } from "../storage/results.ts";
+import type { ResponseStorageMetadata, StructuredError } from "../types.ts";
+import { normalizeUrl } from "../url/normalize.ts";
+import { compareSnapshotText, type TextDiffSummary } from "./compare.ts";
 import {
 	type NormalizedSnapshotContent,
 	normalizeScrapeForSnapshot,
 	type SnapshotLink,
-} from "./normalize.js";
+} from "./normalize.ts";
 
 export interface SnapshotOptions extends ResolveStorageOptions {
 	snapshotName?: string;

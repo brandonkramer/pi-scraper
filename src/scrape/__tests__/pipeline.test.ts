@@ -8,10 +8,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
 	BrowserRenderError,
 	type BrowserRenderer,
-} from "../../browser/playwright.js";
-import type { FetchUrlResult } from "../../http/client.js";
-import type { FingerprintFetchAdapter } from "../../http/fingerprint.js";
-import { type ScrapePipelineDeps, scrapeUrl } from "../pipeline.js";
+} from "../../browser/playwright.ts";
+import type { FetchUrlResult } from "../../http/client.ts";
+import type { FingerprintFetchAdapter } from "../../http/fingerprint.ts";
+import { type ScrapePipelineDeps, scrapeUrl } from "../pipeline.ts";
 
 const URL = "https://example.com/page";
 const rootDir = path.resolve(

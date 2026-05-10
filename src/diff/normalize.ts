@@ -1,7 +1,7 @@
 /**
  * @fileoverview diff normalize module.
  */
-import type { ScrapeResult } from "../scrape/pipeline.js";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
 
 export interface SnapshotLink {
 	url: string;

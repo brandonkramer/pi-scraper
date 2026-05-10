@@ -9,7 +9,7 @@ import {
 	type FingerprintRequestBackend,
 	getFingerprintFetchAdapter,
 	registerFingerprintBackendFactory,
-} from "../fingerprint.js";
+} from "../fingerprint.ts";
 
 let agents: MockAgent[] = [];
 

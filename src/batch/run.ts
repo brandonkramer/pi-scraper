@@ -2,29 +2,29 @@
  * @fileoverview batch run module.
  */
 import { randomUUID } from "node:crypto";
-import { DEFAULT_CONCURRENCY } from "../defaults.js";
-import { createHttpClient } from "../http/client.js";
+import { DEFAULT_CONCURRENCY } from "../defaults.ts";
+import { createHttpClient } from "../http/client.ts";
 import {
 	scrapeUrl,
 	type ScrapePipelineDeps,
 	type ScrapeResult,
-} from "../scrape/pipeline.js";
-import { isAbortError } from "../http/abort.js";
-import { resultChars } from "../scrape/_utils.js";
-import { hasStructuredError } from "../http/retry.js";
-import type { CommonScrapeOptions, StructuredError } from "../types.js";
+} from "../scrape/pipeline.ts";
+import { isAbortError } from "../http/abort.ts";
+import { resultChars } from "../scrape/_utils.ts";
+import { hasStructuredError } from "../http/retry.ts";
+import type { CommonScrapeOptions, StructuredError } from "../types.ts";
 import {
 	appendJobError,
 	setupScrapeJob,
 	structuredErrorToJobError,
 	unknownToJobError,
-} from "../storage/jobs.js";
+} from "../storage/jobs.ts";
 import {
 	storeResult,
 	truncateAndStore,
 	type StoreResultOptions,
-} from "../storage/results.js";
-import { normalizeMaybe } from "../storage/_fields.js";
+} from "../storage/results.ts";
+import { normalizeMaybe } from "../storage/_fields.ts";
 
 export interface BatchProgress {
 	state: "queued" | "processing" | "done" | "error";

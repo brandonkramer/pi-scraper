@@ -10,11 +10,11 @@ import * as cssSelect from "css-select";
 import type { Document, Element } from "domhandler";
 import { ElementType } from "domelementtype";
 import * as domutils from "domutils";
-import { compareFingerprints } from "./element-similarity.js";
+import { compareFingerprints } from "./element-similarity.ts";
 import {
 	fingerprintElement,
 	type ElementFingerprint,
-} from "./element-fingerprint.js";
+} from "./element-fingerprint.ts";
 
 export interface AdaptiveSelectorOptions {
 	/** CSS or XPath selector string. */

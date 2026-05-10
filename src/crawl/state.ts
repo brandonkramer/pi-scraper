@@ -3,11 +3,11 @@
  */
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { openStorageDb, type StorageDb } from "../storage/db.js";
-import type { ResolveStorageOptions } from "../storage/paths.js";
-import { resolvePiStoragePaths } from "../storage/paths.js";
-import type { StructuredError } from "../types.js";
-import type { FrontierItem } from "./frontier.js";
+import { openStorageDb, type StorageDb } from "../storage/db.ts";
+import type { ResolveStorageOptions } from "../storage/paths.ts";
+import { resolvePiStoragePaths } from "../storage/paths.ts";
+import type { StructuredError } from "../types.ts";
+import type { FrontierItem } from "./frontier.ts";
 
 export type CrawlStatus = "queued" | "running" | "paused" | "done" | "error";
 

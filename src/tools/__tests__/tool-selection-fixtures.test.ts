@@ -3,8 +3,8 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { WebTool } from "../define.js";
-import { webTools } from "../register.js";
+import type { WebTool } from "../define.ts";
+import { webTools } from "../register.ts";
 
 interface ToolSelectionFixture {
 	id: string;

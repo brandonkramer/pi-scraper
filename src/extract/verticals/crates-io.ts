@@ -1,7 +1,7 @@
 /**
  * @fileoverview extract verticals crates-io module.
  */
-import { capability, type VerticalExtractor } from "../capabilities.js";
+import { capability, type VerticalExtractor } from "../capabilities.ts";
 
 interface CratesIoResponse {
 	crate: {

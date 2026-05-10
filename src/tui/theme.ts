@@ -1,7 +1,7 @@
 /**
  * @fileoverview Reusable Pi terminal UI theme text helpers.
  */
-import type { RenderTheme } from "../tools/define.js";
+import type { RenderTheme } from "./types.ts";
 
 export function inlineThemeText(
 	name: string,

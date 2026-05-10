@@ -2,7 +2,7 @@
  * @fileoverview http __tests__ url-safety.test module.
  */
 import { describe, expect, it } from "vitest";
-import { assertPublicAddresses, assertSafeUrl, isPrivateOrReservedIp } from "../url-safety.js";
+import { assertPublicAddresses, assertSafeUrl, isPrivateOrReservedIp } from "../url-safety.ts";
 
 describe("assertSafeUrl", () => {
   it("allows normalized public http and https URLs", () => {

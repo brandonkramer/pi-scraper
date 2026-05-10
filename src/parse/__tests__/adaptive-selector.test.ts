@@ -3,11 +3,11 @@
  */
 import { describe, expect, it } from "vitest";
 import { parseDocument } from "htmlparser2";
-import { runAdaptiveSelector } from "../adaptive-selector.js";
+import { runAdaptiveSelector } from "../adaptive-selector.ts";
 import {
 	fingerprintElement,
 	type ElementFingerprint,
-} from "../element-fingerprint.js";
+} from "../element-fingerprint.ts";
 
 describe("adaptive selector", () => {
 	it("directly selects matching elements", async () => {

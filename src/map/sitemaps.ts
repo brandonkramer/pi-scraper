@@ -2,7 +2,7 @@
  * @fileoverview map sitemaps module.
  */
 import { gunzipSync } from "node:zlib";
-import { normalizeUrl } from "../url/normalize.js";
+import { normalizeUrl } from "../url/normalize.ts";
 
 export interface SitemapUrlEntry {
   url: string;

@@ -2,14 +2,14 @@
  * @fileoverview Renderer contract tests for Pi web tool cards.
  */
 import { describe, expect, it } from "vitest";
-import type { RenderComponent, ToolRenderContext } from "../define.js";
-import { progressShell } from "../progress.js";
-import { renderEnvelopeResult } from "../render.js";
-import { toolResult } from "../result.js";
-import { webBatchTool } from "../web-batch.js";
-import { webCrawlTool } from "../web-crawl.js";
-import { webDiffTool } from "../web-diff.js";
-import { webScrapeTool } from "../web-scrape.js";
+import type { RenderComponent, ToolRenderContext } from "../define.ts";
+import { progressShell } from "../progress.ts";
+import { renderEnvelopeResult } from "../render.ts";
+import { toolResult } from "../result.ts";
+import { webBatchTool } from "../web-batch.ts";
+import { webCrawlTool } from "../web-crawl.ts";
+import { webDiffTool } from "../web-diff.ts";
+import { webScrapeTool } from "../web-scrape.ts";
 
 const partialContext = {
 	expanded: false,

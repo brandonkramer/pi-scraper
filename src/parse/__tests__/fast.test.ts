@@ -2,12 +2,12 @@
  * @fileoverview parse __tests__ fast.test module.
  */
 import { describe, expect, it } from "vitest";
-import { discoverAlternateLinks } from "../alternates.js";
-import { recoverDataIslands } from "../data-islands.js";
-import { loadDom } from "../dom-adapter.js";
-import { extractFastPage } from "../fast.js";
-import { likelyAgentReadableUrls, parseLlmsTxt } from "../llms.js";
-import { routeContentType } from "../passthrough.js";
+import { discoverAlternateLinks } from "../alternates.ts";
+import { recoverDataIslands } from "../data-islands.ts";
+import { loadDom } from "../dom-adapter.ts";
+import { extractFastPage } from "../fast.ts";
+import { likelyAgentReadableUrls, parseLlmsTxt } from "../llms.ts";
+import { routeContentType } from "../passthrough.ts";
 
 const fixture = `<!doctype html><html lang="en"><head>
 <title>Example Article</title><meta name="description" content="A useful article">

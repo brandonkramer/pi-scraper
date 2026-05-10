@@ -5,21 +5,21 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { BatchScrapeResult } from "../../batch/run.js";
-import type { ScrapeResult } from "../../scrape/pipeline.js";
-import { closeStorageDbs } from "../../storage/db.js";
-import { getJobManifest } from "../../storage/jobs.js";
-import { getStoredResult } from "../../storage/results.js";
-import type { ResultEnvelope } from "../../types.js";
-import { webBatchTool } from "../web-batch.js";
-import { webGetResultTool } from "../web-get-result.js";
+import type { BatchScrapeResult } from "../../batch/run.ts";
+import type { ScrapeResult } from "../../scrape/pipeline.ts";
+import { closeStorageDbs } from "../../storage/db.ts";
+import { getJobManifest } from "../../storage/jobs.ts";
+import { getStoredResult } from "../../storage/results.ts";
+import type { ResultEnvelope } from "../../types.ts";
+import { webBatchTool } from "../web-batch.ts";
+import { webGetResultTool } from "../web-get-result.ts";
 
-vi.mock("../../batch/run.js", () => ({
+vi.mock("../../batch/run.ts", () => ({
 	runBatchScrape: vi.fn(async (): Promise<BatchScrapeResult> => {
 		const { createJobManifest, writeJobManifest } = await import(
-			"../../storage/jobs.js"
+			"../../storage/jobs.ts"
 		);
-		const { storeResult } = await import("../../storage/results.js");
+		const { storeResult } = await import("../../storage/results.ts");
 		const jobId = "batch-context-package";
 		await writeJobManifest(
 			createJobManifest({

@@ -1,12 +1,12 @@
 /**
  * @fileoverview scrape pdf-route module.
  */
-import type { FetchUrlResult } from "../http/client.js";
-import { extractPdfText } from "../parse/pdf.js";
-import { normalizeWhitespace } from "../serialize/text.js";
-import type { OutputFormat, ScrapeMode } from "../types.js";
-import type { ScrapeResult } from "./pipeline.js";
-import { renderFormat } from "./render.js";
+import type { FetchUrlResult } from "../http/client.ts";
+import { extractPdfText } from "../parse/pdf.ts";
+import { normalizeWhitespace } from "../serialize/text.ts";
+import type { OutputFormat, ScrapeMode } from "../types.ts";
+import type { ScrapeResult } from "./pipeline.ts";
+import { renderFormat } from "./render.ts";
 
 export async function pdfResult(
 	base: ScrapeResult,

@@ -2,37 +2,32 @@
  * @fileoverview Pi tool adapter for single-URL scraping and page summaries.
  */
 import { Type, type Static } from "@earendil-works/pi-ai";
-import type { ModelAdapter } from "../extract/model.js";
-import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.js";
+import type { ModelAdapter } from "../extract/model.ts";
+import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.ts";
 import {
-	formatAge,
 	qualityFromCache,
 	refreshUrlAction,
 	storedTraceContext,
-} from "./agentic-context.js";
-import { defineWebTool, type WebTool } from "./define.js";
-import { emitProgress } from "./progress.js";
+} from "./agentic-context.ts";
+import { resolveScrapeOptions } from "../scrape/options.ts";
+import { describeScrapeResult, formatAge } from "../scrape/describe.ts";
+import { defineWebTool, type WebTool } from "./define.ts";
+import { emitProgress } from "./progress.ts";
 import {
 	errorResult,
+	inputErrorResult,
 	missingModelResult,
 	missingModelError,
 	structuredToolError,
 	toolErrorResult,
 	toolResult,
-} from "./result.js";
-import {
-	buildSessionNotice,
-	buildSessionText,
-	deleteSessionAndStorage,
-	getOrCreateSession,
-	saveSessionToStorage,
-} from "../http/session.js";
-import { sessionOptionSchema, urlProperty } from "./schemas.js";
-import {
-	scrapeInputSummary,
-	scrapeInputToolResult,
-} from "./scrape-input-result.js";
-import { renderWebScrapeResult, renderWebToolCall } from "./web-renderers.js";
+} from "./result.ts";
+import { getOrCreateSession } from "../http/session.ts";
+import { sessionLifecycle } from "./session-lifecycle.ts";
+import { sessionOptionSchema, urlProperty } from "./schemas.ts";
+import { buildSummarizeToolResult } from "./scrape-input-result.ts";
+import { renderWebScrapeResult } from "./web-renderers.ts";
+import { renderSimpleCall } from "./render.ts";
 
 const scrapeTasks = ["read", "summarize"] as const;
 
@@ -79,13 +74,8 @@ export function createWebScrapeTool(
 			if (task === "summarize") return summarizeScrape(params, options, signal);
 			return readScrape(params, signal, onUpdate);
 		},
-		renderCall: (args, theme, context) =>
-			renderWebToolCall(
-				"web_scrape",
-				renderScrapeCallParts(args),
-				theme,
-				context,
-			),
+		renderCall: (args, theme, _context) =>
+			renderSimpleCall("web_scrape", renderScrapeCallParts(args), theme),
 		renderResult: (result, { expanded }, theme) =>
 			renderWebScrapeResult(result, expanded, theme),
 	});
@@ -121,18 +111,14 @@ async function readScrape(
 	onUpdate?: Parameters<WebTool<typeof webScrapeSchema>["execute"]>[3],
 ) {
 	if (!params.url) {
-		return toolResult({
-			text: "Provide url for web_scrape task=read.",
-			data: undefined,
-			error: {
-				code: "SCRAPE_URL_MISSING",
-				phase: "scrape",
-				message: "web_scrape task=read requires url.",
-				retryable: false,
-			},
-		});
+		return inputErrorResult(
+			"SCRAPE_URL_MISSING",
+			"scrape",
+			"web_scrape task=read requires url.",
+			"Provide url for web_scrape task=read.",
+		);
 	}
-	const { loadEffectiveConfig } = await import("../config/settings.js");
+	const { loadEffectiveConfig } = await import("../config/settings.ts");
 	const config = await loadEffectiveConfig();
 	const session = params.sessionId
 		? await getOrCreateSession(params.sessionId)
@@ -148,20 +134,7 @@ async function readScrape(
 				...(params as any).headers,
 			};
 	}
-	const scrapeOptions = {
-		...config.scrapeDefaults,
-		...(session
-			? {
-					mode: session.defaultMode,
-					browserProfile: session.defaultBrowserProfile,
-					proxy: session.defaultProxy,
-					headers: session.defaultHeaders,
-				}
-			: {}),
-		...params,
-		mode: params.mode ?? session?.defaultMode ?? config.scrapeMode,
-		format: params.format ?? config.outputFormat,
-	};
+	const scrapeOptions = resolveScrapeOptions(params, config, session);
 	await emitProgress(onUpdate, {
 		state: "loading",
 		url: params.url,
@@ -174,7 +147,7 @@ async function readScrape(
 			{ id: "store", label: "storing result", state: "pending" },
 		],
 	});
-	const { scrapeUrl } = await import("../scrape/pipeline.js");
+	const { scrapeUrl } = await import("../scrape/pipeline.ts");
 	const result = await scrapeUrl(params.url, scrapeOptions, {}, signal);
 	await emitProgress(onUpdate, {
 		state: result.error ? "error" : "done",
@@ -196,16 +169,15 @@ async function readScrape(
 			{ id: "store", label: "storing result", state: "pending" },
 		],
 	});
-	const { storeResult } = await import("../storage/results.js");
+	const { storeResult } = await import("../storage/results.ts");
 	const stored = await storeResult(result);
 	const shaped = shapeScrapeResult(result, stored.responseId);
-	await applySessionLifecycle(params);
-	const sessionNotice = buildSessionNotice(params);
-	const sessionSuffix = buildSessionText(params);
+	const { notice: sessionNotice, suffix: sessionSuffix } =
+		await sessionLifecycle(params);
 	return toolResult({
 		text: result.error
 			? `Scrape failed: ${result.error.message}`
-			: `${summarizeReadResult(result)}\nresponseId: ${stored.responseId}${sessionSuffix}`,
+			: `${describeScrapeResult(result)}\nresponseId: ${stored.responseId}${sessionSuffix}`,
 		data: result.data,
 		url: result.url,
 		finalUrl: result.finalUrl,
@@ -238,8 +210,8 @@ async function summarizeScrape(
 		);
 	}
 	try {
-		const { loadEffectiveConfig } = await import("../config/settings.js");
-		const { summarizePage } = await import("../summarize/page.js");
+		const { loadEffectiveConfig } = await import("../config/settings.ts");
+		const { summarizePage } = await import("../summarize/page.ts");
 		const config = await loadEffectiveConfig();
 		const result = await summarizePage(
 			{
@@ -252,37 +224,11 @@ async function summarizeScrape(
 			options.scrapeDeps ?? {},
 			signal,
 		);
-		const summary = scrapeInputSummary(
-			"Summarized",
-			result.input,
-			" from fresh scrape input",
-			" from cached scrape input",
-		);
-		await applySessionLifecycle(params);
-		return scrapeInputToolResult({
-			text: result.summary,
-			data: result,
-			input: result.input,
-			fallbackUrl: params.url,
-			summary,
-			answerContext: `${summary} Refresh the source page before summarizing time-sensitive facts.`,
-			formatFallback: "markdown",
-		});
+		await sessionLifecycle(params);
+		return buildSummarizeToolResult(result, params.url);
 	} catch (error) {
 		return toolErrorResult(error, "SUMMARIZE_FAILED", "summarize", params.url);
 	}
-}
-
-function summarizeReadResult(result: ScrapeResult): string {
-	const text =
-		result.data.markdown ??
-		result.data.text ??
-		result.data.title ??
-		result.data.route;
-	const source = result.cache?.cached
-		? `cache hit · ${formatAge(result.cache.ageSeconds)} · ${result.cache.staleness ?? "fresh"}`
-		: "fresh fetch";
-	return `${result.status ?? "ok"} · ${result.mode ?? "auto"} · ${result.format ?? "markdown"} · ${source}\n${String(text).slice(0, 1200)}`;
 }
 
 function shapeScrapeResult(result: ScrapeResult, responseId: string) {
@@ -315,14 +261,4 @@ function shapeScrapeResult(result: ScrapeResult, responseId: string) {
 		}),
 		qualitySignals: qualityFromCache(result.cache),
 	};
-}
-
-async function applySessionLifecycle(params: Params): Promise<void> {
-	if (!params.sessionId) return;
-	if (params.saveSession) {
-		await saveSessionToStorage(params.sessionId);
-	}
-	if (params.clearSession) {
-		await deleteSessionAndStorage(params.sessionId);
-	}
 }

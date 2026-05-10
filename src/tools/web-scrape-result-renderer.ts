@@ -1,13 +1,13 @@
 /**
  * @fileoverview Compact Pi renderer for web_scrape URL result cards.
  */
-import type { ResultEnvelope } from "../types.js";
-import type { RenderComponent, RenderTheme } from "./define.js";
-import { renderUrlStatusRow } from "../tui/rows.js";
-import { renderStackedResultCard } from "../tui/cards.js";
-import { formatPreview, renderMetadataLines } from "../tui/preview.js";
-import { isFileResult, renderFileResultCard } from "../tui/file-card.js";
-import { formatBytes, formatDuration } from "../tui/format.js";
+import type { ResultEnvelope } from "../types.ts";
+import type { RenderComponent, RenderTheme } from "./define.ts";
+import { renderUrlStatusRow } from "../tui/rows.ts";
+import { renderStackedResultCard } from "../tui/cards.ts";
+import { formatPreview, renderMetadataLines } from "../tui/preview.ts";
+import { isFileResult, renderFileResultCard } from "../tui/file-result-card.ts";
+import { formatBytes, formatDuration } from "../tui/format.ts";
 
 export function renderScrapeResultCard(
 	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,

@@ -11,7 +11,7 @@
  * union, arbitrary eval, or network side effects.
  */
 
-import type { StructuredError } from "../types.js";
+import type { StructuredError } from "../types.ts";
 
 export interface JsonPathResult {
 	values: unknown[];

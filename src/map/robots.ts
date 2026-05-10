@@ -1,7 +1,7 @@
 /**
  * @fileoverview map robots module.
  */
-import { normalizeUrl } from "../url/normalize.js";
+import { normalizeUrl } from "../url/normalize.ts";
 
 export interface RobotsMapInfo {
   robotsUrl: string;

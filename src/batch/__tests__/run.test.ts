@@ -2,8 +2,8 @@
  * @fileoverview batch __tests__ run.test module.
  */
 import { describe, expect, it } from "vitest";
-import { runBatchScrape } from "../run.js";
-import type { FetchUrlResult } from "../../http/client.js";
+import { runBatchScrape } from "../run.ts";
+import type { FetchUrlResult } from "../../http/client.ts";
 
 function response(url: string, text: string): FetchUrlResult {
   return { url, finalUrl: url, status: 200, headers: { "content-type": "text/html" }, contentType: "text/html", text, downloadedBytes: text.length };

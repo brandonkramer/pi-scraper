@@ -3,8 +3,8 @@
  */
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
-import type { StructuredError } from "../types.js";
-import { normalizeUrl, type NormalizeUrlOptions } from "../url/normalize.js";
+import type { StructuredError } from "../types.ts";
+import { normalizeUrl, type NormalizeUrlOptions } from "../url/normalize.ts";
 
 export interface UrlSafetyOptions extends NormalizeUrlOptions {
   allowPrivateNetwork?: boolean;

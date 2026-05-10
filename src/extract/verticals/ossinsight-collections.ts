@@ -1,8 +1,8 @@
 /**
  * @fileoverview extract verticals ossinsight-collections module.
  */
-import { capability, type VerticalExtractor } from "../capabilities.js";
-import { rowsOf, type OssInsightRows } from "./ossinsight-shared.js";
+import { capability, type VerticalExtractor } from "../capabilities.ts";
+import { rowsOf, type OssInsightRows } from "./ossinsight-shared.ts";
 
 interface OssInsightCollectionRow {
 	id: string | number;

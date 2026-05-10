@@ -1,9 +1,9 @@
 /**
  * @fileoverview scrape signals module.
  */
-import type { FetchUrlResult } from "../http/client.js";
-import type { FastPageExtraction } from "../parse/fast.js";
-import type { ReadableExtraction } from "../parse/readable.js";
+import type { FetchUrlResult } from "../http/client.ts";
+import type { FastPageExtraction } from "../parse/fast.ts";
+import type { ReadableExtraction } from "../parse/readable.ts";
 
 export interface ScrapeSignals {
   visibleTextLength: number;

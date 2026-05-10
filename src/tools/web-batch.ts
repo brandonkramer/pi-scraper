@@ -2,35 +2,30 @@
  * @fileoverview Pi tool adapter for independent multi-URL scraping.
  */
 import { Type, type Static } from "@earendil-works/pi-ai";
-import { runBatchScrape, type BatchItemResult } from "../batch/run.js";
-import { loadEffectiveConfig } from "../config/settings.js";
-import { DEFAULT_CONCURRENCY } from "../defaults.js";
-import {
-	buildSessionNotice,
-	buildSessionText,
-	deleteSessionAndStorage,
-	saveSessionToStorage,
-} from "../http/session.js";
+import { runBatchScrape } from "../batch/run.ts";
+import { loadEffectiveConfig } from "../config/settings.ts";
+import { DEFAULT_CONCURRENCY } from "../defaults.ts";
+import { sessionLifecycle } from "./session-lifecycle.ts";
 import {
 	aggregateFreshness,
 	freshnessFromCache,
-} from "../storage/freshness.js";
-import { updateJobManifest } from "../storage/jobs.js";
+} from "../storage/freshness.ts";
 import {
 	retrieveResultAction,
 	storedResultGuidance,
-} from "./agentic-context.js";
-import { buildStoredContextPackage } from "./context-package.js";
-import { defineWebTool } from "./define.js";
-import { emitProgress } from "./progress.js";
+} from "./agentic-context.ts";
+import { buildBatchContextPackage } from "../batch/compile.ts";
+import { defineWebTool } from "./define.ts";
+import { emitProgress } from "./progress.ts";
 import {
 	cloneBatchProgress,
 	type BatchProgressView,
 	updateIndexedBatchProgress,
-} from "./web-batch-progress-renderer.js";
-import { renderWebBatchResult, renderWebToolCall } from "./web-renderers.js";
-import { toolResult } from "./result.js";
-import { scrapeOutputOptionSchema, urlProperty } from "./schemas.js";
+} from "../batch/progress-state.ts";
+import { renderWebBatchResult } from "./web-renderers.ts";
+import { renderSimpleCall } from "./render.ts";
+import { toolResult } from "./result.ts";
+import { scrapeOutputOptionSchema, urlProperty } from "./schemas.ts";
 
 export const webBatchSchema = Type.Object({
 	urls: Type.Array(urlProperty(), { minItems: 1 }),
@@ -39,28 +34,6 @@ export const webBatchSchema = Type.Object({
 	...scrapeOutputOptionSchema,
 	compile: Type.Optional(Type.Any()),
 });
-
-async function buildBatchContextPackage(
-	params: Params,
-	items: readonly BatchItemResult[],
-	jobId: string,
-) {
-	if (params.compile !== true) return undefined;
-	const contextPackage = await buildStoredContextPackage({
-		source: "batch",
-		batchId: jobId,
-		pages: items
-			.filter((item) => item.ok)
-			.map((item) => ({
-				url: item.result.finalUrl ?? item.result.url ?? item.url,
-				result: item.result,
-			})),
-	});
-	await updateJobManifest(jobId, {
-		responseIds: [contextPackage.responseId],
-	});
-	return contextPackage;
-}
 
 type Params = Static<typeof webBatchSchema>;
 
@@ -130,12 +103,8 @@ export const webBatchTool = defineWebTool({
 		const text = contextPackage
 			? `${result.summary} Context package: ${contextPackage.value.package.urlCount} page(s), packageResponseId: ${contextPackage.responseId}.`
 			: result.summary;
-		if (params.sessionId) {
-			if (params.saveSession) await saveSessionToStorage(params.sessionId);
-			if (params.clearSession) await deleteSessionAndStorage(params.sessionId);
-		}
-		const sessionNotice = buildSessionNotice(params);
-		const sessionSuffix = buildSessionText(params);
+		const { notice: sessionNotice, suffix: sessionSuffix } =
+			await sessionLifecycle(params);
 		const completedProgress = cloneBatchProgress(batchProgress);
 		return toolResult({
 			text: text + sessionSuffix,
@@ -184,13 +153,11 @@ export const webBatchTool = defineWebTool({
 			assistantGuidance: storedResultGuidance(),
 		});
 	},
-	renderCall: (args, theme, context) =>
-		renderWebToolCall(
+	renderCall: (args, theme, _context) =>
+		renderSimpleCall(
 			"web_batch",
 			[`${args.urls.length} urls`, `(${args.mode ?? "auto"})`],
 			theme,
-			context,
-			{ donePrefix: false },
 		),
 	renderResult: (result, { expanded }, theme) =>
 		renderWebBatchResult(result, expanded, theme),

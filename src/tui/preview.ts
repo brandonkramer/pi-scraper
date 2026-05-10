@@ -1,9 +1,8 @@
 /**
  * @fileoverview Pi terminal UI preview and metadata formatting primitives.
  */
-import type { PiToolShell, ResultEnvelope } from "../types.js";
-import type { RenderTheme } from "../tools/define.js";
-import { inlineThemeText, muted } from "./theme.js";
+import type { RenderTheme } from "./types.ts";
+import { inlineThemeText, muted } from "./theme.ts";
 
 export function formatPreview(
 	format: string | undefined,
@@ -40,19 +39,4 @@ function metadataLine(
 		theme?.fg?.("syntaxKeyword", `${label}: `) ?? `${label}: `;
 	const coloredValue = theme?.fg?.("syntaxString", value) ?? value;
 	return `${coloredLabel}${coloredValue}`;
-}
-
-export function previewText(
-	result: PiToolShell,
-	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
-): string {
-	const data = envelope.data;
-	return String(
-		envelope.answerContext ??
-			data?.markdown ??
-			data?.text ??
-			data?.title ??
-			result.content[0]?.text ??
-			"",
-	);
 }

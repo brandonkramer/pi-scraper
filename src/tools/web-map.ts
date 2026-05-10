@@ -2,15 +2,15 @@
  * @fileoverview Pi tool adapter for robots, sitemap, and llms.txt URL maps.
  */
 import { Type, type Static } from "@earendil-works/pi-ai";
-import { loadEffectiveConfig } from "../config/settings.js";
-import { discoverSiteUrls } from "../map/discover.js";
-import { storeResult } from "../storage/results.js";
-import { defineWebTool } from "./define.js";
-import { emitProgress } from "./progress.js";
-import { renderSimpleCall } from "./render.js";
-import { toolResult } from "./result.js";
-import { renderWebMapResult } from "./web-renderers.js";
-import { urlProperty } from "./schemas.js";
+import { loadEffectiveConfig } from "../config/settings.ts";
+import { discoverSiteUrls } from "../map/discover.ts";
+import { storeResult } from "../storage/results.ts";
+import { defineWebTool } from "./define.ts";
+import { emitProgress } from "./progress.ts";
+import { renderSimpleCall } from "./render.ts";
+import { toolResult } from "./result.ts";
+import { renderWebMapResult } from "./web-renderers.ts";
+import { urlProperty } from "./schemas.ts";
 
 export const webMapSchema = Type.Object({
 	url: urlProperty(),

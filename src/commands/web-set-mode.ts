@@ -6,10 +6,10 @@ import {
 	type ConfigOptions,
 	type WebConfig,
 	updateConfig,
-} from "../config/settings.js";
-import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.js";
-import { toolResult } from "../tools/result.js";
-import { defineWebCommand } from "./define.js";
+} from "../config/settings.ts";
+import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.ts";
+import { toolResult } from "../tools/result.ts";
+import { defineWebCommand } from "./define.ts";
 
 export const webSetModeSchema = Type.Object({
 	mode: Type.Optional(

@@ -11,7 +11,7 @@ import {
 	loadStoredConfig,
 	saveConfig,
 	updateConfig,
-} from "../settings.js";
+} from "../settings.ts";
 
 let rootDir: string;
 

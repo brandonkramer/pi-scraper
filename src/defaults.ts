@@ -1,7 +1,7 @@
 /**
  * @fileoverview defaults module.
  */
-import type { OutputFormat, ScrapeMode } from "./types.js";
+import type { OutputFormat, ScrapeMode } from "./types.ts";
 
 export const DEFAULT_USER_AGENT =
 	"pi-scraper/0.1 (+https://www.npmjs.com/package/pi-scraper)";

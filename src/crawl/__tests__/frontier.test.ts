@@ -6,9 +6,9 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { closeStorageDbs } from "../../storage/db.js";
-import { CrawlFrontier } from "../frontier.js";
-import { createCrawlState, loadCrawlState, saveCrawlState } from "../state.js";
+import { closeStorageDbs } from "../../storage/db.ts";
+import { CrawlFrontier } from "../frontier.ts";
+import { createCrawlState, loadCrawlState, saveCrawlState } from "../state.ts";
 
 let rootDir: string;
 

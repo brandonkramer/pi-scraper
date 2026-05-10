@@ -3,7 +3,7 @@
  */
 import TurndownService from "turndown";
 import turndownPluginGfm from "turndown-plugin-gfm";
-import { normalizeWhitespace } from "./text.js";
+import { normalizeWhitespace } from "./text.ts";
 
 export interface MarkdownOptions {
 	removeImages?: boolean;

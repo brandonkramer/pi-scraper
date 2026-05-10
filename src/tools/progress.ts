@@ -8,8 +8,8 @@ import type {
 	ProgressDetails,
 	ProgressState,
 	TimingInfo,
-} from "../types.js";
-import type { ToolUpdate } from "./define.js";
+} from "../types.ts";
+import type { ToolUpdate } from "./define.ts";
 
 export interface ProgressOptions<TData = unknown> {
 	state: ProgressState;

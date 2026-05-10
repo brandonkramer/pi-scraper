@@ -1,10 +1,10 @@
 /**
  * @fileoverview storage search module.
  */
-import type { ResultEnvelope } from "../types.js";
-import { openStorageDb } from "./db.js";
-import { stringField } from "./_fields.js";
-import type { ResolveStorageOptions } from "./paths.js";
+import type { ResultEnvelope } from "../types.ts";
+import { openStorageDb } from "./db.ts";
+import { stringField } from "./_fields.ts";
+import type { ResolveStorageOptions } from "./paths.ts";
 
 export interface SearchHit {
 	responseId: string;

@@ -8,12 +8,12 @@ import {
 	type OutputFormat,
 	type ScrapeMode,
 	type StructuredError,
-} from "../types.js";
+} from "../types.ts";
 import {
 	ensureDir,
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
-} from "./paths.js";
+} from "./paths.ts";
 
 export type JobType = "crawl" | "batch" | "diff" | "snapshot";
 export type JobStatus = "queued" | "running" | "paused" | "done" | "error";

@@ -1,20 +1,20 @@
 /**
  * @fileoverview browser playwright module.
  */
-import { applyStealthPatches } from "./stealth.js";
+import { applyStealthPatches } from "./stealth.ts";
 import {
 	acquireBrowserSession,
 	destroyBrowserSession,
 	releaseBrowserSession,
-} from "./session-pool.js";
-import { createAbortError } from "../http/abort.js";
+} from "./session-pool.ts";
+import { createAbortError } from "../http/abort.ts";
 import {
 	assertSafeFetchUrl,
 	assertSafeUrl,
 	type SafeUrlResult,
 	UrlSafetyError,
-} from "../http/url-safety.js";
-import type { StructuredError } from "../types.js";
+} from "../http/url-safety.ts";
+import type { StructuredError } from "../types.ts";
 
 export interface BrowserRenderOptions {
 	timeoutSeconds?: number;

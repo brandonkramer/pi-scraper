@@ -1,16 +1,16 @@
 /**
  * @fileoverview storage cache module.
  */
-import type { FetchUrlResult } from "../http/client.js";
-import { isTextLikeContentType } from "../http/download.js";
-import { normalizeUrl } from "../url/normalize.js";
-import { readBlob, writeBlob } from "./blobs.js";
-import { openStorageDb } from "./db.js";
+import type { FetchUrlResult } from "../http/client.ts";
+import { isTextLikeContentType } from "../http/download.ts";
+import { normalizeUrl } from "../url/normalize.ts";
+import { readBlob, writeBlob } from "./blobs.ts";
+import { openStorageDb } from "./db.ts";
 import {
 	DEFAULT_MAX_FRESHNESS_AGE_SECONDS,
 	freshnessMetadata,
-} from "./freshness.js";
-import type { ResolveStorageOptions } from "./paths.js";
+} from "./freshness.ts";
+import type { ResolveStorageOptions } from "./paths.ts";
 
 export interface FetchCacheOptions extends ResolveStorageOptions {
 	ttlSeconds?: number;

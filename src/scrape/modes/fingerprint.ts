@@ -1,20 +1,20 @@
 /**
  * @fileoverview scrape modes fingerprint module.
  */
-import type { FetchUrlResult } from "../../http/client.js";
-import type { FingerprintFetchAdapter } from "../../http/fingerprint.js";
+import type { FetchUrlResult } from "../../http/client.ts";
+import type { FingerprintFetchAdapter } from "../../http/fingerprint.ts";
 import {
 	getFingerprintFetchAdapter,
 	isFingerprintFetchError,
-} from "../../http/fingerprint.js";
-import type { CommonScrapeOptions, OutputFormat } from "../../types.js";
-import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.js";
-import { responseScrape } from "./fast.js";
+} from "../../http/fingerprint.ts";
+import type { CommonScrapeOptions, OutputFormat } from "../../types.ts";
+import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
+import { responseScrape } from "./fast.ts";
 import {
 	fetchOptions,
 	scrapeErrorResult,
 	scrapeStructuredError,
-} from "./shared.js";
+} from "./shared.ts";
 
 export async function fingerprintScrape(
 	input: string | URL,

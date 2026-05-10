@@ -5,8 +5,8 @@ import type {
 	ModelAdapter,
 	ModelRequest,
 	ModelResponse,
-} from "../extract/model.js";
-import { isUnknownRecord, type UnknownRecord } from "../types.js";
+} from "../extract/model.ts";
+import { isUnknownRecord, type UnknownRecord } from "../types.ts";
 type Runner = (
 	payload: unknown,
 	signal?: AbortSignal,

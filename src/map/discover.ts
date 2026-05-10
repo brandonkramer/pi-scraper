@@ -1,12 +1,12 @@
 /**
  * @fileoverview map discover module.
  */
-import type { HttpClient } from "../http/client.js";
-import { createHttpClient } from "../http/client.js";
-import { normalizeUrl } from "../url/normalize.js";
-import { llmsUrlForSite, parseLlmsLinks } from "./llms.js";
-import { parseRobotsSitemaps, robotsUrlForSite } from "./robots.js";
-import { defaultSitemapUrl, parseSitemapXml } from "./sitemaps.js";
+import type { HttpClient } from "../http/client.ts";
+import { createHttpClient } from "../http/client.ts";
+import { normalizeUrl } from "../url/normalize.ts";
+import { llmsUrlForSite, parseLlmsLinks } from "./llms.ts";
+import { parseRobotsSitemaps, robotsUrlForSite } from "./robots.ts";
+import { defaultSitemapUrl, parseSitemapXml } from "./sitemaps.ts";
 
 export interface MapUrlEntry {
   url: string;

@@ -1,7 +1,7 @@
 /**
  * @fileoverview extract verticals npm module.
  */
-import { capability, type VerticalExtractor } from "../capabilities.js";
+import { capability, type VerticalExtractor } from "../capabilities.ts";
 
 interface NpmLatestPackage {
 	name: string;

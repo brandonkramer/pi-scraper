@@ -2,7 +2,7 @@
  * @fileoverview Shared HTTP response materialization helpers.
  */
 import { Readable } from "node:stream";
-import type { CacheMetadata } from "../types.js";
+import type { CacheMetadata } from "../types.ts";
 import {
 	BodySizeLimitError,
 	collectBody,
@@ -11,8 +11,8 @@ import {
 	isTextLikeContentType,
 	streamToTempFile,
 	type BinaryDownloadMetadata,
-} from "./download.js";
-import { decodeText } from "./text-decode.js";
+} from "./download.ts";
+import { decodeText } from "./text-decode.ts";
 
 export interface FetchUrlResult {
 	/** Normalized original request URL after URL policy canonicalization, not the verbatim input string. */

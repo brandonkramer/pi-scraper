@@ -9,7 +9,7 @@ import {
 	deleteSessionAndStorage,
 	getOrCreateSession,
 	saveSessionToStorage,
-} from "../session.js";
+} from "../session.ts";
 
 let homeDir: string;
 let originalHome: string | undefined;
@@ -45,7 +45,7 @@ describe("session persistence", () => {
 		await saveSessionToStorage("test-2");
 
 		// simulate reload: clear memory
-		const { deleteSession } = await import("../session.js");
+		const { deleteSession } = await import("../session.ts");
 		deleteSession("test-2");
 
 		const afterReload = await getOrCreateSession("test-2");

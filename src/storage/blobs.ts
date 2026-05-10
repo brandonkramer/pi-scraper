@@ -9,7 +9,7 @@ import {
 	pathExists,
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
-} from "./paths.js";
+} from "./paths.ts";
 
 export interface BlobWriteResult {
 	contentHash: string;

@@ -2,12 +2,12 @@
  * @fileoverview extract __tests__ ossinsight.test module.
  */
 import { describe, expect, it } from "vitest";
-import type { VerticalExtractorContext } from "../capabilities.js";
-import { runVerticalExtractor } from "../registry.js";
-import { ossInsightCollectionRankingExtractor } from "../verticals/ossinsight-collection-ranking.js";
-import { ossInsightCollectionsExtractor } from "../verticals/ossinsight-collections.js";
-import { ossInsightRepoAnalyticsExtractor } from "../verticals/ossinsight-repo-analytics.js";
-import { ossInsightTrendingReposExtractor } from "../verticals/ossinsight-trending-repos.js";
+import type { VerticalExtractorContext } from "../capabilities.ts";
+import { runVerticalExtractor } from "../registry.ts";
+import { ossInsightCollectionRankingExtractor } from "../verticals/ossinsight-collection-ranking.ts";
+import { ossInsightCollectionsExtractor } from "../verticals/ossinsight-collections.ts";
+import { ossInsightRepoAnalyticsExtractor } from "../verticals/ossinsight-repo-analytics.ts";
+import { ossInsightTrendingReposExtractor } from "../verticals/ossinsight-trending-repos.ts";
 
 function ossInsightContext(calls: string[] = []): VerticalExtractorContext {
 	return {

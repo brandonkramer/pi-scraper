@@ -1,10 +1,10 @@
 /**
- * @fileoverview Pi terminal UI file result card primitive.
+ * @fileoverview Generic file/binary content-type detection and result card. Used by any tool result whose envelope carries a non-text payload.
  */
-import type { ResultEnvelope } from "../types.js";
-import type { RenderComponent, RenderTheme } from "../tools/define.js";
-import { muted } from "./theme.js";
-import { renderText } from "./text.js";
+import type { ResultEnvelope } from "../types.ts";
+import type { RenderComponent, RenderTheme } from "./types.ts";
+import { muted } from "./theme.ts";
+import { renderText } from "./text.ts";
 
 export function isFileResult(
 	envelope: Partial<ResultEnvelope<unknown>>,

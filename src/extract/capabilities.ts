@@ -1,7 +1,7 @@
 /**
  * @fileoverview extract capabilities module.
  */
-import type { ExtractorCapability, SourceReference } from "../types.js";
+import type { ExtractorCapability, SourceReference } from "../types.ts";
 
 export interface VerticalExtractorPage {
 	text: string;

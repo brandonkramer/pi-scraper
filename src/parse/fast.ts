@@ -1,8 +1,8 @@
 /**
  * @fileoverview parse fast module.
  */
-import { type DataIslandContent, recoverDataIslands } from "./data-islands.js";
-import { type DomAdapter, type DomSelection, loadDom } from "./dom-adapter.js";
+import { type DataIslandContent, recoverDataIslands } from "./data-islands.ts";
+import { type DomAdapter, type DomSelection, loadDom } from "./dom-adapter.ts";
 import {
 	extractHeadings,
 	extractLinks,
@@ -10,20 +10,20 @@ import {
 	type PageHeading,
 	type PageLink,
 	type PageMetadata,
-} from "./metadata.js";
+} from "./metadata.ts";
 import {
 	type MainContentCandidate,
 	mainContentRoot,
 	rankMainCandidates,
-} from "./noise.js";
-import { type RecoveredContent, recoverUsefulContent } from "./recovery.js";
+} from "./noise.ts";
+import { type RecoveredContent, recoverUsefulContent } from "./recovery.ts";
 import {
 	outerHtml,
 	prepareDocument,
 	type SelectorOptions,
 	selectedRoots,
 	visibleText,
-} from "./selectors.js";
+} from "./selectors.ts";
 
 export interface FastExtractOptions extends SelectorOptions {
 	onlyMainContent?: boolean;

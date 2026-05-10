@@ -5,19 +5,19 @@ import * as cssSelect from "css-select";
 import type { AnyNode, Element } from "domhandler";
 import * as domutils from "domutils";
 import { parseDocument } from "htmlparser2";
-import { capability, type VerticalExtractor } from "../capabilities.js";
+import { capability, type VerticalExtractor } from "../capabilities.ts";
 import {
 	cleanText,
 	stripUndefined,
 	titleCase,
 	truncateText,
-} from "../_html.js";
+} from "../_html.ts";
 import {
 	extractHeadingSections,
 	firstTextBySelector,
 	sectionFromHeading,
 	type ExtractedDocSection,
-} from "../doc-structure.js";
+} from "../doc-structure.ts";
 
 export type DocsPlatform =
 	| "docusaurus"

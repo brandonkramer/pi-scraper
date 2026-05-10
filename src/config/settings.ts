@@ -3,18 +3,18 @@
  */
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { DEFAULT_OUTPUT_FORMAT, DEFAULT_SCRAPE_MODE } from "../defaults.js";
+import { DEFAULT_OUTPUT_FORMAT, DEFAULT_SCRAPE_MODE } from "../defaults.ts";
 import {
 	ensureDir,
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
-} from "../storage/paths.js";
-import { stripUndefined } from "../extract/_html.js";
+} from "../storage/paths.ts";
+import { stripUndefined } from "../extract/_html.ts";
 import type {
 	CommonScrapeOptions,
 	OutputFormat,
 	ScrapeMode,
-} from "../types.js";
+} from "../types.ts";
 
 type PersistedScrapeDefaults = Partial<
 	Omit<CommonScrapeOptions, "mode" | "format">

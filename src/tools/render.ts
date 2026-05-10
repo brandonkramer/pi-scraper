@@ -1,11 +1,11 @@
 /**
  * @fileoverview Tool-specific result renderers built on shared TUI primitives.
  */
-import type { PiToolShell, ResultEnvelope } from "../types.js";
-import type { RenderComponent, RenderTheme } from "./define.js";
-import { renderText } from "../tui/text.js";
+import type { PiToolShell, ResultEnvelope } from "../types.ts";
+import type { RenderComponent, RenderTheme } from "./define.ts";
+import { renderText } from "../tui/text.ts";
 
-export { renderText } from "../tui/text.js";
+export { renderText } from "../tui/text.ts";
 
 export function renderSimpleCall(
 	name: string,

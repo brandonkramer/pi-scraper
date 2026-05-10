@@ -2,7 +2,7 @@
  * @fileoverview http __tests__ robots.test module.
  */
 import { describe, expect, it } from "vitest";
-import { RobotsCache } from "../robots.js";
+import { RobotsCache } from "../robots.ts";
 
 describe("RobotsCache", () => {
   it("does not cache aborted robots fetches", async () => {

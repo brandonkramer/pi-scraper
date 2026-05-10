@@ -1,7 +1,7 @@
 /**
  * @fileoverview serialize json module.
  */
-import { normalizeWhitespace } from "./text.js";
+import { normalizeWhitespace } from "./text.ts";
 
 export function stableJson(value: unknown): string {
   return JSON.stringify(sortValue(value), null, 2);

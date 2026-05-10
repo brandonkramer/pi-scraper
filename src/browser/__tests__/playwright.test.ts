@@ -2,11 +2,11 @@
  * @fileoverview browser __tests__ playwright.test module.
  */
 import { describe, expect, it } from "vitest";
-import type { SafeUrlResult } from "../../http/url-safety.js";
+import type { SafeUrlResult } from "../../http/url-safety.ts";
 import {
 	createPlaywrightRenderer,
 	type PlaywrightModule,
-} from "../playwright.js";
+} from "../playwright.ts";
 
 const URL = "http://93.184.216.34/page";
 

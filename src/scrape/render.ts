@@ -1,16 +1,16 @@
 /**
  * @fileoverview scrape render module.
  */
-import { DEFAULT_MAX_CHARS } from "../defaults.js";
-import { toLlmText } from "../serialize/json.js";
-import { htmlToMarkdown } from "../serialize/markdown.js";
-import { normalizeWhitespace } from "../serialize/text.js";
+import { DEFAULT_MAX_CHARS } from "../defaults.ts";
+import { toLlmText } from "../serialize/json.ts";
+import { htmlToMarkdown } from "../serialize/markdown.ts";
+import { normalizeWhitespace } from "../serialize/text.ts";
 import type {
 	CommonScrapeOptions,
 	OutputFormat,
 	TimingInfo,
-} from "../types.js";
-import type { ScrapeData, ScrapeResult } from "./pipeline.js";
+} from "../types.ts";
+import type { ScrapeData, ScrapeResult } from "./pipeline.ts";
 
 export function materializeFormat(
 	result: ScrapeResult,

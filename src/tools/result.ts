@@ -7,12 +7,12 @@ import type {
 	ResultEnvelope,
 	StructuredError,
 	TimingInfo,
-} from "../types.js";
-import { structuredErrorFromUnknown } from "../http/errors.js";
+} from "../types.ts";
+import { structuredErrorFromUnknown } from "../http/errors.ts";
 import {
 	freshnessFromCache,
 	guidanceWithFreshness,
-} from "../storage/freshness.js";
+} from "../storage/freshness.ts";
 
 export interface ResultShellOptions<TData> {
 	text: string;
@@ -106,6 +106,20 @@ export function structuredToolError(
 		phase,
 		message: "Tool execution failed",
 		url,
+	});
+}
+
+export function inputErrorResult(
+	code: string,
+	phase: string,
+	message: string,
+	text = message,
+): PiToolShell<ResultEnvelope<undefined>> {
+	return toolResult({
+		text,
+		data: undefined,
+		error: { code, phase, message, retryable: false },
+		truncated: false,
 	});
 }
 

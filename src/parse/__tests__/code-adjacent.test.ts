@@ -1,8 +1,8 @@
 /** @fileoverview Regression coverage for raw markdown, MDX, RST, and docstring parsing. */
 
 import { describe, expect, it } from "vitest";
-import { parseDocstrings } from "../docstrings.js";
-import { parseMarkdown, parseMdx, parseRst } from "../markup-doc.js";
+import { parseDocstrings } from "../docstrings.ts";
+import { parseMarkdown, parseMdx, parseRst } from "../markup-doc.ts";
 
 const tsSource = `/**
  * Fetch metrics for a project.

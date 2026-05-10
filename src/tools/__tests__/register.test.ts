@@ -2,8 +2,8 @@
  * @fileoverview tools __tests__ register.test module.
  */
 import { describe, expect, it } from "vitest";
-import type { WebTool } from "../define.js";
-import { registerWebTools, webTools } from "../register.js";
+import type { WebTool } from "../define.ts";
+import { registerWebTools, webTools } from "../register.ts";
 
 const expectedNames = [
 	"web_scrape",

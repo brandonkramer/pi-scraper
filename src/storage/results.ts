@@ -2,13 +2,13 @@
  * @fileoverview storage results module.
  */
 import { randomUUID } from "node:crypto";
-import { PI_TRUNCATION_LIMITS } from "../defaults.js";
-import type { ResponseStorageMetadata } from "../types.js";
-import { readBlob, writeBlob } from "./blobs.js";
-import { openStorageDb } from "./db.js";
-import { normalizeMaybe, numberField, stringField } from "./_fields.js";
-import type { ResolveStorageOptions } from "./paths.js";
-import { recordStoredSearchText } from "./search.js";
+import { PI_TRUNCATION_LIMITS } from "../defaults.ts";
+import type { ResponseStorageMetadata } from "../types.ts";
+import { readBlob, writeBlob } from "./blobs.ts";
+import { openStorageDb } from "./db.ts";
+import { normalizeMaybe, numberField, stringField } from "./_fields.ts";
+import type { ResolveStorageOptions } from "./paths.ts";
+import { recordStoredSearchText } from "./search.ts";
 
 export interface StoredResult<T = unknown> {
 	metadata: ResponseStorageMetadata;

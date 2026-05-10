@@ -1,40 +1,40 @@
 /**
  * @fileoverview extract registry module.
  */
-import { createHttpClient, type HttpClient } from "../http/client.js";
-import { hasStructuredError } from "../http/errors.js";
+import { createHttpClient, type HttpClient } from "../http/client.ts";
+import { hasStructuredError } from "../http/errors.ts";
 import type {
 	CommonRequestOptions,
 	ExtractorCapability,
 	SourceReference,
-} from "../types.js";
+} from "../types.ts";
 import type {
 	VerticalExtractionResult,
 	VerticalExtractor,
 	VerticalExtractorContext,
-} from "./capabilities.js";
-import { arxivExtractor } from "./verticals/arxiv.js";
-import { cratesIoExtractor } from "./verticals/crates-io.js";
-import { deepWikiExtractor } from "./verticals/deepwiki.js";
-import { docstringsExtractor } from "./verticals/docstrings.js";
-import { docsiteExtractor } from "./verticals/docs-site.js";
-import { dockerHubExtractor } from "./verticals/docker-hub.js";
-import { githubIssueExtractor } from "./verticals/github-issue.js";
-import { githubPrExtractor } from "./verticals/github-pr.js";
-import { githubReleaseExtractor } from "./verticals/github-release.js";
-import { githubRepoExtractor } from "./verticals/github-repo.js";
-import { hackerNewsItemExtractor } from "./verticals/hackernews.js";
+} from "./capabilities.ts";
+import { arxivExtractor } from "./verticals/arxiv.ts";
+import { cratesIoExtractor } from "./verticals/crates-io.ts";
+import { deepWikiExtractor } from "./verticals/deepwiki.ts";
+import { docstringsExtractor } from "./verticals/docstrings.ts";
+import { docsiteExtractor } from "./verticals/docs-site.ts";
+import { dockerHubExtractor } from "./verticals/docker-hub.ts";
+import { githubIssueExtractor } from "./verticals/github-issue.ts";
+import { githubPrExtractor } from "./verticals/github-pr.ts";
+import { githubReleaseExtractor } from "./verticals/github-release.ts";
+import { githubRepoExtractor } from "./verticals/github-repo.ts";
+import { hackerNewsItemExtractor } from "./verticals/hackernews.ts";
 import {
 	huggingFaceDatasetExtractor,
 	huggingFaceModelExtractor,
-} from "./verticals/huggingface.js";
-import { npmPackageExtractor } from "./verticals/npm.js";
-import { ossInsightCollectionRankingExtractor } from "./verticals/ossinsight-collection-ranking.js";
-import { ossInsightCollectionsExtractor } from "./verticals/ossinsight-collections.js";
-import { ossInsightRepoAnalyticsExtractor } from "./verticals/ossinsight-repo-analytics.js";
-import { ossInsightTrendingReposExtractor } from "./verticals/ossinsight-trending-repos.js";
-import { pypiPackageExtractor } from "./verticals/pypi.js";
-import { redditExtractor } from "./verticals/reddit.js";
+} from "./verticals/huggingface.ts";
+import { npmPackageExtractor } from "./verticals/npm.ts";
+import { ossInsightCollectionRankingExtractor } from "./verticals/ossinsight-collection-ranking.ts";
+import { ossInsightCollectionsExtractor } from "./verticals/ossinsight-collections.ts";
+import { ossInsightRepoAnalyticsExtractor } from "./verticals/ossinsight-repo-analytics.ts";
+import { ossInsightTrendingReposExtractor } from "./verticals/ossinsight-trending-repos.ts";
+import { pypiPackageExtractor } from "./verticals/pypi.ts";
+import { redditExtractor } from "./verticals/reddit.ts";
 
 export const verticalExtractors = [
 	githubRepoExtractor,

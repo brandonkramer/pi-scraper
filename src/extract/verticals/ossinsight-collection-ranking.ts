@@ -1,8 +1,8 @@
 /**
  * @fileoverview extract verticals ossinsight-collection-ranking module.
  */
-import { capability, type VerticalExtractor } from "../capabilities.js";
-import { isOneOf, rowsOf, type OssInsightRows } from "./ossinsight-shared.js";
+import { capability, type VerticalExtractor } from "../capabilities.ts";
+import { isOneOf, rowsOf, type OssInsightRows } from "./ossinsight-shared.ts";
 
 const metrics = ["stars", "pull-requests", "issues"] as const;
 const periods = ["past_24_hours", "past_28_days", "past_month"] as const;

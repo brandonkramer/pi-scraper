@@ -5,9 +5,9 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { ResultEnvelope } from "../../types.js";
-import { webMapTool } from "../web-map.js";
-import { webScrapeTool } from "../web-scrape.js";
+import type { ResultEnvelope } from "../../types.ts";
+import { webMapTool } from "../web-map.ts";
+import { webScrapeTool } from "../web-scrape.ts";
 
 const liveEnabled = process.env.PI_SCRAPER_LIVE === "1";
 let homeDir: string;

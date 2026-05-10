@@ -1,7 +1,7 @@
 /**
  * @fileoverview url normalize module.
  */
-import { COMMON_TRACKING_QUERY_PARAMS } from "../defaults.js";
+import { COMMON_TRACKING_QUERY_PARAMS } from "../defaults.ts";
 
 export interface NormalizeUrlOptions {
   stripTrackingParams?: boolean;

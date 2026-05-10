@@ -2,7 +2,7 @@
  * @fileoverview Tests for deterministic section-range extraction.
  */
 import { describe, expect, it } from "vitest";
-import { inspectPatterns } from "../pattern.js";
+import { inspectPatterns } from "../pattern.ts";
 
 describe("inspectPatterns sections", () => {
 	it("extracts content between start and end markers", async () => {

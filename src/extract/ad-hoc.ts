@@ -1,10 +1,10 @@
 /**
  * @fileoverview extract ad-hoc module.
  */
-import type { ScrapeResult } from "../scrape/pipeline.js";
-import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.js";
-import type { CommonScrapeOptions } from "../types.js";
-import type { ModelAdapter } from "./model.js";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
+import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.ts";
+import type { CommonScrapeOptions } from "../types.ts";
+import type { ModelAdapter } from "./model.ts";
 
 export interface AdHocExtractOptions extends CommonScrapeOptions {
 	url?: string;

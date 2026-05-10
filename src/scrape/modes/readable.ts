@@ -1,9 +1,9 @@
 /**
  * @fileoverview scrape modes readable module.
  */
-import { extractReadable } from "../../parse/readable.js";
-import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.js";
-import { readableIsBetter } from "../signals.js";
+import { extractReadable } from "../../parse/readable.ts";
+import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
+import { readableIsBetter } from "../signals.ts";
 
 export async function withReadable(
 	result: ScrapeResult,

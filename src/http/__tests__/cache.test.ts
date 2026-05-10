@@ -6,8 +6,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockAgent } from "undici";
-import { closeStorageDbs } from "../../storage/db.js";
-import { createHttpClient } from "../client.js";
+import { closeStorageDbs } from "../../storage/db.ts";
+import { createHttpClient } from "../client.ts";
 
 let rootDir: string;
 let agent: MockAgent;

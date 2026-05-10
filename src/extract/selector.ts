@@ -8,7 +8,7 @@
 import type { Element } from "domhandler";
 import * as domutils from "domutils";
 import renderDom from "dom-serializer";
-import type { AdaptiveSelectorResult } from "../parse/adaptive-selector.js";
+import type { AdaptiveSelectorResult } from "../parse/adaptive-selector.ts";
 
 export interface SelectorExtractionOptions {
 	/** Output shape. */

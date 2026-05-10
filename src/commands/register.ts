@@ -1,8 +1,8 @@
 /**
  * @fileoverview commands register module.
  */
-import type { PiCommandRegistrar, WebCommand } from "./define.js";
-import { webSetModeCommand } from "./web-set-mode.js";
+import type { PiCommandRegistrar, WebCommand } from "./define.ts";
+import { webSetModeCommand } from "./web-set-mode.ts";
 
 export const webCommands: readonly WebCommand[] = [webSetModeCommand];
 

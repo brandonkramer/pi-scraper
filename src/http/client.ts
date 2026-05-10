@@ -5,45 +5,45 @@ import {
 	getOrCreateSession,
 	mergeSessionHeaders,
 	updateSessionCookies,
-} from "./session.js";
+} from "./session.ts";
 import { request, type Dispatcher } from "undici";
 import {
 	DEFAULT_MAX_BYTES,
 	DEFAULT_RETRY,
 	DEFAULT_TIMEOUT_SECONDS,
 	DEFAULT_USER_AGENT,
-} from "../defaults.js";
-import type { CommonRequestOptions } from "../types.js";
-import { normalizeHeaders } from "./download.js";
-import { HttpClientError, httpClientErrorFromUnknown } from "./errors.js";
-import { createDefaultDispatcher } from "./guarded-agent.js";
-import { PolitenessController, abortableSleep } from "./politeness.js";
-import { followRedirects } from "./redirects.js";
-import { fetchWithRequestPolicy } from "./request-policy.js";
+} from "../defaults.ts";
+import type { CommonRequestOptions } from "../types.ts";
+import { normalizeHeaders } from "./download.ts";
+import { HttpClientError, httpClientErrorFromUnknown } from "./errors.ts";
+import { createDefaultDispatcher } from "./guarded-agent.ts";
+import { PolitenessController, abortableSleep } from "./politeness.ts";
+import { followRedirects } from "./redirects.ts";
+import { fetchWithRequestPolicy } from "./request-policy.ts";
 import {
 	isRetryableStatus,
 	isIdempotentMethod,
 	parseRetryAfterMs,
 	retryDelayMs,
 	shouldStopRetrying,
-} from "./retry.js";
-import { RobotsCache } from "./robots.js";
+} from "./retry.ts";
+import { RobotsCache } from "./robots.ts";
 import {
 	materializeFetchStreamResponse,
 	type FetchUrlResult,
-} from "./response.js";
-import { withTimeout } from "./timeout.js";
-import { findFreshFetch, recordFetch } from "../storage/cache.js";
-import type { ResolveStorageOptions } from "../storage/paths.js";
+} from "./response.ts";
+import { withTimeout } from "./timeout.ts";
+import { findFreshFetch, recordFetch } from "../storage/cache.ts";
+import type { ResolveStorageOptions } from "../storage/paths.ts";
 import {
 	assertSafeFetchUrl,
 	type SafeUrlResult,
 	type UrlSafetyOptions,
-} from "./url-safety.js";
+} from "./url-safety.ts";
 
-export { HttpClientError } from "./errors.js";
-export { createFetchUrlResult } from "./response.js";
-export type { FetchUrlResult } from "./response.js";
+export { HttpClientError } from "./errors.ts";
+export { createFetchUrlResult } from "./response.ts";
+export type { FetchUrlResult } from "./response.ts";
 
 export interface HttpClientOptions extends UrlSafetyOptions {
 	dispatcher?: Dispatcher;

@@ -1,22 +1,22 @@
 /**
  * @fileoverview scrape pipeline module.
  */
-import { DEFAULT_OUTPUT_FORMAT, DEFAULT_SCRAPE_MODE } from "../defaults.js";
-import type { HttpClient } from "../http/client.js";
-import type { FingerprintFetchAdapter } from "../http/fingerprint.js";
-import type { RoutedContentKind } from "../parse/passthrough.js";
-import type { ReadableExtraction, extractReadable } from "../parse/readable.js";
+import { DEFAULT_OUTPUT_FORMAT, DEFAULT_SCRAPE_MODE } from "../defaults.ts";
+import type { HttpClient } from "../http/client.ts";
+import type { FingerprintFetchAdapter } from "../http/fingerprint.ts";
+import type { RoutedContentKind } from "../parse/passthrough.ts";
+import type { ReadableExtraction, extractReadable } from "../parse/readable.ts";
 import type {
 	CommonScrapeOptions,
 	OutputFormat,
 	ResultEnvelope,
 	ScrapeMode,
-} from "../types.js";
-import { finishResult, materializeFormat } from "./render.js";
-import type { ScrapeSignals } from "./signals.js";
-import { httpScrape } from "./modes/fast.js";
-import { scrapeErrorResult, scrapeStructuredError } from "./modes/shared.js";
-import type { BrowserRenderer } from "./modes/browser.js";
+} from "../types.ts";
+import { finishResult, materializeFormat } from "./render.ts";
+import type { ScrapeSignals } from "./signals.ts";
+import { httpScrape } from "./modes/fast.ts";
+import { scrapeErrorResult, scrapeStructuredError } from "./modes/shared.ts";
+import type { BrowserRenderer } from "./modes/browser.ts";
 
 export interface ScrapeData {
 	route: RoutedContentKind;
@@ -86,11 +86,11 @@ async function scrapeByMode(
 	signal?: AbortSignal,
 ): Promise<ScrapeResult> {
 	if (mode === "browser") {
-		const { browserScrape } = await import("./modes/browser.js");
+		const { browserScrape } = await import("./modes/browser.ts");
 		return browserScrape(input, format, options, deps, signal);
 	}
 	if (mode === "fingerprint") {
-		const { fingerprintScrape } = await import("./modes/fingerprint.js");
+		const { fingerprintScrape } = await import("./modes/fingerprint.ts");
 		return fingerprintScrape(input, format, options, deps, signal);
 	}
 
@@ -138,7 +138,7 @@ async function readableMode(
 	result: ScrapeResult,
 	deps: ScrapePipelineDeps,
 ): Promise<ScrapeResult> {
-	const { withReadable } = await import("./modes/readable.js");
+	const { withReadable } = await import("./modes/readable.ts");
 	return withReadable(result, deps);
 }
 
@@ -149,7 +149,7 @@ async function fingerprintMode(
 	deps: ScrapePipelineDeps,
 	signal?: AbortSignal,
 ): Promise<ScrapeResult | undefined> {
-	const { tryFingerprint } = await import("./modes/fingerprint.js");
+	const { tryFingerprint } = await import("./modes/fingerprint.ts");
 	return tryFingerprint(input, format, options, deps, signal);
 }
 
@@ -161,6 +161,6 @@ async function browserFallback(
 	fallback: ScrapeResult,
 	signal?: AbortSignal,
 ): Promise<ScrapeResult> {
-	const { tryBrowser } = await import("./modes/browser.js");
+	const { tryBrowser } = await import("./modes/browser.ts");
 	return tryBrowser(input, format, options, deps, fallback, signal);
 }

@@ -1,10 +1,10 @@
 /**
  * @fileoverview summarize page module.
  */
-import type { ModelAdapter } from "../extract/model.js";
-import type { ScrapeResult } from "../scrape/pipeline.js";
-import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.js";
-import type { CommonScrapeOptions } from "../types.js";
+import type { ModelAdapter } from "../extract/model.ts";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
+import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.ts";
+import type { CommonScrapeOptions } from "../types.ts";
 
 export interface PageSummaryOptions extends CommonScrapeOptions {
 	url?: string;

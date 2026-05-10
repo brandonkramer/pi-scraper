@@ -1,8 +1,8 @@
 /**
  * @fileoverview http politeness module.
  */
-import { DEFAULT_CONCURRENCY } from "../defaults.js";
-import { compactQueue } from "../url/dedupe.js";
+import { DEFAULT_CONCURRENCY } from "../defaults.ts";
+import { compactQueue } from "../url/dedupe.ts";
 
 export interface PolitenessOptions {
 	globalConcurrency?: number;

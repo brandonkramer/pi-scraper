@@ -1,8 +1,8 @@
 /**
  * @fileoverview parse alternates module.
  */
-import { type DomAdapter, loadDom } from "./dom-adapter.js";
-import { absoluteUrl } from "./selectors.js";
+import { type DomAdapter, loadDom } from "./dom-adapter.ts";
+import { absoluteUrl } from "./selectors.ts";
 
 export interface AlternateLink {
 	url: string;

@@ -5,22 +5,22 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ScrapeResult } from "../../scrape/pipeline.js";
-import { closeStorageDbs } from "../../storage/db.js";
-import { getStoredResult } from "../../storage/results.js";
-import type { ResultEnvelope } from "../../types.js";
-import { webCrawlTool } from "../web-crawl.js";
-import { webGetResultTool } from "../web-get-result.js";
+import type { ScrapeResult } from "../../scrape/pipeline.ts";
+import { closeStorageDbs } from "../../storage/db.ts";
+import { getStoredResult } from "../../storage/results.ts";
+import type { ResultEnvelope } from "../../types.ts";
+import { webCrawlTool } from "../web-crawl.ts";
+import { webGetResultTool } from "../web-get-result.ts";
 
 let crawlRunCount = 0;
 
-vi.mock("../../crawl/runner.js", () => ({
+vi.mock("../../crawl/runner.ts", () => ({
 	runCrawl: vi.fn(async (seedUrl: string) => {
 		const { createCrawlState, saveCrawlState } = await import(
-			"../../crawl/state.js"
+			"../../crawl/state.ts"
 		);
 		const { createJobManifest, writeJobManifest } = await import(
-			"../../storage/jobs.js"
+			"../../storage/jobs.ts"
 		);
 		const crawlId = `crawl-api-surface-${++crawlRunCount}`;
 		const state = createCrawlState(seedUrl, crawlId);

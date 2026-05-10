@@ -7,9 +7,9 @@ import {
 	extractDomLinks,
 	type DomHeading,
 	type DomLink,
-} from "./document-elements.js";
-import type { DomAdapter } from "./dom-adapter.js";
-import { absoluteUrl } from "./selectors.js";
+} from "./document-elements.ts";
+import type { DomAdapter } from "./dom-adapter.ts";
+import { absoluteUrl } from "./selectors.ts";
 
 export interface PageMetadata {
 	title?: string;

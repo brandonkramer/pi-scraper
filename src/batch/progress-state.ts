@@ -1,0 +1,131 @@
+/**
+ * @fileoverview Batch/crawl progress view state and update helpers.
+ */
+import type { BatchItemResult } from "./run.ts";
+import type { ProgressDetails } from "../types.ts";
+
+export type BatchProgressStatus = "queued" | "processing" | "done" | "error";
+
+export interface BatchProgressItemView {
+	url: string;
+	status: BatchProgressStatus;
+	error?: string;
+	progress?: number;
+	startedAtMs?: number;
+}
+
+export interface BatchProgressView {
+	total: number;
+	completed: number;
+	succeeded: number;
+	failed: number;
+	concurrency: number;
+	items: BatchProgressItemView[];
+	label?: string;
+}
+
+export function isBatchProgress(
+	details: ProgressDetails<unknown>,
+): details is ProgressDetails<{
+	batchProgress: BatchProgressView;
+	spinnerTick?: number;
+}> {
+	const data = details.data as { batchProgress?: unknown } | undefined;
+	return isBatchProgressView(data?.batchProgress);
+}
+
+export function isBatchProgressView(
+	value: unknown,
+): value is BatchProgressView {
+	return typeof value === "object" && value !== null && "items" in value;
+}
+
+export function cloneBatchProgress(
+	progress: BatchProgressView,
+): BatchProgressView {
+	return { ...progress, items: progress.items.map((item) => ({ ...item })) };
+}
+
+export function updateIndexedBatchProgress(
+	progress: BatchProgressView,
+	state: BatchProgressStatus,
+	current: number,
+	url?: string,
+): void {
+	if (state === "queued") return;
+	const index = state === "processing" ? current : current - 1;
+	const item = progress.items[index];
+	if (!item) return;
+	applyProgressItemStatus(item, state, url);
+	recountBatchProgress(progress);
+}
+
+export function updateUrlBatchProgress(
+	progress: BatchProgressView,
+	state: string,
+	url?: string,
+): void {
+	if (!url) return;
+	const status = batchStatusFromState(state);
+	let item = progress.items.find((entry) => entry.url === url);
+	if (!item) {
+		item = { url, status: "queued" };
+		progress.items.push(item);
+	}
+	applyProgressItemStatus(item, status, url);
+	progress.total = Math.max(progress.total, progress.items.length);
+	recountBatchProgress(progress);
+}
+
+function applyProgressItemStatus(
+	item: BatchProgressItemView,
+	status: BatchProgressStatus,
+	url?: string,
+): void {
+	item.status = status;
+	if (status === "processing" && typeof item.startedAtMs !== "number")
+		item.startedAtMs = Date.now();
+	if (status === "done") item.progress = 1;
+	if (url) item.url = url;
+}
+
+function batchStatusFromState(state: string): BatchProgressStatus {
+	if (state === "done" || state === "error" || state === "processing")
+		return state;
+	return state === "queued" || state === "waiting" ? "queued" : "processing";
+}
+
+function recountBatchProgress(progress: BatchProgressView): void {
+	progress.completed = progress.items.filter(
+		(entry) => entry.status === "done" || entry.status === "error",
+	).length;
+	progress.succeeded = progress.items.filter(
+		(entry) => entry.status === "done",
+	).length;
+	progress.failed = progress.items.filter(
+		(entry) => entry.status === "error",
+	).length;
+}
+
+export function batchProgressFromItems(
+	items: readonly BatchItemResult[],
+	concurrency?: number,
+): BatchProgressView {
+	const succeeded = items.filter((item) => item.ok === true).length;
+	const failed = items.length - succeeded;
+	return {
+		total: items.length,
+		completed: items.length,
+		succeeded,
+		failed,
+		concurrency: concurrency ?? items.length,
+		items: items.map((item) => ({
+			url:
+				item.ok && item.result
+					? (item.result.finalUrl ?? item.result.url ?? item.url)
+					: item.url,
+			status: item.ok === false ? "error" : "done",
+			error: item.ok === false ? item.error?.message : undefined,
+		})),
+	};
+}

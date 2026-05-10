@@ -5,9 +5,9 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { FetchUrlResult } from "../../http/client.js";
-import { runCrawl } from "../runner.js";
-import { loadCrawlMetadata, loadCrawlState } from "../state.js";
+import type { FetchUrlResult } from "../../http/client.ts";
+import { runCrawl } from "../runner.ts";
+import { loadCrawlMetadata, loadCrawlState } from "../state.ts";
 
 let rootDir: string;
 

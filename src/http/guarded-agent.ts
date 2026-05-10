@@ -3,7 +3,7 @@
  */
 import { lookup as dnsLookup, type LookupAddress, type LookupOptions } from "node:dns";
 import { Agent, type Dispatcher } from "undici";
-import { assertPublicAddresses, type UrlSafetyOptions } from "./url-safety.js";
+import { assertPublicAddresses, type UrlSafetyOptions } from "./url-safety.ts";
 
 export function createDefaultDispatcher(options: UrlSafetyOptions): Dispatcher {
   // DNS rebinding mitigation for the default Undici path: preflight URL

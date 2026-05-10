@@ -1,9 +1,9 @@
 /**
  * @fileoverview Pi terminal UI stacked result card primitive.
  */
-import type { RenderComponent, RenderTheme } from "../tools/define.js";
-import { muted } from "./theme.js";
-import { renderText } from "./text.js";
+import type { RenderComponent, RenderTheme } from "./types.ts";
+import { muted } from "./theme.ts";
+import { renderText } from "./text.ts";
 
 export interface StackedResultCardOptions {
 	body: string | ((width: number) => string);

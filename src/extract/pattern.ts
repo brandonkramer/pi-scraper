@@ -1,20 +1,20 @@
 /**
  * @fileoverview extract pattern module.
  */
-import type { ScrapeResult } from "../scrape/pipeline.js";
-import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.js";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
+import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.ts";
 import {
 	selectSymbolContent,
 	type ExtractSchemaPreset,
 	type SymbolIncludeFilter,
 	type SymbolSelectionResult,
-} from "./symbol-selection.js";
+} from "./symbol-selection.ts";
 import {
 	evaluateJsonPaths,
 	flattenJsonValues,
 	isSupportedJsonPath,
 	parseJsonSafe,
-} from "./json-path.js";
+} from "./json-path.ts";
 import {
 	inspectContains,
 	inspectExcerpts,
@@ -25,15 +25,15 @@ import {
 	PatternInspectError,
 	type PatternExcerptRequest,
 	type PatternRegexRequest,
-} from "./pattern-inspect-ops.js";
-import type { CommonScrapeOptions, OutputFormat } from "../types.js";
+} from "./pattern-inspect-ops.ts";
+import type { CommonScrapeOptions, OutputFormat } from "../types.ts";
 
 const SOURCE_FORMATS = ["text", "markdown", "html", "json"] as const;
 
 export type PatternSourceFormat = (typeof SOURCE_FORMATS)[number];
 
 export type PatternSectionRequest =
-	import("./section-ranges.js").SectionRangeRequest;
+	import("./section-ranges.ts").SectionRangeRequest;
 
 export interface PatternInspectOptions
 	extends Omit<CommonScrapeOptions, "include"> {
@@ -96,7 +96,7 @@ export interface PatternInspectResult {
 		totalMatches: number;
 		truncated: boolean;
 	}>;
-	sections?: import("./section-ranges.js").SectionRangeResult[];
+	sections?: import("./section-ranges.ts").SectionRangeResult[];
 	selection?: SymbolSelectionResult;
 }
 
@@ -317,4 +317,4 @@ function contentForFormat(
 export {
 	PatternExcerptRequest,
 	PatternRegexRequest,
-} from "./pattern-inspect-ops.js";
+} from "./pattern-inspect-ops.ts";

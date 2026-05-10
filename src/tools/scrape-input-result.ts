@@ -1,9 +1,9 @@
 /**
  * @fileoverview Shared result shaping for model-backed scrape-input tools.
  */
-import type { OutputFormat, ResultEnvelope, TimingInfo } from "../types.js";
-import { qualityFromCache, storedResultGuidance } from "./agentic-context.js";
-import { toolResult } from "./result.js";
+import type { OutputFormat, ResultEnvelope, TimingInfo } from "../types.ts";
+import { qualityFromCache, storedResultGuidance } from "./agentic-context.ts";
+import { toolResult } from "./result.ts";
 
 interface ScrapeInputSource {
 	source: string;
@@ -71,4 +71,25 @@ export function scrapeInputSummary(
 ): string {
 	const scrape = input.scrape;
 	return `${verb} ${input.source}${scrape?.cache?.cached ? cachedPhrase : scrape ? freshPhrase : " input"}.`;
+}
+
+export function buildSummarizeToolResult(
+	result: { input: ScrapeInputSource; summary: string; raw?: unknown },
+	fallbackUrl?: string,
+) {
+	const summary = scrapeInputSummary(
+		"Summarized",
+		result.input,
+		" from fresh scrape input",
+		" from cached scrape input",
+	);
+	return scrapeInputToolResult({
+		text: result.summary,
+		data: result,
+		input: result.input,
+		fallbackUrl,
+		summary,
+		answerContext: `${summary} Refresh the source page before summarizing time-sensitive facts.`,
+		formatFallback: "markdown",
+	});
 }

@@ -5,10 +5,10 @@ import {
 	buildContextPackage,
 	type ContextPackage,
 	type ContextPackageSource,
-} from "../extract/context-package.js";
-import type { ScrapeResult } from "../scrape/pipeline.js";
-import { writeCrawlContextPackage } from "../storage/context-packages.js";
-import { storeResult } from "../storage/results.js";
+} from "../extract/context-package.ts";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
+import { writeCrawlContextPackage } from "./context-packages.ts";
+import { storeResult } from "./results.ts";
 
 export interface ContextPackagePageInput {
 	url: string;
