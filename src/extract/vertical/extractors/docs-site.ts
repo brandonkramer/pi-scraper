@@ -11,7 +11,7 @@ import {
 	stripUndefined,
 	titleCase,
 	truncateText,
-} from "../../shared/html.ts";
+} from "../../shared/text.ts";
 import {
 	extractHeadingSections,
 	firstTextBySelector,

@@ -9,7 +9,7 @@ import type { AnyNode } from "domhandler";
 import * as domutils from "domutils";
 import { parseDocument } from "htmlparser2";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
-import { cleanText, stripUndefined, titleCase, truncateText } from "../shared/html.ts";
+import { cleanText, stripUndefined, titleCase, truncateText } from "../shared/text.ts";
 import { parseMarkdown as sharedMarkdownParse } from "../../parse/markup/doc.ts";
 import {
 	extractHeadingSections,

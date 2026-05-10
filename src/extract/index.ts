@@ -9,4 +9,5 @@ export * from "./selector/runner.ts";
 export * from "./adhoc/index.ts";
 export * from "./api-surface/index.ts";
 export * from "./context-package/index.ts";
+export * from "./shared/text.ts";
 export * from "./shared/html.ts";

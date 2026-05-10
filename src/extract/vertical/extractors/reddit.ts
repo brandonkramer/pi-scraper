@@ -6,7 +6,7 @@ import {
 	hasStructuredError,
 } from "../../../http/errors.ts";
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
-import { stripUndefined } from "../../shared/html.ts";
+import { stripUndefined } from "../../shared/text.ts";
 const COMMENT_LIMIT = 5;
 interface RedditPostData {
 	id?: string;

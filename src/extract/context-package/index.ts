@@ -8,52 +8,25 @@
  */
 import { PI_TRUNCATION_LIMITS } from "../../defaults.ts";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
+import type {
+	ContextPackage,
+	BuildContextPackageInput,
+	ContextPackageEntry,
+	ContextPackagePage,
+} from "./types.ts";
+
+export {
+	ContextPackage,
+	BuildContextPackageInput,
+	ContextPackageEntry,
+	ContextPackagePage,
+	ContextPackageMetadata,
+	ContextPackageSource,
+} from "./types.ts";
 
 const DEFAULT_EXCERPT_CHARS = 800;
 const MIN_EXCERPT_CHARS = 120;
 const SUMMARY_CHARS = 220;
-
-export type ContextPackageSource = "crawl" | "batch";
-
-export interface ContextPackagePage {
-	url: string;
-	result: ScrapeResult;
-	responseId?: string;
-}
-
-export interface ContextPackageMetadata {
-	source: ContextPackageSource;
-	crawlId?: string;
-	batchId?: string;
-	createdAt: string;
-	urlCount: number;
-	totalChars: number;
-	truncated: boolean;
-}
-
-export interface ContextPackageEntry {
-	url: string;
-	title?: string;
-	breadcrumbs?: string[];
-	summary?: string;
-	children?: Array<{ url: string; title?: string }>;
-	contentRef?: string;
-	excerpt?: string;
-}
-
-export interface ContextPackage {
-	package: ContextPackageMetadata;
-	tree: ContextPackageEntry[];
-}
-
-export interface BuildContextPackageInput {
-	source: ContextPackageSource;
-	crawlId?: string;
-	batchId?: string;
-	pages: readonly ContextPackagePage[];
-	createdAt?: string;
-	maxBytes?: number;
-}
 
 export function buildContextPackage(
 	input: BuildContextPackageInput,

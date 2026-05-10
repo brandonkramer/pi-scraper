@@ -1,7 +1,7 @@
 /**
  * @fileoverview extract verticals arxiv module.
  */
-import { cleanText as sharedCleanText } from "../../shared/html.ts";
+import { cleanText as sharedCleanText } from "../../shared/text.ts";
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 export const arxivExtractor: VerticalExtractor = {

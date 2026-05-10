@@ -6,10 +6,10 @@ import type { AnyNode, Element } from "domhandler";
 import * as domutils from "domutils";
 import {
 	cleanText,
-	followingSectionNodes,
 	stripUndefined,
 	truncateText,
-} from "../shared/html.ts";
+} from "./text.ts";
+import { followingSectionNodes } from "./html.ts";
 
 export interface ExtractedCodeBlock {
 	language?: string;
