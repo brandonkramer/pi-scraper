@@ -22,9 +22,11 @@ import {
 	sessionNotice,
 } from "../../tui/envelope.ts";
 import { renderStackedResultCard } from "../../tui/stacked.ts";
+import { Markdown } from "@earendil-works/pi-tui";
 import { formatPreview, renderMetadataLines } from "../../tui/preview.ts";
 import { isFileResult, renderFileResultCard } from "../../tui/file.ts";
 import { formatBytes, formatDuration } from "../../tui/format.ts";
+import { getMarkdownTheme } from "../../tui/theme.ts";
 
 export function renderWebScrapeResult(
 	result: PiToolShell,
@@ -132,6 +134,12 @@ function renderScrapeResultCard(
 			notice: options.notice,
 			expandedSections: (width) =>
 				scrapeExpandedSections(envelope, options, width, theme),
+			markdownPreview: (_width) =>
+				markdownPreviewComponent(
+					envelope.format,
+					options.preview,
+					theme,
+				),
 			responseId: options.responseId,
 		},
 		theme,
@@ -154,6 +162,15 @@ function renderScrapeRow(
 	});
 }
 
+function markdownPreviewComponent(
+	format: string | undefined,
+	preview: string | undefined,
+	theme?: RenderTheme,
+): RenderComponent | undefined {
+	if (format !== "markdown" || !preview || preview.length <= 100) return undefined;
+	return new Markdown(preview.slice(0, 1200), 0, 0, getMarkdownTheme(theme));
+}
+
 function scrapeExpandedSections(
 	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
 	options: { preview?: string },
@@ -166,7 +183,10 @@ function scrapeExpandedSections(
 	const sections = [scrapeExpandedDetails(envelope)];
 	const meta = renderMetadataLines(envelope.data, theme);
 	if (meta) sections.push(meta);
-	if (options.preview)
+	if (
+		options.preview &&
+		!markdownPreviewComponent(envelope.format, options.preview, theme)
+	)
 		sections.push(
 			formatPreview(envelope.format, options.preview).slice(0, 1200),
 		);

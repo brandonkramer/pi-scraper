@@ -11,6 +11,8 @@ export interface StackedResultCardOptions {
 	expanded?: boolean;
 	notice?: string;
 	expandedSections?: (width: number) => Array<string | undefined>;
+	/** Optional Markdown component rendered inline after text sections when expanded. */
+	markdownPreview?: (width: number) => RenderComponent | undefined;
 	responseId?: string;
 	padToWidth?: boolean;
 }
@@ -33,9 +35,11 @@ export function renderStackedResultCard(
 				if (options.responseId)
 					lines.push("", muted(`responseId: ${options.responseId}`, theme));
 			}
-			return renderText(lines.join("\n"), {
+			const result = renderText(lines.join("\n"), {
 				padToWidth: options.padToWidth !== false,
 			}).render(width);
+			const md = options.markdownPreview?.(width);
+			return md ? [...result, "", ...md.render(width)] : result;
 		},
 		invalidate() {},
 	};
