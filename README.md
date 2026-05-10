@@ -62,86 +62,6 @@ Capability labels:
 | Browser optional | Uses lazy Playwright only when requested or auto-escalation justifies it.               |
 | Model/LLM        | Needs Pi's selected model or a configured model adapter after scraping clean page text. |
 
-## Model adapters
-
-`web_summarize` and `web_extract action="adhoc"` need an LLM transport. Pi-scraper exposes a generic `pi:model-adapter/*` event protocol over `pi.events` so any other Pi extension can register itself as a provider — without either side importing the other.
-
-When a provider is registered, the tools route through it automatically. When none is registered, the tools return `MODEL_ADAPTER_MISSING` and the LLM can fall back to `web_scrape` + summarize-in-reply.
-
-### Capabilities
-
-| Capability  | Used by                      |
-| ----------- | ---------------------------- |
-| `summarize` | `web_summarize`              |
-| `extract`   | `web_extract action="adhoc"` |
-| `analyze`   | (reserved for future tools)  |
-| `chat`      | (reserved for future tools)  |
-
-### Event protocol
-
-| Event                         | Direction             | Payload             | Purpose                                         |
-| ----------------------------- | --------------------- | ------------------- | ----------------------------------------------- |
-| `pi:model-adapter/register`   | provider → pi-scraper | `RegisteredAdapter` | Announce availability                           |
-| `pi:model-adapter/unregister` | provider → pi-scraper | `{ id: string }`    | Withdraw (hot-reload / dispose)                 |
-| `pi:model-adapter/discover`   | pi-scraper → provider | `{}`                | Ask any already-loaded providers to re-announce |
-
-```ts
-interface RegisteredAdapter {
-  id: string; // unique kebab-case, e.g. "gemini-acp"
-  label: string; // human-readable
-  capabilities: ModelCapability[]; // declared honestly
-  priority: number; // higher wins in "auto"
-  adapter: { run(req, signal): Promise<ModelResponse> };
-}
-```
-
-### Configuration (highest priority wins)
-
-| Layer       | Mechanism                                                           | Use                      |
-| ----------- | ------------------------------------------------------------------- | ------------------------ |
-| Per-call    | `provider` param on the tool call                                   | LLM routes a single call |
-| Pi flag     | `--web-model-provider=auto\|<id>\|off`                              | Per Pi session           |
-| Env var     | `PI_WEB_MODEL_PROVIDER`                                             | Shell / scripts          |
-| Config file | `modelProvider` (string or `{ summarize, extract, analyze, chat }`) | Persistent default       |
-| Hardcoded   | `"auto"`                                                            | Out-of-box               |
-
-`"auto"` picks the highest-priority registered adapter that supports the requested capability. `"off"` returns `MODEL_ADAPTER_MISSING` (and, if set at config-level, hides the model-backed tools from Pi's tool list).
-
-### Error codes
-
-| Code                         | Meaning                                                               |
-| ---------------------------- | --------------------------------------------------------------------- |
-| `MODEL_ADAPTER_MISSING`      | No adapter resolved; LLM is redirected to `web_scrape`                |
-| `MODEL_ADAPTER_NOT_FOUND`    | Explicit ID requested but not registered (error lists registered IDs) |
-| `MODEL_ADAPTER_INCOMPATIBLE` | Adapter is registered but does not declare the requested capability   |
-
-### Implementing an adapter (for extension authors)
-
-```ts
-// In your extension's default factory:
-pi.events?.emit?.("pi:model-adapter/register", {
-  id: "my-adapter",
-  label: "My Adapter",
-  capabilities: ["summarize"],
-  priority: 50,
-  adapter: {
-    async run(req, signal) {
-      // req.task: "summarize" | "extract"
-      // req.input: page text
-      // req.prompt: optional instructions
-      // Return: { data, text?, raw? }
-    },
-  },
-});
-
-// Re-announce when pi-scraper requests discovery (handles load order):
-pi.events?.on?.("pi:model-adapter/discover", () => {
-  pi.events?.emit?.("pi:model-adapter/register" /* same payload */);
-});
-```
-
-See [`pi-gemini-acp`](https://github.com/brandonkramer/pi-gemini-acp) for a reference implementation that lends Gemini as a summarize adapter.
-
 ## Parameter quick reference
 
 | Area             | Parameters                                                                                                                                          |
@@ -299,6 +219,84 @@ Persistent paths:
 ## Packaged skill
 
 Includes the compact `web-scraping` Pi skill for tool routing.
+
+## Model adapters
+
+`web_summarize` and `web_extract action="adhoc"` need an LLM transport. Pi-scraper exposes a generic `pi:model-adapter/*` event protocol over `pi.events` so any other Pi extension can register itself as a provider — without either side importing the other.
+
+When a provider is registered, the tools route through it automatically. When none is registered, the tools return `MODEL_ADAPTER_MISSING` and the LLM can fall back to `web_scrape` + summarize-in-reply.
+
+### Capabilities
+
+| Capability  | Used by                      |
+| ----------- | ---------------------------- |
+| `summarize` | `web_summarize`              |
+| `extract`   | `web_extract action="adhoc"` |
+| `analyze`   | (reserved for future tools)  |
+| `chat`      | (reserved for future tools)  |
+
+### Event protocol
+
+| Event                         | Direction             | Payload             | Purpose                                         |
+| ----------------------------- | --------------------- | ------------------- | ----------------------------------------------- |
+| `pi:model-adapter/register`   | provider → pi-scraper | `RegisteredAdapter` | Announce availability                           |
+| `pi:model-adapter/unregister` | provider → pi-scraper | `{ id: string }`    | Withdraw (hot-reload / dispose)                 |
+| `pi:model-adapter/discover`   | pi-scraper → provider | `{}`                | Ask any already-loaded providers to re-announce |
+
+```ts
+interface RegisteredAdapter {
+  id: string; // unique kebab-case, e.g. "gemini-acp"
+  label: string; // human-readable
+  capabilities: ModelCapability[]; // declared honestly
+  priority: number; // higher wins in "auto"
+  adapter: { run(req, signal): Promise<ModelResponse> };
+}
+```
+
+### Configuration (highest priority wins)
+
+| Layer       | Mechanism                                                           | Use                      |
+| ----------- | ------------------------------------------------------------------- | ------------------------ |
+| Per-call    | `provider` param on the tool call                                   | LLM routes a single call |
+| Pi flag     | `--web-model-provider=auto\|<id>\|off`                              | Per Pi session           |
+| Env var     | `PI_WEB_MODEL_PROVIDER`                                             | Shell / scripts          |
+| Config file | `modelProvider` (string or `{ summarize, extract, analyze, chat }`) | Persistent default       |
+| Hardcoded   | `"auto"`                                                            | Out-of-box               |
+
+`"auto"` picks the highest-priority registered adapter that supports the requested capability. `"off"` returns `MODEL_ADAPTER_MISSING` (and, if set at config-level, hides the model-backed tools from Pi's tool list).
+
+### Error codes
+
+| Code                         | Meaning                                                               |
+| ---------------------------- | --------------------------------------------------------------------- |
+| `MODEL_ADAPTER_MISSING`      | No adapter resolved; LLM is redirected to `web_scrape`                |
+| `MODEL_ADAPTER_NOT_FOUND`    | Explicit ID requested but not registered (error lists registered IDs) |
+| `MODEL_ADAPTER_INCOMPATIBLE` | Adapter is registered but does not declare the requested capability   |
+
+### Implementing an adapter
+
+```ts
+// In your extension's default factory:
+pi.events?.emit?.("pi:model-adapter/register", {
+  id: "my-adapter",
+  label: "My Adapter",
+  capabilities: ["summarize"],
+  priority: 50,
+  adapter: {
+    async run(req, signal) {
+      // req.task: "summarize" | "extract"
+      // req.input: page text
+      // req.prompt: optional instructions
+      // Return: { data, text?, raw? }
+    },
+  },
+});
+
+// Re-announce when pi-scraper requests discovery (handles load order):
+pi.events?.on?.("pi:model-adapter/discover", () => {
+  pi.events?.emit?.("pi:model-adapter/register" /* same payload */);
+});
+```
 
 ## Development and release checks
 
