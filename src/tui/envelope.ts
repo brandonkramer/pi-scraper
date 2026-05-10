@@ -3,6 +3,7 @@
  */
 import { Markdown } from "@earendil-works/pi-tui";
 import type { PiToolShell, ResultEnvelope, StructuredError } from "../types.ts";
+import type { ModelUsage } from "../extract/adhoc/model.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 import { renderText } from "./text.ts";
 import { getMarkdownTheme } from "./theme.ts";
@@ -97,6 +98,12 @@ function expandedEnvelopeText(
 	if (details?.freshness?.stale) {
 		lines.push("", "Freshness: stale; refresh source if time-sensitive.");
 	}
+	const usageLine = details?.modelUsage
+		? formatModelUsage(details.modelUsage)
+		: undefined;
+	if (usageLine) {
+		lines.push("", usageLine);
+	}
 	if (details?.nextActions?.length) {
 		lines.push(
 			"",
@@ -110,4 +117,23 @@ function expandedEnvelopeText(
 		);
 	}
 	return lines.join("\n");
+}
+
+/** Build a compact one-line usage footer. Returns undefined when no fields are presentable. */
+function formatModelUsage(u: ModelUsage): string | undefined {
+	const parts: string[] = [];
+	if (u.provider) parts.push(u.provider);
+	if (u.model) parts.push(u.model);
+	if (typeof u.inputTokens === "number") parts.push(`${u.inputTokens} in`);
+	if (typeof u.outputTokens === "number") parts.push(`${u.outputTokens} out`);
+	if (typeof u.totalTokens === "number") parts.push(`${u.totalTokens} total`);
+	if (typeof u.costUSD === "number") parts.push(formatCostUSD(u.costUSD));
+	return parts.length ? parts.join(" · ") : undefined;
+}
+
+function formatCostUSD(cost: number): string {
+	if (cost === 0) return "$0";
+	if (cost < 0.0001) return `~$${cost.toExponential(1)}`;
+	if (cost < 1) return `$${cost.toFixed(4)}`;
+	return `$${cost.toFixed(2)}`;
 }
