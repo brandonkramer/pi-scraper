@@ -5,14 +5,14 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { htmlToMarkdown } from "../../serialize/markdown.ts";
-import { discoverAlternateLinksFromDom } from "../alternates.ts";
-import { loadDom } from "../dom-adapter.ts";
+import { discoverAlternateLinksFromDom } from "../discovery/alternates.ts";
+import { loadDom } from "../dom/adapter.ts";
 import {
 	extractFastPage,
 	extractFastPageFromDom,
 	type FastExtractOptions,
-} from "../fast.ts";
-import { loadHtmlparser2Dom } from "../htmlparser2-dom-adapter.ts";
+} from "../page/fast.ts";
+import { loadHtmlparser2Dom } from "../dom/htmlparser2.ts";
 
 const baseUrl = "https://example.com/docs/page";
 

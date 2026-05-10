@@ -1,7 +1,7 @@
 /**
  * @fileoverview scrape modes readable module.
  */
-import { extractReadable } from "../../parse/readable.ts";
+import { extractReadable } from "../../parse/page/readable.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
 import { readableIsBetter } from "../signals.ts";
 

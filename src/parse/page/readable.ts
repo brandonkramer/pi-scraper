@@ -3,7 +3,7 @@
  */
 import { Readability, isProbablyReaderable } from "@mozilla/readability";
 import { parseHTML } from "linkedom";
-import { normalizeWhitespace } from "../serialize/text.ts";
+import { normalizeWhitespace } from "../../serialize/text.ts";
 
 export interface ReadableExtraction {
   ok: boolean;

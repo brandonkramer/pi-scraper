@@ -4,14 +4,14 @@
 import type { ProgressDetails } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 import { renderText } from "./text.ts";
-import { renderStatusGlyph, renderStatusPill } from "./status-pill.ts";
+import { renderStatusGlyph, renderStatusPill } from "./pill.ts";
 import {
 	activityCountSegment,
 	failureCountSegment,
 	successCountSegment,
-} from "./count-segments.ts";
+} from "./counts.ts";
 import { formatChecklistItem, formatChecklistText } from "./checklist.ts";
-import type { StatusPillState } from "./status-pill.ts";
+import type { StatusPillState } from "./pill.ts";
 
 export function renderProgressBar(progress: number, width = 12): string {
 	const clamped = Math.max(0, Math.min(1, progress));
@@ -93,9 +93,9 @@ export function renderProgressCard(
 										theme,
 									)
 								: `${counts.cacheHits} cache hits`,
-						]
-							.filter(Boolean)
-							.join(" · "),
+					]
+						.filter(Boolean)
+						.join(" · "),
 				);
 			}
 			return renderText(lines.filter(Boolean).join("\n"), {

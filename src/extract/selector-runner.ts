@@ -9,7 +9,7 @@ import {
 import {
 	runAdaptiveSelector,
 	type AdaptiveSelectorOptions,
-} from "../parse/adaptive-selector.ts";
+} from "../parse/adaptive/selector.ts";
 import {
 	extractFromSelectorResult,
 	type SelectorExtractionResult,
@@ -98,7 +98,7 @@ export async function runSelectorExtraction(
 			try {
 				return JSON.parse(
 					stored.fingerprintJson,
-				) as import("../parse/element-fingerprint.ts").ElementFingerprint;
+				) as import("../parse/adaptive/fingerprint.ts").ElementFingerprint;
 			} catch {
 				return undefined;
 			}

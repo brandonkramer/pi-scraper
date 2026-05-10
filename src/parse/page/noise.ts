@@ -1,8 +1,8 @@
 /**
  * @fileoverview parse noise module.
  */
-import type { DomAdapter, DomNode, DomSelection } from "./dom-adapter.ts";
-import { visibleText } from "./selectors.ts";
+import type { DomAdapter, DomNode, DomSelection } from "../dom/adapter.ts";
+import { visibleText } from "../dom/selectors.ts";
 
 export interface MainContentCandidate {
 	selector: string;

@@ -3,8 +3,8 @@
 import {
 	docstringsToMarkdown,
 	type ParsedDocstrings,
-} from "../parse/docstrings.ts";
-import type { MarkupDocument } from "../parse/markup-doc.ts";
+} from "../parse/markup/docstrings.ts";
+import type { MarkupDocument } from "../parse/markup/doc.ts";
 
 export function markupDocumentToMarkdown(document: MarkupDocument): string {
 	return document.markdown || document.text;

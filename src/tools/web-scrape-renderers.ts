@@ -21,9 +21,9 @@ import {
 	freshnessLabel,
 	sessionNotice,
 } from "../tui/envelope.ts";
-import { renderStackedResultCard } from "../tui/stacked-result-card.ts";
+import { renderStackedResultCard } from "../tui/stacked.ts";
 import { formatPreview, renderMetadataLines } from "../tui/preview.ts";
-import { isFileResult, renderFileResultCard } from "../tui/file-result-card.ts";
+import { isFileResult, renderFileResultCard } from "../tui/file.ts";
 import { formatBytes, formatDuration } from "../tui/format.ts";
 
 export function renderWebScrapeResult(

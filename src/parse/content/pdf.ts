@@ -1,7 +1,7 @@
 /**
  * @fileoverview parse pdf module.
  */
-import { abortable, throwIfAborted } from "../http/abort.ts";
+import { abortable, throwIfAborted } from "../../http/abort.ts";
 
 const PDF_ABORT_MESSAGE = "PDF extraction aborted";
 

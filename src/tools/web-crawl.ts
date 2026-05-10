@@ -5,7 +5,7 @@ import { type Static, Type } from "@earendil-works/pi-ai";
 import { defineWebTool } from "./define.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { renderWebCrawlResult } from "./web-crawl-renderers.ts";
-import { renderSimpleCall } from "../tui/simple-call.ts";
+import { renderSimpleCall } from "../tui/call.ts";
 import { sessionOptionSchema, urlProperty } from "./schemas.ts";
 import { crawlRun } from "./web-crawl-run.ts";
 import { crawlStatus, crawlList } from "./web-crawl-status.ts";

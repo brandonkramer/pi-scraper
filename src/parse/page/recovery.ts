@@ -1,9 +1,9 @@
 /**
  * @fileoverview parse recovery module.
  */
-import { dedupeBy } from "../url/dedupe.ts";
-import type { DomAdapter } from "./dom-adapter.ts";
-import { absoluteUrl } from "./selectors.ts";
+import { dedupeBy } from "../../url/dedupe.ts";
+import type { DomAdapter } from "../dom/adapter.ts";
+import { absoluteUrl } from "../dom/selectors.ts";
 
 export interface RecoveredContent {
 	kind: "heading" | "hero" | "announcement" | "footer_link";

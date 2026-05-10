@@ -6,7 +6,7 @@ import renderDom from "dom-serializer";
 import type { AnyNode, Document } from "domhandler";
 import * as domutils from "domutils";
 import { parseDocument } from "htmlparser2";
-import type { DomAdapter, DomNode, DomSelection } from "./dom-adapter.ts";
+import type { DomAdapter, DomNode, DomSelection } from "../dom/adapter.ts";
 
 class Htmlparser2DomSelection implements DomSelection {
 	readonly adapterKind = "dom-selection" as const;

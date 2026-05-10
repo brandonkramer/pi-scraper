@@ -7,7 +7,7 @@ import { getJobManifest } from "../storage/jobs/manifest.ts";
 import { readResponse } from "../storage/responses/read.ts";
 import { defineWebTool } from "./define.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
-import { renderSimpleCall } from "../tui/simple-call.ts";
+import { renderSimpleCall } from "../tui/call.ts";
 import { errorResult, structuredToolError, toolResult } from "./result.ts";
 
 export const webGetResultSchema = Type.Object({

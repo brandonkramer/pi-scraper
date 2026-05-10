@@ -3,15 +3,15 @@
  */
 import type { FetchUrlResult, HttpClient } from "../../http/client.ts";
 import { createHttpClient } from "../../http/client.ts";
-import { parseDocstrings } from "../../parse/docstrings.ts";
-import { extractFastPage } from "../../parse/fast.ts";
-import { parseMarkdown, parseMdx, parseRst } from "../../parse/markup-doc.ts";
+import { parseDocstrings } from "../../parse/markup/docstrings.ts";
+import { extractFastPage } from "../../parse/page/fast.ts";
+import { parseMarkdown, parseMdx, parseRst } from "../../parse/markup/doc.ts";
 import {
 	binaryAttachmentInfo,
 	parseJsonText,
 	type RoutedContentKind,
 	routeContentType,
-} from "../../parse/passthrough.ts";
+} from "../../parse/content/route.ts";
 import {
 	docstringsToText,
 	markupDocumentToMarkdown,

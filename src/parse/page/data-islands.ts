@@ -1,8 +1,8 @@
 /**
  * @fileoverview parse data-islands module.
  */
-import { normalizeWhitespace } from "../serialize/text.ts";
-import type { DomAdapter } from "./dom-adapter.ts";
+import { normalizeWhitespace } from "../../serialize/text.ts";
+import type { DomAdapter } from "../dom/adapter.ts";
 
 export interface DataIslandContent {
 	source: string;

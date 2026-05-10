@@ -5,8 +5,8 @@
  * Reuses existing diff/text utilities (Levenshtein, token Jaccard) from
  * {@link src/diff/compare.ts} rather than duplicating algorithms.
  */
-import { lineSimilarity, tokens } from "../diff/compare.ts";
-import type { ElementFingerprint } from "./element-fingerprint.ts";
+import { lineSimilarity, tokens } from "../../diff/compare.ts";
+import type { ElementFingerprint } from "./fingerprint.ts";
 
 /**
  * Weights for each fingerprint feature when computing overall similarity.

@@ -2,7 +2,7 @@
  * @fileoverview parse fast module.
  */
 import { type DataIslandContent, recoverDataIslands } from "./data-islands.ts";
-import { type DomAdapter, type DomSelection, loadDom } from "./dom-adapter.ts";
+import { type DomAdapter, type DomSelection, loadDom } from "../dom/adapter.ts";
 import {
 	extractHeadings,
 	extractLinks,
@@ -23,7 +23,7 @@ import {
 	type SelectorOptions,
 	selectedRoots,
 	visibleText,
-} from "./selectors.ts";
+} from "../dom/selectors.ts";
 
 export interface FastExtractOptions extends SelectorOptions {
 	onlyMainContent?: boolean;

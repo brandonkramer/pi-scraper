@@ -2,7 +2,7 @@
  * @fileoverview serialize __tests__ serialize.test module.
  */
 import { describe, expect, it } from "vitest";
-import { extractReadable } from "../../parse/readable.ts";
+import { extractReadable } from "../../parse/page/readable.ts";
 import { htmlToMarkdown } from "../markdown.ts";
 import { stableJson, toLlmText } from "../json.ts";
 import { normalizeWhitespace } from "../text.ts";

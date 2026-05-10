@@ -2,7 +2,7 @@
  * @fileoverview scrape pdf-route module.
  */
 import type { FetchUrlResult } from "../http/client.ts";
-import { extractPdfText } from "../parse/pdf.ts";
+import { extractPdfText } from "../parse/content/pdf.ts";
 import { normalizeWhitespace } from "../serialize/text.ts";
 import type { OutputFormat, ScrapeMode } from "../types.ts";
 import type { ScrapeResult } from "./pipeline.ts";

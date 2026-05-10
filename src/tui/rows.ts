@@ -7,7 +7,7 @@ import {
 	renderStatusGlyph,
 	renderStatusPill,
 	type StatusPillOptions,
-} from "./status-pill.ts";
+} from "./pill.ts";
 
 export interface UrlStatusRowOptions extends StatusPillOptions {
 	url: string;

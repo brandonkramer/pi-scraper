@@ -1,7 +1,7 @@
 /**
  * @fileoverview parse passthrough module.
  */
-import type { BinaryDownloadMetadata } from "../http/download.ts";
+import type { BinaryDownloadMetadata } from "../../http/download.ts";
 
 export type RoutedContentKind =
 	| "text"

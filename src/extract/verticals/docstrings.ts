@@ -3,7 +3,7 @@
 import {
 	parseDocstrings,
 	type ParsedDocstrings,
-} from "../../parse/docstrings.ts";
+} from "../../parse/markup/docstrings.ts";
 import { capability, type VerticalExtractor } from "../capabilities.ts";
 
 export const docstringsExtractor: VerticalExtractor<ParsedDocstrings> = {

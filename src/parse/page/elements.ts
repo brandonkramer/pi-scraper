@@ -1,8 +1,8 @@
 /**
  * @fileoverview Shared DOM document element extraction helpers.
  */
-import type { DomAdapter } from "./dom-adapter.ts";
-import { absoluteUrl } from "./selectors.ts";
+import type { DomAdapter } from "../dom/adapter.ts";
+import { absoluteUrl } from "../dom/selectors.ts";
 
 export interface DomHeading {
 	level: number;

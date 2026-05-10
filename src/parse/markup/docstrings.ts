@@ -1,5 +1,5 @@
 /** @fileoverview Surface-level docstring extraction for source files without typechecking. */
-import { stripUndefined } from "../extract/_html.ts";
+import { stripUndefined } from "../../extract/_html.ts";
 
 export type DocstringKind = "function" | "class" | "interface" | "variable";
 

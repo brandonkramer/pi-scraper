@@ -6,9 +6,9 @@ import type { RenderComponent, RenderTheme } from "./types.ts";
 import { renderText } from "./text.ts";
 import { muted } from "./theme.ts";
 import { renderProgressBar } from "./progress.ts";
-import { renderStatusPill } from "./status-pill.ts";
+import { renderStatusPill } from "./pill.ts";
 import { renderUrlStatusRow } from "./rows.ts";
-import { renderStackedResultCard } from "./stacked-result-card.ts";
+import { renderStackedResultCard } from "./stacked.ts";
 import { withSpinnerFooter } from "./spinner.ts";
 import type {
 	BatchProgressItemView,

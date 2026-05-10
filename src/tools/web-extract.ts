@@ -6,7 +6,7 @@ import type { ModelAdapter } from "../extract/model.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { defineWebTool, type WebTool } from "./define.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
-import { renderSimpleCall } from "../tui/simple-call.ts";
+import { renderSimpleCall } from "../tui/call.ts";
 import { urlProperty } from "./schemas.ts";
 import { runApiSurfaceExtraction } from "./web-extract-surface.ts";
 import { runSelectorExtractionTool } from "./web-extract-selector.ts";

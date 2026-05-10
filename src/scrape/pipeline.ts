@@ -4,8 +4,8 @@
 import { DEFAULT_OUTPUT_FORMAT, DEFAULT_SCRAPE_MODE } from "../defaults.ts";
 import type { HttpClient } from "../http/client.ts";
 import type { FingerprintFetchAdapter } from "../http/fingerprint.ts";
-import type { RoutedContentKind } from "../parse/passthrough.ts";
-import type { ReadableExtraction, extractReadable } from "../parse/readable.ts";
+import type { RoutedContentKind } from "../parse/content/route.ts";
+import type { ReadableExtraction, extractReadable } from "../parse/page/readable.ts";
 import type {
 	CommonScrapeOptions,
 	OutputFormat,

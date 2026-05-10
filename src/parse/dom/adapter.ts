@@ -1,7 +1,7 @@
 /**
  * @fileoverview parse dom-adapter module.
  */
-import { loadHtmlparser2Dom } from "./htmlparser2-dom-adapter.ts";
+import { loadHtmlparser2Dom } from "../dom/htmlparser2.ts";
 
 /** Opaque DOM node handle owned by a {@link DomAdapter}. */
 export type DomNode = unknown;

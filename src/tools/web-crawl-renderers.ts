@@ -12,7 +12,7 @@ import { renderProgressCard } from "../tui/progress.ts";
 import {
 	renderBatchProgressCard,
 	renderBatchResultCard,
-} from "../tui/batch-cards.ts";
+} from "../tui/batch.ts";
 import {
 	batchProgressFromCrawlPages,
 	isBatchProgress,
@@ -22,7 +22,7 @@ import {
 	activityCountSegment,
 	failureCountSegment,
 	successCountSegment,
-} from "../tui/count-segments.ts";
+} from "../tui/counts.ts";
 import { muted, neutral, separator } from "../tui/theme.ts";
 import {
 	errorLabel,
@@ -59,7 +59,7 @@ export interface CrawlPageView {
 import {
 	type ResourceListItem,
 	renderResourceItemList,
-} from "../tui/resource-fields.ts";
+} from "../tui/resource.ts";
 
 export function crawlExpandedDetails(
 	pages: readonly CrawlPageView[],

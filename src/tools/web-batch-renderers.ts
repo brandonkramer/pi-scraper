@@ -17,7 +17,7 @@ import {
 import {
 	renderBatchProgressCard,
 	renderBatchResultCard,
-} from "../tui/batch-cards.ts";
+} from "../tui/batch.ts";
 export interface BatchItem {
 	ok?: boolean;
 	url?: string;
@@ -45,12 +45,12 @@ export interface BatchItem {
 import {
 	type ResourceListItem,
 	renderResourceItemList,
-} from "../tui/resource-fields.ts";
+} from "../tui/resource.ts";
 import {
 	activityCountSegment,
 	failureCountSegment,
 	successCountSegment,
-} from "../tui/count-segments.ts";
+} from "../tui/counts.ts";
 import {
 	errorLabel,
 	freshnessLabel,
