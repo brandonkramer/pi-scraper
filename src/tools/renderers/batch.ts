@@ -64,13 +64,18 @@ export function batchExpandedDetails(
 	items: readonly BatchItem[],
 	metadata: { jobId?: unknown; packageResponseId?: unknown } = {},
 ): string {
-	return renderResourceItemList(items.map(toBatchListItem), {
+	const cap = excerptCapForCount(items.length);
+	return renderResourceItemList(items.map((item) => toBatchListItem(item, cap)), {
 		header: "Per-URL details:",
 		metadata,
 	});
 }
 
-function toBatchListItem(item: BatchItem): ResourceListItem {
+function excerptCapForCount(count: number): number {
+	return Math.max(100, Math.min(500, Math.floor(1000 / Math.max(1, count))));
+}
+
+function toBatchListItem(item: BatchItem, excerptCap = 180): ResourceListItem {
 	if (!item.ok) {
 		return {
 			ok: false,
@@ -91,7 +96,7 @@ function toBatchListItem(item: BatchItem): ResourceListItem {
 			result?.data?.markdown,
 			result?.data?.text,
 			result?.data?.route,
-			500,
+			excerptCap,
 		),
 		fields: {
 			status: result?.status,

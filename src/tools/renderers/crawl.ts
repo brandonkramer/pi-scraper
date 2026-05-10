@@ -66,13 +66,24 @@ export function crawlExpandedDetails(
 	pages: readonly CrawlPageView[],
 	metadata: { jobId?: unknown; packageResponseId?: unknown } = {},
 ): string {
-	return renderResourceItemList(pages.map(toCrawlListItem), {
-		header: "Per-page details:",
-		metadata,
-	});
+	const cap = excerptCapForCount(pages.length);
+	return renderResourceItemList(
+		pages.map((page) => toCrawlListItem(page, cap)),
+		{
+			header: "Per-page details:",
+			metadata,
+		},
+	);
 }
 
-function toCrawlListItem(page: CrawlPageView): ResourceListItem {
+function excerptCapForCount(count: number): number {
+	return Math.max(100, Math.min(500, Math.floor(1000 / Math.max(1, count))));
+}
+
+function toCrawlListItem(
+	page: CrawlPageView,
+	excerptCap = 180,
+): ResourceListItem {
 	if (page.error) {
 		return {
 			ok: false,
@@ -94,7 +105,7 @@ function toCrawlListItem(page: CrawlPageView): ResourceListItem {
 			page.data?.description,
 			page.data?.markdown,
 			page.data?.text,
-			500,
+			excerptCap,
 		),
 		fields: {
 			status: page.status,
