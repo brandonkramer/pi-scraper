@@ -293,10 +293,35 @@ pi.events?.emit?.("pi:model-adapter/register", {
 });
 
 // Re-announce when pi-scraper requests discovery (handles load order):
-pi.events?.on?.("pi:model-adapter/discover", () => {
+pi.events?.on?.("pi:model-adapter/discover", (payload) => {
+  const filter = payload as {
+    capabilities?: readonly string[];
+    minPriority?: number;
+  };
+  if (
+    filter.capabilities &&
+    !["summarize"].some((c) => filter.capabilities!.includes(c))
+  ) {
+    return; // skip re-register — we don't match the filter
+  }
   pi.events?.emit?.("pi:model-adapter/register" /* same payload */);
 });
 ```
+
+### Discover filtering
+
+`pi:model-adapter/discover` accepts an optional capability/priority filter so pi-scraper can scope adapter announcements to what it needs:
+
+```ts
+interface DiscoverPayload {
+  capabilities?: readonly ModelCapability[]; // adapters SHOULD match at least one
+  minPriority?: number;                       // adapters SHOULD have priority >= this
+}
+```
+
+Adapters **SHOULD** honor the filter if present and **MAY** re-register unconditionally for backwards compatibility — pi-scraper's `resolve()` already filters by capability anyway, so unconditional re-registration is harmless but slightly noisier.
+
+`web_summarize` uses this today: when no matching adapter is registered, it emits `{ capabilities: ["summarize"] }` before falling back to `MODEL_ADAPTER_MISSING`. Other model-backed tools will adopt the same pattern in follow-ups.
 
 ## Development and release checks
 
