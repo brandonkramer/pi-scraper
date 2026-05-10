@@ -9,7 +9,7 @@ import {
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
 } from "../storage/paths.ts";
-import { stripUndefined } from "../extract/_html.ts";
+import { stripUndefined } from "../extract/shared/html.ts";
 import type {
 	CommonScrapeOptions,
 	OutputFormat,

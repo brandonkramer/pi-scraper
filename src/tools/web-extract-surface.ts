@@ -6,8 +6,8 @@ import { storedResultGuidance } from "./agentic-context.ts";
 import {
 	runApiSurfaceFromInput,
 	type ApiSurfaceInput,
-} from "../extract/api-surface-runner.ts";
-import type { ApiSurfaceTree } from "../extract/api-surface.ts";
+} from "../extract/api-surface/runner.ts";
+import type { ApiSurfaceTree } from "../extract/api-surface/index.ts";
 import type { CommonScrapeOptions } from "../types.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 

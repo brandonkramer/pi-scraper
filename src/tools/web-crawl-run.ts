@@ -147,7 +147,7 @@ export async function crawlRun(
 async function maybeBuildApiSurface(params: Params, pages: ScrapeResult[]) {
 	if (params.extract !== "api-surface") return undefined;
 	const { buildApiSurfaceFromScrapes } = await import(
-		"../extract/api-surface.ts"
+		"../extract/api-surface/index.ts"
 	);
 	return buildApiSurfaceFromScrapes(pages);
 }

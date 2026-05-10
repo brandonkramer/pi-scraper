@@ -5,7 +5,7 @@ import {
 	buildContextPackage,
 	type ContextPackage,
 	type ContextPackageSource,
-} from "../../extract/context-package.ts";
+} from "../../extract/context-package/index.ts";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { writeCrawlContextPackage } from "./write-crawl-file.ts";
 import { storeResponse } from "../responses/store.ts";

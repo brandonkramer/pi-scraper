@@ -2,7 +2,7 @@
  * @fileoverview web_extract action="adhoc" handler — model-backed schema extraction.
  */
 import { loadEffectiveConfig } from "../config/settings.ts";
-import { extractAdHoc, MissingExtractInputError } from "../extract/ad-hoc.ts";
+import { extractAdHoc, MissingExtractInputError } from "../extract/adhoc/index.ts";
 import { missingModelResult } from "./result.ts";
 import {
 	scrapeInputSummary,

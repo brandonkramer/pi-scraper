@@ -2,7 +2,7 @@
  * @fileoverview Pi tool adapter for single-URL scraping and page summaries.
  */
 import { Type, type Static } from "@earendil-works/pi-ai";
-import type { ModelAdapter } from "../extract/model.ts";
+import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.ts";
 import {
 	qualityFromCache,

@@ -1,7 +1,7 @@
 /**
  * @fileoverview summarize page module.
  */
-import type { ModelAdapter } from "../extract/model.ts";
+import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import type { ScrapeResult } from "../scrape/pipeline.ts";
 import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.ts";
 import type { CommonScrapeOptions } from "../types.ts";

@@ -3,7 +3,7 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { ModelAdapter, ModelRequest } from "../../extract/model.ts";
+import type { ModelAdapter, ModelRequest } from "../../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import type { WebTool } from "../define.ts";

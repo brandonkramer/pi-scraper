@@ -5,7 +5,7 @@ import type {
 	ModelAdapter,
 	ModelRequest,
 	ModelResponse,
-} from "../extract/model.ts";
+} from "../extract/adhoc/model.ts";
 import { isUnknownRecord, type UnknownRecord } from "../types.ts";
 type Runner = (
 	payload: unknown,

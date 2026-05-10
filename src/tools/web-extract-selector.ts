@@ -9,7 +9,7 @@ import {
 	SelectorInputError,
 	runSelectorExtraction,
 	type SelectorRunParams,
-} from "../extract/selector-runner.ts";
+} from "../extract/selector/runner.ts";
 import type { ToolUpdate } from "./define.ts";
 import { emitProgress } from "./progress.ts";
 import { inputErrorResult, toolResult } from "./result.ts";
@@ -91,7 +91,7 @@ function buildSummary(
 		score?: number;
 		saved: boolean;
 	},
-	_extractResult: import("../extract/selector.ts").SelectorExtractionResult,
+	_extractResult: import("../extract/selector/css.ts").SelectorExtractionResult,
 ): string {
 	if (selectorResult.strategy === "direct") {
 		return `Selector matched ${selectorResult.directMatches} element(s)${selectorResult.saved ? "; 🔒 fingerprint saved" : ""}.`;

@@ -6,7 +6,7 @@ import {
 	inspectPatterns,
 	PatternInspectError,
 	type PatternInspectOptions,
-} from "../extract/pattern.ts";
+} from "../extract/pattern/index.ts";
 import { storedResultGuidance } from "./agentic-context.ts";
 import type { ToolUpdate } from "./define.ts";
 import { emitProgress } from "./progress.ts";

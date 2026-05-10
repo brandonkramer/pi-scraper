@@ -2,7 +2,7 @@
  * @fileoverview Pi tool adapter for vertical, pattern, ad hoc, and surface extraction.
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
-import type { ModelAdapter } from "../extract/model.ts";
+import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { defineWebTool, type WebTool } from "./define.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";

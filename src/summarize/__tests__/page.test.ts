@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { summarizePage } from "../page.ts";
-import type { ModelAdapter } from "../../extract/model.ts";
+import type { ModelAdapter } from "../../extract/adhoc/model.ts";
 
 const model: ModelAdapter = {
   run: async <T>(request: Parameters<ModelAdapter["run"]>[0]) => ({ data: "" as T, text: `${request.prompt} ${request.input.slice(0, 6)}` }),

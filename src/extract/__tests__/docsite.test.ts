@@ -2,8 +2,8 @@
  * @fileoverview extract __tests__ docsite.test module.
  */
 import { describe, expect, it } from "vitest";
-import type { VerticalExtractorContext } from "../capabilities.ts";
-import { runVerticalExtractor } from "../registry.ts";
+import type { VerticalExtractorContext } from "../vertical/capabilities.ts";
+import { runVerticalExtractor } from "../vertical/registry.ts";
 
 const pages: Record<string, string> = {
 	"https://docusaurus.example/docs/3.0/api/client": `<!doctype html><html data-theme="light"><head><title>Client API</title><meta name="docsearch:version" content="3.0"><meta name="description" content="Client reference."></head><body><nav class="breadcrumbs"><a>Docs</a><a>3.0</a><span>Client API</span></nav><main class="theme-doc-markdown"><h1 id="client-api">Client API</h1><p>Create a client.</p><h2 id="usage">Usage</h2><p>Call the constructor.</p><pre><code class="language-ts">new Client()</code></pre></main></body></html>`,

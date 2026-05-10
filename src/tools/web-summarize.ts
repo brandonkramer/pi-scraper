@@ -3,7 +3,7 @@
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
 import { loadEffectiveConfig } from "../config/settings.ts";
-import type { ModelAdapter } from "../extract/model.ts";
+import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { summarizePage } from "../summarize/page.ts";
 import { buildSummarizeToolResult } from "./scrape-input-result.ts";

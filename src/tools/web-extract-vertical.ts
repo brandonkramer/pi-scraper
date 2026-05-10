@@ -2,7 +2,7 @@
  * @fileoverview web_extract action="vertical" and action="list" handlers — deterministic extractor capabilities and vertical extraction.
  */
 import { loadEffectiveConfig } from "../config/settings.ts";
-import type { VerticalExtractionResult } from "../extract/capabilities.ts";
+import type { VerticalExtractionResult } from "../extract/vertical/capabilities.ts";
 import { storedResultGuidance } from "./agentic-context.ts";
 import type { ToolUpdate } from "./define.ts";
 import { emitProgress } from "./progress.ts";
@@ -10,7 +10,7 @@ import { inputErrorResult, toolResult } from "./result.ts";
 import type { Params } from "./web-extract.ts";
 
 export async function listDeterministicExtractors() {
-	const { listExtractorCapabilities } = await import("../extract/registry.ts");
+	const { listExtractorCapabilities } = await import("../extract/vertical/registry.ts");
 	const capabilities = listExtractorCapabilities();
 	return toolResult({
 		text: `${capabilities.length} extractor(s): ${capabilities.map((item) => item.name).join(", ")}`,
@@ -41,7 +41,7 @@ export async function runDeterministicExtractor(
 		url: params.url,
 		message: `extractor ${params.extractor}`,
 	});
-	const { runVerticalExtractor } = await import("../extract/registry.ts");
+	const { runVerticalExtractor } = await import("../extract/vertical/registry.ts");
 	const result = await runVerticalExtractor(
 		params.extractor,
 		params.url,

@@ -2,11 +2,11 @@
  * @fileoverview extract __tests__ registry.test module.
  */
 import { describe, expect, it } from "vitest";
-import type { VerticalExtractorContext } from "../capabilities.ts";
+import type { VerticalExtractorContext } from "../vertical/capabilities.ts";
 import {
 	listExtractorCapabilities,
 	runVerticalExtractor,
-} from "../registry.ts";
+} from "../vertical/registry.ts";
 
 const context: VerticalExtractorContext = {
 	fetchJson: async <T>(url: string) => {
