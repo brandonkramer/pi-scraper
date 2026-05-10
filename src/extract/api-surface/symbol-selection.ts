@@ -15,7 +15,7 @@ import type {
 	SelectedCodeBlock,
 	SelectedTable,
 	SelectedSymbol,
-} from "./symbol-selection-types.ts";
+} from "./types.ts";
 
 export {
 	SymbolIncludeType,
@@ -27,7 +27,7 @@ export {
 	SelectedTable,
 	SelectedSymbol,
 	SymbolSelectionResult,
-} from "./symbol-selection-types.ts";
+} from "./types.ts";
 
 interface ParsedContent {
 	headings: SelectedSection[];
@@ -294,7 +294,7 @@ function isCodeDeclaration(
 }
 
 function matchesForType<
-	T extends import("./symbol-selection-types.ts").SymbolIncludeType,
+	T extends import("./types.ts").SymbolIncludeType,
 >(
 	parsed: ParsedContent,
 	include: SymbolIncludeFilter[],
@@ -310,7 +310,7 @@ function matchesForType<
 }
 
 type ExtractedFor<
-	T extends import("./symbol-selection-types.ts").SymbolIncludeType,
+	T extends import("./types.ts").SymbolIncludeType,
 > = T extends "code-block"
 	? SelectedCodeBlock
 	: T extends "table"
@@ -320,7 +320,7 @@ type ExtractedFor<
 			: SelectedSection;
 
 function collectionForType<
-	T extends import("./symbol-selection-types.ts").SymbolIncludeType,
+	T extends import("./types.ts").SymbolIncludeType,
 >(parsed: ParsedContent, type: T): ExtractedFor<T>[] {
 	if (type === "heading") return parsed.headings as ExtractedFor<T>[];
 	if (type === "section") return parsed.sections as ExtractedFor<T>[];

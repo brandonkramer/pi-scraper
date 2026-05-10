@@ -3,7 +3,7 @@
  */
 import { loadEffectiveConfig } from "../../config/settings.ts";
 import type { ScrapeMode } from "../../types.ts";
-import type { ApiSurfaceTree } from "../api-surface/index.ts";
+import type { ApiSurfaceTree } from "./types.ts";
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
 
 export interface ApiSurfaceInput {
@@ -24,7 +24,7 @@ export async function runApiSurfaceFromInput(
 	scrapeDeps?: ScrapePipelineDeps,
 	signal?: AbortSignal,
 ): Promise<ApiSurfaceRunResult> {
-	const { buildApiSurface } = await import("./index.ts");
+	const { buildApiSurface } = await import("./tree.ts");
 	if (input.content) {
 		const tree = buildApiSurface([
 			{

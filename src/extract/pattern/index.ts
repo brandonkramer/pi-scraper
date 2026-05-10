@@ -2,12 +2,12 @@
  * @fileoverview Pattern extraction public entrypoint.
  */
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
-import {
-	selectSymbolContent,
-	type ExtractSchemaPreset,
-	type SymbolIncludeFilter,
-	type SymbolSelectionResult,
-} from "../api-surface/symbol-selection.ts";
+import { selectSymbolContent } from "../api-surface/symbol-selection.ts";
+import type {
+	ExtractSchemaPreset,
+	SymbolIncludeFilter,
+	SymbolSelectionResult,
+} from "../api-surface/types.ts";
 import {
 	evaluateJsonPaths,
 	flattenJsonValues,
