@@ -6,7 +6,7 @@ import {
 	aggregateFreshness,
 	freshnessFromTimestamp,
 	freshnessMetadata,
-} from "../freshness.ts";
+} from "../cache/freshness.ts";
 
 describe("freshness metadata", () => {
 	it("maps cached fetch rows to explicit freshness fields", () => {

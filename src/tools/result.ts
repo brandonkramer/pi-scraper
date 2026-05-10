@@ -12,7 +12,7 @@ import { structuredErrorFromUnknown } from "../http/errors.ts";
 import {
 	freshnessFromCache,
 	guidanceWithFreshness,
-} from "../storage/freshness.ts";
+} from "../storage/cache/freshness.ts";
 
 export interface ResultShellOptions<TData> {
 	text: string;

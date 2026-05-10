@@ -10,7 +10,7 @@ import {
 	updateSnapshotReference,
 } from "../diff/snapshots.ts";
 import { scrapeUrl } from "../scrape/pipeline.ts";
-import { freshnessFromTimestamp } from "../storage/freshness.ts";
+import { freshnessFromTimestamp } from "../storage/cache/freshness.ts";
 import {
 	appendJobError,
 	createJobManifest,

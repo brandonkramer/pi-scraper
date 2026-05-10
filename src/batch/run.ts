@@ -24,7 +24,7 @@ import {
 	truncateAndStore,
 	type StoreResultOptions,
 } from "../storage/results.ts";
-import { normalizeMaybe } from "../storage/_fields.ts";
+import { normalizeMaybe } from "../storage/db/row-fields.ts";
 
 export interface BatchProgress {
 	state: "queued" | "processing" | "done" | "error";

@@ -11,7 +11,7 @@ import {
 import {
 	aggregateFreshness,
 	freshnessFromTimestamp,
-} from "../storage/freshness.ts";
+} from "../storage/cache/freshness.ts";
 import type { ScrapeResult } from "../scrape/pipeline.ts";
 import { updateJobManifest } from "../storage/jobs.ts";
 import { storeResultWithResponseId } from "../storage/results.ts";

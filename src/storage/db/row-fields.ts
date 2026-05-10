@@ -1,7 +1,7 @@
 /**
  * @fileoverview Shared narrow field accessors for storage rows.
  */
-import { normalizeUrl } from "../url/normalize.ts";
+import { normalizeUrl } from "../../url/normalize.ts";
 
 export function stringField(value: unknown): string | undefined {
 	return typeof value === "string" ? value : undefined;

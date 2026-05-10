@@ -3,7 +3,7 @@
  */
 import type { ResultEnvelope } from "../types.ts";
 import { openStorageDb } from "./db.ts";
-import { stringField } from "./_fields.ts";
+import { stringField } from "./db/row-fields.ts";
 import type { ResolveStorageOptions } from "./paths.ts";
 
 export interface SearchHit {

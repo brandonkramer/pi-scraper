@@ -7,7 +7,7 @@ import {
 	type CrawlMetadata,
 	type CrawlStatus,
 } from "../crawl/state.ts";
-import { aggregateFreshness, crawlStaleness } from "../storage/freshness.ts";
+import { aggregateFreshness, crawlStaleness } from "../storage/cache/freshness.ts";
 import type {
 	AgenticNextAction,
 	AgenticQualitySignals,

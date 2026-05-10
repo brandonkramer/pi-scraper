@@ -9,7 +9,7 @@ import { sessionLifecycle } from "./session-lifecycle.ts";
 import {
 	aggregateFreshness,
 	freshnessFromCache,
-} from "../storage/freshness.ts";
+} from "../storage/cache/freshness.ts";
 import {
 	retrieveResultAction,
 	storedResultGuidance,

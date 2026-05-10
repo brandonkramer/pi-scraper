@@ -8,7 +8,7 @@ import type { CrawlState } from "../crawl/state.ts";
 import type { ResponseStorageMetadata } from "../types.ts";
 import { writeBlob } from "./blobs.ts";
 import type { StorageDb } from "./db.ts";
-import { normalizeMaybe, numberField, stringField } from "./_fields.ts";
+import { normalizeMaybe, numberField, stringField } from "./db/row-fields.ts";
 import {
 	pathExists,
 	type ResolveStorageOptions,

@@ -9,7 +9,7 @@ import { openStorageDb } from "./db.ts";
 import {
 	DEFAULT_MAX_FRESHNESS_AGE_SECONDS,
 	freshnessMetadata,
-} from "./freshness.ts";
+} from "./cache/freshness.ts";
 import type { ResolveStorageOptions } from "./paths.ts";
 
 export interface FetchCacheOptions extends ResolveStorageOptions {

@@ -6,7 +6,7 @@ import { PI_TRUNCATION_LIMITS } from "../defaults.ts";
 import type { ResponseStorageMetadata } from "../types.ts";
 import { readBlob, writeBlob } from "./blobs.ts";
 import { openStorageDb } from "./db.ts";
-import { normalizeMaybe, numberField, stringField } from "./_fields.ts";
+import { normalizeMaybe, numberField, stringField } from "./db/row-fields.ts";
 import type { ResolveStorageOptions } from "./paths.ts";
 import { recordStoredSearchText } from "./search.ts";
 

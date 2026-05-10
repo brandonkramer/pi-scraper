@@ -1,7 +1,7 @@
 /**
  * @fileoverview storage freshness module.
  */
-import type { CacheMetadata, FreshnessMetadata } from "../types.ts";
+import type { CacheMetadata, FreshnessMetadata } from "../../types.ts";
 
 export type Staleness = "fresh" | "aging" | "stale" | "expired" | "revalidated";
 
