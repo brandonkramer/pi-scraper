@@ -1,7 +1,11 @@
 /**
  * @fileoverview Batched, throttled job progress writer.
  */
-import { updateJobManifest, type JobManifest, type JobManifestPatch } from "./manifest.ts";
+import {
+	updateJobManifest,
+	type JobManifest,
+	type JobManifestPatch,
+} from "./manifest.ts";
 import type { ResolveStorageOptions } from "../paths.ts";
 
 export interface JobProgressWriterOptions extends ResolveStorageOptions {

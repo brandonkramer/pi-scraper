@@ -4,16 +4,16 @@
 import { randomUUID } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rename, stat } from "node:fs/promises";
 import path from "node:path";
-import type { CrawlState } from "../crawl/state.ts";
-import type { ResponseStorageMetadata } from "../types.ts";
-import { writeBlob } from "./blobs.ts";
-import type { StorageDb } from "./db.ts";
-import { normalizeMaybe, numberField, stringField } from "./db/row-fields.ts";
+import type { CrawlState } from "../../crawl/state.ts";
+import type { ResponseStorageMetadata } from "../../types.ts";
+import { writeBlob } from "../blobs.ts";
+import type { StorageDb } from "../db/open.ts";
+import { normalizeMaybe, numberField, stringField } from "../db/row-fields.ts";
 import {
 	pathExists,
 	type ResolveStorageOptions,
 	resolvePiStoragePaths,
-} from "./paths.ts";
+} from "../paths.ts";
 
 interface LegacyEnvelope {
 	metadata?: ResponseStorageMetadata;

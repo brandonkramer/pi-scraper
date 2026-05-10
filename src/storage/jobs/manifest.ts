@@ -3,10 +3,7 @@
  */
 import { readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type {
-	OutputFormat,
-	ScrapeMode,
-} from "../../types.ts";
+import type { OutputFormat, ScrapeMode } from "../../types.ts";
 import {
 	ensureDir,
 	type ResolveStorageOptions,
