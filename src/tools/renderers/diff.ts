@@ -10,7 +10,10 @@ import {
 import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 import { renderText } from "../../tui/text.ts";
 import { muted, separator } from "../../tui/theme.ts";
-import { formatChecklistItem, formatChecklistText } from "../../tui/checklist.ts";
+import {
+	formatChecklistItem,
+	formatChecklistText,
+} from "../../tui/checklist.ts";
 import { renderProgressCard } from "../../tui/progress.ts";
 import { errorLabel, freshnessLabel } from "../../tui/envelope.ts";
 export interface DiffData {

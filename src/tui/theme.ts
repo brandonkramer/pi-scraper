@@ -21,31 +21,27 @@ export function accent(text: string, theme?: RenderTheme): string {
 }
 
 export function neutral(text: string, theme?: RenderTheme): string {
-	const themed = inlineThemeText("muted", text, theme);
-	if (themed) return themed;
-	return `\u001B[38;2;139;145;134m${text}\u001B[39m`;
+	return inlineThemeText("muted", text, theme) ?? text;
 }
 
 export function success(text: string, theme?: RenderTheme): string {
-	const themed = inlineThemeText("success", text, theme);
-	if (themed) return themed;
-	return `\u001B[38;2;148;226;213m${text}\u001B[39m`;
+	return inlineThemeText("success", text, theme) ?? text;
 }
 
 export function failure(text: string, theme?: RenderTheme): string {
-	const themed =
+	return (
 		inlineThemeText("error", text, theme) ??
-		inlineThemeText("danger", text, theme);
-	if (themed) return themed;
-	return `\u001B[38;2;239;118;122m${text}\u001B[39m`;
+		inlineThemeText("danger", text, theme) ??
+		text
+	);
 }
 
 export function activity(text: string, theme?: RenderTheme): string {
-	const themed =
+	return (
 		inlineThemeText("warning", text, theme) ??
-		inlineThemeText("accent", text, theme);
-	if (themed) return themed;
-	return `\u001B[38;2;199;211;111m${text}\u001B[39m`;
+		inlineThemeText("accent", text, theme) ??
+		text
+	);
 }
 
 export function separator(theme?: RenderTheme): string {

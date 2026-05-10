@@ -133,13 +133,9 @@ describe("web tool renderers", () => {
 		expect(doneTitle).toContain("web_crawl https://example.com max 1");
 		expect(doneTitle).not.toContain("✓ web_crawl");
 		expect(collapsed).toContain("✓ 2 succeeded");
-		expect(collapsed).toContain("\u001B[38;2;239;118;122m✖ 1 failed\u001B[39m");
-		expect(collapsed).toContain(
-			"\u001B[38;2;199;211;111m◉  3 visited\u001B[39m",
-		);
-		expect(collapsed).toContain(
-			"\u001B[38;2;139;145;134m→ frontier 0\u001B[39m",
-		);
+		expect(collapsed).toContain("✖ 1 failed");
+		expect(collapsed).toContain("◉  3 visited");
+		expect(collapsed).toContain("→ frontier 0");
 		expect(collapsed).toContain("done");
 		expect(collapsed).toContain("error");
 		expect(collapsed).not.toContain("✓ web_crawl");
@@ -203,9 +199,6 @@ describe("web tool renderers", () => {
 		expect(collapsed).toContain("✓ 1 succeeded");
 		expect(collapsed).toContain("✖ 1 failed");
 		expect(collapsed).toContain("ⓞ  1 cache hits");
-		expect(collapsed).toContain(
-			"\u001B[38;2;199;211;111mⓞ  1 cache hits\u001B[39m",
-		);
 		const expanded = text(
 			webBatchTool.renderResult?.(result, { expanded: true }),
 		);
@@ -288,11 +281,7 @@ describe("web tool renderers", () => {
 		);
 
 		expect(collapsed).toContain("✖ 0 failed");
-		expect(collapsed).toContain("\u001B[38;2;239;118;122m✖ 0 failed\u001B[39m");
 		expect(collapsed).toContain("ⓞ  0 cache hits");
-		expect(collapsed).toContain(
-			"\u001B[38;2;199;211;111mⓞ  0 cache hits\u001B[39m",
-		);
 	});
 
 	it("omits success icons when batch and crawl succeeded counts are zero", () => {
@@ -314,10 +303,10 @@ describe("web tool renderers", () => {
 
 		expect(
 			text(webBatchTool.renderResult?.(batch, { expanded: false })),
-		).toContain("\u001B[38;2;139;145;134m0 succeeded\u001B[39m");
+		).toContain("0 succeeded");
 		expect(
 			text(webCrawlTool.renderResult?.(crawl, { expanded: false })),
-		).toContain("\u001B[38;2;139;145;134m0 succeeded\u001B[39m");
+		).toContain("0 succeeded");
 	});
 
 	it("renders diff baseline, unchanged, and changed states", () => {
