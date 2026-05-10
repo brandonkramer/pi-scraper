@@ -295,10 +295,16 @@ pi.events?.on?.("pi:model-adapter/discover", (payload) => {
   };
 
   if (filter.capabilities?.length) {
-    const overlap = entry.capabilities.some((c) => filter.capabilities!.includes(c));
+    const overlap = entry.capabilities.some((c) =>
+      filter.capabilities!.includes(c),
+    );
     if (!overlap) return;
   }
-  if (typeof filter.minPriority === "number" && entry.priority < filter.minPriority) return;
+  if (
+    typeof filter.minPriority === "number" &&
+    entry.priority < filter.minPriority
+  )
+    return;
 
   pi.events?.emit?.("pi:model-adapter/register", entry);
 });
@@ -314,15 +320,15 @@ When an adapter returns `usage`, `web_summarize` (and `web_extract action="adhoc
 
 Use `/web-config` to inspect effective settings and persist defaults interactively or via direct arguments.
 
-| Sub-action | What it does |
-|------------|-------------|
-| (no args) | Interactive picker (falls back to `status` when UI unavailable) |
-| `status` | Effective config + live adapter-resolution preview |
-| `model-provider <value>` | Set `modelProvider` (`auto` / `off` / `<adapter-id>`) |
-| `scrape-mode <mode> [format]` | Set `scrapeMode` + `outputFormat` |
-| `cache stats` | Inspect response cache size and entry counts |
-| `cache clear` | Clear response cache (confirm prompt) |
-| `robots on/off` | Toggle `respectRobots` default |
+| Sub-action                    | What it does                                                    |
+| ----------------------------- | --------------------------------------------------------------- |
+| (no args)                     | Interactive picker (falls back to `status` when UI unavailable) |
+| `status`                      | Effective config + live adapter-resolution preview              |
+| `model-provider <value>`      | Set `modelProvider` (`auto` / `off` / `<adapter-id>`)           |
+| `scrape-mode <mode> [format]` | Set `scrapeMode` + `outputFormat`                               |
+| `cache stats`                 | Inspect response cache size and entry counts                    |
+| `cache clear`                 | Clear response cache (confirm prompt)                           |
+| `robots on/off`               | Toggle `respectRobots` default                                  |
 
 `/web-set-mode` remains as an alias for `scrape-mode`.
 

@@ -8,7 +8,7 @@ import {
 	type EffectiveWebConfig,
 } from "../config/settings.ts";
 import { modelRegistry } from "../tools/infra/model-registry.ts";
-import { resolveToolModelAdapter } from "../tools/infra/model-adapter.ts";
+import { piHostAdapterAvailable } from "../tools/infra/register.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
 import type { Params } from "./web-config.ts";
@@ -40,9 +40,9 @@ export async function runWebConfigStatus(
 
 async function assembleStatusReport(
 	config: EffectiveWebConfig,
-	ctx?: CommandContext,
+	_ctx?: CommandContext,
 ): Promise<WebConfigStatusReport> {
-	const piHost = detectPiHostModel(ctx);
+	const piHost = detectPiHostModel();
 	const adapters = modelRegistry.list().map((e) => ({
 		id: e.id,
 		label: e.label,
@@ -51,8 +51,8 @@ async function assembleStatusReport(
 	}));
 
 	const precedence: Array<{ layer: string; value: string }> = [
-		{ layer: "per-call provider param", value: "(none active)" },
-		{ layer: "Pi flag --web-model-provider", value: "(none active)" },
+		{ layer: "per-call provider param", value: "(unobservable from /web-config)" },
+		{ layer: "Pi flag --web-model-provider", value: "(unobservable from /web-config)" },
 		{
 			layer: "env PI_WEB_MODEL_PROVIDER",
 			value: process.env.PI_WEB_MODEL_PROVIDER ?? "(unset)",
@@ -79,19 +79,10 @@ async function assembleStatusReport(
 	};
 }
 
-function detectPiHostModel(ctx?: CommandContext): {
-	detected: boolean;
-	label: string;
-} {
-	try {
-		const adapter = resolveToolModelAdapter(ctx ?? {});
-		if (adapter) {
-			return { detected: true, label: "detected via Pi host context" };
-		}
-	} catch {
-		// ignore
-	}
-	return { detected: false, label: "not detected" };
+function detectPiHostModel(): { detected: boolean; label: string } {
+	return piHostAdapterAvailable()
+		? { detected: true, label: "detected via Pi host context" }
+		: { detected: false, label: "not detected" };
 }
 
 function formatStatusText(report: WebConfigStatusReport): string {

@@ -25,6 +25,11 @@ export async function runWebConfigCache(params: Params, ctx?: CommandContext) {
 				data: { cleared: false },
 			});
 		}
+	} else if (!params.force) {
+		return toolResult({
+			text: "Headless invocation requires explicit --force to clear cache.",
+			data: { error: "needs_force" },
+		});
 	}
 	const { count, bytes } = await clearResultsDir();
 	return toolResult({

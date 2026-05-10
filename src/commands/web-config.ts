@@ -115,11 +115,13 @@ export function parseWebConfigCommandArgs(args: string): Params {
 			return { action, mode, format };
 		}
 		case "cache": {
-			const [op] = rest;
+			const force = rest.includes("--force");
+			const tokens = rest.filter((t) => t !== "--force");
+			const [op] = tokens;
 			if (op && op !== "stats" && op !== "clear") {
 				throw new Error("Expected cache op 'stats' or 'clear'.");
 			}
-			return { action, op: op as Params["op"] };
+			return { action, op: op as Params["op"], force };
 		}
 		case "robots": {
 			const [value] = rest;

@@ -7,7 +7,6 @@ import {
 	runWebConfigCommand,
 } from "../web-config.ts";
 
-
 describe("parseWebConfigCommandArgs", () => {
 	it("returns empty for no args (picker path)", () => {
 		expect(parseWebConfigCommandArgs("")).toEqual({});
@@ -36,6 +35,7 @@ describe("parseWebConfigCommandArgs", () => {
 		expect(parseWebConfigCommandArgs("cache stats")).toEqual({
 			action: "cache",
 			op: "stats",
+			force: false,
 		});
 	});
 
@@ -43,6 +43,15 @@ describe("parseWebConfigCommandArgs", () => {
 		expect(parseWebConfigCommandArgs("cache clear")).toEqual({
 			action: "cache",
 			op: "clear",
+			force: false,
+		});
+	});
+
+	it("parses cache clear --force", () => {
+		expect(parseWebConfigCommandArgs("cache clear --force")).toEqual({
+			action: "cache",
+			op: "clear",
+			force: true,
 		});
 	});
 

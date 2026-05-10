@@ -25,10 +25,17 @@ export const webTools: readonly WebTool[] = [
 	webGetResultTool,
 ];
 
+let _piHostAdapterAvailable = false;
+
+export function piHostAdapterAvailable(): boolean {
+	return _piHostAdapterAvailable;
+}
+
 export async function registerWebTools(pi: PiToolRegistrar): Promise<void> {
 	initModelAdapterProtocol(pi);
 	const config = await loadEffectiveConfig();
 	const modelAdapter = resolveToolModelAdapter(pi);
+	_piHostAdapterAvailable = modelAdapter !== undefined;
 	const hideModelBacked = config.modelProvider === "off";
 	const tools = modelAdapter
 		? webTools.map((tool) => {
