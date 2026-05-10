@@ -42,13 +42,21 @@ function metadataLine(
 }
 
 /**
- * Pick the first non-empty candidate and collapse whitespace, capped at 180 chars.
+ * Pick the first non-empty candidate and collapse whitespace.
+ *
+ * @remarks
+ * Defaults to 180 chars for collapsed-view previews.
+ * Pass a custom cap (e.g. 500) for expanded-view excerpts.
  */
 export function pickExcerpt(
-	...candidates: ReadonlyArray<string | undefined>
+	...args: ReadonlyArray<string | undefined | number>
 ): string | undefined {
-	for (const value of candidates) {
-		if (value) return String(value).replace(/\s+/g, " ").trim().slice(0, 180);
+	const mutable = args as Array<string | undefined | number>;
+	const maxChars =
+		typeof mutable.at(-1) === "number" ? (mutable.pop() as number) : 180;
+	for (const value of mutable as Array<string | undefined>) {
+		if (value)
+			return String(value).replace(/\s+/g, " ").trim().slice(0, maxChars);
 	}
 	return undefined;
 }

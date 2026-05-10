@@ -91,6 +91,7 @@ function toBatchListItem(item: BatchItem): ResourceListItem {
 			result?.data?.markdown,
 			result?.data?.text,
 			result?.data?.route,
+			500,
 		),
 		fields: {
 			status: result?.status,

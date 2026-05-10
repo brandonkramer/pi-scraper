@@ -94,6 +94,7 @@ function toCrawlListItem(page: CrawlPageView): ResourceListItem {
 			page.data?.description,
 			page.data?.markdown,
 			page.data?.text,
+			500,
 		),
 		fields: {
 			status: page.status,
