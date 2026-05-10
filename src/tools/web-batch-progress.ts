@@ -1,7 +1,7 @@
 /**
  * @fileoverview Tool-specific batch/crawl progress view conversions.
  */
-import type { CrawlPageView } from "./web-renderer-types.ts";
+import type { CrawlPageView } from "./web-renderer-views.ts";
 import type { BatchProgressView } from "../batch/progress-state.ts";
 
 export {

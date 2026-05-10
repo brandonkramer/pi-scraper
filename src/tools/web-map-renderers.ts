@@ -5,7 +5,7 @@ import type { RenderComponent, RenderTheme } from "../tui/types.ts";
 import { renderText } from "./render.ts";
 import { muted } from "../tui/theme.ts";
 import { renderUrlBadgeRow } from "../tui/rows.ts";
-import type { MapUrlEntryView } from "./web-renderer-types.ts";
+import type { MapUrlEntryView } from "./web-renderer-views.ts";
 
 export function renderMapResultCard(
 	urls: readonly MapUrlEntryView[],

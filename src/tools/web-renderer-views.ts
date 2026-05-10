@@ -1,4 +1,6 @@
-/** @fileoverview Shared renderer-only structural types kept out of web-renderers to preserve file-size limits. */
+/**
+ * @fileoverview View-shaped read models consumed by Pi web tool renderers (BatchItem, CrawlPageView, MapUrlEntryView, DiffData). Decoupled from the canonical envelope types in src/types.ts.
+ */
 
 export interface CrawlMeta {
 	succeededCount: number;

@@ -21,18 +21,18 @@ import { renderText } from "./render.ts";
 import { renderProgress } from "../tui/progress-card.ts";
 import {
 	batchExpandedDetails,
-	crawlExpandedDetails,
 	renderBatchProgressCard,
 	renderBatchResultCard,
-	renderMapResultCard,
-} from "./web-batch-progress-renderer.ts";
+} from "./web-batch-renderers.ts";
+import { crawlExpandedDetails } from "./web-crawl-renderers.ts";
+import { renderMapResultCard } from "./web-map-renderers.ts";
 import { batchProgressFromCrawlPages } from "./web-batch-progress.ts";
 import {
 	batchProgressFromItems,
 	isBatchProgress,
 	isBatchProgressView,
 } from "../batch/progress-state.ts";
-import type { CrawlMeta, CrawlPageView } from "./web-renderer-types.ts";
+import type { CrawlMeta, CrawlPageView } from "./web-renderer-views.ts";
 import {
 	activityCountSegment,
 	failureCountSegment,

@@ -1,7 +1,7 @@
 /**
- * @fileoverview Crawl expanded result detail formatting.
+ * @fileoverview Pi web_crawl renderer details — expanded per-page lines used by web-renderers.ts when assembling the result card.
  */
-import type { CrawlPageView } from "./web-renderer-types.ts";
+import type { CrawlPageView } from "./web-renderer-views.ts";
 import { formatResourceFields } from "../tui/resource-fields.ts";
 
 export function crawlExpandedDetails(
