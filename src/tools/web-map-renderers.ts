@@ -80,12 +80,9 @@ export function renderWebMapResult(
 		.filter(Boolean)
 		.join(theme ? separator(theme) : " · ");
 	if (urls.length === 0) {
-		return renderText(
-			`${summary}\n\n${muted("No URLs discovered.", theme)}`,
-			{
-				padToWidth: true,
-			},
-		);
+		return renderText(`${summary}\n\n${muted("No URLs discovered.", theme)}`, {
+			padToWidth: true,
+		});
 	}
 	return {
 		render(width: number) {
@@ -93,10 +90,7 @@ export function renderWebMapResult(
 			const mapText = mapCard.render(width).join("\n");
 			const lines = [summary, mapText];
 			if (expanded && envelope.responseId)
-				lines.push(
-					"",
-					muted(`responseId: ${envelope.responseId}`, theme),
-				);
+				lines.push("", muted(`responseId: ${envelope.responseId}`, theme));
 			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
 		},
 		invalidate() {},

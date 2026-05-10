@@ -90,9 +90,7 @@ export function renderChecklistResult(
 ): RenderComponent {
 	if (!expanded) {
 		const hint = muted("(ctrl+o to expand)", theme);
-		const notice = options.notice
-			? `\n\n${muted(options.notice, theme)}`
-			: "";
+		const notice = options.notice ? `\n\n${muted(options.notice, theme)}` : "";
 		return renderText(`${title}${separator(theme)}${hint}${notice}`, {
 			padToWidth: true,
 			truncate: true,
