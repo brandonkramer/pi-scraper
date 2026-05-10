@@ -14,7 +14,10 @@ import {
 	listDeterministicExtractors,
 	runDeterministicExtractor,
 } from "./web-extract-vertical.ts";
-import { hasPatternRequest, runPatternInspection } from "./web-extract-pattern.ts";
+import {
+	hasPatternRequest,
+	runPatternInspection,
+} from "./web-extract-pattern.ts";
 import { runAdHocExtraction } from "./web-extract-adhoc.ts";
 
 const extractActions = [
@@ -121,12 +124,12 @@ export function createWebExtractTool(
 			if (action === "vertical")
 				return runDeterministicExtractor(params, signal, onUpdate);
 			if (action === "pattern")
-				return runPatternInspection(params, signal, onUpdate);
+				return runPatternInspection(params, options, signal, onUpdate);
 			if (action === "surface")
 				return runApiSurfaceExtraction(params, options, signal, onUpdate);
 			if (action === "selector")
 				return runSelectorExtractionTool(params, options, signal, onUpdate);
-			return runAdHocExtraction(params, { modelAdapter: options.modelAdapter }, signal);
+			return runAdHocExtraction(params, options, signal);
 		},
 		renderCall: (args, theme) =>
 			renderSimpleCall("web_extract", renderExtractCallParts(args), theme),
@@ -160,5 +163,3 @@ function renderExtractCallParts(params: Params): string[] {
 		Boolean,
 	) as string[];
 }
-
-

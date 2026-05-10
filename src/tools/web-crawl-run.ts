@@ -8,7 +8,10 @@ import {
 	updateCrawlMetadata,
 	type CrawlMetadata,
 } from "../crawl/state.ts";
-import { aggregateFreshness, freshnessFromTimestamp } from "../storage/freshness.ts";
+import {
+	aggregateFreshness,
+	freshnessFromTimestamp,
+} from "../storage/freshness.ts";
 import type { ScrapeResult } from "../scrape/pipeline.ts";
 import { updateJobManifest } from "../storage/jobs.ts";
 import { storeResultWithResponseId } from "../storage/results.ts";

@@ -3,22 +3,17 @@
  */
 import { loadEffectiveConfig } from "../config/settings.ts";
 import { extractAdHoc, MissingExtractInputError } from "../extract/ad-hoc.ts";
-import type { ModelAdapter } from "../extract/model.ts";
 import { missingModelResult } from "./result.ts";
 import {
 	scrapeInputSummary,
 	scrapeInputToolResult,
 } from "./scrape-input-result.ts";
 import { toolErrorResult } from "./result.ts";
-import type { Params } from "./web-extract.ts";
-
-export interface WebExtractAdHocOptions {
-	modelAdapter?: ModelAdapter;
-}
+import type { Params, WebExtractToolOptions } from "./web-extract.ts";
 
 export async function runAdHocExtraction(
 	params: Params,
-	options: WebExtractAdHocOptions,
+	options: WebExtractToolOptions,
 	signal: AbortSignal,
 ) {
 	const config = await loadEffectiveConfig();
@@ -41,7 +36,7 @@ export async function runAdHocExtraction(
 				format: config.outputFormat,
 			},
 			options.modelAdapter,
-			{},
+			options.scrapeDeps ?? {},
 			signal,
 		);
 		const summary = scrapeInputSummary(

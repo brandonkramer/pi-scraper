@@ -11,7 +11,7 @@ import { storedResultGuidance } from "./agentic-context.ts";
 import type { ToolUpdate } from "./define.ts";
 import { emitProgress } from "./progress.ts";
 import { toolResult, toolErrorResult } from "./result.ts";
-import type { Params } from "./web-extract.ts";
+import type { Params, WebExtractToolOptions } from "./web-extract.ts";
 
 export function hasPatternRequest(params: Params): boolean {
 	return Boolean(
@@ -29,6 +29,7 @@ export function hasPatternRequest(params: Params): boolean {
 
 export async function runPatternInspection(
 	params: Params,
+	options: WebExtractToolOptions,
 	signal: AbortSignal,
 	onUpdate?: ToolUpdate,
 ) {
@@ -47,7 +48,7 @@ export async function runPatternInspection(
 				...params,
 				mode: params.mode ?? config.scrapeMode,
 			} as PatternInspectOptions,
-			{},
+			options.scrapeDeps ?? {},
 			signal,
 		);
 		const foundMarkers =
@@ -55,10 +56,8 @@ export async function runPatternInspection(
 		const foundContains =
 			result.contains?.filter((item) => item.found).length ?? 0;
 		const matchCount =
-			result.regexes?.reduce(
-				(total, item) => total + item.matches.length,
-				0,
-			) ?? 0;
+			result.regexes?.reduce((total, item) => total + item.matches.length, 0) ??
+			0;
 		const sectionCount =
 			result.sections?.filter((item) => item.found).length ?? 0;
 		const summary = `Pattern inspection complete: ${result.source.length} chars, ${foundMarkers} marker(s), ${foundContains} contains hit(s), ${matchCount} regex match(es), ${sectionCount} section(s).`;

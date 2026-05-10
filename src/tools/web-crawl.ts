@@ -78,5 +78,3 @@ function isRunCrawlResult(details: unknown): boolean {
 	const data = (details as { data?: { metadata?: unknown } } | undefined)?.data;
 	return Boolean(data && "metadata" in data);
 }
-
-
