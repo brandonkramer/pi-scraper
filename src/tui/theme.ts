@@ -1,6 +1,7 @@
 /**
  * @fileoverview Reusable Pi terminal UI theme text helpers.
  */
+import type { MarkdownTheme } from "@earendil-works/pi-tui";
 import type { RenderTheme } from "./types.ts";
 
 export function inlineThemeText(
@@ -46,4 +47,32 @@ export function activity(text: string, theme?: RenderTheme): string {
 
 export function separator(theme?: RenderTheme): string {
 	return `${neutral(" · ", theme)}`;
+}
+
+/**
+ * Build a MarkdownTheme from the runtime Pi theme palette.
+ *
+ * @remarks
+ * Each MarkdownTheme slot tries a semantic color name on the host theme.
+ * If the host does not define that name, the text falls back to plain.
+ */
+export function getMarkdownTheme(theme?: RenderTheme): MarkdownTheme {
+	const themed = (name: string) => (text: string) =>
+		theme?.fg?.(name, text) ?? text;
+	return {
+		heading: themed("accent"),
+		link: themed("accent"),
+		linkUrl: themed("muted"),
+		code: themed("syntaxKeyword"),
+		codeBlock: themed("syntaxKeyword"),
+		codeBlockBorder: themed("muted"),
+		quote: themed("muted"),
+		quoteBorder: themed("muted"),
+		hr: themed("muted"),
+		listBullet: themed("accent"),
+		bold: (text) => theme?.bold?.(text) ?? themed("accent")(text),
+		italic: (text) => themed("muted")(text),
+		strikethrough: (text) => themed("muted")(text),
+		underline: (text) => text,
+	};
 }
