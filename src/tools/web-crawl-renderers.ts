@@ -23,6 +23,7 @@ import {
 	failureCountSegment,
 	successCountSegment,
 } from "../tui/counts.ts";
+import { pickExcerpt } from "../tui/preview.ts";
 import { muted, neutral, separator } from "../tui/theme.ts";
 import {
 	errorLabel,
@@ -106,15 +107,6 @@ function toCrawlListItem(page: CrawlPageView): ResourceListItem {
 			truncated: page.truncated,
 		},
 	};
-}
-
-function pickExcerpt(
-	...candidates: ReadonlyArray<string | undefined>
-): string | undefined {
-	for (const value of candidates) {
-		if (value) return String(value).replace(/\s+/g, " ").trim().slice(0, 180);
-	}
-	return undefined;
 }
 
 export function renderWebCrawlResult(

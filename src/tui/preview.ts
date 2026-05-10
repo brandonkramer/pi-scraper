@@ -3,7 +3,7 @@
  */
 import type { PiToolShell, ResultEnvelope } from "../types.ts";
 import type { RenderTheme } from "./types.ts";
-import { inlineThemeText, muted } from "./theme.ts";
+
 
 export function formatPreview(
 	format: string | undefined,
@@ -40,6 +40,18 @@ function metadataLine(
 		theme?.fg?.("syntaxKeyword", `${label}: `) ?? `${label}: `;
 	const coloredValue = theme?.fg?.("syntaxString", value) ?? value;
 	return `${coloredLabel}${coloredValue}`;
+}
+
+/**
+ * Pick the first non-empty candidate and collapse whitespace, capped at 180 chars.
+ */
+export function pickExcerpt(
+	...candidates: ReadonlyArray<string | undefined>
+): string | undefined {
+	for (const value of candidates) {
+		if (value) return String(value).replace(/\s+/g, " ").trim().slice(0, 180);
+	}
+	return undefined;
 }
 
 export function previewText(

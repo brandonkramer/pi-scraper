@@ -8,7 +8,7 @@ import type { CrawlState } from "../../crawl/state.ts";
 import type { ResponseStorageMetadata } from "../../types.ts";
 import { writeBlob } from "../blobs.ts";
 import type { StorageDb } from "../db/open.ts";
-import { normalizeMaybe, numberField, stringField } from "../db/row-fields.ts";
+import { responseFields } from "../responses/fields.ts";
 import {
 	pathExists,
 	type ResolveStorageOptions,
@@ -193,25 +193,6 @@ function insertCrawlState(db: StorageDb, state: CrawlState): void {
 			insertResult.run(state.crawlId, url, index),
 		);
 	});
-}
-
-function responseFields(value: unknown, responseId: string) {
-	const source =
-		typeof value === "object" && value !== null
-			? (value as Record<string, unknown>)
-			: {};
-	const url =
-		stringField(source.url) ??
-		stringField(source.finalUrl) ??
-		`urn:response:${responseId}`;
-	return {
-		url,
-		urlNormalized: normalizeMaybe(url),
-		finalUrl: stringField(source.finalUrl),
-		status: numberField(source.status),
-		mode: stringField(source.mode),
-		format: stringField(source.format),
-	};
 }
 
 function hasResponse(db: StorageDb, responseId: string): boolean {

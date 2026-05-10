@@ -9,6 +9,7 @@ import {
 } from "../types.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
 import { muted, separator } from "../tui/theme.ts";
+import { pickExcerpt } from "../tui/preview.ts";
 import {
 	batchProgressFromItems,
 	isBatchProgress,
@@ -103,15 +104,6 @@ function toBatchListItem(item: BatchItem): ResourceListItem {
 			truncated: result?.truncated,
 		},
 	};
-}
-
-function pickExcerpt(
-	...candidates: ReadonlyArray<string | undefined>
-): string | undefined {
-	for (const value of candidates) {
-		if (value) return String(value).replace(/\s+/g, " ").trim().slice(0, 180);
-	}
-	return undefined;
 }
 
 export function renderWebBatchResult(
