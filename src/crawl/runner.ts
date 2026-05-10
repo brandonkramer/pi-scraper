@@ -11,7 +11,7 @@ import {
 	type ScrapeResult,
 	scrapeUrl,
 } from "../scrape/pipeline.ts";
-import { resultChars } from "../scrape/_utils.ts";
+import { resultChars } from "../scrape/result-chars.ts";
 import { hasStructuredError } from "../http/retry.ts";
 import type { CommonScrapeOptions, StructuredError } from "../types.ts";
 import {

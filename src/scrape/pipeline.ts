@@ -15,7 +15,7 @@ import type {
 import { finishResult, materializeFormat } from "./render.ts";
 import type { ScrapeSignals } from "./signals.ts";
 import { httpScrape } from "./modes/fast.ts";
-import { scrapeErrorResult, scrapeStructuredError } from "./modes/shared.ts";
+import { scrapeErrorResult, scrapeStructuredError } from "./modes/mode-helpers.ts";
 import type { BrowserRenderer } from "./modes/browser.ts";
 
 export interface ScrapeData {

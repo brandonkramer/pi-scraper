@@ -27,7 +27,7 @@ import { pdfResult } from "../pdf-route.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
 import { renderFormat } from "../render.ts";
 import { analyzeFastResult, combineRecoveredText } from "../signals.ts";
-import { fetchOptions, resultBase } from "./shared.ts";
+import { fetchOptions, resultBase } from "./mode-helpers.ts";
 
 export async function httpScrape(
 	input: string | URL,

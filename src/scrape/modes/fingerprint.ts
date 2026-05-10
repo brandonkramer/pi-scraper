@@ -14,7 +14,7 @@ import {
 	fetchOptions,
 	scrapeErrorResult,
 	scrapeStructuredError,
-} from "./shared.ts";
+} from "./mode-helpers.ts";
 
 export async function fingerprintScrape(
 	input: string | URL,

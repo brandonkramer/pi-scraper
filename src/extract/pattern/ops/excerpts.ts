@@ -3,7 +3,7 @@
  */
 import { MAX_EXCERPTS, MAX_EXCERPT_CHARS, MAX_OCCURRENCES } from "../limits.ts";
 import { PatternInspectError } from "../errors.ts";
-import { boundedInteger } from "../shared.ts";
+import { boundedInteger } from "../bounds.ts";
 import type { PatternExcerptRequest } from "../types.ts";
 
 export function inspectExcerpts(

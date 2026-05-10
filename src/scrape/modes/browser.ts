@@ -10,7 +10,7 @@ import type { FetchUrlResult } from "../../http/client.ts";
 import type { CommonScrapeOptions, OutputFormat } from "../../types.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
 import { responseScrape } from "./fast.ts";
-import { scrapeErrorResult, scrapeStructuredError } from "./shared.ts";
+import { scrapeErrorResult, scrapeStructuredError } from "./mode-helpers.ts";
 
 export async function browserScrape(
 	input: string | URL,

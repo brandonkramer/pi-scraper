@@ -10,7 +10,7 @@ import {
 	type ScrapeResult,
 } from "../scrape/pipeline.ts";
 import { isAbortError } from "../http/abort.ts";
-import { resultChars } from "../scrape/_utils.ts";
+import { resultChars } from "../scrape/result-chars.ts";
 import { hasStructuredError } from "../http/retry.ts";
 import type { CommonScrapeOptions, StructuredError } from "../types.ts";
 import {

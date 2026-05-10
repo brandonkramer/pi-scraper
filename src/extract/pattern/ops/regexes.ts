@@ -3,7 +3,7 @@
  */
 import { MAX_REGEXES, MAX_REGEX_LENGTH, MAX_MATCHES } from "../limits.ts";
 import { PatternInspectError } from "../errors.ts";
-import { boundedInteger, withGlobalFlag } from "../shared.ts";
+import { boundedInteger, withGlobalFlag } from "../bounds.ts";
 import type { PatternRegexRequest } from "../types.ts";
 
 export function inspectRegexes(
