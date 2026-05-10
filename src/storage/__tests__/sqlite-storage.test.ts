@@ -11,7 +11,7 @@ import { closeStorageDbs } from "../db/open.ts";
 import { writeBlob } from "../blobs.ts";
 import { readResponse } from "../responses/read.ts";
 import { storeResponse } from "../responses/store.ts";
-import { searchResponses, setFtsAvailabilityForTests } from "../search/fts.ts";
+import { searchResponses, setFtsAvailabilityForTests } from "../search.ts";
 
 let rootDir: string;
 

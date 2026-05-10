@@ -7,7 +7,7 @@ import { readBlob, writeBlob } from "../blobs.ts";
 import { openStorageDb } from "../db/open.ts";
 import { normalizeMaybe, numberField, stringField } from "../db/row-fields.ts";
 import type { ResolveStorageOptions } from "../paths.ts";
-import { indexSearchText } from "../search/fts.ts";
+import { indexSearchText } from "../search.ts";
 import { responseFields } from "./fields.ts";
 
 export interface StoreResponseOptions extends ResolveStorageOptions {
