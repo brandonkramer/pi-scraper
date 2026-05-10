@@ -6,7 +6,7 @@ import type { PiToolShell } from "../types.ts";
 
 export type CommandExecute<TParams> = (
 	params: TParams,
-	signal?: AbortSignal,
+	ctx?: CommandContext,
 ) => Promise<PiToolShell> | PiToolShell;
 
 export interface CommandContext {
@@ -19,7 +19,10 @@ export interface CommandContext {
 			choices: readonly string[],
 			options?: { signal?: AbortSignal },
 		): Promise<string | undefined>;
-		confirm?(message: string, options?: { signal?: AbortSignal }): Promise<boolean>;
+		confirm?(
+			message: string,
+			options?: { signal?: AbortSignal },
+		): Promise<boolean>;
 		input?(
 			prompt: string,
 			options?: { signal?: AbortSignal },

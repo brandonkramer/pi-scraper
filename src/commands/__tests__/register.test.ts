@@ -30,7 +30,10 @@ describe("web command registration", () => {
 		registerWebCommands({
 			registerCommand: (name, options) => registered.push({ name, options }),
 		});
-		expect(registered.map((command) => command.name)).toEqual(["web-set-mode"]);
+		expect(registered.map((command) => command.name)).toEqual([
+			"web-set-mode",
+			"web-config",
+		]);
 		expect(registered[0]?.options.handler).toBeTypeOf("function");
 		expect(
 			webCommands.every((command) => command.name.startsWith("web-")),

@@ -3,8 +3,12 @@
  */
 import type { PiCommandRegistrar, WebCommand } from "./define.ts";
 import { webSetModeCommand } from "./web-set-mode.ts";
+import { webConfigCommand } from "./web-config.ts";
 
-export const webCommands: readonly WebCommand[] = [webSetModeCommand];
+export const webCommands: readonly WebCommand[] = [
+	webSetModeCommand,
+	webConfigCommand,
+];
 
 export function registerWebCommands(pi: PiCommandRegistrar): void {
 	for (const command of webCommands) {
@@ -14,7 +18,7 @@ export function registerWebCommands(pi: PiCommandRegistrar): void {
 				const params = command.parseArgs
 					? command.parseArgs(args)
 					: parseJsonObjectArgs(args);
-				const result = await command.execute(params as never, ctx.signal);
+				const result = await command.execute(params as never, ctx);
 				const message = result.content[0]?.text;
 				if (message) ctx.ui?.notify(message, "info");
 			},
