@@ -66,11 +66,7 @@ export async function loadStoredConfig(
 export async function loadEffectiveConfig(
 	options: ConfigOptions = {},
 ): Promise<EffectiveWebConfig> {
-	const stored = await loadStoredConfig(options);
-	if (!stored.modelProvider && process.env.PI_WEB_MODEL_PROVIDER) {
-		stored.modelProvider = process.env.PI_WEB_MODEL_PROVIDER;
-	}
-	return mergeConfig(stored);
+	return mergeConfig(await loadStoredConfig(options));
 }
 
 export async function saveConfig(

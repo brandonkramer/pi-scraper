@@ -42,10 +42,7 @@ export async function registerWebTools(pi: PiToolRegistrar): Promise<void> {
 			})
 		: webTools;
 	for (const tool of tools) {
-		if (
-			hideModelBacked &&
-			(tool.name === "web_summarize" || tool.name === "web_extract")
-		) {
+		if (hideModelBacked && tool.name === "web_summarize") {
 			continue;
 		}
 		pi.registerTool(tool);

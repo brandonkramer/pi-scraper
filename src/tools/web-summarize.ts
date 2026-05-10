@@ -32,7 +32,10 @@ export const webSummarizeSchema = Type.Object({
 	sentences: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
 	bullets: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
 	provider: Type.Optional(
-		Type.Union([Type.Literal("auto"), Type.Literal("off"), Type.String()]),
+		Type.String({
+			description:
+				"Model adapter id, 'auto' (default), or 'off'. Known values: auto, off, plus any registered adapter id.",
+		}),
 	),
 	...scrapeModeOptionSchema,
 });
@@ -52,17 +55,12 @@ export function createWebSummarizeTool(
 		label: "Sum",
 		description: "Summarize URL no multi-source",
 		parameters: webSummarizeSchema,
-		async execute(
-			_toolCallId,
-			params: Params,
-			signal,
-			_onUpdate,
-			context,
-		) {
+		async execute(_toolCallId, params: Params, signal, _onUpdate, context) {
 			const config = await loadEffectiveConfig();
 			const preference = resolveProviderPreference({
 				paramProvider: params.provider,
 				flagProvider: context?.getFlag?.("web-model-provider"),
+				envProvider: process.env.PI_WEB_MODEL_PROVIDER,
 				configProvider: config.modelProvider,
 				capability: "summarize",
 			});
@@ -77,21 +75,27 @@ export function createWebSummarizeTool(
 						"web_summarize is disabled (provider=off). Use web_scrape to read source text locally.",
 					);
 				}
-				if (
-					preference !== "auto" &&
-					resolveAdapterFromRegistry(preference, "summarize") === undefined
-				) {
-					const registered = modelRegistry
-						.list()
-						.map((e) => e.id);
+				if (preference !== "auto" && preference !== "off") {
+					const entry = modelRegistry.get(preference);
+					if (!entry) {
+						const registered = modelRegistry.list().map((e) => e.id);
+						return errorResult(
+							adapterNotFoundError(
+								"summarize",
+								preference,
+								registered,
+								params.url,
+							),
+							`Model adapter "${preference}" is not registered.`,
+						);
+					}
 					return errorResult(
-						adapterNotFoundError(
+						adapterIncompatibleError(
 							"summarize",
 							preference,
-							registered,
 							params.url,
 						),
-						`Model adapter "${preference}" is not registered.`,
+						`Model adapter "${preference}" does not support summarize.`,
 					);
 				}
 				return missingModelResult(

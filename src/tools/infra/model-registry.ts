@@ -34,6 +34,10 @@ export class ModelRegistry {
 		this.order = this.order.filter((x) => x !== id);
 	}
 
+	get(id: string): RegisteredAdapter | undefined {
+		return this.entries.get(id);
+	}
+
 	resolve(
 		preference: ResolvePreference,
 		capability: ModelCapability,
@@ -58,7 +62,9 @@ export class ModelRegistry {
 	}
 
 	list(): RegisteredAdapter[] {
-		return this.order.map((id) => this.entries.get(id)).filter(Boolean) as RegisteredAdapter[];
+		return this.order
+			.map((id) => this.entries.get(id))
+			.filter(Boolean) as RegisteredAdapter[];
 	}
 
 	/** Test helper. */
@@ -73,7 +79,10 @@ export const modelRegistry = new ModelRegistry();
 
 /** Wire the singleton to a Pi registrar's event bus. */
 export function initModelAdapterProtocol(pi: {
-	events?: { on(event: string, handler: (payload: unknown) => void): void; emit(event: string, payload?: unknown): void };
+	events?: {
+		on(event: string, handler: (payload: unknown) => void): void;
+		emit(event: string, payload?: unknown): void;
+	};
 }): void {
 	if (typeof pi.events?.on !== "function") return;
 	pi.events.on("pi:model-adapter/register", (payload) => {
@@ -97,7 +106,10 @@ export function validateAdapterPayload(
 	if (typeof payload.label !== "string") return null;
 	if (!Array.isArray(payload.capabilities)) return null;
 	if (typeof payload.priority !== "number") return null;
-	if (!isUnknownRecord(payload.adapter) || typeof payload.adapter.run !== "function") {
+	if (
+		!isUnknownRecord(payload.adapter) ||
+		typeof payload.adapter.run !== "function"
+	) {
 		return null;
 	}
 	const capabilities = payload.capabilities.filter(

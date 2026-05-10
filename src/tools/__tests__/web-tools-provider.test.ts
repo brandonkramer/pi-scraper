@@ -92,6 +92,19 @@ describe("web_summarize provider routing", () => {
 		);
 	});
 
+	it("returns MODEL_ADAPTER_INCOMPATIBLE when id lacks capability", async () => {
+		fakeAdapter("extract-only", ["extract"]);
+		const tool = createWebSummarizeTool();
+		const result = await tool.execute(
+			"call",
+			{ content: "page text", sentences: 1, provider: "extract-only" },
+			signal,
+		);
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_INCOMPATIBLE",
+		);
+	});
+
 	it("programmatic adapter beats registry", async () => {
 		fakeAdapter("gemini", ["summarize"]);
 		const tool = createWebSummarizeTool({
@@ -150,6 +163,19 @@ describe("web_extract action=adhoc provider routing", () => {
 		);
 		expect((result.details as { error?: { code: string } }).error?.code).toBe(
 			"MODEL_ADAPTER_NOT_FOUND",
+		);
+	});
+
+	it("returns MODEL_ADAPTER_INCOMPATIBLE when id lacks capability", async () => {
+		fakeAdapter("summarize-only", ["summarize"]);
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ content: "page text", prompt: "extract", provider: "summarize-only" },
+			signal,
+		);
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_INCOMPATIBLE",
 		);
 	});
 });

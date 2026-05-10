@@ -2,11 +2,15 @@
  * @fileoverview web_extract action="adhoc" handler — model-backed schema extraction.
  */
 import { loadEffectiveConfig } from "../config/settings.ts";
-import { extractAdHoc, MissingExtractInputError } from "../extract/adhoc/index.ts";
+import {
+	extractAdHoc,
+	MissingExtractInputError,
+} from "../extract/adhoc/index.ts";
 import {
 	missingModelResult,
 	errorResult,
 	adapterNotFoundError,
+	adapterIncompatibleError,
 } from "./infra/result.ts";
 import {
 	scrapeInputSummary,
@@ -31,12 +35,12 @@ export async function runAdHocExtraction(
 	const preference = resolveProviderPreference({
 		paramProvider: params.provider as string | undefined,
 		flagProvider: context?.getFlag?.("web-model-provider"),
+		envProvider: process.env.PI_WEB_MODEL_PROVIDER,
 		configProvider: config.modelProvider,
 		capability: "extract",
 	});
 	const adapter =
-		options.modelAdapter ??
-		resolveAdapterFromRegistry(preference, "extract");
+		options.modelAdapter ?? resolveAdapterFromRegistry(preference, "extract");
 	if (!adapter) {
 		if (preference === "off") {
 			return missingModelResult(
@@ -45,14 +49,27 @@ export async function runAdHocExtraction(
 				"web_extract action=adhoc is disabled (provider=off). Use action=list or action=vertical for deterministic extractors.",
 			);
 		}
-		if (
-			preference !== "auto" &&
-			resolveAdapterFromRegistry(preference, "extract") === undefined
-		) {
-			const registered = modelRegistry.list().map((e) => e.id);
+		if (preference !== "auto" && preference !== "off") {
+			const entry = modelRegistry.get(preference);
+			if (!entry) {
+				const registered = modelRegistry.list().map((e) => e.id);
+				return errorResult(
+					adapterNotFoundError(
+						"extract",
+						preference,
+						registered,
+						params.url,
+					),
+					`Model adapter "${preference}" is not registered.`,
+				);
+			}
 			return errorResult(
-				adapterNotFoundError("extract", preference, registered, params.url),
-				`Model adapter "${preference}" is not registered.`,
+				adapterIncompatibleError(
+					"extract",
+					preference,
+					params.url,
+				),
+				`Model adapter "${preference}" does not support extract.`,
 			);
 		}
 		return missingModelResult(

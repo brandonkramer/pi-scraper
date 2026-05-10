@@ -153,7 +153,9 @@ export function resolveProviderPreference(opts: {
 	paramProvider?: string;
 	flagProvider?: string;
 	envProvider?: string;
-	configProvider?: string | { summarize?: string; extract?: string; analyze?: string; chat?: string };
+	configProvider?:
+		| string
+		| { summarize?: string; extract?: string; analyze?: string; chat?: string };
 	capability: ModelCapability;
 }): ResolvePreference {
 	const layers = [

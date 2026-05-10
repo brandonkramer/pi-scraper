@@ -45,7 +45,8 @@ describe("ModelRegistry", () => {
 		registry.register({ ...fakeAdapter("low"), priority: 10 });
 		registry.register({ ...fakeAdapter("high"), priority: 90 });
 		const resolved = registry.resolve("auto", "summarize");
-		const result = resolved && (await resolved.run({ task: "summarize", input: "" }));
+		const result =
+			resolved && (await resolved.run({ task: "summarize", input: "" }));
 		expect(result?.data).toBe("high");
 	});
 
@@ -53,7 +54,8 @@ describe("ModelRegistry", () => {
 		registry.register(fakeAdapter("first"));
 		registry.register(fakeAdapter("second"));
 		const resolved = registry.resolve("auto", "summarize");
-		const result = resolved && (await resolved.run({ task: "summarize", input: "" }));
+		const result =
+			resolved && (await resolved.run({ task: "summarize", input: "" }));
 		expect(result?.data).toBe("first");
 	});
 
@@ -92,7 +94,11 @@ describe("validateAdapterPayload", () => {
 			label: "Test",
 			capabilities: ["summarize"],
 			priority: 50,
-			adapter: { async run() { return { data: true }; } },
+			adapter: {
+				async run() {
+					return { data: true };
+				},
+			},
 		});
 		expect(entry).toBeTruthy();
 		expect(entry?.id).toBe("test");
@@ -159,9 +165,7 @@ describe("initModelAdapterProtocol", () => {
 			},
 		};
 		initModelAdapterProtocol(pi);
-		expect(events.map((e) => e.event)).toContain(
-			"pi:model-adapter/discover",
-		);
+		expect(events.map((e) => e.event)).toContain("pi:model-adapter/discover");
 	});
 
 	it("ignores registrars without events", () => {

@@ -36,7 +36,10 @@ export const webExtractSchema = Type.Object({
 	prompt: Type.Optional(Type.Any()),
 	schema: Type.Optional(Type.Any()),
 	provider: Type.Optional(
-		Type.Union([Type.Literal("auto"), Type.Literal("off"), Type.String()]),
+		Type.String({
+			description:
+				"Model adapter id, 'auto' (default), or 'off'. Known values: auto, off, plus any registered adapter id.",
+		}),
 	),
 	sourceFormat: Type.Optional(Type.Any()),
 	include: Type.Optional(Type.Array(Type.Any())),
