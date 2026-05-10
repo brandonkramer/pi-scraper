@@ -272,7 +272,9 @@ const entry = {
   adapter: {
     async run(req, signal) {
       // req.task | req.input | req.prompt | req.schema (extract only)
-      // Return: { data, text?, raw? }
+      // Return: { data, text?, raw?, usage? }
+      //   usage: { provider?, model?, inputTokens?, outputTokens?, totalTokens?, costUSD? }
+      //   All usage fields optional — supply what you have.
     },
   },
 };
@@ -305,6 +307,8 @@ pi.events?.emit?.("pi:model-adapter/unregister", { id: entry.id }); // on unload
 ```
 
 `web_summarize` issues a filtered discover (`{ capabilities: ["summarize"] }`) on its first invocation when no `summarize`-capable adapter is registered, then caches per capability so subsequent invocations don't re-emit. `web_extract action="adhoc"` will adopt the same pattern.
+
+When an adapter returns `usage`, `web_summarize` (and `web_extract action="adhoc"`) render a compact footer in the expanded view, for example: `gemini-acp · gemini-2.0-flash · 234 in · 187 out · $0.0023`. Adapters supply only the fields they have; pi-scraper hides absent fields automatically. Cost is in USD and is the adapter's responsibility to compute — pi-scraper ships no pricing table.
 
 ## Development and release checks
 
