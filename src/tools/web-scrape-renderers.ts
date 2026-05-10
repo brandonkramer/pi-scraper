@@ -14,7 +14,7 @@ import { currentSpinnerFrame } from "../tui/spinner.ts";
 import { progressStartedAtMs } from "../tui/progress-status.ts";
 import { renderUrlStatusRow } from "../tui/rows.ts";
 import { formatChecklistText } from "../tui/checklist.ts";
-import { previewText } from "../tui/preview-text.ts";
+import { previewText } from "../tui/preview.ts";
 import {
 	cacheLabel,
 	errorTitle,
