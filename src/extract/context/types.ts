@@ -3,16 +3,16 @@
  */
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 
-export type ContextPackageSource = "crawl" | "batch";
+export type ContextSource = "crawl" | "batch";
 
-export interface ContextPackagePage {
+export interface ContextPage {
 	url: string;
 	result: ScrapeResult;
 	responseId?: string;
 }
 
-export interface ContextPackageMetadata {
-	source: ContextPackageSource;
+export interface ContextMetadata {
+	source: ContextSource;
 	crawlId?: string;
 	batchId?: string;
 	createdAt: string;
@@ -21,7 +21,7 @@ export interface ContextPackageMetadata {
 	truncated: boolean;
 }
 
-export interface ContextPackageEntry {
+export interface ContextNode {
 	url: string;
 	title?: string;
 	breadcrumbs?: string[];
@@ -31,16 +31,16 @@ export interface ContextPackageEntry {
 	excerpt?: string;
 }
 
-export interface ContextPackage {
-	package: ContextPackageMetadata;
-	tree: ContextPackageEntry[];
+export interface CompiledContext {
+	package: ContextMetadata;
+	tree: ContextNode[];
 }
 
-export interface BuildContextPackageInput {
-	source: ContextPackageSource;
+export interface CompileContextInput {
+	source: ContextSource;
 	crawlId?: string;
 	batchId?: string;
-	pages: readonly ContextPackagePage[];
+	pages: readonly ContextPage[];
 	createdAt?: string;
 	maxBytes?: number;
 }

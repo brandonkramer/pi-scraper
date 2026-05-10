@@ -17,7 +17,7 @@ import { updateJobManifest } from "../storage/jobs/manifest.ts";
 import { storeResponseWithId } from "../storage/responses/store.ts";
 import type { FreshnessMetadata } from "../types.ts";
 import { storedResultGuidance } from "./agentic-context.ts";
-import { buildStoredContextPackage } from "../storage/context-packages/build.ts";
+import { storeCompiledContext } from "../storage/context/build.ts";
 import { sessionLifecycle } from "./session-lifecycle.ts";
 import { emitProgress } from "./progress.ts";
 import {
@@ -91,7 +91,7 @@ export async function crawlRun(
 		responseId: finalStored.responseId,
 		status: crawl.metadata.status,
 	});
-	const contextPackage = await buildCrawlContextPackage(
+	const contextPackage = await compileCrawlContext(
 		params,
 		crawl.crawlId,
 		crawl.pages,
@@ -152,13 +152,13 @@ async function maybeBuildApiSurface(params: Params, pages: ScrapeResult[]) {
 	return buildApiSurfaceFromScrapes(pages);
 }
 
-async function buildCrawlContextPackage(
+async function compileCrawlContext(
 	params: Params,
 	crawlId: string,
 	pages: ScrapeResult[],
 ) {
 	if (params.compile !== true) return undefined;
-	return buildStoredContextPackage({
+	return storeCompiledContext({
 		source: "crawl",
 		crawlId,
 		pages: pages.map((result) => ({

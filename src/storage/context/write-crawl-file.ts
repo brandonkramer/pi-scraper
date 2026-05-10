@@ -8,22 +8,22 @@
  */
 import { rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ContextPackage } from "../../extract/context-package/index.ts";
+import type { CompiledContext } from "../../extract/context/index.ts";
 import {
 	ensureDir,
 	resolvePiStoragePaths,
 	type ResolveStorageOptions,
 } from "../paths.ts";
 
-export interface StoredContextPackageFile {
+export interface StoredContextFile {
 	path: string;
 }
 
-export async function writeCrawlContextPackage(
+export async function writeCrawlContextFile(
 	crawlId: string,
-	contextPackage: ContextPackage,
+	contextPackage: CompiledContext,
 	options: ResolveStorageOptions = {},
-): Promise<StoredContextPackageFile> {
+): Promise<StoredContextFile> {
 	const dir = await ensureDir(
 		path.join(resolvePiStoragePaths(options).crawl, safeSegment(crawlId)),
 	);

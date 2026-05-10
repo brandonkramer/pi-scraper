@@ -2,16 +2,16 @@
  * @fileoverview Batch context-package compilation workflow.
  */
 import type { BatchItemResult } from "./run.ts";
-import { buildStoredContextPackage } from "../storage/context-packages/build.ts";
+import { storeCompiledContext } from "../storage/context/build.ts";
 import { updateJobManifest } from "../storage/jobs/manifest.ts";
 
-export async function buildBatchContextPackage(
+export async function compileBatchContext(
 	params: { compile?: boolean },
 	items: readonly BatchItemResult[],
 	jobId: string,
 ) {
 	if (params.compile !== true) return undefined;
-	const contextPackage = await buildStoredContextPackage({
+	const contextPackage = await storeCompiledContext({
 		source: "batch",
 		batchId: jobId,
 		pages: items

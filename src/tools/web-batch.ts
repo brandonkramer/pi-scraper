@@ -14,7 +14,7 @@ import {
 	retrieveResultAction,
 	storedResultGuidance,
 } from "./agentic-context.ts";
-import { buildBatchContextPackage } from "../batch/compile.ts";
+import { compileBatchContext } from "../batch/compile.ts";
 import { defineWebTool } from "./define.ts";
 import { emitProgress } from "./progress.ts";
 import {
@@ -95,7 +95,7 @@ export const webBatchTool = defineWebTool({
 					: undefined,
 			),
 		);
-		const contextPackage = await buildBatchContextPackage(
+		const contextPackage = await compileBatchContext(
 			params,
 			result.items,
 			result.jobId,

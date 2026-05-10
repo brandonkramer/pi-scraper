@@ -2,35 +2,35 @@
  * @fileoverview Shared context-package storage flow for web tools.
  */
 import {
-	buildContextPackage,
-	type ContextPackage,
-	type ContextPackageSource,
-} from "../../extract/context-package/index.ts";
+	compileContext,
+	type CompiledContext,
+	type ContextSource,
+} from "../../extract/context/index.ts";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
-import { writeCrawlContextPackage } from "./write-crawl-file.ts";
+import { writeCrawlContextFile } from "./write-crawl-file.ts";
 import { storeResponse } from "../responses/store.ts";
 
-export interface ContextPackagePageInput {
+export interface ContextPageInput {
 	url: string;
 	result: ScrapeResult;
 	responseId?: string;
 }
 
-export interface StoredContextPackage {
-	value: ContextPackage;
+export interface StoredCompiledContext {
+	value: CompiledContext;
 	responseId: string;
 	fullOutputPath: string;
 	crawlPackagePath?: string;
 }
 
-export async function buildStoredContextPackage(input: {
-	source: ContextPackageSource;
+export async function storeCompiledContext(input: {
+	source: ContextSource;
 	crawlId?: string;
 	batchId?: string;
-	pages: readonly ContextPackagePageInput[];
+	pages: readonly ContextPageInput[];
 	persistCrawlPackage?: boolean;
-}): Promise<StoredContextPackage> {
-	const value = buildContextPackage({
+}): Promise<StoredCompiledContext> {
+	const value = compileContext({
 		source: input.source,
 		crawlId: input.crawlId,
 		batchId: input.batchId,
@@ -38,7 +38,7 @@ export async function buildStoredContextPackage(input: {
 	});
 	const stored = await storeResponse(value);
 	const crawlFile = input.persistCrawlPackage
-		? await writeCrawlContextPackage(requiredCrawlId(input), value)
+		? await writeCrawlContextFile(requiredCrawlId(input), value)
 		: undefined;
 	return {
 		value,

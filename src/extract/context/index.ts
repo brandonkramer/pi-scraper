@@ -9,28 +9,28 @@
 import { PI_TRUNCATION_LIMITS } from "../../defaults.ts";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import type {
-	ContextPackage,
-	BuildContextPackageInput,
-	ContextPackageEntry,
-	ContextPackagePage,
+	CompiledContext,
+	CompileContextInput,
+	ContextNode,
+	ContextPage,
 } from "./types.ts";
 
 export {
-	ContextPackage,
-	BuildContextPackageInput,
-	ContextPackageEntry,
-	ContextPackagePage,
-	ContextPackageMetadata,
-	ContextPackageSource,
+	CompiledContext,
+	CompileContextInput,
+	ContextNode,
+	ContextPage,
+	ContextMetadata,
+	ContextSource,
 } from "./types.ts";
 
 const DEFAULT_EXCERPT_CHARS = 800;
 const MIN_EXCERPT_CHARS = 120;
 const SUMMARY_CHARS = 220;
 
-export function buildContextPackage(
-	input: BuildContextPackageInput,
-): ContextPackage {
+export function compileContext(
+	input: CompileContextInput,
+): CompiledContext {
 	const maxBytes = input.maxBytes ?? PI_TRUNCATION_LIMITS.maxBytes;
 	const pages = input.pages.filter((page) => !page.result.error);
 	const totalChars = pages.reduce(
@@ -51,15 +51,15 @@ export function buildContextPackage(
 			truncated: false,
 		},
 		tree,
-	} satisfies ContextPackage;
+	} satisfies CompiledContext;
 	return boundPackage(base, input, maxBytes);
 }
 
 function boundPackage(
-	base: ContextPackage,
-	input: BuildContextPackageInput,
+	base: CompiledContext,
+	input: CompileContextInput,
 	maxBytes: number,
-): ContextPackage {
+): CompiledContext {
 	if (byteLength(base) <= maxBytes) return base;
 	for (const excerptChars of [400, MIN_EXCERPT_CHARS, 0]) {
 		const tree = attachChildren(
@@ -78,10 +78,10 @@ function boundPackage(
 }
 
 function truncateEntries(
-	base: ContextPackage,
+	base: CompiledContext,
 	maxBytes: number,
-): ContextPackage {
-	const tree: ContextPackageEntry[] = [];
+): CompiledContext {
+	const tree: ContextNode[] = [];
 	const packageMeta = { ...base.package, truncated: true };
 	for (const entry of base.tree) {
 		const compact = withoutUndefined({
@@ -98,9 +98,9 @@ function truncateEntries(
 }
 
 function entryForPage(
-	page: ContextPackagePage,
+	page: ContextPage,
 	excerptChars: number,
-): ContextPackageEntry {
+): ContextNode {
 	const result = page.result;
 	const url = result.finalUrl ?? result.url ?? page.url;
 	const text = contentText(result);
@@ -114,7 +114,7 @@ function entryForPage(
 	});
 }
 
-function attachChildren(entries: ContextPackageEntry[]): ContextPackageEntry[] {
+function attachChildren(entries: ContextNode[]): ContextNode[] {
 	const byUrl = new Map(entries.map((entry) => [entry.url, entry]));
 	for (const entry of entries) {
 		const parent = parentUrl(entry.url, byUrl);
@@ -128,8 +128,8 @@ function attachChildren(entries: ContextPackageEntry[]): ContextPackageEntry[] {
 
 function parentUrl(
 	url: string,
-	entries: Map<string, ContextPackageEntry>,
-): ContextPackageEntry | undefined {
+	entries: Map<string, ContextNode>,
+): ContextNode | undefined {
 	try {
 		const current = new URL(url);
 		const parts = current.pathname.split("/").filter(Boolean);
