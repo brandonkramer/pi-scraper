@@ -9,17 +9,16 @@ import {
 
 export function renderText(
 	text: string,
-	options: { padToWidth?: boolean; truncate?: boolean } = {},
+	options: { padToWidth?: boolean } = {},
 ): Component {
 	return {
 		render(width: number): string[] {
 			const safeWidth = Math.max(1, Math.floor(width || 80));
-			const lines = text.split("\n").flatMap((line) => {
-				const normalized = line.replaceAll("\t", "   ");
-				return options.truncate
-					? [truncateToWidth(normalized, safeWidth, "…")]
-					: wrapTextWithAnsi(normalized, safeWidth);
-			});
+			const lines = text
+				.split("\n")
+				.flatMap((line) =>
+					wrapTextWithAnsi(line.replaceAll("\t", "   "), safeWidth),
+				);
 			return options.padToWidth
 				? lines.map((line) => truncateToWidth(line, safeWidth, "", true))
 				: lines;

@@ -59,7 +59,7 @@ export function renderEnvelopeResult(
 		details?.summary ?? `${status}${url ? ` · ${url}` : ""}${id}${freshness}`;
 	return renderText(
 		expanded ? expandedEnvelopeText(summary, preview, details) : summary,
-		{ padToWidth: true, truncate: !expanded },
+		{ padToWidth: true },
 	);
 }
 
