@@ -1,0 +1,20 @@
+{
+	"$schema": "./node_modules/oxfmt/configuration_schema.json",
+	"useTabs": true,
+	"printWidth": 100,
+	"sortImports": true,
+	"jsdoc": true,
+	"ignorePatterns": [
+		"node_modules",
+		"dist",
+		"build",
+		"coverage",
+		"graphify-out",
+		".pi",
+		".bin",
+		"eval",
+		"bench/.build",
+		"package-lock.json",
+		"CHANGELOG.md"
+	]
+}

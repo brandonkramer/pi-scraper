@@ -1,0 +1,92 @@
+# ============================================================================
+# no-architecture-violation — canonical-home rules.
+#
+# Each helper that has a single canonical home in this repo is enforced here.
+# When violated, the commit is blocked with a message pointing to the
+# canonical file. To add a new canonical-home rule, append a YAML doc below
+# following the same shape (id, language, severity, message, note, rule,
+# files, ignores).
+#
+# Why one file: these rules share the same architectural intent
+# ("X must live in Y"). Grouping them keeps the architecture invariants
+# discoverable in one place. Each rule keeps its own scoped `ignores` because
+# ast-grep applies `ignores` per YAML document, not per the whole file.
+# ============================================================================
+
+id: no-define-web-tool-elsewhere
+language: TypeScript
+severity: error
+message: "defineWebTool() may only be called in src/tools/web-*.ts"
+note: |
+  Each tool gets its own web-<name>.ts file and is registered in src/tools/infra/register.ts.
+rule:
+  pattern: defineWebTool($$$)
+files:
+  - "src/**/*.ts"
+ignores:
+  - "src/tools/web-*.ts"
+  - "src/tools/infra/define.ts"
+  - "**/__tests__/**"
+  - "**/*.test.ts"
+
+---
+id: no-sqlite-import-elsewhere
+language: TypeScript
+severity: error
+message: "node:sqlite must only be imported in src/storage/db/open.ts and src/storage/migrations/run.ts"
+note: |
+  Use openStorageDb() and the storage helpers from "../storage/db/open.ts" (adjust depth).
+rule:
+  any:
+    - pattern: import $$$ from 'node:sqlite'
+    - pattern: import $$$ from "node:sqlite"
+files:
+  - "src/**/*.ts"
+ignores:
+  - "src/storage/db/open.ts"
+  - "src/storage/migrations/run.ts"
+  - "**/__tests__/**"
+  - "**/*.test.ts"
+
+---
+id: no-normalize-url-elsewhere
+language: TypeScript
+severity: error
+message: "URL normalization must live in src/url/normalize.ts"
+note: |
+  Import normalizeUrl from "../url/normalize.ts" (adjust depth) instead of rolling your own.
+rule:
+  any:
+    - kind: function_declaration
+      has:
+        field: name
+        regex: "^normalizeUrl$"
+    - kind: variable_declarator
+      has:
+        field: name
+        regex: "^normalizeUrl$"
+files:
+  - "src/**/*.ts"
+ignores:
+  - "src/url/normalize.ts"
+  - "**/__tests__/**"
+  - "**/*.test.ts"
+
+---
+id: no-tui-tools-import
+language: TypeScript
+severity: error
+message: "src/tui/ must not import from src/tools/. Move shared code to an internal module."
+note: |
+  The TUI layer must remain independent of the tool interface layer.
+  Shared rendering contracts belong in src/tui/types.ts or src/types.ts.
+rule:
+  kind: import_statement
+  has:
+    kind: string
+    regex: '"[^"]*tools/[^"]*"'
+files:
+  - "src/tui/**/*.ts"
+ignores:
+  - "**/__tests__/**"
+  - "**/*.test.ts"

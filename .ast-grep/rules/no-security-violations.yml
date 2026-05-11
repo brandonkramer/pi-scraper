@@ -1,0 +1,53 @@
+# ============================================================================
+# no-security-violations — security-category rules.
+#
+# In scope: rules where a violation could lead to a CVE, data leak, or auth
+# bypass (hardcoded credentials, weak crypto, unsafe eval, etc.).
+#
+# Out of scope: robustness/error-handling rules (those get their own file).
+#
+# To add a new security rule: append a YAML doc below following the same shape
+# (id, language, severity, message, note, optional constraints). Each
+# rule keeps its own scope because ast-grep applies `ignores` per YAML doc.
+# ============================================================================
+
+id: no-hardcoded-secrets
+language: TypeScript
+severity: error
+message: "Hardcoded secret detected — use process.env instead"
+note: |
+  Hardcoded secrets in source code can be exposed through version control.
+  Use environment variables or a secrets manager instead.
+
+  BAD:  const apiKey = "<hardcoded-value>"
+  GOOD: const apiKey = process.env.API_KEY
+rule:
+  any:
+    - pattern: const $VAR = "$_"
+    - pattern: const $VAR = '$_'
+constraints:
+  VAR:
+    # clientId/client_id/appId are public OAuth identifiers — excluded intentionally
+    regex: "(password|passwd|pwd|secret|token|apiKey|api_key|apikey|apiSecret|accessKey|access_key|privateKey|private_key|clientSecret|client_secret|credentials|bearer)"
+
+---
+id: no-insecure-randomness
+language: TypeScript
+severity: error
+message: "Math.random() used for security-sensitive operations — use crypto.getRandomValues() instead"
+note: |
+  Math.random() is not cryptographically secure. For tokens, IDs, or
+  any security-sensitive random values, use crypto.getRandomValues()
+  or the Web Crypto API.
+rule:
+  all:
+    - pattern: Math.random()
+    - any:
+        - inside:
+            kind: call_expression
+            has:
+              regex: "(?i)(token|secret|key|nonce|salt|hash|encrypt|uuid|guid|id)"
+        - inside:
+            kind: variable_declarator
+            has:
+              regex: "(?i)(token|secret|key|nonce|salt|hash)"
