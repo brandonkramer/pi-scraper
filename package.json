@@ -1,104 +1,104 @@
 {
-  "name": "pi-scraper",
-  "version": "0.3.0",
-  "description": "Crawl, map, and structured extraction for Pi — scraper-first, Pi-native, and local-first.",
-  "keywords": [
-    "crawler",
-    "firecrawl",
-    "pi",
-    "pi-package",
-    "scraping",
-    "structured-extraction",
-    "web-scraping"
-  ],
-  "homepage": "https://github.com/brandonkramer/pi-scraper#readme",
-  "bugs": {
-    "url": "https://github.com/brandonkramer/pi-scraper/issues"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/brandonkramer/pi-scraper"
-  },
-  "files": [
-    "src",
-    "!src/**/*.test.ts",
-    "!src/**/__tests__/**",
-    "skills",
-    "README.md",
-    "LICENSE"
-  ],
-  "type": "module",
-  "scripts": {
-    "prepare": "lefthook install",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run --exclude '.pi/**' --exclude '**/.pi/**'",
-    "test:tools": "vitest run src/tools/__tests__/tools-smoke.test.ts --reporter=verbose --exclude '.pi/**' --exclude '**/.pi/**'",
-    "test:selection": "vitest run src/tools/__tests__/tool-contract.test.ts src/tools/__tests__/tool-selection-fixtures.test.ts --reporter=verbose --exclude '.pi/**' --exclude '**/.pi/**'",
-    "eval:selection": "node eval/tool-selection/run-selection-eval.mjs",
-    "eval:selection:pi": "PI_TOOL_SELECTION_EVAL_COMMAND='node eval/tool-selection/pi-model-command.mjs' node eval/tool-selection/run-selection-eval.mjs",
-    "smoke:install": "npm run bench:suite -- install-smoke",
-    "smoke:live": "vitest run src/tools/__tests__/tools-smoke.live.test.ts --reporter=verbose",
-    "smoke:browser": "vitest run src/browser/__tests__/browser-smoke.test.ts --reporter=verbose",
-    "audit:strict": "npm audit --omit=dev --audit-level=high",
-    "lint:workflows": "github-actionlint .github/workflows/*.yml",
-    "similarity:install": "bash scripts/similarity.sh",
-    "dup-check": "bash scripts/check-dup.sh",
-    "bench": "node bench/bench.mjs eval/corpus.json",
-    "bench:suite": "node bench/suites/run.mjs",
-    "check": "npm run typecheck && npm test",
-    "prepublishOnly": "npm run typecheck"
-  },
-  "dependencies": {
-    "@earendil-works/pi-tui": "^0.74.0",
-    "@mozilla/readability": "^0.6.0",
-    "css-select": "^6.0.0",
-    "dom-serializer": "^2.0.0",
-    "domhandler": "^5.0.3",
-    "domutils": "^3.2.2",
-    "htmlparser2": "^12.0.0",
-    "linkedom": "^0.18.12",
-    "robots-parser": "^3.0.1",
-    "turndown": "^7.2.4",
-    "turndown-plugin-gfm": "^1.0.2",
-    "undici": "^8.2.0"
-  },
-  "devDependencies": {
-    "@ast-grep/cli": "^0.42.2",
-    "@earendil-works/pi-ai": "latest",
-    "@sinclair/typebox": "latest",
-    "@types/node": "latest",
-    "@types/turndown": "^5.0.6",
-    "cheerio": "^1.2.0",
-    "defuddle": "^0.18.1",
-    "github-actionlint": "^1.7.12",
-    "html-to-text": "^10.0.0",
-    "lefthook": "^2.1.6",
-    "node-html-markdown": "^2.0.0",
-    "oxfmt": "^0.48.0",
-    "oxlint": "^1.63.0",
-    "oxlint-tsgolint": "^0.22.1",
-    "typescript": "latest",
-    "vitest": "^4.1.5"
-  },
-  "peerDependencies": {
-    "@earendil-works/pi-ai": "*",
-    "@sinclair/typebox": "*"
-  },
-  "optionalDependencies": {
-    "pdfjs-dist": "^5.7.284",
-    "playwright": "^1.59.1"
-  },
-  "engines": {
-    "node": ">=22.19.0",
-    "pi": ">=0.65.0"
-  },
-  "pi": {
-    "extensions": [
-      "./src/index.ts"
-    ],
-    "skills": [
-      "./skills"
-    ]
-  }
+	"name": "pi-scraper",
+	"version": "0.3.0",
+	"description": "Crawl, map, and structured extraction for Pi — scraper-first, Pi-native, and local-first.",
+	"keywords": [
+		"crawler",
+		"firecrawl",
+		"pi",
+		"pi-package",
+		"scraping",
+		"structured-extraction",
+		"web-scraping"
+	],
+	"homepage": "https://github.com/brandonkramer/pi-scraper#readme",
+	"bugs": {
+		"url": "https://github.com/brandonkramer/pi-scraper/issues"
+	},
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/brandonkramer/pi-scraper"
+	},
+	"files": [
+		"src",
+		"!src/**/*.test.ts",
+		"!src/**/__tests__/**",
+		"skills",
+		"README.md",
+		"LICENSE"
+	],
+	"type": "module",
+	"scripts": {
+		"prepare": "lefthook install",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:tools": "vitest run src/tools/__tests__/tools-smoke.test.ts --reporter=verbose",
+		"test:selection": "vitest run src/tools/__tests__/tool-contract.test.ts src/tools/__tests__/tool-selection-fixtures.test.ts --reporter=verbose",
+		"eval:selection": "node eval/tool-selection/run-selection-eval.mjs",
+		"eval:selection:pi": "PI_TOOL_SELECTION_EVAL_COMMAND='node eval/tool-selection/pi-model-command.mjs' node eval/tool-selection/run-selection-eval.mjs",
+		"smoke:install": "npm run bench:suite -- install-smoke",
+		"smoke:live": "vitest run src/tools/__tests__/tools-smoke.live.test.ts --reporter=verbose",
+		"smoke:browser": "vitest run src/browser/__tests__/browser-smoke.test.ts --reporter=verbose",
+		"audit:strict": "npm audit --omit=dev --audit-level=high",
+		"lint:workflows": "github-actionlint .github/workflows/*.yml",
+		"similarity:install": "bash scripts/similarity.sh",
+		"dup-check": "bash scripts/check-dup.sh",
+		"bench": "node bench/bench.mjs eval/corpus.json",
+		"bench:suite": "node bench/suites/run.mjs",
+		"check": "npm run typecheck && npm test",
+		"prepublishOnly": "npm run typecheck"
+	},
+	"dependencies": {
+		"@earendil-works/pi-tui": "^0.74.0",
+		"@mozilla/readability": "^0.6.0",
+		"css-select": "^6.0.0",
+		"dom-serializer": "^2.0.0",
+		"domhandler": "^5.0.3",
+		"domutils": "^3.2.2",
+		"htmlparser2": "^12.0.0",
+		"linkedom": "^0.18.12",
+		"robots-parser": "^3.0.1",
+		"turndown": "^7.2.4",
+		"turndown-plugin-gfm": "^1.0.2",
+		"undici": "^8.2.0"
+	},
+	"devDependencies": {
+		"@ast-grep/cli": "^0.42.2",
+		"@earendil-works/pi-ai": "latest",
+		"@sinclair/typebox": "latest",
+		"@types/node": "latest",
+		"@types/turndown": "^5.0.6",
+		"cheerio": "^1.2.0",
+		"defuddle": "^0.18.1",
+		"github-actionlint": "^1.7.12",
+		"html-to-text": "^10.0.0",
+		"lefthook": "^2.1.6",
+		"node-html-markdown": "^2.0.0",
+		"oxfmt": "^0.48.0",
+		"oxlint": "^1.63.0",
+		"oxlint-tsgolint": "^0.22.1",
+		"typescript": "latest",
+		"vitest": "^4.1.5"
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-ai": "*",
+		"@sinclair/typebox": "*"
+	},
+	"optionalDependencies": {
+		"pdfjs-dist": "^5.7.284",
+		"playwright": "^1.59.1"
+	},
+	"engines": {
+		"node": ">=22.19.0",
+		"pi": ">=0.65.0"
+	},
+	"pi": {
+		"extensions": [
+			"./src/index.ts"
+		],
+		"skills": [
+			"./skills"
+		]
+	}
 }
