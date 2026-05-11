@@ -1,0 +1,12 @@
+# Use structured logging instead of console.log
+id: no-console-log
+language: ts
+severity: warning
+rule:
+  pattern: console.log($$$)
+message: "Avoid console.log in source code. Use a proper logger or structured output."
+files:
+  - "src/**/*.ts"
+ignore:
+  - "src/**/*.test.ts"
+  - "src/**/__tests__/**"

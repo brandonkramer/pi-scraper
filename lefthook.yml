@@ -1,0 +1,32 @@
+# https://lefthook.dev/configuration/
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: oxfmt
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc}"
+      run: npx oxfmt {staged_files}
+      stage_fixed: true
+    - name: oxlint
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
+      run: npx oxlint {staged_files}
+    - name: ast-grep
+      glob: "*.{ts,tsx}"
+      run: npx ast-grep scan {staged_files}
+    - name: dup-check
+      glob: "src/**/*.ts"
+      run: npm run dup-check
+    - name: residue-check
+      run: bash scripts/check-residue.sh
+
+pre-push:
+  parallel: false
+  jobs:
+    - name: oxlint
+      run: npx oxlint .
+    - name: ast-grep
+      run: npx ast-grep scan
+    - name: typecheck
+      run: npm run typecheck
+    - name: test
+      run: npm test

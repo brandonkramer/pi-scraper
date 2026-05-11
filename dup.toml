@@ -1,0 +1,61 @@
+# dup.toml — allowlist of known-false-positive duplicates from similarity-ts.
+# Every entry MUST include an inline # (YYYY-MM-DD initials) comment.
+# Re-evaluate quarterly.
+#
+# Format:
+#   pairs    — list of "<pathA>:<symbolA>||<pathB>:<symbolB>" strings (order doesn't matter)
+#   clusters — list of glob patterns; silences a cluster when EVERY symbol matches
+
+# Allowed duplicate pairs
+pairs = [
+  # Test file shadows source function — by design
+  "src/tui/__tests__/envelope-usage.test.ts:formatModelUsage||src/tui/envelope.ts:formatModelUsage", # (2026-05-11 bk)
+
+  # Cross-domain coincidence — config dispatch vs migration insert
+  "src/commands/web-config.ts:runWebConfigCommand||src/storage/migrations/legacy-files.ts:insertCrawlState", # (2026-05-11 bk)
+
+  # Cross-domain coincidence — status report vs crawl state save
+  "src/commands/web-config-status.ts:assembleStatusReport||src/crawl/state.ts:saveCrawlState", # (2026-05-11 bk)
+
+  # Same-file selection helpers — different responsibilities
+  "src/extract/api-surface/selection.ts:collectionForType||src/extract/api-surface/selection.ts:presetInclude", # (2026-05-11 bk)
+
+  # Cross-domain async I/O primitives — all try/catch wrappers with different domains
+  "src/diff/snapshots.ts:loadSnapshot||src/http/session.ts:buildCookieHeader",                                              # (2026-05-11 bk)
+  "src/diff/snapshots.ts:loadSnapshot||src/storage/blobs.ts:writeBlob",                                                     # (2026-05-11 bk)
+  "src/diff/snapshots.ts:loadSnapshot||src/tools/web-extract-adhoc.ts:runAdHocExtraction",                                  # (2026-05-11 bk)
+  "src/http/session.ts:buildCookieHeader||src/storage/blobs.ts:writeBlob",                                                  # (2026-05-11 bk)
+  "src/http/session.ts:buildCookieHeader||src/tools/web-extract-adhoc.ts:runAdHocExtraction",                               # (2026-05-11 bk)
+  "src/storage/blobs.ts:writeBlob||src/tools/web-extract-adhoc.ts:runAdHocExtraction",                                      # (2026-05-11 bk)
+  "src/commands/web-config-model-provider.ts:runWebConfigModelProvider||src/diff/snapshots.ts:loadSnapshot",                # (2026-05-11 bk)
+  "src/commands/web-config-model-provider.ts:runWebConfigModelProvider||src/http/session.ts:buildCookieHeader",             # (2026-05-11 bk)
+  "src/commands/web-config-model-provider.ts:runWebConfigModelProvider||src/storage/blobs.ts:writeBlob",                    # (2026-05-11 bk)
+  "src/commands/web-config-model-provider.ts:runWebConfigModelProvider||src/tools/web-extract-adhoc.ts:runAdHocExtraction", # (2026-05-11 bk)
+  "src/commands/web-config-scrape-mode.ts:runWebConfigScrapeMode||src/diff/snapshots.ts:loadSnapshot",                      # (2026-05-11 bk)
+  "src/commands/web-config-scrape-mode.ts:runWebConfigScrapeMode||src/http/session.ts:buildCookieHeader",                   # (2026-05-11 bk)
+  "src/commands/web-config-scrape-mode.ts:runWebConfigScrapeMode||src/storage/blobs.ts:writeBlob",                          # (2026-05-11 bk)
+  "src/commands/web-config-scrape-mode.ts:runWebConfigScrapeMode||src/tools/web-extract-adhoc.ts:runAdHocExtraction",       # (2026-05-11 bk)
+
+  # Structural coincidence — small helper functions with similar parameter shape
+  "src/extract/api-surface/selection.ts:presetInclude||src/scrape/describe.ts:formatAge",      # (2026-05-11 bk)
+  "src/extract/api-surface/selection.ts:presetInclude||src/scrape/render.ts:renderFormat",     # (2026-05-11 bk)
+  "src/extract/api-surface/selection.ts:collectionForType||src/scrape/describe.ts:formatAge",  # (2026-05-11 bk)
+  "src/extract/api-surface/selection.ts:collectionForType||src/scrape/render.ts:renderFormat", # (2026-05-11 bk)
+  "src/scrape/describe.ts:formatAge||src/scrape/render.ts:renderFormat",                       # (2026-05-11 bk)
+
+  # By-design dedupe helpers — same concept, different domains
+  "src/extract/api-surface/selection.ts:uniqueBy||src/extract/api-surface/tree.ts:dedupeByName", # (2026-05-11 bk)
+  "src/extract/api-surface/selection.ts:uniqueBy||src/url/dedupe.ts:dedupeBy",                   # (2026-05-11 bk)
+]
+
+# Allowed cluster globs — every symbol in the cluster must match the glob
+clusters = [
+  # By-design sibling renderers (batch, crawl, map, scrape, diff)
+  "renderWeb*", # (2026-05-11 bk)
+
+  # Config sub-actions follow same async pattern
+  "runWebConfig*", # (2026-05-11 bk)
+
+  # Dedupe helpers across domains
+  "*dedupe*", # (2026-05-11 bk)
+]

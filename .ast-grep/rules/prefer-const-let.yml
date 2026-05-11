@@ -1,0 +1,12 @@
+# Use const/let instead of var
+id: prefer-const-let
+language: ts
+severity: warning
+rule:
+  pattern: var $NAME = $INIT
+message: "Use const or let instead of var."
+files:
+  - "src/**/*.ts"
+ignore:
+  - "src/**/*.test.ts"
+  - "src/**/__tests__/**"
