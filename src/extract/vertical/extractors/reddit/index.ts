@@ -1,14 +1,7 @@
-/**
- * @fileoverview Reddit vertical extractor — entrypoint, types, and error utilities.
- */
-import {
-	createStructuredError,
-	hasStructuredError,
-} from "../../../../http/errors.ts";
-import {
-	capability,
-	type VerticalExtractor,
-} from "../../../vertical/capabilities.ts";
+/** @file Reddit vertical extractor — entrypoint, types, and error utilities. */
+import { createStructuredError, hasStructuredError } from "../../../../http/errors.ts";
+import { capability, type VerticalExtractor } from "../../../vertical/capabilities.ts";
+// oxlint-disable-next-line import/no-cycle -- vertical extractors and storage modules share type contracts; cycle is resolved at call time
 import { fetchFirstAllowedRedditEndpoint } from "./post.ts";
 
 export interface RedditPostData {
@@ -124,46 +117,30 @@ export function normalizeRedditError(error: unknown): Error {
 		if (structured.code === "ROBOTS_DENIED") {
 			return redditError("REDDIT_ROBOTS_DENIED", structured.message, false);
 		}
-		return redditError(
-			String(structured.code),
-			String(structured.message),
-			Boolean(structured.retryable),
-		);
+		return redditError(structured.code, structured.message, structured.retryable);
 	}
 	if (error instanceof Error && hasStructuredError(error.cause)) {
 		return normalizeRedditError(error.cause);
 	}
 	return error instanceof Error
 		? error
-		: redditError(
-				"REDDIT_EXTRACTION_FAILED",
-				"Reddit extraction failed.",
-				false,
-			);
+		: redditError("REDDIT_EXTRACTION_FAILED", "Reddit extraction failed.", false);
 }
 
 export function errorCode(error: Error): string {
-	return hasStructuredError(error)
-		? error.structured.code
-		: "REDDIT_EXTRACTION_FAILED";
+	return hasStructuredError(error) ? error.structured.code : "REDDIT_EXTRACTION_FAILED";
 }
 
 export function errorRetryable(error: Error): boolean {
-	return hasStructuredError(error)
-		? Boolean(error.structured.retryable)
-		: false;
+	return hasStructuredError(error) ? error.structured.retryable : false;
 }
 
 export function absoluteRedditUrl(value?: string): string | undefined {
-	if (!value) return undefined;
+	if (!value) return;
 	return value.startsWith("/") ? `https://www.reddit.com${value}` : value;
 }
 
-export function redditError(
-	code: string,
-	message: string,
-	retryable: boolean,
-): Error {
+export function redditError(code: string, message: string, retryable: boolean): Error {
 	return createStructuredError(
 		{
 			code,
@@ -203,7 +180,11 @@ export const redditExtractor: VerticalExtractor<RedditPostResult> = {
 				false,
 			);
 		}
-		return fetchFirstAllowedRedditEndpoint(reddit, context.fetchPage, signal);
+		return await fetchFirstAllowedRedditEndpoint(
+			reddit,
+			(url, sig) => context.fetchPage!(url, sig),
+			signal,
+		);
 	},
 };
 
@@ -212,7 +193,7 @@ function parseRedditPostUrl(url: URL): RedditPostMatch | undefined {
 	const parts = url.pathname.split("/").filter(Boolean);
 	if (host === "redd.it") {
 		const postId = cleanPostId(parts[0]);
-		if (!postId) return undefined;
+		if (!postId) return;
 		return {
 			postId,
 			subreddit: "",
@@ -220,17 +201,14 @@ function parseRedditPostUrl(url: URL): RedditPostMatch | undefined {
 		};
 	}
 	if (!["reddit.com", "www.reddit.com", "old.reddit.com"].includes(host)) {
-		return undefined;
+		return;
 	}
-	if (
-		parts[0]?.toLowerCase() !== "r" ||
-		parts[2]?.toLowerCase() !== "comments"
-	) {
-		return undefined;
+	if (parts[0]?.toLowerCase() !== "r" || parts[2]?.toLowerCase() !== "comments") {
+		return;
 	}
 	const subreddit = parts[1];
 	const postId = cleanPostId(parts[3]);
-	if (!subreddit || !postId) return undefined;
+	if (!subreddit || !postId) return;
 	return {
 		postId,
 		subreddit,

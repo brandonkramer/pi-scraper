@@ -1,6 +1,4 @@
-/**
- * @fileoverview parse pdf module.
- */
+/** @file Parse pdf module. */
 import { abortable, throwIfAborted } from "../../http/abort.ts";
 
 const PDF_ABORT_MESSAGE = "PDF extraction aborted";
@@ -37,9 +35,7 @@ export interface PdfExtractionOptions {
 export interface PdfTextBackend {
 	extract(
 		input: Uint8Array,
-		options: Required<
-			Pick<PdfExtractionOptions, "maxPages" | "maxTextChars">
-		> & {
+		options: Required<Pick<PdfExtractionOptions, "maxPages" | "maxTextChars">> & {
 			signal?: AbortSignal;
 		},
 	): Promise<PdfExtractionResult>;
@@ -75,7 +71,7 @@ export async function extractPdfText(
 
 async function getPdfJsBackend(): Promise<PdfTextBackend> {
 	pdfjsBackendPromise ??= importPdfJsBackend();
-	return pdfjsBackendPromise;
+	return await pdfjsBackendPromise;
 }
 
 async function importPdfJsBackend(): Promise<PdfTextBackend> {
@@ -89,8 +85,7 @@ async function importPdfJsBackend(): Promise<PdfTextBackend> {
 					ok: false,
 					reason: "unsupported",
 					text: "PDF text extraction requires the optional pdfjs-dist backend.",
-					error:
-						error instanceof Error ? error.message : "pdfjs-dist unavailable",
+					error: error instanceof Error ? error.message : "pdfjs-dist unavailable",
 				};
 			},
 		};
@@ -102,9 +97,7 @@ class PdfJsBackend implements PdfTextBackend {
 
 	async extract(
 		input: Uint8Array,
-		options: Required<
-			Pick<PdfExtractionOptions, "maxPages" | "maxTextChars">
-		> & {
+		options: Required<Pick<PdfExtractionOptions, "maxPages" | "maxTextChars">> & {
 			signal?: AbortSignal;
 		},
 	): Promise<PdfExtractionResult> {
@@ -173,23 +166,16 @@ async function readMetadata(
 	document: PdfDocument,
 	signal: AbortSignal | undefined,
 ): Promise<PdfMetadata | undefined> {
-	if (!document.getMetadata) return undefined;
+	if (!document.getMetadata) return;
 	try {
-		const result = await abortable(
-			document.getMetadata(),
-			signal,
-			PDF_ABORT_MESSAGE,
-		);
+		const result = await abortable(document.getMetadata(), signal, PDF_ABORT_MESSAGE);
 		return sanitizeMetadata(result.info);
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }
 
-async function pageText(
-	page: PdfPage,
-	signal: AbortSignal | undefined,
-): Promise<string> {
+async function pageText(page: PdfPage, signal: AbortSignal | undefined): Promise<string> {
 	const content = await abortable(
 		page.getTextContent({ disableNormalization: false }),
 		signal,
@@ -202,7 +188,7 @@ async function pageText(
 }
 
 function sanitizeMetadata(info: unknown): PdfMetadata | undefined {
-	if (!info || typeof info !== "object") return undefined;
+	if (!info || typeof info !== "object") return;
 	const source = info as Record<string, unknown>;
 	const metadata: PdfMetadata = {
 		title: safeString(source.Title),
@@ -220,28 +206,25 @@ function sanitizeMetadata(info: unknown): PdfMetadata | undefined {
 }
 
 function safeString(value: unknown): string | undefined {
-	if (typeof value !== "string") return undefined;
-	const normalized = value.replace(/[\u0000-\u001f\u007f]/gu, " ").trim();
+	if (typeof value !== "string") return;
+	const normalized = value.replaceAll(/\p{Cc}/gu, " ").trim();
 	return normalized ? normalized.slice(0, 500) : undefined;
 }
 
 function normalizePdfText(text: string): string {
 	return text
-		.replace(/\r\n?/gu, "\n")
-		.replace(/[\t\f\v ]+/gu, " ")
-		.replace(/ *\n */gu, "\n")
-		.replace(/\n{3,}/gu, "\n\n")
+		.replaceAll(/\r\n?/gu, "\n")
+		.replaceAll(/[\t\f\v ]+/gu, " ")
+		.replaceAll(/ *\n */gu, "\n")
+		.replaceAll(/\n{3,}/gu, "\n\n")
 		.trim();
 }
 
 function pdfErrorResult(error: unknown): PdfExtractionResult {
-	const message =
-		error instanceof Error ? error.message : "PDF extraction failed";
+	const message = error instanceof Error ? error.message : "PDF extraction failed";
 	const lower = message.toLowerCase();
 	// Classify encrypted or structurally invalid files as unsupported so callers can distinguish them from transient parser failures.
-	if (
-		/password|encrypted|invalid pdf structure|missing pdf header/u.test(lower)
-	) {
+	if (/password|encrypted|invalid pdf structure|missing pdf header/u.test(lower)) {
 		return { ok: false, reason: "unsupported", text: "", error: message };
 	}
 	return { ok: false, reason: "failed", text: "", error: message };
@@ -250,9 +233,9 @@ function pdfErrorResult(error: unknown): PdfExtractionResult {
 function isTextItem(item: unknown): item is { str: string } {
 	return Boolean(
 		item &&
-			typeof item === "object" &&
-			"str" in item &&
-			typeof (item as { str?: unknown }).str === "string",
+		typeof item === "object" &&
+		"str" in item &&
+		typeof (item as { str?: unknown }).str === "string",
 	);
 }
 
@@ -271,7 +254,5 @@ interface PdfDocument {
 }
 
 interface PdfPage {
-	getTextContent(
-		params: Record<string, unknown>,
-	): Promise<{ items: unknown[] }>;
+	getTextContent(params: Record<string, unknown>): Promise<{ items: unknown[] }>;
 }

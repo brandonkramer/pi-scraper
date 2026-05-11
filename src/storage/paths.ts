@@ -1,6 +1,4 @@
-/**
- * @fileoverview storage paths module.
- */
+/** @file Storage paths module. */
 import { mkdir, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
@@ -24,9 +22,7 @@ export function expandHome(input: string): string {
 	return input;
 }
 
-export function resolvePiStoragePaths(
-	options: ResolveStorageOptions = {},
-): PiStoragePaths {
+export function resolvePiStoragePaths(options: ResolveStorageOptions = {}): PiStoragePaths {
 	const root = path.resolve(expandHome(options.rootDir ?? "~/.pi/scraper"));
 	return {
 		root,
@@ -44,7 +40,7 @@ export async function ensureDir(dir: string): Promise<string> {
 }
 
 export async function pathExists(filePath: string): Promise<boolean> {
-	return stat(filePath).then(
+	return await stat(filePath).then(
 		() => true,
 		() => false,
 	);

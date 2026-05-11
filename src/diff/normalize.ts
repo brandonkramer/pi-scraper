@@ -1,6 +1,4 @@
-/**
- * @fileoverview diff normalize module.
- */
+/** @file Diff normalize module. */
 import type { ScrapeResult } from "../scrape/pipeline.ts";
 
 export interface SnapshotLink {
@@ -21,12 +19,8 @@ export interface NormalizedSnapshotContent {
 	paragraphs: string[];
 }
 
-export function normalizeScrapeForSnapshot(
-	result: ScrapeResult,
-): NormalizedSnapshotContent {
-	const rawText = normalizeSnapshotText(
-		result.data.markdown ?? result.data.text ?? "",
-	);
+export function normalizeScrapeForSnapshot(result: ScrapeResult): NormalizedSnapshotContent {
+	const rawText = normalizeSnapshotText(result.data.markdown ?? result.data.text ?? "");
 	const text = normalizeVolatileSnapshotText(rawText);
 	const metadata = snapshotMetadata(result);
 	const title = result.data.title ?? metadata.title;
@@ -45,7 +39,7 @@ export function normalizeScrapeForSnapshot(
 
 export function normalizeSnapshotText(text: string): string {
 	return text
-		.replace(/\r\n?/gu, "\n")
+		.replaceAll(/\r\n?/gu, "\n")
 		.split("\n")
 		.map((line) => line.trim())
 		.filter(Boolean)
@@ -57,23 +51,20 @@ export function normalizeVolatileSnapshotText(text: string): string {
 		.split("\n")
 		.map((line) =>
 			line
-				.replace(
+				.replaceAll(
 					/\b(last updated|updated|posted)\s+(?:about\s+)?\d+\s+(seconds?|minutes?|hours?|days?)\s+ago\b/giu,
 					"$1 <relative-time>",
 				)
-				.replace(
-					/\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z\b/gu,
-					"<timestamp>",
-				)
-				.replace(
+				.replaceAll(/\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z\b/gu, "<timestamp>")
+				.replaceAll(
 					/\b(?:csrf|xsrf|session|sid|nonce|token)=['"]?[A-Za-z0-9._:-]{12,}['"]?/giu,
 					"token=<volatile-token>",
 				)
-				.replace(
+				.replaceAll(
 					/\b(?:ad-slot|ad_unit|google_ads_iframe)[:=_-][A-Za-z0-9._-]{6,}\b/giu,
 					"ad-slot=<volatile-ad-slot>",
 				)
-				.replace(/https?:\/\/[^\s)]+/giu, stripTrackingParams),
+				.replaceAll(/https?:\/\/[^\s)]+/giu, stripTrackingParams),
 		)
 		.join("\n");
 }
@@ -81,7 +72,7 @@ export function normalizeVolatileSnapshotText(text: string): string {
 function stripTrackingParams(urlText: string): string {
 	try {
 		const url = new URL(urlText);
-		for (const key of [...url.searchParams.keys()]) {
+		for (const key of Array.from(url.searchParams.keys())) {
 			if (/^(utm_|fbclid$|gclid$|msclkid$|yclid$|mc_cid$|mc_eid$)/iu.test(key))
 				url.searchParams.delete(key);
 			if (/^(session|sid|csrf|xsrf|nonce|token)$/iu.test(key))
@@ -94,11 +85,12 @@ function stripTrackingParams(urlText: string): string {
 }
 
 function headingsFromText(text: string): string[] {
-	return text
-		.split("\n")
-		.map((line) => line.match(/^#{1,6}\s+(.+)$/u)?.[1]?.trim())
-		.filter((line): line is string => Boolean(line))
-		.slice(0, 100);
+	return (
+		text
+			.split("\n")
+			.map((line) => line.match(/^#{1,6}\s+(.+)$/u)?.[1]?.trim())
+			.filter(Boolean) as string[]
+	).slice(0, 100);
 }
 
 function paragraphsFromText(text: string): string[] {
@@ -132,30 +124,17 @@ function snapshotMetadata(result: ScrapeResult): Record<string, string> {
 	if (result.data.description) entries.description = result.data.description;
 	flattenMetadata(entries, "metadata", result.data.metadata);
 	return Object.fromEntries(
-		Object.entries(entries).sort(([left], [right]) =>
-			left.localeCompare(right),
-		),
+		Object.entries(entries).sort(([left], [right]) => left.localeCompare(right)),
 	);
 }
 
-function flattenMetadata(
-	output: Record<string, string>,
-	prefix: string,
-	value: unknown,
-): void {
-	if (
-		typeof value === "string" ||
-		typeof value === "number" ||
-		typeof value === "boolean"
-	) {
+function flattenMetadata(output: Record<string, string>, prefix: string, value: unknown): void {
+	if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
 		output[prefix] = String(value);
 		return;
 	}
-	if (typeof value !== "object" || value === null || Array.isArray(value))
-		return;
-	for (const [key, nested] of Object.entries(
-		value as Record<string, unknown>,
-	)) {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) return;
+	for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
 		flattenMetadata(output, `${prefix}.${key}`, nested);
 	}
 }

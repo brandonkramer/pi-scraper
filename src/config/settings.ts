@@ -1,24 +1,12 @@
-/**
- * @fileoverview config settings module.
- */
+/** @file Config settings module. */
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+
 import { DEFAULT_OUTPUT_FORMAT, DEFAULT_SCRAPE_MODE } from "../defaults.ts";
-import {
-	ensureDir,
-	type ResolveStorageOptions,
-	resolvePiStoragePaths,
-} from "../storage/paths.ts";
+import { ensureDir, type ResolveStorageOptions, resolvePiStoragePaths } from "../storage/paths.ts";
+import type { CommonScrapeOptions, OutputFormat, ScrapeMode } from "../types.ts";
 
-import type {
-	CommonScrapeOptions,
-	OutputFormat,
-	ScrapeMode,
-} from "../types.ts";
-
-type PersistedScrapeDefaults = Partial<
-	Omit<CommonScrapeOptions, "mode" | "format">
->;
+type PersistedScrapeDefaults = Partial<Omit<CommonScrapeOptions, "mode" | "format">>;
 
 export type ModelProviderConfig =
 	| string
@@ -31,13 +19,14 @@ export interface WebConfig {
 	modelProvider?: ModelProviderConfig;
 }
 
-export interface EffectiveWebConfig
-	extends Required<Pick<WebConfig, "scrapeMode" | "outputFormat">> {
+export interface EffectiveWebConfig extends Required<
+	Pick<WebConfig, "scrapeMode" | "outputFormat">
+> {
 	scrapeDefaults: PersistedScrapeDefaults;
 	modelProvider?: ModelProviderConfig;
 }
 
-export interface ConfigOptions extends ResolveStorageOptions {}
+export type ConfigOptions = ResolveStorageOptions;
 
 export const DEFAULT_WEB_CONFIG: EffectiveWebConfig = {
 	scrapeMode: DEFAULT_SCRAPE_MODE,
@@ -50,13 +39,9 @@ export function configFilePath(options: ConfigOptions = {}): string {
 	return path.join(resolvePiStoragePaths(options).config, "web.json");
 }
 
-export async function loadStoredConfig(
-	options: ConfigOptions = {},
-): Promise<WebConfig> {
+export async function loadStoredConfig(options: ConfigOptions = {}): Promise<WebConfig> {
 	try {
-		return normalizeConfig(
-			JSON.parse(await readFile(configFilePath(options), "utf8")),
-		);
+		return normalizeConfig(JSON.parse(await readFile(configFilePath(options), "utf8")));
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code === "ENOENT") return {};
 		throw error;
@@ -90,7 +75,7 @@ export async function updateConfig(
 	const cleaned = Object.fromEntries(
 		Object.entries(patch).filter(([, v]) => v !== undefined && v !== ""),
 	) as WebConfig;
-	return saveConfig(
+	return await saveConfig(
 		{
 			...current,
 			...cleaned,
@@ -126,25 +111,17 @@ function normalizeConfig(input: unknown): WebConfig {
 	};
 }
 
-function normalizeModelProvider(
-	input: unknown,
-): ModelProviderConfig | undefined {
+function normalizeModelProvider(input: unknown): ModelProviderConfig | undefined {
 	if (typeof input === "string") return input;
 	if (typeof input === "object" && input !== null) {
 		const raw = input as Record<string, unknown>;
-		const entries = Object.entries(raw).filter(
-			([, v]) => typeof v === "string",
-		);
-		if (entries.length > 0)
-			return Object.fromEntries(entries) as ModelProviderConfig;
+		const entries = Object.entries(raw).filter(([, v]) => typeof v === "string");
+		if (entries.length > 0) return Object.fromEntries(entries) as ModelProviderConfig;
 	}
-	return undefined;
 }
 
-function normalizeScrapeDefaults(
-	input: unknown,
-): PersistedScrapeDefaults | undefined {
-	if (typeof input !== "object" || input === null) return undefined;
+function normalizeScrapeDefaults(input: unknown): PersistedScrapeDefaults | undefined {
+	if (typeof input !== "object" || input === null) return;
 	const raw = input as PersistedScrapeDefaults;
 	return Object.fromEntries(
 		Object.entries({
@@ -155,8 +132,7 @@ function normalizeScrapeDefaults(
 				raw.headers && typeof raw.headers === "object"
 					? Object.fromEntries(
 							Object.entries(raw.headers).filter(
-								(entry): entry is [string, string] =>
-									typeof entry[1] === "string",
+								(entry): entry is [string, string] => typeof entry[1] === "string",
 							),
 						)
 					: undefined,
@@ -180,11 +156,7 @@ function normalizeScrapeDefaults(
 	) as PersistedScrapeDefaults;
 }
 
-function boundedNumber(
-	value: unknown,
-	minimum: number,
-	maximum: number,
-): number | undefined {
-	if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+function boundedNumber(value: unknown, minimum: number, maximum: number): number | undefined {
+	if (typeof value !== "number" || !Number.isFinite(value)) return;
 	return Math.max(minimum, Math.min(maximum, value));
 }

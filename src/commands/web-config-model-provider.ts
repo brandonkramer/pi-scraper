@@ -1,6 +1,4 @@
-/**
- * @fileoverview Model-provider sub-action for /web-config.
- */
+/** @file Model-provider sub-action for /web-config. */
 import { updateConfig, type ConfigOptions } from "../config/settings.ts";
 import { modelRegistry } from "../tools/infra/model-registry.ts";
 import { toolResult } from "../tools/infra/result.ts";
@@ -35,12 +33,9 @@ export async function runWebConfigModelProvider(
 		}
 	}
 
-	const updated = await updateConfig(
-		{ modelProvider: provider },
-		configOptions,
-	);
+	const updated = await updateConfig({ modelProvider: provider }, configOptions);
 	return toolResult({
-		text: `Model provider set to "${updated.modelProvider}".`,
+		text: `Model provider set to "${typeof updated.modelProvider === "string" ? updated.modelProvider : JSON.stringify(updated.modelProvider)}".`,
 		data: updated,
 	});
 }

@@ -1,43 +1,35 @@
 /**
- * @fileoverview Pi web_scrape tool result and progress card renderers, including the URL result card composition.
+ * @file Pi web_scrape tool result and progress card renderers, including the URL result card
+ *   composition.
  */
+import { Markdown } from "@earendil-works/pi-tui";
+
+import { formatChecklistText } from "../../tui/checklist.ts";
+import { cacheLabel, errorLabel, freshnessLabel, sessionNotice } from "../../tui/envelope.ts";
+import { isFileResult, renderFileResultCard } from "../../tui/file.ts";
+import { formatBytes, formatDuration } from "../../tui/format.ts";
+import { formatPreview, previewText, renderMetadataLines } from "../../tui/preview.ts";
+import { progressStartedAtMs } from "../../tui/progress.ts";
+import { renderUrlStatusRow } from "../../tui/rows.ts";
+import { currentSpinnerFrame } from "../../tui/spinner.ts";
+import { renderStackedResultCard } from "../../tui/stacked.ts";
+import { renderText } from "../../tui/text.ts";
+import { getMarkdownTheme, muted, separator } from "../../tui/theme.ts";
+import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 import {
 	isProgress,
 	type PiToolShell,
 	type ProgressDetails,
 	type ResultEnvelope,
 } from "../../types.ts";
-import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
-import { renderText } from "../../tui/text.ts";
-import { muted, separator } from "../../tui/theme.ts";
-import { currentSpinnerFrame } from "../../tui/spinner.ts";
-import { progressStartedAtMs } from "../../tui/progress.ts";
-import { renderUrlStatusRow } from "../../tui/rows.ts";
-import { formatChecklistText } from "../../tui/checklist.ts";
-import { previewText } from "../../tui/preview.ts";
-import {
-	cacheLabel,
-	errorLabel,
-	freshnessLabel,
-	sessionNotice,
-} from "../../tui/envelope.ts";
-import { renderStackedResultCard } from "../../tui/stacked.ts";
-import { Markdown } from "@earendil-works/pi-tui";
-import { formatPreview, renderMetadataLines } from "../../tui/preview.ts";
-import { isFileResult, renderFileResultCard } from "../../tui/file.ts";
-import { formatBytes, formatDuration } from "../../tui/format.ts";
-import { getMarkdownTheme } from "../../tui/theme.ts";
 
 export function renderWebScrapeResult(
 	result: PiToolShell,
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as
-		| Partial<ResultEnvelope<unknown>>
-		| ProgressDetails;
-	if (isProgress(details))
-		return renderScrapeProgressCard(details, expanded, theme);
+	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
+	if (isProgress(details)) return renderScrapeProgressCard(details, expanded, theme);
 	const envelope = details as Partial<ResultEnvelope<Record<string, unknown>>>;
 	const summary = envelope.error
 		? errorLabel("web_scrape", envelope.error, { allowIcons: false })
@@ -71,11 +63,7 @@ function renderScrapeProgressCard(
 ): RenderComponent {
 	const url = details.url ?? "unknown URL";
 	const failed = details.state === "error";
-	const status = failed
-		? "error"
-		: details.state === "done"
-			? "done"
-			: "loading";
+	const status = failed ? "error" : details.state === "done" ? "done" : "loading";
 	const startedAtMs = progressStartedAtMs(details) ?? Date.now();
 	return {
 		render(width: number) {
@@ -109,7 +97,9 @@ function renderScrapeProgressCard(
 			}
 			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
 		},
-		invalidate() {},
+		invalidate() {
+			/* no-op */
+		},
 	};
 }
 
@@ -127,13 +117,11 @@ function renderScrapeResultCard(
 	const url = envelope.finalUrl ?? envelope.url ?? "unknown URL";
 	return renderStackedResultCard(
 		{
-			body: (width) =>
-				renderScrapeRow(url, Boolean(envelope.error), width, theme),
+			body: (width) => renderScrapeRow(url, Boolean(envelope.error), width, theme),
 			summary: options.summary,
 			expanded: options.expanded,
 			notice: options.notice,
-			expandedSections: (width) =>
-				scrapeExpandedSections(envelope, options, width, theme),
+			expandedSections: (width) => scrapeExpandedSections(envelope, options, width, theme),
 			markdownPreview: (_width) =>
 				markdownPreviewComponent(envelope.format, options.preview, theme),
 			responseId: options.responseId,
@@ -142,12 +130,7 @@ function renderScrapeResultCard(
 	);
 }
 
-function renderScrapeRow(
-	url: string,
-	failed: boolean,
-	width: number,
-	theme?: RenderTheme,
-): string {
+function renderScrapeRow(url: string, failed: boolean, width: number, theme?: RenderTheme): string {
 	const state = failed ? "error" : "done";
 	return renderUrlStatusRow({
 		url,
@@ -163,8 +146,7 @@ function markdownPreviewComponent(
 	preview: string | undefined,
 	theme?: RenderTheme,
 ): RenderComponent | undefined {
-	if (format !== "markdown" || !preview || preview.length <= 100)
-		return undefined;
+	if (format !== "markdown" || !preview || preview.length <= 100) return;
 	return new Markdown(preview.slice(0, 1200), 0, 0, getMarkdownTheme(theme));
 }
 
@@ -180,19 +162,12 @@ function scrapeExpandedSections(
 	const sections = [scrapeExpandedDetails(envelope)];
 	const meta = renderMetadataLines(envelope.data, theme);
 	if (meta) sections.push(meta);
-	if (
-		options.preview &&
-		!markdownPreviewComponent(envelope.format, options.preview, theme)
-	)
-		sections.push(
-			formatPreview(envelope.format, options.preview).slice(0, 1200),
-		);
+	if (options.preview && !markdownPreviewComponent(envelope.format, options.preview, theme))
+		sections.push(formatPreview(envelope.format, options.preview).slice(0, 1200));
 	return sections;
 }
 
-function scrapeExpandedDetails(
-	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
-): string {
+function scrapeExpandedDetails(envelope: Partial<ResultEnvelope<Record<string, unknown>>>): string {
 	const lines = ["Scrape details:"];
 	const fields = [
 		envelope.status ? `status ${envelope.status}` : undefined,

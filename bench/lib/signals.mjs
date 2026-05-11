@@ -5,15 +5,9 @@ export function evaluateSignals(names, context) {
 }
 
 export function renderMarkdown(report) {
-	const failed = report.results.filter(
-		(result) => result.verdict === "fail",
-	).length;
-	const passed = report.results.filter(
-		(result) => result.verdict === "pass",
-	).length;
-	const skipped = report.results.filter(
-		(result) => result.verdict === "skipped",
-	).length;
+	const failed = report.results.filter((result) => result.verdict === "fail").length;
+	const passed = report.results.filter((result) => result.verdict === "pass").length;
+	const skipped = report.results.filter((result) => result.verdict === "skipped").length;
 	const lines = [
 		"# pi-scraper extraction eval",
 		"",
@@ -25,9 +19,7 @@ export function renderMarkdown(report) {
 		"",
 		"| Case | Verdict | Fixture | Bytes | Markdown chars | Signals |",
 		"| --- | --- | --- | ---: | ---: | --- |",
-		...report.results.map(
-			(result) => `| ${signalRow(result).map(escapeCell).join(" | ")} |`,
-		),
+		...report.results.map((result) => `| ${signalRow(result).map(escapeCell).join(" | ")} |`),
 	];
 	const perfRows = report.results.filter((result) => result.perf);
 	if (perfRows.length > 0) {
@@ -38,8 +30,7 @@ export function renderMarkdown(report) {
 			"| Case | Samples | Min ms | Median ms | Mean ms | P95 ms | Max ms | Stddev ms |",
 			"| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
 			...perfRows.map(
-				(result) =>
-					`| ${perfCells(result.id, result.perf).map(escapeCell).join(" | ")} |`,
+				(result) => `| ${perfCells(result.id, result.perf).map(escapeCell).join(" | ")} |`,
 			),
 		);
 	}
@@ -56,9 +47,7 @@ function signalStatus(name, context) {
 	const headingsCount = (cleanedHtml.match(/<h[1-6][\s>]/giu) ?? []).length;
 	const blocked = Boolean(
 		scrape?.blocked ||
-			/captcha|access denied|blocked|cloudflare|verify you are human/iu.test(
-				lower,
-			),
+		/captcha|access denied|blocked|cloudflare|verify you are human/iu.test(lower),
 	);
 	const browserUsed = (scrape?.extractionPath ?? []).includes("browser");
 	const pass = {
@@ -70,12 +59,8 @@ function signalStatus(name, context) {
 		internal_links: links.length > 0,
 		metadata: Boolean(scrape?.title || scrape?.description),
 		// Cleaned HTML may strip <script> tags; fall back to raw fixture HTML for the JSON-LD probe.
-		json_ld:
-			/application\/ld\+json/iu.test(cleanedHtml) ||
-			/application\/ld\+json/iu.test(html),
-		price_or_features: /\$\d|\bpricing\b|\bfeatures?\b|\bplans?\b/iu.test(
-			lower,
-		),
+		json_ld: /application\/ld\+json/iu.test(cleanedHtml) || /application\/ld\+json/iu.test(html),
+		price_or_features: /\$\d|\bpricing\b|\bfeatures?\b|\bplans?\b/iu.test(lower),
 		sparse_dom: Boolean(scrape?.signals?.sparseDom) && dataIslandLen > 0,
 		data_island_text: dataIslandLen > 0,
 		no_unnecessary_browser: !browserUsed,
@@ -85,18 +70,15 @@ function signalStatus(name, context) {
 		pdf_text_or_metadata:
 			fixtureExt === ".pdf" &&
 			(Boolean(scrape?.pdf?.ok && text.length > 0) ||
-				Boolean(
-					scrape?.pdf?.metadata && Object.keys(scrape.pdf.metadata).length > 0,
-				)),
+				Boolean(scrape?.pdf?.metadata && Object.keys(scrape.pdf.metadata).length > 0)),
 		hero_text: /class=["'][^"']*hero/iu.test(html),
 		section_headings: headingsCount >= 2,
 		footer_links: /<footer[\s>]/iu.test(html),
 		low_noise:
-			(lower.match(/cookie|subscribe|privacy|advertisement/gu) ?? []).length <=
-				3 && markdown.length < 5000,
+			(lower.match(/cookie|subscribe|privacy|advertisement/gu) ?? []).length <= 3 &&
+			markdown.length < 5000,
 	};
-	if (!(name in pass))
-		return { status: "unverifiable_offline", details: "no_offline_heuristic" };
+	if (!(name in pass)) return { status: "unverifiable_offline", details: "no_offline_heuristic" };
 	if (["blocked_signal", "structured_error"].includes(name) && !pass[name]) {
 		return {
 			status: "unverifiable_offline",
@@ -124,21 +106,13 @@ function signalRow(result) {
 }
 
 function signalSummary(signals) {
-	return signals
-		.map((signal) => `${iconFor(signal.status)} ${signal.name}`)
-		.join("<br>");
+	return signals.map((signal) => `${iconFor(signal.status)} ${signal.name}`).join("<br>");
 }
 
 function iconFor(status) {
-	return status === "pass"
-		? "✅"
-		: status === "fail"
-			? "❌"
-			: status === "skipped"
-				? "⏭"
-				: "◌";
+	return status === "pass" ? "✅" : status === "fail" ? "❌" : status === "skipped" ? "⏭" : "◌";
 }
 
 function escapeCell(value) {
-	return String(value).replace(/\|/gu, "\\|").replace(/\n/gu, " ");
+	return String(value).replaceAll("|", "\\|").replaceAll("\n", " ");
 }

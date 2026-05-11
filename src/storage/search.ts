@@ -1,6 +1,4 @@
-/**
- * @fileoverview storage search module.
- */
+/** @file Storage search module. */
 import type { ResultEnvelope } from "../types.ts";
 import { openStorageDb } from "./db/open.ts";
 import { stringField } from "./db/row-fields.ts";
@@ -27,9 +25,7 @@ export function setFtsAvailabilityForTests(value: boolean | undefined): void {
 	initialized.clear();
 }
 
-export async function fts5Available(
-	options: ResolveStorageOptions = {},
-): Promise<boolean> {
+export async function fts5Available(options: ResolveStorageOptions = {}): Promise<boolean> {
 	if (ftsOverride !== undefined) return ftsOverride;
 	const storage = await openStorageDb(options);
 	try {
@@ -54,17 +50,10 @@ export async function indexSearchText(
 	const db = await openStorageDb(options);
 	ensureFtsTable(db.db, cacheKey(options));
 	const envelope =
-		typeof value === "object" && value !== null
-			? (value as Partial<ResultEnvelope>)
-			: {};
+		typeof value === "object" && value !== null ? (value as Partial<ResultEnvelope>) : {};
 	db.prepare(
 		`INSERT OR REPLACE INTO responses_fts (response_id, url, title, text) VALUES (?, ?, ?, ?)`,
-	).run(
-		responseId,
-		stringField(envelope.url) ?? "",
-		titleFrom(value) ?? null,
-		text,
-	);
+	).run(responseId, stringField(envelope.url) ?? "", titleFrom(value) ?? null, text);
 }
 
 export async function searchResponses(
@@ -110,7 +99,7 @@ function ensureFtsTable(db: { exec(sql: string): void }, key: string): void {
 
 function searchableJobText(value: unknown): string | undefined {
 	if (typeof value === "string") return value;
-	if (typeof value !== "object" || value === null) return undefined;
+	if (typeof value !== "object" || value === null) return;
 	const source = value as Partial<ResultEnvelope<Record<string, unknown>>>;
 	const data = source.data;
 	return firstString(
@@ -123,18 +112,13 @@ function searchableJobText(value: unknown): string | undefined {
 }
 
 function titleFrom(value: unknown): string | undefined {
-	if (typeof value !== "object" || value === null) return undefined;
+	if (typeof value !== "object" || value === null) return;
 	const source = value as Partial<ResultEnvelope<Record<string, unknown>>>;
-	return firstString(
-		source.data?.title,
-		stringField((value as Record<string, unknown>).title),
-	);
+	return firstString(source.data?.title, stringField((value as Record<string, unknown>).title));
 }
 
 function firstString(...values: Array<unknown>): string | undefined {
-	return values.find(
-		(value): value is string => typeof value === "string" && value.length > 0,
-	);
+	return values.find((value): value is string => typeof value === "string" && value.length > 0);
 }
 
 function cacheKey(options: ResolveStorageOptions): string {

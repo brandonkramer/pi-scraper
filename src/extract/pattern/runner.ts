@@ -1,8 +1,6 @@
-/**
- * @fileoverview Pattern source preparation — scrape or use provided content.
- */
-import type { ScrapeResult } from "../../scrape/pipeline.ts";
-import { type ScrapePipelineDeps, scrapeUrl } from "../../scrape/pipeline.ts";
+/** @file Pattern source preparation — scrape or use provided content. */
+import { type ScrapePipelineDeps, type ScrapeResult, scrapeUrl } from "../../scrape/pipeline.ts";
+import type { OutputFormat } from "../../types.ts";
 import {
 	evaluateJsonPaths,
 	flattenJsonValues,
@@ -11,7 +9,6 @@ import {
 } from "../selector/json-path.ts";
 import { PatternInspectError } from "./errors.ts";
 import type { PatternInspectOptions, PatternInspectResult, PatternSourceFormat } from "./index.ts";
-import type { OutputFormat } from "../../types.ts";
 
 const SOURCE_FORMATS = ["text", "markdown", "html", "json"] as const;
 
@@ -21,10 +18,7 @@ export async function preparePatternSource(
 	signal?: AbortSignal,
 ): Promise<{
 	content: string;
-	source: Omit<
-		PatternInspectResult["source"],
-		"length" | "inspectedLength" | "truncated"
-	>;
+	source: Omit<PatternInspectResult["source"], "length" | "inspectedLength" | "truncated">;
 }> {
 	const sourceFormat = options.sourceFormat ?? "text";
 	if (!SOURCE_FORMATS.includes(sourceFormat)) {
@@ -63,8 +57,7 @@ export async function preparePatternSource(
 			"MISSING_INPUT",
 		);
 	}
-	const { content, include, extractSchema, jsonPaths, ...scrapeOptions } =
-		options;
+	const { content, include, extractSchema, jsonPaths, ...scrapeOptions } = options;
 	void content;
 	void include;
 	void extractSchema;
@@ -77,9 +70,7 @@ export async function preparePatternSource(
 	);
 	if (sourceFormat === "json") {
 		const jsonText =
-			scrape.data.json !== undefined
-				? JSON.stringify(scrape.data.json)
-				: (scrape.data.text ?? "");
+			scrape.data.json !== undefined ? JSON.stringify(scrape.data.json) : (scrape.data.text ?? "");
 		return prepareJsonSource(jsonText, {
 			url: options.url,
 			finalUrl: scrape.finalUrl,
@@ -120,25 +111,18 @@ function prepareJsonSource(
 	},
 ): {
 	content: string;
-	source: Omit<
-		PatternInspectResult["source"],
-		"length" | "inspectedLength" | "truncated"
-	>;
+	source: Omit<PatternInspectResult["source"], "length" | "inspectedLength" | "truncated">;
 } {
 	const parsed = parseJsonSafe(content);
 	if (parsed.error) {
-		throw new PatternInspectError(
-			parsed.error.message,
-			parsed.error.code,
-			meta.url,
-		);
+		throw new PatternInspectError(parsed.error.message, parsed.error.code, meta.url);
 	}
 	const paths = meta.jsonPaths?.length ? meta.jsonPaths : ["$"];
 	const { values, infos, errors } = evaluateJsonPaths(parsed.data, paths);
 	if (errors.length) {
 		throw new PatternInspectError(
 			errors.map((e) => `${e.path}: ${e.message}`).join("; "),
-			errors[0]!.code,
+			errors[0].code,
 			meta.url,
 		);
 	}
@@ -170,19 +154,15 @@ function prepareJsonSource(
 	};
 }
 
-function contentForFormat(
-	scrape: ScrapeResult,
-	format: PatternSourceFormat,
-): string {
+function contentForFormat(scrape: ScrapeResult, format: PatternSourceFormat): string {
 	if (format === "html") return scrape.data.html ?? scrape.data.text ?? "";
-	if (format === "markdown")
-		return scrape.data.markdown ?? scrape.data.text ?? "";
+	if (format === "markdown") return scrape.data.markdown ?? scrape.data.text ?? "";
 	if (format === "json") {
 		if (scrape.data.json !== undefined) {
 			try {
 				return JSON.stringify(scrape.data.json);
 			} catch {
-				return String(scrape.data.json);
+				return "";
 			}
 		}
 		return scrape.data.text ?? "";

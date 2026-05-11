@@ -1,6 +1,4 @@
-/**
- * @fileoverview extract verticals deepwiki module.
- */
+/** @file Extract verticals deepwiki module. */
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 interface DeepWikiResult {
@@ -30,7 +28,7 @@ export const deepWikiExtractor: VerticalExtractor = {
 		},
 	}),
 	match: (url) => {
-		if (url.hostname !== "deepwiki.com") return undefined;
+		if (url.hostname !== "deepwiki.com") return;
 		const [owner, repo] = url.pathname.split("/").filter(Boolean);
 		return owner && repo ? { owner, repo } : undefined;
 	},
@@ -46,15 +44,9 @@ export const deepWikiExtractor: VerticalExtractor = {
 	},
 };
 
-function parseDeepWiki(
-	text: string,
-	owner: string,
-	repo: string,
-): DeepWikiResult {
+function parseDeepWiki(text: string, owner: string, repo: string): DeepWikiResult {
 	const cleanedText = cleanDeepWikiText(text);
-	const lastIndexedMatch = cleanedText.match(
-		/Last indexed:\s*([^()]+?)\s*\(\s*([a-f0-9]+)\s*\)/iu,
-	);
+	const lastIndexedMatch = cleanedText.match(/Last indexed:\s*([^()]+?)\s*\(\s*([a-f0-9]+)\s*\)/iu);
 	const lastIndexed = lastIndexedMatch?.[1]?.trim();
 	const commit = lastIndexedMatch?.[2];
 
@@ -72,8 +64,8 @@ function parseDeepWiki(
 
 function cleanDeepWikiText(text: string): string {
 	return text
-		.replace(/<[^>]+>/g, " ")
-		.replace(/\s+/g, " ")
+		.replaceAll(/<[^>]+>/g, " ")
+		.replaceAll(/\s+/g, " ")
 		.trim();
 }
 
@@ -87,7 +79,7 @@ function extractSourceFiles(text: string): string[] {
 	const files: string[] = [];
 	const tail = text.slice(startIdx + marker.length).trim();
 	for (const token of tail.split(/\s+/u)) {
-		const candidate = token.replace(/^[([{]+|[),.;:]+$/gu, "");
+		const candidate = token.replaceAll(/^[([{]+|[),.;:]+$/gu, "");
 		if (!candidate) continue;
 		if (!isSourcePathToken(candidate)) break;
 		files.push(candidate);
@@ -96,9 +88,7 @@ function extractSourceFiles(text: string): string[] {
 }
 
 function isSourcePathToken(token: string): boolean {
-	return (
-		token.includes("/") || /\.[A-Za-z0-9][A-Za-z0-9_-]*(?:$|[?#])/u.test(token)
-	);
+	return token.includes("/") || /\.[A-Za-z0-9][A-Za-z0-9_-]*(?:$|[?#])/u.test(token);
 }
 
 function extractTextSections(text: string): string[] {
@@ -109,16 +99,15 @@ function extractTextSections(text: string): string[] {
 	const startIdx = startMatch.index + startMatch[0].length;
 
 	const endIdx = text.indexOf("Glossary", startIdx);
-	const segment =
-		endIdx === -1 ? text.slice(startIdx) : text.slice(startIdx, endIdx);
+	const segment = endIdx === -1 ? text.slice(startIdx) : text.slice(startIdx, endIdx);
 	return dedupeCleanedSections(splitSectionSegment(segment));
 }
 
 function splitSectionSegment(segment: string): string[] {
 	const words = segment
-		.replace(/(?<=[a-z)])(?=[A-Z])/gu, " ")
+		.replaceAll(/(?<=[a-z)])(?=[A-Z])/gu, " ")
 		.split(/\s+/u)
-		.map((word) => word.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9&/._-]+$/gu, ""))
+		.map((word) => word.replaceAll(/^[^A-Za-z0-9]+|[^A-Za-z0-9&/._-]+$/gu, ""))
 		.filter(Boolean);
 	const sections: string[] = [];
 	let index = 0;
@@ -174,7 +163,6 @@ function matchKnownSection(
 			return { label, words: labelWords.length };
 		}
 	}
-	return undefined;
 }
 
 function dedupeCleanedSections(sections: string[]): string[] {
@@ -210,8 +198,6 @@ function isNoiseSection(section: string): boolean {
 }
 
 function extractActiveSection(text: string): string | undefined {
-	const match = text.match(
-		/(?:^|\s)Menu\s+(.+?)(?=\s+Relevant source files|\s*$)/iu,
-	);
+	const match = text.match(/(?:^|\s)Menu\s+(.+?)(?=\s+Relevant source files|\s*$)/iu);
 	return match?.[1] ? cleanSectionName(match[1]) : undefined;
 }

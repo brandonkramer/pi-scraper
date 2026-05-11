@@ -1,6 +1,4 @@
-/**
- * @fileoverview parse recovery module.
- */
+/** @file Parse recovery module. */
 import { dedupeBy } from "../../url/dedupe.ts";
 import type { DomAdapter } from "../dom/adapter.ts";
 import { absoluteUrl } from "../dom/selectors.ts";
@@ -11,15 +9,10 @@ export interface RecoveredContent {
 	url?: string;
 }
 
-export function recoverUsefulContent(
-	dom: DomAdapter,
-	baseUrl: string,
-): RecoveredContent[] {
+export function recoverUsefulContent(dom: DomAdapter, baseUrl: string): RecoveredContent[] {
 	const recovered: RecoveredContent[] = [];
 	for (const node of dom.nodes(
-		dom.select(
-			"h1,h2,[class*=hero],[id*=hero],[class*=announcement],[role=banner]",
-		),
+		dom.select("h1,h2,[class*=hero],[id*=hero],[class*=announcement],[role=banner]"),
 	)) {
 		const text = clean(dom.text(node));
 		if (!text) continue;
@@ -31,19 +24,14 @@ export function recoverUsefulContent(
 				: "hero";
 		recovered.push({ kind, text });
 	}
-	for (const node of dom.nodes(
-		dom.select('footer a[href],nav[aria-label*="footer" i] a[href]'),
-	)) {
+	for (const node of dom.nodes(dom.select('footer a[href],nav[aria-label*="footer" i] a[href]'))) {
 		const text = clean(dom.text(node));
 		const url = absoluteUrl(dom.attr(node, "href"), baseUrl);
 		if (text && url) recovered.push({ kind: "footer_link", text, url });
 	}
-	return dedupeBy(
-		recovered,
-		(item) => `${item.kind}:${item.text}:${item.url ?? ""}`,
-	);
+	return dedupeBy(recovered, (item) => `${item.kind}:${item.text}:${item.url ?? ""}`);
 }
 
 function clean(value: string): string {
-	return value.replace(/\s+/gu, " ").trim();
+	return value.replaceAll(/\s+/gu, " ").trim();
 }

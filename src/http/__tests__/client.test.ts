@@ -1,11 +1,11 @@
-/**
- * @fileoverview http __tests__ client.test module.
- */
+/** @file Http **tests** client.test module. */
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { afterEach, describe, expect, it } from "vitest";
+
 import { MockAgent } from "undici";
+import { afterEach, describe, expect, it } from "vitest";
+
 import { createHttpClient, HttpClientError } from "../client.ts";
 
 let agents: MockAgent[] = [];
@@ -47,9 +47,7 @@ describe("HttpClient", () => {
 				headers: { "content-type": "text/plain", "content-length": "5" },
 			});
 
-		const result = await client.fetchUrl(
-			"https://EXAMPLE.com/page?b=2&a=1&utm_source=x",
-		);
+		const result = await client.fetchUrl("https://EXAMPLE.com/page?b=2&a=1&utm_source=x");
 		expect(result.url).toBe("https://example.com/page?a=1&b=2");
 		expect(result.finalUrl).toBe("https://example.com/page?a=1&b=2");
 		expect(result.status).toBe(200);
@@ -66,9 +64,7 @@ describe("HttpClient", () => {
 				headers: { "content-type": "text/plain" },
 			});
 
-		await expect(
-			client.fetchUrl("https://example.com/private/page"),
-		).rejects.toMatchObject({
+		await expect(client.fetchUrl("https://example.com/private/page")).rejects.toMatchObject({
 			structured: { code: "ROBOTS_DENIED", phase: "robots" },
 		});
 	});
@@ -133,9 +129,7 @@ describe("HttpClient", () => {
 		const result = await client.fetchUrl("https://example.com/image");
 		expect(result.file?.downloadedBytes).toBe(3);
 		expect(result.file?.contentType).toBe("image/png");
-		await expect(readFile(result.file?.path ?? "")).resolves.toEqual(
-			Buffer.from([1, 2, 3]),
-		);
+		await expect(readFile(result.file?.path ?? "")).resolves.toEqual(Buffer.from([1, 2, 3]));
 	});
 
 	it("keeps parseable PDF bytes in memory under maxBytes", async () => {
@@ -201,9 +195,7 @@ describe("HttpClient", () => {
 				headers: { "content-type": "text/plain" },
 			});
 
-		await expect(
-			client.fetchUrl("https://example.com/docs"),
-		).resolves.toMatchObject({
+		await expect(client.fetchUrl("https://example.com/docs")).resolves.toMatchObject({
 			url: "https://example.com/docs",
 			finalUrl: "https://example.com/docs/",
 			text: "docs",
@@ -227,9 +219,7 @@ describe("HttpClient", () => {
 				headers: { "content-type": "text/plain" },
 			});
 
-		await expect(
-			client.fetchUrl("https://example.com/start"),
-		).resolves.toMatchObject({
+		await expect(client.fetchUrl("https://example.com/start")).resolves.toMatchObject({
 			url: "https://example.com/start",
 			finalUrl: "https://docs.example/final",
 			text: "docs",
@@ -246,9 +236,7 @@ describe("HttpClient", () => {
 				headers: { location: "http://127.0.0.1/private" },
 			});
 
-		await expect(
-			client.fetchUrl("https://example.com/start"),
-		).rejects.toMatchObject({
+		await expect(client.fetchUrl("https://example.com/start")).rejects.toMatchObject({
 			structured: { code: "PRIVATE_NETWORK_ADDRESS", phase: "url_safety" },
 		});
 	});
@@ -265,19 +253,14 @@ describe("HttpClient", () => {
 			.intercept({ path: "/b" })
 			.reply(302, "", { headers: { location: "/a" } });
 
-		await expect(
-			client.fetchUrl("https://example.com/a"),
-		).rejects.toMatchObject({
+		await expect(client.fetchUrl("https://example.com/a")).rejects.toMatchObject({
 			structured: { code: "REDIRECT_LOOP", phase: "redirect" },
 		});
 	});
 
 	it("fetches robots outside normal host slots to avoid same-host starvation", async () => {
 		const { agent, client } = mockClient();
-		agent
-			.get("https://example.com")
-			.intercept({ path: "/robots.txt" })
-			.reply(404, "");
+		agent.get("https://example.com").intercept({ path: "/robots.txt" }).reply(404, "");
 		for (const path of ["/one", "/two", "/three"]) {
 			agent
 				.get("https://example.com")
@@ -292,11 +275,7 @@ describe("HttpClient", () => {
 			client.fetchUrl("https://example.com/two"),
 			client.fetchUrl("https://example.com/three"),
 		]);
-		expect(results.map((result) => result.text)).toEqual([
-			"/one",
-			"/two",
-			"/three",
-		]);
+		expect(results.map((result) => result.text)).toEqual(["/one", "/two", "/three"]);
 	});
 
 	it("handles crawl-like same-host pressure with slow robots and default per-host limits", async () => {
@@ -322,9 +301,7 @@ describe("HttpClient", () => {
 			}, 10);
 		});
 
-		await new Promise<void>((resolve) =>
-			server.listen(0, "127.0.0.1", resolve),
-		);
+		await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
 		const { port } = server.address() as AddressInfo;
 		const client = createHttpClient({ allowPrivateNetwork: true });
 		try {
@@ -336,9 +313,12 @@ describe("HttpClient", () => {
 			expect(robotsHits).toBe(1);
 			expect(maxActivePages).toBeLessThanOrEqual(2);
 		} finally {
-			await new Promise<void>((resolve, reject) =>
-				server.close((error) => (error ? reject(error) : resolve())),
-			);
+			await new Promise<void>((resolve, reject) => {
+				server.close((error) => {
+					if (error) reject(error);
+					else resolve();
+				});
+			});
 		}
 	});
 
@@ -358,16 +338,16 @@ describe("HttpClient", () => {
 				headers: { "content-type": "text/plain; charset=windows-1252" },
 			});
 
-		await expect(
-			client.fetchUrl("https://example.com/latin1"),
-		).resolves.toMatchObject({ text: "café" });
-		await expect(
-			client.fetchUrl("https://example.com/win1252"),
-		).resolves.toMatchObject({ text: "“hi”" });
+		await expect(client.fetchUrl("https://example.com/latin1")).resolves.toMatchObject({
+			text: "café",
+		});
+		await expect(client.fetchUrl("https://example.com/win1252")).resolves.toMatchObject({
+			text: "“hi”",
+		});
 	});
 });
 
 expect.addSnapshotSerializer({
-	serialize: (value) => String(value),
+	serialize: String,
 	test: (value) => value instanceof HttpClientError,
 });

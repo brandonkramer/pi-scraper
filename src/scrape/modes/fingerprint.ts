@@ -1,6 +1,4 @@
-/**
- * @fileoverview scrape modes fingerprint module.
- */
+/** @file Scrape modes fingerprint module. */
 import type { FetchUrlResult } from "../../http/client.ts";
 import type { FingerprintFetchAdapter } from "../../http/fingerprint/index.ts";
 import {
@@ -10,11 +8,7 @@ import {
 import type { CommonScrapeOptions, OutputFormat } from "../../types.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
 import { responseScrape } from "./fast.ts";
-import {
-	fetchOptions,
-	scrapeErrorResult,
-	scrapeStructuredError,
-} from "./mode-helpers.ts";
+import { fetchOptions, scrapeErrorResult, scrapeStructuredError } from "./mode-helpers.ts";
 
 export async function fingerprintScrape(
 	input: string | URL,
@@ -24,13 +18,7 @@ export async function fingerprintScrape(
 	signal?: AbortSignal,
 ): Promise<ScrapeResult> {
 	try {
-		return await fingerprintResponseScrape(
-			input,
-			format,
-			options,
-			deps,
-			signal,
-		);
+		return await fingerprintResponseScrape(input, format, options, deps, signal);
 	} catch (error) {
 		return scrapeErrorResult(
 			input.toString(),
@@ -49,15 +37,9 @@ export async function tryFingerprint(
 	signal?: AbortSignal,
 ): Promise<ScrapeResult | undefined> {
 	try {
-		return await fingerprintResponseScrape(
-			input,
-			format,
-			options,
-			deps,
-			signal,
-		);
+		return await fingerprintResponseScrape(input, format, options, deps, signal);
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }
 
@@ -68,7 +50,7 @@ async function fingerprintResponseScrape(
 	deps: ScrapePipelineDeps,
 	signal?: AbortSignal,
 ): Promise<ScrapeResult> {
-	return responseScrape(
+	return await responseScrape(
 		await fingerprintFetch(input, options, deps, signal),
 		"fingerprint",
 		format,
@@ -90,7 +72,7 @@ async function fingerprintFetch(
 			osProfile: options.osProfile,
 			proxy: options.proxy,
 		});
-	return adapter.fetch(
+	return await adapter.fetch(
 		input,
 		{
 			...fetchOptions(options),

@@ -1,24 +1,36 @@
 /**
- * @fileoverview Pi web_batch renderer — top-level result/progress card, batch progress state UI, and per-URL expanded details composer.
+ * @file Pi web_batch renderer — top-level result/progress card, batch progress state UI, and
+ *   per-URL expanded details composer.
  */
+import {
+	batchProgressFromItems,
+	isBatchProgress,
+	isBatchProgressView,
+} from "../../batch/progress-state.ts";
+import { renderBatchProgressCard, renderBatchResultCard } from "../../tui/batch.ts";
+import {
+	activityCountSegment,
+	failureCountSegment,
+	successCountSegment,
+} from "../../tui/counts.ts";
+import {
+	errorLabel,
+	freshnessLabel,
+	sessionNotice,
+	contextPackageResponseId,
+} from "../../tui/envelope.ts";
+import { pickExcerpt } from "../../tui/preview.ts";
+import { renderProgressCard } from "../../tui/progress.ts";
+import { type ResourceListItem, renderResourceItemList } from "../../tui/resource.ts";
+import { muted, separator } from "../../tui/theme.ts";
+import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 import {
 	isProgress,
 	type PiToolShell,
 	type ProgressDetails,
 	type ResultEnvelope,
 } from "../../types.ts";
-import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
-import { muted, separator } from "../../tui/theme.ts";
-import { pickExcerpt } from "../../tui/preview.ts";
-import {
-	batchProgressFromItems,
-	isBatchProgress,
-	isBatchProgressView,
-} from "../../batch/progress-state.ts";
-import {
-	renderBatchProgressCard,
-	renderBatchResultCard,
-} from "../../tui/batch.ts";
+
 export interface BatchItem {
 	ok?: boolean;
 	url?: string;
@@ -43,22 +55,6 @@ export interface BatchItem {
 	};
 	error?: { code?: string; phase?: string; message?: string };
 }
-import {
-	type ResourceListItem,
-	renderResourceItemList,
-} from "../../tui/resource.ts";
-import {
-	activityCountSegment,
-	failureCountSegment,
-	successCountSegment,
-} from "../../tui/counts.ts";
-import {
-	errorLabel,
-	freshnessLabel,
-	sessionNotice,
-	contextPackageResponseId,
-} from "../../tui/envelope.ts";
-import { renderProgressCard } from "../../tui/progress.ts";
 
 export function batchExpandedDetails(
 	items: readonly BatchItem[],
@@ -120,12 +116,9 @@ export function renderWebBatchResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as
-		| Partial<ResultEnvelope<unknown>>
-		| ProgressDetails;
+	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
 	if (isProgress(details)) {
-		if (isBatchProgress(details))
-			return renderBatchProgressCard(details, expanded, theme);
+		if (isBatchProgress(details)) return renderBatchProgressCard(details, expanded, theme);
 		return renderProgressCard("web_batch", details, theme, {
 			allowIcons: true,
 		});
@@ -134,11 +127,10 @@ export function renderWebBatchResult(
 		ResultEnvelope<import("../../batch/run.ts").BatchItemResult[]>
 	>;
 	const items = Array.isArray(envelope.data) ? envelope.data : [];
-	const succeeded = items.filter((item) => item.ok === true).length;
+	const succeeded = items.filter((item) => item.ok).length;
 	const failed = items.length - succeeded;
-	const cacheHits = items.filter(
-		(item) => item.ok === true && item.result?.cache?.cached,
-	).length;
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
+	const cacheHits = items.filter((item) => item.ok && item.result?.cache?.cached).length;
 	const summary = envelope.error
 		? errorLabel("web_batch", envelope.error, { allowIcons: true })
 		: [

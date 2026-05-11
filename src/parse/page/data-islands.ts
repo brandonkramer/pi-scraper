@@ -1,6 +1,4 @@
-/**
- * @fileoverview parse data-islands module.
- */
+/** @file Parse data-islands module. */
 import { normalizeWhitespace } from "../../serialize/text.ts";
 import type { DomAdapter } from "../dom/adapter.ts";
 
@@ -60,29 +58,21 @@ function islandType(
 	if (/__NUXT__|__APOLLO_STATE__|window\.__INITIAL_STATE__/u.test(raw)) {
 		return "hydration";
 	}
-	return undefined;
 }
 
-function parseJsonPayload(
-	raw: string,
-	type: DataIslandContent["type"],
-): unknown {
+function parseJsonPayload(raw: string, type: DataIslandContent["type"]): unknown {
 	try {
 		if (type !== "hydration") return JSON.parse(raw);
 		const match = raw.match(
 			/(?:__NUXT__|__APOLLO_STATE__|__INITIAL_STATE__)\s*=\s*(\{[\s\S]*\});?/u,
 		);
-		return match ? JSON.parse(match[1] ?? "") : undefined;
+		return match ? JSON.parse(match[1] || "") : undefined;
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }
 
-function collectUsefulStrings(
-	value: unknown,
-	parentKey = "",
-	out: string[] = [],
-): string[] {
+function collectUsefulStrings(value: unknown, parentKey = "", out: string[] = []): string[] {
 	if (typeof value === "string") {
 		if (TEXT_KEYS.has(parentKey) || looksLikeSentence(value)) out.push(value);
 		return out;
@@ -92,9 +82,7 @@ function collectUsefulStrings(
 		return out;
 	}
 	if (value && typeof value === "object") {
-		for (const [key, entry] of Object.entries(
-			value as Record<string, unknown>,
-		)) {
+		for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
 			collectUsefulStrings(entry, key, out);
 		}
 	}
@@ -102,7 +90,7 @@ function collectUsefulStrings(
 }
 
 function firstTitle(value: unknown): string | undefined {
-	if (!value || typeof value !== "object") return undefined;
+	if (!value || typeof value !== "object") return;
 	const record = value as Record<string, unknown>;
 	const title = record.headline ?? record.title ?? record.name;
 	if (typeof title === "string") return title;
@@ -110,7 +98,6 @@ function firstTitle(value: unknown): string | undefined {
 		const nested = firstTitle(entry);
 		if (nested) return nested;
 	}
-	return undefined;
 }
 
 function looksLikeSentence(value: string): boolean {

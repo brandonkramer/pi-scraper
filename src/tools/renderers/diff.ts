@@ -1,21 +1,16 @@
-/**
- * @fileoverview Pi web_diff tool result renderer.
- */
+import { formatChecklistItem, formatChecklistText } from "../../tui/checklist.ts";
+import { errorLabel, freshnessLabel } from "../../tui/envelope.ts";
+import { renderProgressCard } from "../../tui/progress.ts";
+import { renderText } from "../../tui/text.ts";
+import { muted, separator } from "../../tui/theme.ts";
+import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
+/** @file Pi web_diff tool result renderer. */
 import {
 	isProgress,
 	type PiToolShell,
 	type ResultEnvelope,
 	type ProgressDetails,
 } from "../../types.ts";
-import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
-import { renderText } from "../../tui/text.ts";
-import { muted, separator } from "../../tui/theme.ts";
-import {
-	formatChecklistItem,
-	formatChecklistText,
-} from "../../tui/checklist.ts";
-import { renderProgressCard } from "../../tui/progress.ts";
-import { errorLabel, freshnessLabel } from "../../tui/envelope.ts";
 export interface DiffData {
 	previous?: unknown;
 	current?: unknown;
@@ -35,11 +30,9 @@ export function renderWebDiffResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as
-		| Partial<ResultEnvelope<unknown>>
-		| ProgressDetails;
+	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
 	if (isProgress(details))
-		return renderProgressCard("web_diff", details as ProgressDetails, theme, {
+		return renderProgressCard("web_diff", details, theme, {
 			allowIcons: false,
 		});
 	const envelope = details as Partial<ResultEnvelope<DiffData>>;
@@ -101,20 +94,15 @@ export function renderChecklistResult(
 	const lines = [title];
 	if (options.notice) lines.push("", muted(options.notice, theme));
 	if (options.items?.length) {
-		const formatter =
-			options.icons === false ? formatChecklistText : formatChecklistItem;
+		const formatter = options.icons === false ? formatChecklistText : formatChecklistItem;
 		lines.push("", ...options.items.map(formatter));
 	}
 	if (options.preview) lines.push("", options.preview.slice(0, 500));
-	if (options.responseId)
-		lines.push("", muted(`responseId: ${options.responseId}`, theme));
+	if (options.responseId) lines.push("", muted(`responseId: ${options.responseId}`, theme));
 	return renderText(lines.join("\n"), { padToWidth: true });
 }
 
-function diffTitle(
-	diff: DiffData | undefined,
-	summary: string | undefined,
-): string {
+function diffTitle(diff: DiffData | undefined, summary: string | undefined): string {
 	if (!diff?.previous) return "saved baseline";
 	if (summary?.includes("No meaningful") || summary?.includes("No content"))
 		return "no content changes";

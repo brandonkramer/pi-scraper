@@ -2,24 +2,18 @@ import { execFileSync } from "node:child_process";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+
 import { buildAndImport } from "./build-pipeline.mjs";
+import { writeSuiteReport } from "./results.mjs";
 import { evaluateSignals, renderMarkdown } from "./signals.mjs";
 import { timedRepeats } from "./stats.mjs";
-import { writeSuiteReport } from "./results.mjs";
 
 const FIXTURE_EXTS = [".html", ".pdf"];
 
-export async function runEval({
-	rootDir,
-	corpusPath,
-	warmup = 3,
-	repeats = 20,
-}) {
+export async function runEval({ rootDir, corpusPath, warmup = 3, repeats = 20 }) {
 	const timestamp = new Date().toISOString();
 	const corpus = JSON.parse(await readFile(corpusPath, "utf8"));
-	const pkg = JSON.parse(
-		await readFile(path.join(rootDir, "package.json"), "utf8"),
-	);
+	const pkg = JSON.parse(await readFile(path.join(rootDir, "package.json"), "utf8"));
 	const compiled = await buildAndImport(rootDir);
 	const fixturesDir = path.join(rootDir, "eval/fixtures");
 	const results = [];
@@ -65,7 +59,7 @@ async function runCase(testCase, compiled, fixturesDir, rootDir, options) {
 	const fixture = await findFixture(fixturesDir, testCase.id);
 	if (!fixture) return skippedCase(testCase, "no_fixture");
 	if (fixture.ext === ".pdf")
-		return runPdfCase(testCase, compiled, fixture, rootDir, options);
+		return await runPdfCase(testCase, compiled, fixture, rootDir, options);
 	const totalStart = performance.now();
 	const fetchStart = performance.now();
 	const htmlBuffer = await readFile(fixture.path);
@@ -106,12 +100,7 @@ async function runCase(testCase, compiled, fixturesDir, rootDir, options) {
 
 // Inject a fixture-backed HttpClient stub so scrapeUrl(fast) drives the full pipeline
 // (signal aggregation, blocked detection, format rendering, truncation) with no network I/O.
-function stubHttpClient(
-	url,
-	payload,
-	bytes,
-	contentType = "text/html; charset=utf-8",
-) {
+function stubHttpClient(url, payload, bytes, contentType = "text/html; charset=utf-8") {
 	return {
 		fetchUrl: async () => ({
 			url,
@@ -137,12 +126,7 @@ async function runPdfCase(testCase, compiled, fixture, rootDir, options) {
 			fileUrl,
 			{ mode: "fast", format: "markdown" },
 			{
-				httpClient: stubHttpClient(
-					fileUrl,
-					pdfBuffer,
-					pdfBuffer.byteLength,
-					"application/pdf",
-				),
+				httpClient: stubHttpClient(fileUrl, pdfBuffer, pdfBuffer.byteLength, "application/pdf"),
 			},
 		);
 	const parseStart = performance.now();
@@ -174,9 +158,7 @@ function caseResult(testCase, fixture, rootDir, signals, metrics, perf) {
 		id: testCase.id,
 		category: testCase.category,
 		fixture: path.relative(rootDir, fixture.path),
-		verdict: signals.some((signal) => signal.status === "fail")
-			? "fail"
-			: "pass",
+		verdict: signals.some((signal) => signal.status === "fail") ? "fail" : "pass",
 		metrics,
 		signals,
 		...(perf ? { perf } : {}),
@@ -189,7 +171,9 @@ async function findFixture(fixturesDir, id) {
 		try {
 			await stat(candidate);
 			return { path: candidate, ext };
-		} catch {}
+		} catch {
+			/* ignore */
+		}
 	}
 }
 
@@ -208,14 +192,7 @@ function skippedCase(testCase, reason) {
 	};
 }
 
-function metricsFor(
-	fetchMs,
-	parseMs,
-	totalMs,
-	downloadedBytes,
-	markdown,
-	visibleText,
-) {
+function metricsFor(fetchMs, parseMs, totalMs, downloadedBytes, markdown, visibleText) {
 	return {
 		fetch_ms: round(fetchMs),
 		parse_ms: round(parseMs),
@@ -235,7 +212,7 @@ function gitSha(rootDir) {
 			stdio: ["ignore", "pipe", "ignore"],
 		}).trim();
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }
 

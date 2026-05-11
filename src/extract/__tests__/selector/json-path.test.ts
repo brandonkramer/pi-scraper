@@ -1,7 +1,6 @@
-/**
- * @fileoverview Tests for safe JSONPath subset evaluator.
- */
+/** @file Tests for safe JSONPath subset evaluator. */
 import { describe, expect, it } from "vitest";
+
 import {
 	evaluateJsonPath,
 	evaluateJsonPaths,
@@ -39,18 +38,12 @@ describe("evaluateJsonPath", () => {
 	});
 
 	it("selects array index then property", () => {
-		const result = evaluateJsonPath(
-			[{ name: "a" }, { name: "b" }],
-			"$[0].name",
-		);
+		const result = evaluateJsonPath([{ name: "a" }, { name: "b" }], "$[0].name");
 		expect(result.values).toEqual(["a"]);
 	});
 
 	it("selects wildcard then property", () => {
-		const result = evaluateJsonPath(
-			[{ name: "a" }, { name: "b" }],
-			"$[*].name",
-		);
+		const result = evaluateJsonPath([{ name: "a" }, { name: "b" }], "$[*].name");
 		expect(result.values).toEqual(["a", "b"]);
 	});
 
@@ -70,25 +63,25 @@ describe("evaluateJsonPath", () => {
 		const result = evaluateJsonPath({ a: 1 }, "$.a[?(@.b>1)]");
 		expect(result.values).toEqual([]);
 		expect(result.errors).toHaveLength(1);
-		expect(result.errors[0]!.code).toBe("JSON_PATH_UNSUPPORTED");
+		expect(result.errors[0].code).toBe("JSON_PATH_UNSUPPORTED");
 	});
 
 	it("errors for filter expressions", () => {
 		const result = evaluateJsonPath([{ a: 1 }], "$[?(@.a>1)]");
 		expect(result.values).toEqual([]);
-		expect(result.errors[0]!.code).toBe("JSON_PATH_UNSUPPORTED");
+		expect(result.errors[0].code).toBe("JSON_PATH_UNSUPPORTED");
 	});
 
 	it("errors for recursive descent", () => {
 		const result = evaluateJsonPath({ a: { b: 1 } }, "$..b");
 		expect(result.values).toEqual([]);
-		expect(result.errors[0]!.code).toBe("JSON_PATH_UNSUPPORTED");
+		expect(result.errors[0].code).toBe("JSON_PATH_UNSUPPORTED");
 	});
 
 	it("errors for paths not starting with $", () => {
 		const result = evaluateJsonPath({ a: 1 }, "a.b");
 		expect(result.values).toEqual([]);
-		expect(result.errors[0]!.code).toBe("JSON_PATH_UNSUPPORTED");
+		expect(result.errors[0].code).toBe("JSON_PATH_UNSUPPORTED");
 	});
 });
 
@@ -129,14 +122,9 @@ describe("flattenJsonValues", () => {
 	});
 
 	it("flattens notebook cell source arrays", () => {
-		const cells = [
-			{ source: ["import os", "print(1)"] },
-			{ source: ["# comment", "x = 2"] },
-		];
+		const cells = [{ source: ["import os", "print(1)"] }, { source: ["# comment", "x = 2"] }];
 		const result = evaluateJsonPath(cells, "$[*].source");
-		expect(flattenJsonValues(result.values)).toBe(
-			"import os\nprint(1)\n# comment\nx = 2",
-		);
+		expect(flattenJsonValues(result.values)).toBe("import os\nprint(1)\n# comment\nx = 2");
 	});
 });
 

@@ -1,35 +1,27 @@
-/**
- * @fileoverview Pi web_crawl renderer — top-level result/progress card and per-page expanded details.
- */
+import {
+	batchProgressFromCrawlPages,
+	isBatchProgress,
+	isBatchProgressView,
+} from "../../batch/progress-state.ts";
+import { renderBatchProgressCard, renderBatchResultCard } from "../../tui/batch.ts";
+import {
+	activityCountSegment,
+	failureCountSegment,
+	successCountSegment,
+} from "../../tui/counts.ts";
+import { errorLabel, sessionNotice, contextPackageResponseId } from "../../tui/envelope.ts";
+import { pickExcerpt } from "../../tui/preview.ts";
+import { renderProgressCard } from "../../tui/progress.ts";
+import { type ResourceListItem, renderResourceItemList } from "../../tui/resource.ts";
+import { muted, neutral, separator } from "../../tui/theme.ts";
+import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
+/** @file Pi web_crawl renderer — top-level result/progress card and per-page expanded details. */
 import {
 	isProgress,
 	type PiToolShell,
 	type ProgressDetails,
 	type ResultEnvelope,
 } from "../../types.ts";
-import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
-import { renderProgressCard } from "../../tui/progress.ts";
-import {
-	renderBatchProgressCard,
-	renderBatchResultCard,
-} from "../../tui/batch.ts";
-import {
-	batchProgressFromCrawlPages,
-	isBatchProgress,
-	isBatchProgressView,
-} from "../../batch/progress-state.ts";
-import {
-	activityCountSegment,
-	failureCountSegment,
-	successCountSegment,
-} from "../../tui/counts.ts";
-import { pickExcerpt } from "../../tui/preview.ts";
-import { muted, neutral, separator } from "../../tui/theme.ts";
-import {
-	errorLabel,
-	sessionNotice,
-	contextPackageResponseId,
-} from "../../tui/envelope.ts";
 export interface CrawlMeta {
 	succeededCount: number;
 	failedCount: number;
@@ -57,10 +49,6 @@ export interface CrawlPageView {
 	};
 	error?: { code?: string; phase?: string; message?: string };
 }
-import {
-	type ResourceListItem,
-	renderResourceItemList,
-} from "../../tui/resource.ts";
 
 export function crawlExpandedDetails(
 	pages: readonly CrawlPageView[],
@@ -80,10 +68,7 @@ function excerptCapForCount(count: number): number {
 	return Math.max(100, Math.min(500, Math.floor(1000 / Math.max(1, count))));
 }
 
-function toCrawlListItem(
-	page: CrawlPageView,
-	excerptCap = 180,
-): ResourceListItem {
+function toCrawlListItem(page: CrawlPageView, excerptCap = 180): ResourceListItem {
 	if (page.error) {
 		return {
 			ok: false,
@@ -96,17 +81,9 @@ function toCrawlListItem(
 	return {
 		ok: true,
 		url,
-		finalUrl:
-			page.finalUrl && page.url && page.finalUrl !== page.url
-				? page.finalUrl
-				: undefined,
+		finalUrl: page.finalUrl && page.url && page.finalUrl !== page.url ? page.finalUrl : undefined,
 		title: page.data?.title,
-		excerpt: pickExcerpt(
-			page.data?.description,
-			page.data?.markdown,
-			page.data?.text,
-			excerptCap,
-		),
+		excerpt: pickExcerpt(page.data?.description, page.data?.markdown, page.data?.text, excerptCap),
 		fields: {
 			status: page.status,
 			mode: page.mode,
@@ -126,19 +103,14 @@ export function renderWebCrawlResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as
-		| Partial<ResultEnvelope<unknown>>
-		| ProgressDetails;
+	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
 	if (isProgress(details)) {
-		if (isBatchProgress(details))
-			return renderBatchProgressCard(details, expanded, theme);
+		if (isBatchProgress(details)) return renderBatchProgressCard(details, expanded, theme);
 		return renderProgressCard("web_crawl", details, theme, {
 			allowIcons: true,
 		});
 	}
-	const envelope = details as Partial<
-		ResultEnvelope<{ metadata?: CrawlMeta; pages?: unknown[] }>
-	>;
+	const envelope = details as Partial<ResultEnvelope<{ metadata?: CrawlMeta; pages?: unknown[] }>>;
 	const metadata = envelope.data?.metadata;
 	const failed = metadata?.failedCount ?? 0;
 	const summary = envelope.error
@@ -146,19 +118,15 @@ export function renderWebCrawlResult(
 		: [
 				successCountSegment(metadata?.succeededCount ?? 0, "succeeded", theme),
 				failureCountSegment(failed, "failed", theme),
-				activityCountSegment(
-					metadata?.visitedCount ?? 0,
-					"visited",
-					"◉",
-					theme,
-				),
+				activityCountSegment(metadata?.visitedCount ?? 0, "visited", "◉", theme),
 				neutral(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
 				!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
 			]
 				.filter(Boolean)
 				.join(separator(theme));
 	const pages = Array.isArray(envelope.data?.pages)
-		? (envelope.data?.pages as CrawlPageView[])
+		? // oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
+			(envelope.data?.pages as CrawlPageView[])
 		: [];
 	const progress = isBatchProgressView(envelope.diagnostics?.batchProgress)
 		? envelope.diagnostics.batchProgress

@@ -1,5 +1,6 @@
 /**
- * @fileoverview web_crawl action="status" and action="list" handlers — crawl metadata lookup, enrichment, and agentic guidance.
+ * @file Web_crawl action="status" and action="list" handlers — crawl metadata lookup, enrichment,
+ *   and agentic guidance.
  */
 import {
 	loadCrawlMetadata,
@@ -7,14 +8,10 @@ import {
 	type CrawlMetadata,
 	type CrawlStatus,
 } from "../crawl/state.ts";
-import { aggregateFreshness, crawlStaleness } from "../storage/cache/freshness.ts";
-import type {
-	AgenticNextAction,
-	AgenticQualitySignals,
-	FreshnessMetadata,
-} from "../types.ts";
-import { crawlAction, storedResultGuidance } from "./infra/agentic-context.ts";
 import { formatAge } from "../scrape/describe.ts";
+import { aggregateFreshness, crawlStaleness } from "../storage/cache/freshness.ts";
+import type { AgenticNextAction, AgenticQualitySignals, FreshnessMetadata } from "../types.ts";
+import { crawlAction, storedResultGuidance } from "./infra/agentic-context.ts";
 import { inputErrorResult, toolResult } from "./infra/result.ts";
 import { crawlFreshness } from "./web-crawl-run.ts";
 import type { Params } from "./web-crawl.ts";
@@ -88,7 +85,7 @@ export async function crawlList(params: Params) {
 			assistantGuidance: storedResultGuidance(),
 		});
 	}
-	const latest = entries[0]!;
+	const latest = entries[0];
 	const text = `Found ${entries.length} prior crawl(s)${scope}. Latest ${latest.crawlId} is ${latest.staleness}; recommended action: ${latest.recommendedAction}.`;
 	return toolResult({
 		text,
@@ -123,11 +120,9 @@ function recommendedAction(status: CrawlStatus, staleness: string): string {
 		staleness !== "expired"
 	)
 		return "resume";
-	if (status === "done" && (staleness === "fresh" || staleness === "aging"))
-		return "reuse_results";
+	if (status === "done" && (staleness === "fresh" || staleness === "aging")) return "reuse_results";
 	if (status === "done") return "recrawl";
-	if (status === "error" && (staleness === "stale" || staleness === "expired"))
-		return "discard";
+	if (status === "error" && (staleness === "stale" || staleness === "expired")) return "discard";
 	return "inspect";
 }
 
@@ -173,24 +168,17 @@ function crawlNextActions(entries: CrawlEntry[]): AgenticNextAction[] {
 	return actions.slice(0, 5);
 }
 
-function crawlQuality(
-	entries: CrawlEntry[],
-	limit: number,
-): AgenticQualitySignals {
+function crawlQuality(entries: CrawlEntry[], limit: number): AgenticQualitySignals {
 	const stale = entries.filter(
 		(entry) =>
-			entry.freshness.stale ||
-			entry.staleness === "stale" ||
-			entry.staleness === "expired",
+			entry.freshness.stale || entry.staleness === "stale" || entry.staleness === "expired",
 	);
 	return {
 		confidence: stale.length ? "medium" : "high",
 		freshness: stale.length ? "stale_possible" : "current",
 		coverage: entries.length >= limit ? "top_n_only" : "complete",
 		knownGaps: stale.length
-			? [
-					`${stale.length} crawl(s) are stale or expired and should not be treated as current.`,
-				]
+			? [`${stale.length} crawl(s) are stale or expired and should not be treated as current.`]
 			: undefined,
 	};
 }

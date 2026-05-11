@@ -1,13 +1,12 @@
 /**
- * @fileoverview Serialize htmlparser2/domhandler nodes into stable element fingerprints.
- *
  * @remarks
- * Fingerprints are portable JSON shapes used for adaptive selector repair.
- * They capture tag, attributes, text content, DOM path, parent signature, and
- * sibling/child tag sequences — enough to relocate an element after markup changes.
+ *   Fingerprints are portable JSON shapes used for adaptive selector repair. They capture tag,
+ *   attributes, text content, DOM path, parent signature, and sibling/child tag sequences — enough
+ *   to relocate an element after markup changes.
+ * @file Serialize htmlparser2/domhandler nodes into stable element fingerprints.
  */
 import type { AnyNode, Element } from "domhandler";
-import * as domutils from "domutils";
+import { innerText, isTag, textContent } from "domutils";
 
 /** Attributes that change frequently and should be ignored by default. */
 const VOLATILE_ATTRS = new Set([
@@ -24,9 +23,7 @@ const VOLATILE_ATTRS = new Set([
 	"data-testid",
 ]);
 
-/**
- * Portable JSON shape representing an element's structural fingerprint.
- */
+/** Portable JSON shape representing an element's structural fingerprint. */
 export interface ElementFingerprint {
 	/** Element tag name, lowercased. */
 	tag: string;
@@ -61,13 +58,13 @@ export interface ElementFingerprint {
  * Build a fingerprint from a domhandler Element node.
  *
  * @param element — htmlparser2 Element node
- * @returns portable fingerprint
+ * @returns Portable fingerprint
  */
 export function fingerprintElement(element: Element): ElementFingerprint {
 	const tag = element.name.toLowerCase();
 	const attributes = cleanAttributes(element.attribs);
-	const text = collapseWhitespace(domutils.getText(element));
-	const fullText = collapseWhitespace(domutils.textContent(element));
+	const text = collapseWhitespace(innerText(element));
+	const fullText = collapseWhitespace(textContent(element));
 	const path = buildPath(element);
 	const parent = buildParent(element);
 	const siblings = buildSiblings(element);
@@ -82,12 +79,8 @@ export function fingerprintElement(element: Element): ElementFingerprint {
 	return result;
 }
 
-/**
- * Remove empty/whitespace-only values and volatile framework attributes.
- */
-function cleanAttributes(
-	attribs: Record<string, string> | undefined,
-): Record<string, string> {
+/** Remove empty/whitespace-only values and volatile framework attributes. */
+function cleanAttributes(attribs: Record<string, string> | undefined): Record<string, string> {
 	if (!attribs) return {};
 	const cleaned: Record<string, string> = {};
 	for (const [key, value] of Object.entries(attribs)) {
@@ -99,23 +92,19 @@ function cleanAttributes(
 	return cleaned;
 }
 
-/**
- * Collapse whitespace and trim.
- */
+/** Collapse whitespace and trim. */
 function collapseWhitespace(text: string | undefined | null): string | undefined {
-	if (!text) return undefined;
-	const collapsed = text.replace(/\s+/gu, " ").trim();
+	if (!text) return;
+	const collapsed = text.replaceAll(/\s+/gu, " ").trim();
 	return collapsed.length > 0 ? collapsed : undefined;
 }
 
-/**
- * Build ancestor tag path from document root to this element.
- */
+/** Build ancestor tag path from document root to this element. */
 function buildPath(element: Element): string[] {
 	const path: string[] = [];
 	let current: AnyNode | null = element;
 	while (current) {
-		if (domutils.isTag(current)) {
+		if (isTag(current)) {
 			path.unshift(current.name.toLowerCase());
 		}
 		current = current.parent ?? null;
@@ -123,40 +112,34 @@ function buildPath(element: Element): string[] {
 	return path;
 }
 
-/**
- * Capture parent element signature when available.
- */
-function buildParent(
-	element: Element,
-): ElementFingerprint["parent"] | undefined {
+/** Capture parent element signature when available. */
+function buildParent(element: Element): ElementFingerprint["parent"] | undefined {
 	const parent = element.parent;
-	if (!parent || !domutils.isTag(parent)) return undefined;
+	if (!parent || !isTag(parent)) return;
 	return {
 		tag: parent.name.toLowerCase(),
 		attributes: cleanAttributes(parent.attribs),
-		text: collapseWhitespace(domutils.textContent(parent)) ?? undefined,
+		text: collapseWhitespace(textContent(parent)) ?? undefined,
 	};
 }
 
-/**
- * Tag names of sibling elements (excluding text/comments).
- */
+/** Tag names of sibling elements (excluding text/comments). */
 function buildSiblings(element: Element): string[] | undefined {
 	const parent = element.parent;
-	if (!parent || !parent.children) return undefined;
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- defensive guard; runtime conditions can diverge from inferred type
+	if (!parent || !parent.children) return;
 	const siblings = parent.children
-		.filter((child) => child !== element && domutils.isTag(child))
+		.filter((child) => child !== element && isTag(child))
 		.map((child) => (child as Element).name.toLowerCase());
 	return siblings.length > 0 ? siblings : undefined;
 }
 
-/**
- * Tag names of direct child elements (excluding text/comments).
- */
+/** Tag names of direct child elements (excluding text/comments). */
 function buildChildren(element: Element): string[] | undefined {
-	if (!element.children) return undefined;
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- defensive guard; runtime conditions can diverge from inferred type
+	if (!element.children) return;
 	const children = element.children
-		.filter((child) => domutils.isTag(child))
-		.map((child) => (child as Element).name.toLowerCase());
+		.filter((child): child is Element => isTag(child))
+		.map((child) => child.name.toLowerCase());
 	return children.length > 0 ? children : undefined;
 }

@@ -1,7 +1,7 @@
-/**
- * @fileoverview Reddit post fetch and parse logic.
- */
+/** @file Reddit post fetch and parse logic. */
 import { stripUndefined } from "../../../text.ts";
+// oxlint-disable-next-line import/no-cycle -- vertical extractors and storage modules share type contracts; cycle is resolved at call time
+import { extractTopComments } from "./comments.ts";
 import {
 	type RedditCommentData,
 	type RedditListing,
@@ -13,8 +13,8 @@ import {
 	errorCode,
 	errorRetryable,
 	normalizeRedditError,
+	// oxlint-disable-next-line import/no-cycle -- vertical extractors and storage modules share type contracts; cycle is resolved at call time
 } from "./index.ts";
-import { extractTopComments } from "./comments.ts";
 
 const COMMENT_LIMIT = 5;
 
@@ -38,24 +38,15 @@ export async function fetchFirstAllowedRedditEndpoint(
 		} catch (error) {
 			const normalized = normalizeRedditError(error);
 			failures.push({ endpoint, error: normalized });
-			if (!shouldTryNextEndpoint(normalized))
-				throw withAttemptContext(normalized, failures);
+			if (!shouldTryNextEndpoint(normalized)) throw withAttemptContext(normalized, failures);
 		}
 	}
-	if (
-		failures.every(
-			(failure) => errorCode(failure.error) === "REDDIT_ROBOTS_DENIED",
-		)
-	) {
+	if (failures.every((failure) => errorCode(failure.error) === "REDDIT_ROBOTS_DENIED")) {
 		return blockedMetadataResult(match, endpoints, failures[0]?.error.message);
 	}
 	throw withAttemptContext(
 		failures[0]?.error ??
-			redditError(
-				"REDDIT_EXTRACTION_FAILED",
-				"Reddit extraction failed.",
-				false,
-			),
+			redditError("REDDIT_EXTRACTION_FAILED", "Reddit extraction failed.", false),
 		failures,
 	);
 }
@@ -67,12 +58,8 @@ function redditEndpoints(match: RedditPostMatch): string[] {
 		endpoints.push(redditEndpoint("https://www.reddit.com", path));
 		endpoints.push(redditEndpoint("https://old.reddit.com", path));
 	}
-	endpoints.push(
-		redditEndpoint("https://www.reddit.com", `/comments/${match.postId}.json`),
-	);
-	endpoints.push(
-		redditEndpoint("https://www.reddit.com", `/by_id/t3_${match.postId}.json`),
-	);
+	endpoints.push(redditEndpoint("https://www.reddit.com", `/comments/${match.postId}.json`));
+	endpoints.push(redditEndpoint("https://www.reddit.com", `/by_id/t3_${match.postId}.json`));
 	return [...new Set(endpoints)];
 }
 
@@ -84,11 +71,9 @@ function redditEndpoint(origin: string, path: string): string {
 }
 
 export function shouldTryNextEndpoint(error: Error): boolean {
-	return [
-		"REDDIT_ROBOTS_DENIED",
-		"REDDIT_RESPONSE_INVALID",
-		"REDDIT_POST_NOT_FOUND",
-	].includes(errorCode(error));
+	return ["REDDIT_ROBOTS_DENIED", "REDDIT_RESPONSE_INVALID", "REDDIT_POST_NOT_FOUND"].includes(
+		errorCode(error),
+	);
 }
 
 export function blockedMetadataResult(
@@ -213,18 +198,14 @@ function parseRedditResponse(
 
 function redditListings(
 	parsed: unknown,
-): [
-	RedditListing<RedditPostData>,
-	RedditListing<RedditCommentData> | undefined,
-] {
+): [RedditListing<RedditPostData>, RedditListing<RedditCommentData> | undefined] {
 	if (Array.isArray(parsed) && parsed.length >= 1) {
 		return [
 			parsed[0] as RedditListing<RedditPostData>,
 			parsed[1] as RedditListing<RedditCommentData> | undefined,
 		];
 	}
-	if (isRedditListing(parsed))
-		return [parsed as RedditListing<RedditPostData>, undefined];
+	if (isRedditListing(parsed)) return [parsed as RedditListing<RedditPostData>, undefined];
 	throw redditError(
 		"REDDIT_RESPONSE_INVALID",
 		"Reddit JSON response did not include a post listing.",
@@ -235,9 +216,7 @@ function redditListings(
 function isRedditListing(value: unknown): value is RedditListing<unknown> {
 	return Boolean(
 		value &&
-			typeof value === "object" &&
-			Array.isArray(
-				(value as { data?: { children?: unknown } }).data?.children,
-			),
+		typeof value === "object" &&
+		Array.isArray((value as { data?: { children?: unknown } }).data?.children),
 	);
 }

@@ -1,9 +1,8 @@
 /**
- * @fileoverview Post-parse symbol and section selection for deterministic extraction.
- *
- * The selector works only on already prepared page text/markdown/html so fetch, robots,
- * cache, SSRF, and mode policy remain in the shared scrape/http boundary. It is a
- * lightweight structural pass, not semantic code analysis.
+ * @file Post-parse symbol and section selection for deterministic extraction. The selector works
+ *   only on already prepared page text/markdown/html so fetch, robots, cache, SSRF, and mode policy
+ *   remain in the shared scrape/http boundary. It is a lightweight structural pass, not semantic
+ *   code analysis.
  */
 import type { PatternSourceFormat } from "../pattern/index.ts";
 import type {
@@ -17,7 +16,7 @@ import type {
 	SelectedSymbol,
 } from "./types.ts";
 
-export {
+export type {
 	SymbolIncludeType,
 	ExtractSchemaPreset,
 	SymbolIncludeFilter,
@@ -42,18 +41,13 @@ export function selectSymbolContent(
 	options: SymbolSelectionOptions,
 ): SymbolSelectionResult | undefined {
 	const include = normalizedInclude(options);
-	if (!include.length) return undefined;
-	const parsed = parseSelectableContent(
-		content,
-		options.sourceFormat ?? "text",
-	);
+	if (!include.length) return;
+	const parsed = parseSelectableContent(content, options.sourceFormat ?? "text");
 	const sections = uniqueSections([
 		...matchesForType(parsed, include, "heading"),
 		...matchesForType(parsed, include, "section"),
 	]);
-	const codeBlocks = uniqueBlocks(
-		matchesForType(parsed, include, "code-block"),
-	);
+	const codeBlocks = uniqueBlocks(matchesForType(parsed, include, "code-block"));
 	const tables = uniqueTables(matchesForType(parsed, include, "table"));
 	const symbols = uniqueSymbols(matchesForType(parsed, include, "symbol"));
 	return {
@@ -63,21 +57,15 @@ export function selectSymbolContent(
 		codeBlocks,
 		tables,
 		symbols,
-		unmatched: include.filter(
-			(filter) => matchCountForFilter(parsed, filter) === 0,
-		),
+		unmatched: include.filter((filter) => matchCountForFilter(parsed, filter) === 0),
 	};
 }
 
-function normalizedInclude(
-	options: SymbolSelectionOptions,
-): SymbolIncludeFilter[] {
+function normalizedInclude(options: SymbolSelectionOptions): SymbolIncludeFilter[] {
 	return [...presetInclude(options.extractSchema), ...(options.include ?? [])];
 }
 
-function presetInclude(
-	preset: ExtractSchemaPreset | undefined,
-): SymbolIncludeFilter[] {
+function presetInclude(preset: ExtractSchemaPreset | undefined): SymbolIncludeFilter[] {
 	if (preset === "api-reference")
 		return [
 			{ type: "section", level: 2 },
@@ -92,8 +80,7 @@ function presetInclude(
 				pattern: "(^|\\b)(v?\\d+\\.\\d+|changelog|release)",
 			},
 		];
-	if (preset === "faq")
-		return [{ type: "section", pattern: "(faq|question|\\?)$" }];
+	if (preset === "faq") return [{ type: "section", pattern: "(faq|question|\\?)$" }];
 	if (preset === "compatibility-table")
 		return [
 			{
@@ -104,10 +91,7 @@ function presetInclude(
 	return [];
 }
 
-function parseSelectableContent(
-	content: string,
-	sourceFormat: PatternSourceFormat,
-): ParsedContent {
+function parseSelectableContent(content: string, sourceFormat: PatternSourceFormat): ParsedContent {
 	const headings = selectHeadings(content, sourceFormat);
 	const sections = sectionsFromHeadings(content, headings);
 	const codeBlocks = selectCodeBlocks(content, sourceFormat);
@@ -128,33 +112,28 @@ function parseSelectableContent(
 	return { headings, sections, codeBlocks, tables, symbols };
 }
 
-function selectHeadings(
-	content: string,
-	sourceFormat: PatternSourceFormat,
-): SelectedSection[] {
+function selectHeadings(content: string, sourceFormat: PatternSourceFormat): SelectedSection[] {
 	const headings: SelectedSection[] = [];
 	for (const match of content.matchAll(/^(#{1,6})\s+([^\n#].*)$/gmu)) {
-		const title = stripMarkdown(match[2] ?? "").trim();
+		const title = stripMarkdown(match[2] || "").trim();
 		headings.push({
 			type: "heading",
 			title,
-			level: match[1]?.length ?? 1,
-			start: match.index ?? 0,
-			end: (match.index ?? 0) + match[0].length,
+			level: match[1]?.length || 1,
+			start: match.index || 0,
+			end: (match.index || 0) + match[0].length,
 			text: title,
 		});
 	}
 	if (sourceFormat === "html") {
-		for (const match of content.matchAll(
-			/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/giu,
-		)) {
-			const title = stripHtml(match[2] ?? "").trim();
+		for (const match of content.matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/giu)) {
+			const title = stripHtml(match[2] || "").trim();
 			headings.push({
 				type: "heading",
 				title,
 				level: Number(match[1]),
-				start: match.index ?? 0,
-				end: (match.index ?? 0) + match[0].length,
+				start: match.index || 0,
+				end: (match.index || 0) + match[0].length,
 				text: title,
 			});
 		}
@@ -162,14 +141,9 @@ function selectHeadings(
 	return headings.sort((a, b) => a.start - b.start);
 }
 
-function sectionsFromHeadings(
-	content: string,
-	headings: SelectedSection[],
-): SelectedSection[] {
+function sectionsFromHeadings(content: string, headings: SelectedSection[]): SelectedSection[] {
 	return headings.map((heading, index) => {
-		const next = headings
-			.slice(index + 1)
-			.find((candidate) => candidate.level <= heading.level);
+		const next = headings.slice(index + 1).find((candidate) => candidate.level <= heading.level);
 		const end = next?.start ?? content.length;
 		return {
 			type: "section",
@@ -182,55 +156,47 @@ function sectionsFromHeadings(
 	});
 }
 
-function selectCodeBlocks(
-	content: string,
-	sourceFormat: PatternSourceFormat,
-): SelectedCodeBlock[] {
+function selectCodeBlocks(content: string, sourceFormat: PatternSourceFormat): SelectedCodeBlock[] {
 	const blocks: SelectedCodeBlock[] = [];
 	for (const match of content.matchAll(/```([^\n`]*)\n([\s\S]*?)```/gu)) {
-		const start = match.index ?? 0;
+		const start = match.index || 0;
 		blocks.push({
 			type: "code-block",
-			language: (match[1] ?? "").trim() || undefined,
+			language: (match[1] || "").trim() || undefined,
 			start,
 			end: start + match[0].length,
-			code: match[2] ?? "",
+			code: match[2] || "",
 		});
 	}
 	if (sourceFormat === "html") {
 		for (const match of content.matchAll(/<pre\b[^>]*>([\s\S]*?)<\/pre>/giu)) {
-			const start = match.index ?? 0;
+			const start = match.index || 0;
 			blocks.push({
 				type: "code-block",
 				language: htmlCodeLanguage(match[0]),
 				start,
 				end: start + match[0].length,
-				code: stripHtml(match[1] ?? ""),
+				code: stripHtml(match[1] || ""),
 			});
 		}
 	}
 	return blocks.sort((a, b) => a.start - b.start);
 }
 
-function extractTables(
-	content: string,
-	sourceFormat: PatternSourceFormat,
-): SelectedTable[] {
+function extractTables(content: string, sourceFormat: PatternSourceFormat): SelectedTable[] {
 	const tables: SelectedTable[] = [];
 	for (const match of content.matchAll(/(?:^|\n)((?:\|[^\n]*\|\n?){2,})/gu)) {
-		const start = (match.index ?? 0) + (match[0].startsWith("\n") ? 1 : 0);
+		const start = (match.index || 0) + (match[0].startsWith("\n") ? 1 : 0);
 		tables.push({
 			type: "table",
 			start,
-			end: start + (match[1] ?? "").length,
-			text: (match[1] ?? "").trim(),
+			end: start + (match[1] || "").length,
+			text: (match[1] || "").trim(),
 		});
 	}
 	if (sourceFormat === "html") {
-		for (const match of content.matchAll(
-			/<table\b[^>]*>[\s\S]*?<\/table>/giu,
-		)) {
-			const start = match.index ?? 0;
+		for (const match of content.matchAll(/<table\b[^>]*>[\s\S]*?<\/table>/giu)) {
+			const start = match.index || 0;
 			tables.push({
 				type: "table",
 				start,
@@ -248,15 +214,13 @@ function symbolsFromCodeBlock(block: SelectedCodeBlock): SelectedSymbol[] {
 		/^(?:(\/\*\*[\s\S]*?\*\/|(?:\s*\/\/\/.*\n)+)\s*)?\s*(?:export\s+)?(?:async\s+)?(function|class|interface|type|const|let|var)\s+([A-Za-z_$][\w$]*)\s*([^\n{;]*)/gmu;
 	for (const match of block.code.matchAll(declaration)) {
 		if (!isCodeDeclaration(match[2], match[4])) continue;
-		const relative = match.index ?? 0;
+		const relative = match.index || 0;
 		const start = block.start + relative;
-		const rawKind = match[2] ?? "variable";
+		const rawKind = match[2] || "variable";
 		const kind =
-			rawKind === "const" || rawKind === "let" || rawKind === "var"
-				? "variable"
-				: rawKind;
-		const name = match[3] ?? "";
-		const tail = (match[4] ?? "").trim();
+			rawKind === "const" || rawKind === "let" || rawKind === "var" ? "variable" : rawKind;
+		const name = match[3] || "";
+		const tail = (match[4] || "").trim();
 		symbols.push({
 			type: "symbol",
 			name,
@@ -274,19 +238,13 @@ function symbolsFromCodeBlock(block: SelectedCodeBlock): SelectedSymbol[] {
 function looksCodeBearing(content: string): boolean {
 	const declaration =
 		/^\s*(?:export\s+)?(?:async\s+)?(function|class|interface|type|const|let|var)\s+[A-Za-z_$][\w$]*\s*([^\n{;]*)/gmu;
-	return [...content.matchAll(declaration)].some((match) =>
-		isCodeDeclaration(match[1], match[2]),
-	);
+	return [...content.matchAll(declaration)].some((match) => isCodeDeclaration(match[1], match[2]));
 }
 
-function isCodeDeclaration(
-	kind: string | undefined,
-	tail: string | undefined,
-): boolean {
+function isCodeDeclaration(kind: string | undefined, tail: string | undefined): boolean {
 	const value = (tail ?? "").trim();
 	if (kind === "function") return value.startsWith("(");
-	if (kind === "const" || kind === "let" || kind === "var")
-		return /^[:=]/u.test(value);
+	if (kind === "const" || kind === "let" || kind === "var") return /^[:=]/u.test(value);
 	if (kind === "type") return value.startsWith("=");
 	if (kind === "class" || kind === "interface")
 		return value === "" || /^(extends|implements)\b/u.test(value);
@@ -301,20 +259,17 @@ function matchesForType<T extends import("./types.ts").SymbolIncludeType>(
 	return include
 		.filter((filter) => filter.type === type)
 		.flatMap((filter) =>
-			collectionForType(parsed, type).filter((item) =>
-				matchesFilter(item, filter),
-			),
-		) as ExtractedFor<T>[];
+			collectionForType(parsed, type).filter((item) => matchesFilter(item, filter)),
+		);
 }
 
-type ExtractedFor<T extends import("./types.ts").SymbolIncludeType> =
-	T extends "code-block"
-		? SelectedCodeBlock
-		: T extends "table"
-			? SelectedTable
-			: T extends "symbol"
-				? SelectedSymbol
-				: SelectedSection;
+type ExtractedFor<T extends import("./types.ts").SymbolIncludeType> = T extends "code-block"
+	? SelectedCodeBlock
+	: T extends "table"
+		? SelectedTable
+		: T extends "symbol"
+			? SelectedSymbol
+			: SelectedSection;
 
 function collectionForType<T extends import("./types.ts").SymbolIncludeType>(
 	parsed: ParsedContent,
@@ -327,39 +282,20 @@ function collectionForType<T extends import("./types.ts").SymbolIncludeType>(
 	return parsed.symbols as ExtractedFor<T>[];
 }
 
-function matchCountForFilter(
-	parsed: ParsedContent,
-	filter: SymbolIncludeFilter,
-): number {
-	return collectionForType(parsed, filter.type).filter((item) =>
-		matchesFilter(item, filter),
-	).length;
+function matchCountForFilter(parsed: ParsedContent, filter: SymbolIncludeFilter): number {
+	return collectionForType(parsed, filter.type).filter((item) => matchesFilter(item, filter))
+		.length;
 }
 
 function matchesFilter(
 	item: SelectedSection | SelectedCodeBlock | SelectedTable | SelectedSymbol,
 	filter: SymbolIncludeFilter,
 ): boolean {
-	if (
-		"level" in item &&
-		filter.level !== undefined &&
-		item.level !== filter.level
-	)
-		return false;
-	if (
-		"language" in item &&
-		filter.language &&
-		item.language !== filter.language
-	)
-		return false;
+	if ("level" in item && filter.level !== undefined && item.level !== filter.level) return false;
+	if ("language" in item && filter.language && item.language !== filter.language) return false;
 	const haystack = searchableText(item);
-	if (
-		filter.name &&
-		!haystack.toLowerCase().includes(filter.name.toLowerCase())
-	)
-		return false;
-	if (filter.pattern && !safePattern(filter.pattern).test(haystack))
-		return false;
+	if (filter.name && !haystack.toLowerCase().includes(filter.name.toLowerCase())) return false;
+	if (filter.pattern && !safePattern(filter.pattern).test(haystack)) return false;
 	return true;
 }
 
@@ -376,8 +312,7 @@ function searchableText(
 ): string {
 	if ("title" in item) return `${item.title}\n${item.text}`;
 	if ("code" in item) return `${item.language ?? ""}\n${item.code}`;
-	if ("name" in item)
-		return `${item.name}\n${item.signature ?? ""}\n${item.description ?? ""}`;
+	if ("name" in item) return `${item.name}\n${item.signature ?? ""}\n${item.description ?? ""}`;
 	return item.text;
 }
 
@@ -386,10 +321,7 @@ function uniqueSections(items: SelectedSection[]): SelectedSection[] {
 }
 
 function uniqueBlocks(items: SelectedCodeBlock[]): SelectedCodeBlock[] {
-	return uniqueBy(
-		items,
-		(item) => `${item.start}:${item.end}:${item.language ?? ""}`,
-	);
+	return uniqueBy(items, (item) => `${item.start}:${item.end}:${item.language ?? ""}`);
 }
 
 function uniqueTables(items: SelectedTable[]): SelectedTable[] {
@@ -411,13 +343,13 @@ function uniqueBy<T>(items: T[], key: (item: T) => string): T[] {
 }
 
 function stripMarkdown(value: string): string {
-	return value.replace(/[`*_~[\]()]/gu, "").trim();
+	return value.replaceAll(/[`*_~[\]()]/gu, "").trim();
 }
 
 function stripHtml(value: string): string {
 	return value
-		.replace(/<[^>]+>/gu, " ")
-		.replace(/\s+/gu, " ")
+		.replaceAll(/<[^>]+>/gu, " ")
+		.replaceAll(/\s+/gu, " ")
 		.trim();
 }
 
@@ -426,10 +358,10 @@ function htmlCodeLanguage(value: string): string | undefined {
 }
 
 function docDescription(value: string | undefined): string | undefined {
-	if (!value) return undefined;
+	if (!value) return;
 	return value
-		.replace(/^\s*\/\*\*|\*\/\s*$/gu, "")
-		.replace(/^\s*\* ?/gmu, "")
-		.replace(/^\s*\/\/\/ ?/gmu, "")
+		.replaceAll(/^\s*\/\*\*|\*\/\s*$/gu, "")
+		.replaceAll(/^\s*\* ?/gmu, "")
+		.replaceAll(/^\s*\/\/\/ ?/gmu, "")
 		.trim();
 }

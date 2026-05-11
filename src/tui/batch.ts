@@ -1,20 +1,18 @@
-/**
- * @fileoverview Batch-progress result and progress cards shared by web_batch and web_crawl.
- */
-import type { ProgressDetails } from "../types.ts";
-import type { RenderComponent, RenderTheme } from "./types.ts";
-import { renderText } from "./text.ts";
-import { muted } from "./theme.ts";
-import { renderProgressBar } from "./progress.ts";
-import { renderStatusPill } from "./pill.ts";
-import { renderUrlStatusRow } from "./rows.ts";
-import { renderStackedResultCard } from "./stacked.ts";
-import { withSpinnerFooter } from "./spinner.ts";
 import type {
 	BatchProgressItemView,
 	BatchProgressStatus,
 	BatchProgressView,
 } from "../batch/progress-state.ts";
+/** @file Batch-progress result and progress cards shared by web_batch and web_crawl. */
+import type { ProgressDetails } from "../types.ts";
+import { renderStatusPill } from "./pill.ts";
+import { renderProgressBar } from "./progress.ts";
+import { renderUrlStatusRow } from "./rows.ts";
+import { withSpinnerFooter } from "./spinner.ts";
+import { renderStackedResultCard } from "./stacked.ts";
+import { renderText } from "./text.ts";
+import { muted } from "./theme.ts";
+import type { RenderComponent, RenderTheme } from "./types.ts";
 
 export function renderBatchProgressCard(
 	details: ProgressDetails<{
@@ -38,7 +36,9 @@ export function renderBatchProgressCard(
 			}
 			return renderText(lines.join("\n")).render(width);
 		},
-		invalidate() {},
+		invalidate() {
+			/* no-op */
+		},
 	};
 }
 
@@ -57,8 +57,7 @@ export function renderBatchResultCard(
 ): RenderComponent {
 	return renderStackedResultCard(
 		{
-			body: (width) =>
-				renderBatchProgressText(options.progress, width, expanded, theme),
+			body: (width) => renderBatchProgressText(options.progress, width, expanded, theme),
 			summary: options.summary,
 			expanded,
 			notice: options.notice,
@@ -95,11 +94,7 @@ function renderBatchProgressText(
 	return [title, ...rows, ...more].join("\n");
 }
 
-function renderBatchRow(
-	item: BatchProgressItemView,
-	width: number,
-	theme?: RenderTheme,
-): string {
+function renderBatchRow(item: BatchProgressItemView, width: number, theme?: RenderTheme): string {
 	const statusWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
 	return renderUrlStatusRow({
 		url: item.url,
@@ -112,11 +107,7 @@ function renderBatchRow(
 	});
 }
 
-function renderStatusBox(
-	item: BatchProgressItemView,
-	width: number,
-	theme?: RenderTheme,
-): string {
+function renderStatusBox(item: BatchProgressItemView, width: number, theme?: RenderTheme): string {
 	if (item.status === "processing" && typeof item.progress === "number") {
 		return renderProgressBar(item.progress, width - 2);
 	}

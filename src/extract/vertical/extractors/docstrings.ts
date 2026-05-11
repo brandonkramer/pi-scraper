@@ -1,9 +1,6 @@
-/** @fileoverview Deterministic vertical extraction for raw source docstrings. */
+/** @file Deterministic vertical extraction for raw source docstrings. */
 
-import {
-	parseDocstrings,
-	type ParsedDocstrings,
-} from "../../../parse/markup/docstrings.ts";
+import { parseDocstrings, type ParsedDocstrings } from "../../../parse/markup/docstrings.ts";
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 export const docstringsExtractor: VerticalExtractor<ParsedDocstrings> = {
@@ -19,22 +16,20 @@ export const docstringsExtractor: VerticalExtractor<ParsedDocstrings> = {
 		],
 		docstringsSchema(),
 	),
-	match: (url) =>
-		isSupportedSourceUrl(url) ? { file: url.pathname } : undefined,
+	match: (url) => (isSupportedSourceUrl(url) ? { file: url.pathname } : undefined),
 	extract: async (url, match, context, signal) => {
 		const text = context.fetchPage
 			? (await context.fetchPage(url.toString(), signal)).text
 			: await context.fetchText?.(url.toString(), signal);
-		if (text === undefined)
-			throw new Error("docstrings extractor requires text fetch support");
+		if (text === undefined) throw new Error("docstrings extractor requires text fetch support");
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 		return parseDocstrings(text, match.file ?? url.pathname);
 	},
 };
 
 function isSupportedSourceUrl(url: URL): boolean {
 	return (
-		/^https?:$/u.test(url.protocol) &&
-		/\.(?:[cm]?[jt]sx?|py|rs)$/u.test(url.pathname.toLowerCase())
+		/^https?:$/u.test(url.protocol) && /\.(?:[cm]?[jt]sx?|py|rs)$/u.test(url.pathname.toLowerCase())
 	);
 }
 

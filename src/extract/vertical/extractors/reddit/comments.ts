@@ -1,15 +1,12 @@
-/**
- * @fileoverview Reddit comment extraction helpers.
- */
+/** @file Reddit comment extraction helpers. */
 import { stripUndefined } from "../../../text.ts";
+// oxlint-disable-next-line import/no-cycle -- vertical extractors and storage modules share type contracts; cycle is resolved at call time
 import { absoluteRedditUrl } from "./index.ts";
 import type { RedditCommentData, RedditListing } from "./index.ts";
 
 const COMMENT_LIMIT = 5;
 
-export function extractTopComments(
-	listing: RedditListing<RedditCommentData> | undefined,
-):
+export function extractTopComments(listing: RedditListing<RedditCommentData> | undefined):
 	| Array<{
 			id: string;
 			author?: string;

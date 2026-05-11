@@ -1,16 +1,13 @@
 /**
- * @fileoverview Compare element fingerprints and score similarity.
- *
  * @remarks
- * Reuses existing diff/text utilities (Levenshtein, token Jaccard) from
- * {@link src/diff/compare.ts} rather than duplicating algorithms.
+ *   Reuses existing diff/text utilities (Levenshtein, token Jaccard) from
+ *   {@link src/diff/compare.ts} rather than duplicating algorithms.
+ * @file Compare element fingerprints and score similarity.
  */
 import { lineSimilarity, tokens } from "../../diff/compare.ts";
 import type { ElementFingerprint } from "./fingerprint.ts";
 
-/**
- * Weights for each fingerprint feature when computing overall similarity.
- */
+/** Weights for each fingerprint feature when computing overall similarity. */
 const WEIGHTS = {
 	tag: 0.1,
 	text: 0.25,
@@ -43,7 +40,7 @@ export interface SimilarityResult {
  *
  * @param stored — fingerprint retrieved from storage
  * @param candidate — fingerprint of a candidate element in the current page
- * @returns score and per-feature reasons
+ * @returns Score and per-feature reasons
  */
 export function compareFingerprints(
 	stored: ElementFingerprint,
@@ -93,10 +90,7 @@ function textSimilarity(a: ElementFingerprint, b: ElementFingerprint): number {
 	return lineSimilarity(left, right);
 }
 
-function attributeSimilarity(
-	a: ElementFingerprint,
-	b: ElementFingerprint,
-): number {
+function attributeSimilarity(a: ElementFingerprint, b: ElementFingerprint): number {
 	const aKeys = Object.keys(a.attributes);
 	const bKeys = Object.keys(b.attributes);
 	if (aKeys.length === 0 && bKeys.length === 0) return 1;
@@ -105,6 +99,7 @@ function attributeSimilarity(
 	let matches = 0;
 	let valueScoreSum = 0;
 	for (const key of aKeys) {
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- runtime values may be undefined despite TS inference
 		if (b.attributes[key] === undefined) continue;
 		matches += 1;
 		const av = a.attributes[key] ?? "";
@@ -125,10 +120,7 @@ function pathSimilarity(a: ElementFingerprint, b: ElementFingerprint): number {
 	return lineSimilarity(left, right);
 }
 
-function parentSimilarity(
-	a: ElementFingerprint,
-	b: ElementFingerprint,
-): number {
+function parentSimilarity(a: ElementFingerprint, b: ElementFingerprint): number {
 	if (!a.parent && !b.parent) return 1;
 	if (!a.parent || !b.parent) return 0;
 
@@ -143,18 +135,14 @@ function parentSimilarity(
 	const bParentAttrs = Object.keys(b.parent.attributes);
 	if (aParentAttrs.length > 0 || bParentAttrs.length > 0) {
 		const shared = aParentAttrs.filter((k) => bParentAttrs.includes(k)).length;
-		score +=
-			(shared / Math.max(aParentAttrs.length, bParentAttrs.length)) * 0.3;
+		score += (shared / Math.max(aParentAttrs.length, bParentAttrs.length)) * 0.3;
 	} else {
 		score += 0.3;
 	}
 	return Math.min(score, 1);
 }
 
-function sequenceSimilarity(
-	a: string[] | undefined,
-	b: string[] | undefined,
-): number {
+function sequenceSimilarity(a: string[] | undefined, b: string[] | undefined): number {
 	if (!a && !b) return 1;
 	if (!a || !b) return 0;
 	const left = a.join(" ");

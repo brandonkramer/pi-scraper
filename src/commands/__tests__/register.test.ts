@@ -1,10 +1,10 @@
-/**
- * @fileoverview commands __tests__ register.test module.
- */
+/** @file Commands **tests** register.test module. */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { loadEffectiveConfig } from "../../config/settings.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import type { RegisteredCommandOptions } from "../define.ts";
@@ -30,14 +30,9 @@ describe("web command registration", () => {
 		registerWebCommands({
 			registerCommand: (name, options) => registered.push({ name, options }),
 		});
-		expect(registered.map((command) => command.name)).toEqual([
-			"web-set-mode",
-			"web-config",
-		]);
-		expect(registered[0]?.options.handler).toBeTypeOf("function");
-		expect(
-			webCommands.every((command) => command.name.startsWith("web-")),
-		).toBe(true);
+		expect(registered.map((command) => command.name)).toEqual(["web-set-mode", "web-config"]);
+		expect(typeof registered[0]?.options.handler).toBe("function");
+		expect(webCommands.every((command) => command.name.startsWith("web-"))).toBe(true);
 	});
 
 	it("persists scrape mode defaults", async () => {
@@ -48,10 +43,7 @@ describe("web command registration", () => {
 	});
 
 	it("persists advanced scrape defaults", async () => {
-		await setDefaultMode(
-			{ scrapeDefaults: { timeoutSeconds: 7, refresh: true } },
-			{ rootDir },
-		);
+		await setDefaultMode({ scrapeDefaults: { timeoutSeconds: 7, refresh: true } }, { rootDir });
 		const config = await loadEffectiveConfig({ rootDir });
 		expect(config.scrapeDefaults).toMatchObject({
 			timeoutSeconds: 7,

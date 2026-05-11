@@ -1,19 +1,14 @@
-/**
- * @fileoverview storage migrate-from-files module.
- */
+/** @file Storage migrate-from-files module. */
 import { randomUUID } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rename, stat } from "node:fs/promises";
 import path from "node:path";
+
 import type { CrawlState } from "../../crawl/state.ts";
 import type { ResponseStorageMetadata } from "../../types.ts";
 import { writeBlob } from "../blobs.ts";
 import type { StorageDb } from "../db/open.ts";
+import { pathExists, type ResolveStorageOptions, resolvePiStoragePaths } from "../paths.ts";
 import { responseFields } from "../responses/fields.ts";
-import {
-	pathExists,
-	type ResolveStorageOptions,
-	resolvePiStoragePaths,
-} from "../paths.ts";
 
 interface LegacyEnvelope {
 	metadata?: ResponseStorageMetadata;
@@ -29,9 +24,9 @@ export interface MigrationSummary {
  * Migrates pre-SQLite result and crawl files into the SQLite index.
  *
  * @remarks
- * Legacy directories are renamed only after all rows and blobs are written.
- * Existing rows are skipped so the migrator is safe to run before every storage
- * lookup/write while an interrupted upgrade is recovering.
+ *   Legacy directories are renamed only after all rows and blobs are written. Existing rows are
+ *   skipped so the migrator is safe to run before every storage lookup/write while an interrupted
+ *   upgrade is recovering.
  */
 export async function migrateLegacyFiles(
 	db: StorageDb,
@@ -61,9 +56,11 @@ export async function migrateLegacyFiles(
 		}
 	}
 
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- defensive guard; runtime conditions can diverge from inferred type
 	if (responseMigrationOk && (await isDirectory(paths.results))) {
 		await backupDirectory(paths.results, path.join(paths.root, "results.bak"));
 	}
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- defensive guard; runtime conditions can diverge from inferred type
 	if (crawlMigrationOk && (await isDirectory(paths.crawl))) {
 		await backupDirectory(paths.crawl, path.join(paths.root, "crawl.bak"));
 	}
@@ -80,14 +77,12 @@ async function migrateLegacyResults(
 	for (const entry of await readdir(resultsDir, { withFileTypes: true })) {
 		if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
 		const filePath = path.join(resultsDir, entry.name);
-		const envelope = JSON.parse(
-			await readFile(filePath, "utf8"),
-		) as LegacyEnvelope;
-		const responseId =
-			envelope.metadata?.responseId ?? path.basename(entry.name, ".json");
+		const envelope = JSON.parse(await readFile(filePath, "utf8")) as LegacyEnvelope;
+		const responseId = envelope.metadata?.responseId ?? path.basename(entry.name, ".json");
 		if (hasResponse(db, responseId)) continue;
 		const value = envelope.value ?? null;
 		const contentType = envelope.metadata?.contentType ?? "application/json";
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 		const valueJson = JSON.stringify(value) ?? "null";
 		const blob = await writeBlob(valueJson, contentType, options);
 		const storedAt = envelope.metadata?.storedAt ?? new Date().toISOString();
@@ -119,10 +114,7 @@ async function migrateLegacyResults(
 	return migrated;
 }
 
-async function migrateLegacyCrawls(
-	db: StorageDb,
-	crawlDir: string,
-): Promise<number> {
+async function migrateLegacyCrawls(db: StorageDb, crawlDir: string): Promise<number> {
 	let migrated = 0;
 	for (const entry of await readdir(crawlDir, { withFileTypes: true })) {
 		if (!entry.isDirectory()) continue;
@@ -189,28 +181,21 @@ function insertCrawlState(db: StorageDb, state: CrawlState): void {
 		const insertResult = db.prepare(
 			"INSERT OR REPLACE INTO crawl_results (crawl_id, url, position) VALUES (?, ?, ?)",
 		);
-		state.results.forEach((url, index) =>
-			insertResult.run(state.crawlId, url, index),
-		);
+		for (const [index, url] of state.results.entries()) {
+			insertResult.run(state.crawlId, url, index);
+		}
 	});
 }
 
 function hasResponse(db: StorageDb, responseId: string): boolean {
-	return Boolean(
-		db.prepare("SELECT 1 FROM responses WHERE response_id = ?").get(responseId),
-	);
+	return Boolean(db.prepare("SELECT 1 FROM responses WHERE response_id = ?").get(responseId));
 }
 
 function hasCrawl(db: StorageDb, crawlId: string): boolean {
-	return Boolean(
-		db.prepare("SELECT 1 FROM crawl_metadata WHERE crawl_id = ?").get(crawlId),
-	);
+	return Boolean(db.prepare("SELECT 1 FROM crawl_metadata WHERE crawl_id = ?").get(crawlId));
 }
 
-async function backupDirectory(
-	source: string,
-	preferredBackup: string,
-): Promise<void> {
+async function backupDirectory(source: string, preferredBackup: string): Promise<void> {
 	const target = (await pathExists(preferredBackup))
 		? `${preferredBackup}.${Date.now()}-${randomUUID()}`
 		: preferredBackup;
@@ -223,14 +208,14 @@ async function backupDirectory(
 }
 
 async function isDirectory(filePath: string): Promise<boolean> {
-	return stat(filePath).then(
+	return await stat(filePath).then(
 		(value) => value.isDirectory(),
 		() => false,
 	);
 }
 
 async function isFile(filePath: string): Promise<boolean> {
-	return stat(filePath).then(
+	return await stat(filePath).then(
 		(value) => value.isFile(),
 		() => false,
 	);

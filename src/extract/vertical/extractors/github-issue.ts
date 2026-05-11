@@ -1,6 +1,4 @@
-/**
- * @fileoverview extract verticals github-issue module.
- */
+/** @file Extract verticals github-issue module. */
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 interface GitHubIssueApi {
@@ -18,27 +16,21 @@ interface GitHubIssueApi {
 }
 
 export const githubIssueExtractor: VerticalExtractor = {
-	capability: capability(
-		"github_issue",
-		["https://github.com/:owner/:repo/issues/:number"],
-		{
-			type: "object",
-			required: ["owner", "repo", "number", "title", "state", "url"],
-			properties: {
-				owner: { type: "string" },
-				repo: { type: "string" },
-				number: { type: "number" },
-				title: { type: "string" },
-				state: { type: "string" },
-				url: { type: "string" },
-			},
+	capability: capability("github_issue", ["https://github.com/:owner/:repo/issues/:number"], {
+		type: "object",
+		required: ["owner", "repo", "number", "title", "state", "url"],
+		properties: {
+			owner: { type: "string" },
+			repo: { type: "string" },
+			number: { type: "number" },
+			title: { type: "string" },
+			state: { type: "string" },
+			url: { type: "string" },
 		},
-	),
+	}),
 	match: (url) => {
-		if (url.hostname !== "github.com") return undefined;
-		const [owner, repo, type, number, ...rest] = url.pathname
-			.split("/")
-			.filter(Boolean);
+		if (url.hostname !== "github.com") return;
+		const [owner, repo, type, number, ...rest] = url.pathname.split("/").filter(Boolean);
 		if (
 			!owner ||
 			!repo ||
@@ -47,7 +39,7 @@ export const githubIssueExtractor: VerticalExtractor = {
 			rest.length > 0 ||
 			!/^\d+$/u.test(number)
 		)
-			return undefined;
+			return;
 		return { owner, repo, number };
 	},
 	extract: async (_url, match, context, signal) => {
@@ -63,9 +55,7 @@ export const githubIssueExtractor: VerticalExtractor = {
 			state: issue.state,
 			url: issue.html_url,
 			author: issue.user?.login,
-			labels: issue.labels
-				?.map((label) => label.name)
-				.filter((name): name is string => Boolean(name)),
+			labels: (issue.labels?.map((label) => label.name).filter(Boolean) ?? []) as string[],
 			comments: issue.comments,
 			createdAt: issue.created_at,
 			updatedAt: issue.updated_at,

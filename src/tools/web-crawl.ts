@@ -1,12 +1,11 @@
-/**
- * @fileoverview Pi tool adapter for crawling, crawl state, and context.
- */
+/** @file Pi tool adapter for crawling, crawl state, and context. */
 import { type Static, Type } from "@earendil-works/pi-ai";
-import { defineWebTool } from "./infra/define.ts";
-import { renderEnvelopeResult } from "../tui/envelope.ts";
-import { renderWebCrawlResult } from "./renderers/crawl.ts";
+
 import { renderSimpleCall } from "../tui/call.ts";
+import { renderEnvelopeResult } from "../tui/envelope.ts";
+import { defineWebTool } from "./infra/define.ts";
 import { sessionOptionSchema, urlProperty } from "./infra/schemas.ts";
+import { renderWebCrawlResult } from "./renderers/crawl.ts";
 import { crawlRun } from "./web-crawl-run.ts";
 import { crawlStatus, crawlList } from "./web-crawl-status.ts";
 
@@ -46,9 +45,9 @@ export const webCrawlTool = defineWebTool({
 	parameters: webCrawlSchema,
 	async execute(_toolCallId, params: Params, signal, onUpdate) {
 		const action = inferCrawlAction(params);
-		if (action === "status") return crawlStatus(params);
-		if (action === "list") return crawlList(params);
-		return crawlRun(params, signal, onUpdate);
+		if (action === "status") return await crawlStatus(params);
+		if (action === "list") return await crawlList(params);
+		return await crawlRun(params, signal, onUpdate);
 	},
 	renderCall: (args, theme, _context) =>
 		renderSimpleCall(
@@ -69,8 +68,7 @@ export const webCrawlTool = defineWebTool({
 function inferCrawlAction(params: Params): CrawlAction {
 	if (params.action) return params.action as CrawlAction;
 	if (params.crawlId && !params.url && params.resume !== true) return "status";
-	if ((params.seed || params.status || params.limit) && !params.url)
-		return "list";
+	if ((params.seed || params.status || params.limit) && !params.url) return "list";
 	return "run";
 }
 

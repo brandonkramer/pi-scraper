@@ -1,13 +1,9 @@
-/**
- * @fileoverview crawl __tests__ respect-robots.test module.
- */
-import {
-	createServer,
-	type IncomingMessage,
-	type ServerResponse,
-} from "node:http";
+/** @file Crawl **tests** respect-robots.test module. */
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
+
 import { describe, expect, it } from "vitest";
+
 import { createHttpClient } from "../../http/client.ts";
 import { runCrawl } from "../runner.ts";
 
@@ -30,9 +26,7 @@ describe("runCrawl respectRobots integration", () => {
 			expect(site.hits.get("/robots.txt")).toBe(1);
 			expect(site.hits.get("/allowed")).toBe(1);
 			expect(site.hits.get("/private/blocked")).toBeUndefined();
-			expect(
-				crawl.pages.some((page) => page.error?.code === "ROBOTS_DENIED"),
-			).toBe(true);
+			expect(crawl.pages.some((page) => page.error?.code === "ROBOTS_DENIED")).toBe(true);
 		} finally {
 			await site.close();
 		}
@@ -49,9 +43,7 @@ describe("runCrawl respectRobots integration", () => {
 
 			expect(site.hits.get("/robots.txt")).toBeUndefined();
 			expect(site.hits.get("/private/blocked")).toBe(1);
-			expect(
-				crawl.pages.every((page) => page.error?.code !== "ROBOTS_DENIED"),
-			).toBe(true);
+			expect(crawl.pages.every((page) => page.error?.code !== "ROBOTS_DENIED")).toBe(true);
 		} finally {
 			await site.close();
 		}
@@ -60,18 +52,19 @@ describe("runCrawl respectRobots integration", () => {
 
 async function servedRobotsSite(): Promise<ServedSite> {
 	const hits = new Map<string, number>();
-	const server = createServer((request, response) =>
-		serve(request, response, hits),
-	);
+	const server = createServer((request, response) => serve(request, response, hits));
 	await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
 	const { port } = server.address() as AddressInfo;
 	return {
 		origin: `http://127.0.0.1:${port}/`,
 		hits,
 		close: () =>
-			new Promise((resolve, reject) =>
-				server.close((error) => (error ? reject(error) : resolve())),
-			),
+			new Promise<void>((resolve, reject) => {
+				server.close((error) => {
+					if (error) reject(error);
+					else resolve();
+				});
+			}),
 	};
 }
 

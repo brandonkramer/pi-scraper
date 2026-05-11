@@ -1,15 +1,15 @@
-/**
- * @fileoverview tools __tests__ web-tools.test module.
- */
+/** @file Tools **tests** web-tools.test module. */
 import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
+
 import type { ModelAdapter, ModelRequest } from "../../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
+import { renderText } from "../../tui/text.ts";
+import type { RenderComponent } from "../../tui/types.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import type { WebTool } from "../infra/define.ts";
-import type { RenderComponent } from "../../tui/types.ts";
 import { registerWebTools } from "../infra/register.ts";
-import { renderText } from "../../tui/text.ts";
 import { createWebExtractTool, webExtractTool } from "../web-extract.ts";
 import { createWebScrapeTool } from "../web-scrape.ts";
 import { createWebSummarizeTool } from "../web-summarize.ts";
@@ -18,11 +18,7 @@ const signal = new AbortController().signal;
 
 describe("selected web tool handlers", () => {
 	it("lists vertical extractor capabilities through web_extract", async () => {
-		const result = await webExtractTool.execute(
-			"call",
-			{ action: "list" },
-			signal,
-		);
+		const result = await webExtractTool.execute("call", { action: "list" }, signal);
 		expect(result.content[0]?.text).toContain("extractor");
 		expect(Array.isArray((result.details as ResultEnvelope).data)).toBe(true);
 	});
@@ -42,24 +38,15 @@ describe("selected web tool handlers", () => {
 	});
 
 	it("keeps web_extract adapter vertical-agnostic", () => {
-		const source = readFileSync(
-			new URL("../web-extract.ts", import.meta.url),
-			"utf8",
-		);
+		const source = readFileSync(new URL("../web-extract.ts", import.meta.url), "utf8");
 
 		expect(source).not.toContain('"reddit"');
 		expect(source).not.toContain("'reddit'");
 	});
 
 	it("returns structured missing-model errors for ad hoc extraction", async () => {
-		const result = await webExtractTool.execute(
-			"call",
-			{ url: "https://example.com" },
-			signal,
-		);
-		expect((result.details as ResultEnvelope).error?.code).toBe(
-			"MODEL_ADAPTER_MISSING",
-		);
+		const result = await webExtractTool.execute("call", { url: "https://example.com" }, signal);
+		expect((result.details as ResultEnvelope).error?.code).toBe("MODEL_ADAPTER_MISSING");
 		expect(result.content[0]?.text).toContain("model-backed");
 	});
 
@@ -98,9 +85,10 @@ describe("selected web tool handlers", () => {
 		expect(envelope.data?.markers[1]?.index).toBe(-1);
 		expect(envelope.data?.contains[0]?.found).toBe(true);
 		expect(envelope.data?.excerpts[0]?.text).toContain("web_crawl");
-		expect(
-			envelope.data?.regexes[0]?.matches.map((item) => item.value),
-		).toEqual(["web_crawl", "web_scrape"]);
+		expect(envelope.data?.regexes[0]?.matches.map((item) => item.value)).toEqual([
+			"web_crawl",
+			"web_scrape",
+		]);
 	});
 
 	it("filters pattern inspection to requested symbols", async () => {
@@ -123,9 +111,7 @@ describe("selected web tool handlers", () => {
 			"fetchMetrics",
 			"parseUrl",
 		]);
-		expect(envelope.data?.selection?.symbols[0]?.description).toContain(
-			"Fetch metrics",
-		);
+		expect(envelope.data?.selection?.symbols[0]?.description).toContain("Fetch metrics");
 	});
 
 	it("returns structured api-reference preset selections", async () => {
@@ -228,9 +214,7 @@ describe("selected web tool handlers", () => {
 			{ action: "pattern", content: "abc", regexes: [{ pattern: "[" }] },
 			signal,
 		);
-		expect((result.details as ResultEnvelope).error?.code).toBe(
-			"PATTERN_INPUT_INVALID",
-		);
+		expect((result.details as ResultEnvelope).error?.code).toBe("PATTERN_INPUT_INVALID");
 	});
 
 	it("runs provided-content extraction with an injected model adapter", async () => {
@@ -309,10 +293,9 @@ describe("selected web tool handlers", () => {
 			{ content: "content", prompt: "extract" },
 			signal,
 		);
-		expect(
-			(extracted?.details as ResultEnvelope<{ data: { ok: boolean } }>).data
-				?.data.ok,
-		).toBe(true);
+		expect((extracted?.details as ResultEnvelope<{ data: { ok: boolean } }>)?.data?.data?.ok).toBe(
+			true,
+		);
 
 		const summarized = await scrape?.execute(
 			"call",
@@ -401,20 +384,12 @@ describe("selected web tool handlers", () => {
 	});
 
 	it("renders compact calls and expanded results", async () => {
-		const result = await webExtractTool.execute(
-			"call",
-			{ action: "list" },
-			signal,
+		const result = await webExtractTool.execute("call", { action: "list" }, signal);
+		expect(renderComponentText(webExtractTool.renderCall?.({ action: "list" }, undefined))).toBe(
+			"web_extract list",
 		);
 		expect(
-			renderComponentText(
-				webExtractTool.renderCall?.({ action: "list" }, undefined),
-			),
-		).toBe("web_extract list");
-		expect(
-			renderComponentText(
-				webExtractTool.renderResult?.(result, { expanded: true }, undefined),
-			),
+			renderComponentText(webExtractTool.renderResult?.(result, { expanded: true }, undefined)),
 		).toContain("extractor");
 	});
 
@@ -475,9 +450,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		expect((result.details as ResultEnvelope).error?.code).toBe(
-			"JSON_PARSE_FAILED",
-		);
+		expect((result.details as ResultEnvelope).error?.code).toBe("JSON_PARSE_FAILED");
 	});
 
 	it("reports structured errors for unsupported JSONPath syntax", async () => {
@@ -491,9 +464,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		expect((result.details as ResultEnvelope).error?.code).toBe(
-			"JSON_PATH_UNSUPPORTED",
-		);
+		expect((result.details as ResultEnvelope).error?.code).toBe("JSON_PATH_UNSUPPORTED");
 	});
 
 	it("reports no-match error when all JSONPaths miss", async () => {
@@ -507,9 +478,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		expect((result.details as ResultEnvelope).error?.code).toBe(
-			"JSON_PATH_NO_MATCH",
-		);
+		expect((result.details as ResultEnvelope).error?.code).toBe("JSON_PATH_NO_MATCH");
 	});
 
 	it("runs JSON pattern inspection from scraped URL", async () => {
@@ -557,9 +526,7 @@ function renderComponentText(component: RenderComponent | undefined): string {
 	return component?.render(80).join("\n") ?? "";
 }
 
-function fakeModelAdapter(
-	respond: (request: ModelRequest) => unknown,
-): ModelAdapter {
+function fakeModelAdapter(respond: (request: ModelRequest) => unknown): ModelAdapter {
 	return {
 		async run<T = unknown>(request: ModelRequest) {
 			const data = respond(request);

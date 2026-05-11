@@ -1,19 +1,14 @@
-/**
- * @fileoverview Pattern extraction public entrypoint.
- */
+/** @file Pattern extraction public entrypoint. */
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
+import type { CommonScrapeOptions } from "../../types.ts";
 import { selectSymbolContent } from "../api-surface/selection.ts";
 import type {
 	ExtractSchemaPreset,
 	SymbolIncludeFilter,
 	SymbolSelectionResult,
 } from "../api-surface/types.ts";
-import {
-	evaluateJsonPaths,
-	flattenJsonValues,
-	isSupportedJsonPath,
-	parseJsonSafe,
-} from "../selector/json-path.ts";
+import { PatternInspectError } from "./errors.ts";
+import { MAX_INSPECT_CHARS } from "./limits.ts";
 import {
 	inspectContains,
 	inspectExcerpts,
@@ -21,20 +16,15 @@ import {
 	inspectRegexes,
 	inspectSections,
 } from "./ops/index.ts";
-import { MAX_INSPECT_CHARS } from "./limits.ts";
-import { PatternInspectError } from "./errors.ts";
-import type { CommonScrapeOptions, OutputFormat } from "../../types.ts";
 import { preparePatternSource } from "./runner.ts";
 
 const SOURCE_FORMATS = ["text", "markdown", "html", "json"] as const;
 
 export type PatternSourceFormat = (typeof SOURCE_FORMATS)[number];
 
-export type PatternSectionRequest =
-	import("./section-ranges.ts").SectionRangeRequest;
+export type PatternSectionRequest = import("./section-ranges.ts").SectionRangeRequest;
 
-export interface PatternInspectOptions
-	extends Omit<CommonScrapeOptions, "include"> {
+export interface PatternInspectOptions extends Omit<CommonScrapeOptions, "include"> {
 	url?: string;
 	content?: string;
 	sourceFormat?: PatternSourceFormat;
@@ -137,4 +127,4 @@ export async function inspectPatterns(
 	};
 }
 
-export { PatternExcerptRequest, PatternRegexRequest } from "./types.ts";
+export type { PatternExcerptRequest, PatternRegexRequest } from "./types.ts";

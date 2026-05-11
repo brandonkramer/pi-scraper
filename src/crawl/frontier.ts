@@ -1,6 +1,4 @@
-/**
- * @fileoverview crawl frontier module.
- */
+/** @file Crawl frontier module. */
 import { compactQueue } from "../url/dedupe.ts";
 import { normalizeUrl } from "../url/normalize.ts";
 import { matchesAny } from "../url/patterns.ts";
@@ -29,22 +27,20 @@ export class CrawlFrontier {
 
 	constructor(private readonly options: FrontierOptions) {
 		this.seedOrigin = new URL(normalizeUrl(options.seedUrl)).origin;
-		for (const url of options.initialSeen ?? [])
-			this.seen.add(normalizeUrl(url));
+		for (const url of options.initialSeen ?? []) this.seen.add(normalizeUrl(url));
 		this.queue.push(...(options.initialQueue ?? []));
 	}
 
 	enqueue(url: string, depth: number, parentUrl?: string): boolean {
 		const normalized = normalizeUrl(url);
-		if (!this.allowed(normalized, depth) || this.seen.has(normalized))
-			return false;
+		if (!this.allowed(normalized, depth) || this.seen.has(normalized)) return false;
 		this.seen.add(normalized);
 		this.queue.push({ url: normalized, depth, parentUrl });
 		return true;
 	}
 
 	next(): FrontierItem | undefined {
-		if (this.queueHead >= this.queue.length) return undefined;
+		if (this.queueHead >= this.queue.length) return;
 		const item = this.queue[this.queueHead];
 		this.queueHead += 1;
 		this.queueHead = compactQueue(this.queue, this.queueHead);
@@ -65,14 +61,9 @@ export class CrawlFrontier {
 
 	private allowed(url: string, depth: number): boolean {
 		if (depth > (this.options.maxDepth ?? 3)) return false;
-		if (
-			(this.options.sameOrigin ?? true) &&
-			new URL(url).origin !== this.seedOrigin
-		)
-			return false;
+		if ((this.options.sameOrigin ?? true) && new URL(url).origin !== this.seedOrigin) return false;
 		if (matchesAny(url, this.options.exclude)) return false;
-		if (this.options.include?.length && !matchesAny(url, this.options.include))
-			return false;
+		if (this.options.include?.length && !matchesAny(url, this.options.include)) return false;
 		return true;
 	}
 }

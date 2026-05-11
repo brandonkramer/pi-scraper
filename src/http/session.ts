@@ -1,12 +1,10 @@
 /**
- * @fileoverview Lightweight session management for static HTTP requests.
- *
  * @remarks
- * Sessions store cookies, default headers, and profile preferences across
- * multiple requests. They are persisted in memory by default and optionally
- * saved to SQLite when `saveSession` is set.
+ *   Sessions store cookies, default headers, and profile preferences across multiple requests. They
+ *   are persisted in memory by default and optionally saved to SQLite when `saveSession` is set.
+ * @file Lightweight session management for static HTTP requests.
  */
-import { openStorageDb, type StorageDb } from "../storage/db/open.ts";
+import { openStorageDb } from "../storage/db/open.ts";
 import type { ResolveStorageOptions } from "../storage/paths.ts";
 
 export interface FetchSession {
@@ -34,9 +32,7 @@ interface SerializedCookie {
 
 const memorySessions = new Map<string, FetchSession>();
 
-/**
- * Get an existing session from memory, load from SQLite, or create a new empty one.
- */
+/** Get an existing session from memory, load from SQLite, or create a new empty one. */
 export async function getOrCreateSession(
 	id: string,
 	options: ResolveStorageOptions = {},
@@ -59,9 +55,7 @@ export async function getOrCreateSession(
 	return session;
 }
 
-/**
- * Persist a memory session to SQLite.
- */
+/** Persist a memory session to SQLite. */
 export async function saveSessionToStorage(
 	id: string,
 	options: ResolveStorageOptions = {},
@@ -71,9 +65,7 @@ export async function saveSessionToStorage(
 	await persistSession(session, options);
 }
 
-/**
- * Delete a session from memory and from SQLite.
- */
+/** Delete a session from memory and from SQLite. */
 export async function deleteSessionAndStorage(
 	id: string,
 	options: ResolveStorageOptions = {},
@@ -87,27 +79,18 @@ export async function deleteSessionAndStorage(
 	}
 }
 
-/**
- * Delete a session from memory only.
- */
+/** Delete a session from memory only. */
 export function deleteSession(id: string): void {
 	memorySessions.delete(id);
 }
 
-/**
- * List active session IDs in memory.
- */
+/** List active session IDs in memory. */
 export function listSessions(): string[] {
 	return [...memorySessions.keys()];
 }
 
-/**
- * Parse a raw Set-Cookie header into a serialized cookie.
- */
-export function parseSetCookie(
-	setCookie: string,
-	host?: string,
-): SerializedCookie {
+/** Parse a raw Set-Cookie header into a serialized cookie. */
+export function parseSetCookie(setCookie: string, _host?: string): SerializedCookie {
 	const parts = setCookie.split(";").map((p) => p.trim());
 	const [nameValue] = parts;
 	const eq = nameValue.indexOf("=");
@@ -128,14 +111,8 @@ export function parseSetCookie(
 	return cookie;
 }
 
-/**
- * Build a Cookie header string from stored cookies matching the target host and path.
- */
-export function buildCookieHeader(
-	session: FetchSession,
-	host: string,
-	path: string,
-): string {
+/** Build a Cookie header string from stored cookies matching the target host and path. */
+export function buildCookieHeader(session: FetchSession, host: string, path: string): string {
 	const now = new Date();
 	const matching = session.cookies.filter((c) => {
 		if (c.expires) {
@@ -150,9 +127,7 @@ export function buildCookieHeader(
 	return matching.map((c) => `${c.name}=${c.value}`).join("; ");
 }
 
-/**
- * Merge session cookies (as outgoing Cookie header) with request headers.
- */
+/** Merge session cookies (as outgoing Cookie header) with request headers. */
 export function mergeSessionHeaders(
 	session: FetchSession | undefined,
 	host: string,
@@ -168,9 +143,7 @@ export function mergeSessionHeaders(
 	return merged;
 }
 
-/**
- * Update session with Set-Cookie headers from a response.
- */
+/** Update session with Set-Cookie headers from a response. */
 export function updateSessionCookies(
 	session: FetchSession,
 	setCookieHeaders: string[],
@@ -180,20 +153,13 @@ export function updateSessionCookies(
 		const cookie = parseSetCookie(header, host);
 		// Remove old cookie with same name/domain/path
 		session.cookies = session.cookies.filter(
-			(c) =>
-				!(
-					c.name === cookie.name &&
-					c.domain === cookie.domain &&
-					c.path === cookie.path
-				),
+			(c) => !(c.name === cookie.name && c.domain === cookie.domain && c.path === cookie.path),
 		);
 		session.cookies.push(cookie);
 	}
 }
 
-/**
- * Persist session metadata to SQLite.
- */
+/** Persist session metadata to SQLite. */
 export async function persistSession(
 	session: FetchSession,
 	options: ResolveStorageOptions = {},
@@ -231,9 +197,7 @@ export async function persistSession(
 	);
 }
 
-/**
- * Load session metadata from SQLite into memory if not already present.
- */
+/** Load session metadata from SQLite into memory if not already present. */
 export async function loadPersistedSession(
 	id: string,
 	options: ResolveStorageOptions = {},
@@ -253,7 +217,7 @@ export async function loadPersistedSession(
 				default_mode: string;
 		  }
 		| undefined;
-	if (!row) return undefined;
+	if (!row) return;
 	const session: FetchSession = {
 		id: row.id,
 		createdAt: row.created_at,
@@ -267,8 +231,7 @@ export async function loadPersistedSession(
 			/* ignore */
 		}
 	}
-	if (row.default_browser_profile)
-		session.defaultBrowserProfile = row.default_browser_profile;
+	if (row.default_browser_profile) session.defaultBrowserProfile = row.default_browser_profile;
 	if (row.default_os_profile) session.defaultOsProfile = row.default_os_profile;
 	if (row.default_proxy) session.defaultProxy = row.default_proxy;
 	if (row.default_mode) session.defaultMode = row.default_mode;
@@ -282,20 +245,15 @@ export interface SessionNoticeParams {
 	clearSession?: boolean;
 }
 
-/**
- * Build a compact session status for tool renderers.
- */
+/** Build a compact session status for tool renderers. */
 export function buildSessionNotice(params: SessionNoticeParams): string {
 	if (!params.sessionId) return "";
-	if (params.saveSession)
-		return `● session "${params.sessionId}" created & persisted`;
+	if (params.saveSession) return `● session "${params.sessionId}" created & persisted`;
 	if (params.clearSession) return `● session "${params.sessionId}" cleared`;
 	return `● session "${params.sessionId}" active`;
 }
 
-/**
- * Build a human-readable session status line for fallback tool result text.
- */
+/** Build a human-readable session status line for fallback tool result text. */
 export function buildSessionText(params: SessionNoticeParams): string {
 	const notice = buildSessionNotice(params);
 	return notice ? `\n\n---\n${notice}` : "";

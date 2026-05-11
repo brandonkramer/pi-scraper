@@ -1,8 +1,7 @@
 /**
- * @fileoverview Cross-extension model-adapter registry over pi.events.
- *
- * Implements the `pi:model-adapter/*` protocol so any Pi extension can
- * register an LLM transport without either side importing the other.
+ * @file Cross-extension model-adapter registry over pi.events. Implements the `pi:model-adapter/*`
+ *   protocol so any Pi extension can register an LLM transport without either side importing the
+ *   other.
  */
 import type { ModelAdapter } from "../../extract/adhoc/model.ts";
 import { isUnknownRecord } from "../../types.ts";
@@ -23,8 +22,8 @@ export type ResolvePreference = "auto" | "off" | string;
  * Optional filter for `pi:model-adapter/discover`.
  *
  * @remarks
- * Adapters SHOULD only re-register when they match the filter;
- * MAY re-register unconditionally for backwards compatibility.
+ *   Adapters SHOULD only re-register when they match the filter; MAY re-register unconditionally
+ *   for backwards compatibility.
  */
 export interface DiscoverPayload {
 	capabilities?: readonly ModelCapability[];
@@ -50,18 +49,13 @@ export class ModelRegistry {
 		return this.entries.get(id);
 	}
 
-	resolve(
-		preference: ResolvePreference,
-		capability: ModelCapability,
-	): ModelAdapter | undefined {
-		if (preference === "off") return undefined;
+	resolve(preference: ResolvePreference, capability: ModelCapability): ModelAdapter | undefined {
+		if (preference === "off") return;
 		if (preference === "auto") {
 			const candidates = this.order
 				.map((id) => this.entries.get(id))
-				.filter((e): e is RegisteredAdapter =>
-					Boolean(e && e.capabilities.includes(capability)),
-				);
-			if (candidates.length === 0) return undefined;
+				.filter((e): e is RegisteredAdapter => Boolean(e && e.capabilities.includes(capability)));
+			if (candidates.length === 0) return;
 			let best = candidates[0];
 			for (const c of candidates) {
 				if (c.priority > best.priority) best = c;
@@ -69,14 +63,12 @@ export class ModelRegistry {
 			return best.adapter;
 		}
 		const entry = this.entries.get(preference);
-		if (!entry || !entry.capabilities.includes(capability)) return undefined;
+		if (!entry || !entry.capabilities.includes(capability)) return;
 		return entry.adapter;
 	}
 
 	list(): RegisteredAdapter[] {
-		return this.order
-			.map((id) => this.entries.get(id))
-			.filter(Boolean) as RegisteredAdapter[];
+		return this.order.map((id) => this.entries.get(id)).filter(Boolean) as RegisteredAdapter[];
 	}
 
 	/** Test helper. */
@@ -115,17 +107,18 @@ export function initModelAdapterProtocol(pi: {
 			modelRegistry.unregister(payload.id);
 		}
 	});
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 	pi.events.emit?.("pi:model-adapter/discover", {});
 }
 
 /**
- * Emit a `pi:model-adapter/discover` event, optionally scoped by capability
- * or minimum priority. A no-op when `pi.events.emit` is unavailable.
+ * Emit a `pi:model-adapter/discover` event, optionally scoped by capability or minimum priority. A
+ * no-op when `pi.events.emit` is unavailable.
  *
  * @remarks
- * Callers that lack an explicit `pi` reference (e.g. inside tool `execute`)
- * can pass `undefined` for `pi`; the helper falls back to the events reference
- * captured during `initModelAdapterProtocol`.
+ *   Callers that lack an explicit `pi` reference (e.g. inside tool `execute`) can pass `undefined`
+ *   for `pi`; the helper falls back to the events reference captured during
+ *   `initModelAdapterProtocol`.
  */
 export function requestAdapterDiscovery(
 	pi?: {
@@ -139,24 +132,18 @@ export function requestAdapterDiscovery(
 }
 
 /** Duck-type an incoming payload; return null if malformed. */
-export function validateAdapterPayload(
-	payload: unknown,
-): RegisteredAdapter | null {
+export function validateAdapterPayload(payload: unknown): RegisteredAdapter | null {
 	if (!isUnknownRecord(payload)) return null;
 	if (typeof payload.id !== "string" || payload.id.length === 0) return null;
 	if (typeof payload.label !== "string") return null;
 	if (!Array.isArray(payload.capabilities)) return null;
 	if (typeof payload.priority !== "number") return null;
-	if (
-		!isUnknownRecord(payload.adapter) ||
-		typeof payload.adapter.run !== "function"
-	) {
+	if (!isUnknownRecord(payload.adapter) || typeof payload.adapter.run !== "function") {
 		return null;
 	}
 	const capabilities = payload.capabilities.filter(
 		(c): c is ModelCapability =>
-			typeof c === "string" &&
-			["summarize", "extract", "analyze", "chat"].includes(c),
+			typeof c === "string" && ["summarize", "extract", "analyze", "chat"].includes(c),
 	);
 	return {
 		id: payload.id,

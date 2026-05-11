@@ -1,27 +1,14 @@
-/**
- * @fileoverview Pi terminal UI spinner and spinner-footer primitives.
- */
-export const SPINNER_FRAMES = [
-	"⠋",
-	"⠙",
-	"⠹",
-	"⠸",
-	"⠼",
-	"⠴",
-	"⠦",
-	"⠧",
-	"⠇",
-	"⠏",
-];
+/** @file Pi terminal UI spinner and spinner-footer primitives. */
+export const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 export function renderSpinner(tick: number, message = "Working..."): string {
-	const frame = SPINNER_FRAMES[tick % SPINNER_FRAMES.length]!;
+	const frame = SPINNER_FRAMES[tick % SPINNER_FRAMES.length];
 	return `${frame} ${message}`;
 }
 
 export function currentSpinnerFrame(): string {
 	const tick = Math.floor(Date.now() / 80);
-	return SPINNER_FRAMES[tick % SPINNER_FRAMES.length]!;
+	return SPINNER_FRAMES[tick % SPINNER_FRAMES.length];
 }
 
 export function withSpinnerFooter(lines: string[], tick?: number): string {

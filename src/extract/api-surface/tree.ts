@@ -1,26 +1,17 @@
 /**
- * @fileoverview Builds a small hierarchical API-surface tree from already-fetched documentation pages.
- *
- * The module is intentionally parser-light: Task 22 compiles crawl/extract outputs, while
- * richer raw Markdown/RST/source parsing belongs to Task 21 and symbol filtering to Task 23.
+ * @file Builds a small hierarchical API-surface tree from already-fetched documentation pages. The
+ *   module is intentionally parser-light: Task 22 compiles crawl/extract outputs, while richer raw
+ *   Markdown/RST/source parsing belongs to Task 21 and symbol filtering to Task 23.
  */
-import * as cssSelect from "css-select";
+import { selectOne } from "css-select";
 import type { AnyNode } from "domhandler";
-import * as domutils from "domutils";
+import { textContent } from "domutils";
 import { parseDocument } from "htmlparser2";
-import type { ScrapeResult } from "../../scrape/pipeline.ts";
-import {
-	cleanText,
-	stripUndefined,
-	titleCase,
-	truncateText,
-} from "../text.ts";
-import { parseMarkdown as sharedMarkdownParse } from "../../parse/markup/doc.ts";
-import {
-	extractHeadingSections,
-	firstTextBySelector,
-} from "../doc-structure.ts";
 
+import { parseMarkdown as sharedMarkdownParse } from "../../parse/markup/doc.ts";
+import type { ScrapeResult } from "../../scrape/pipeline.ts";
+import { extractHeadingSections, firstTextBySelector } from "../doc-structure.ts";
+import { cleanText, stripUndefined, titleCase, truncateText } from "../text.ts";
 import type {
 	ApiSurfaceParameter,
 	ApiSurfaceFunction,
@@ -30,9 +21,7 @@ import type {
 	ApiSurfaceInputPage,
 } from "./types.ts";
 
-export function buildApiSurfaceFromScrapes(
-	pages: ScrapeResult[],
-): ApiSurfaceTree {
+export function buildApiSurfaceFromScrapes(pages: ScrapeResult[]): ApiSurfaceTree {
 	return buildApiSurface(
 		pages.map((page) => ({
 			url: page.url ?? page.finalUrl ?? "unknown",
@@ -70,8 +59,7 @@ export function buildApiSurface(pages: ApiSurfaceInputPage[]): ApiSurfaceTree {
 			? undefined
 			: {
 					kind: "flat-markdown",
-					reason:
-						"No API signatures were detected; returned page-level documentation modules.",
+					reason: "No API signatures were detected; returned page-level documentation modules.",
 					pageCount: modules.length,
 				},
 	});
@@ -123,20 +111,12 @@ function parsePageContent(
 	return parseMarkdownPage(page.markdown ?? page.text ?? "", url);
 }
 
-function parseHtml(
-	html: string,
-	url: string,
-): ReturnType<typeof parsePageContent> {
+function parseHtml(html: string, url: string): ReturnType<typeof parsePageContent> {
 	const document = parseDocument(html, {
 		lowerCaseAttributeNames: true,
 		lowerCaseTags: true,
 	});
-	const title = firstTextBySelector(document, [
-		"main h1",
-		"article h1",
-		"h1",
-		"title",
-	]);
+	const title = firstTextBySelector(document, ["main h1", "article h1", "h1", "title"]);
 	const sections = extractHeadingSections(document as AnyNode).filter(
 		(section) => section.level <= 4,
 	);
@@ -148,10 +128,7 @@ function parseHtml(
 	};
 }
 
-function parseMarkdownPage(
-	markdown: string,
-	url: string,
-): ReturnType<typeof parsePageContent> {
+function parseMarkdownPage(markdown: string, url: string): ReturnType<typeof parsePageContent> {
 	const doc = sharedMarkdownParse(markdown);
 	const lines = markdown.split(/\r?\n/u);
 	const sections: SectionLike[] = [];
@@ -163,13 +140,9 @@ function parseMarkdownPage(
 		const nextLine = relevantHeadings[index + 1]?.line ?? lines.length + 1;
 
 		const sectionCodeBlocks: Array<{ language?: string; code: string }> = [];
-		while (
-			cbIdx < doc.codeBlocks.length &&
-			doc.codeBlocks[cbIdx].lineEnd < nextLine
-		) {
+		while (cbIdx < doc.codeBlocks.length && doc.codeBlocks[cbIdx].lineEnd < nextLine) {
 			const cb = doc.codeBlocks[cbIdx];
-			if (cb.value)
-				sectionCodeBlocks.push({ language: cb.language, code: cb.value });
+			if (cb.value) sectionCodeBlocks.push({ language: cb.language, code: cb.value });
 			cbIdx += 1;
 		}
 
@@ -189,16 +162,11 @@ function parseMarkdownPage(
 	};
 }
 
-function functionsFromSections(
-	sections: SectionLike[],
-	url: string,
-): ApiSurfaceFunction[] {
+function functionsFromSections(sections: SectionLike[], url: string): ApiSurfaceFunction[] {
 	const functions: ApiSurfaceFunction[] = [];
 	for (const section of sections) {
 		const signature = signatureFromSection(section);
-		const name = signature
-			? nameFromSignature(signature)
-			: symbolName(section.heading);
+		const name = signature ? nameFromSignature(signature) : symbolName(section.heading);
 		if (!name || looksLikeClass(section.heading)) continue;
 		functions.push(
 			stripUndefined({
@@ -213,10 +181,7 @@ function functionsFromSections(
 	return dedupeByName(functions);
 }
 
-function classesFromSections(
-	sections: SectionLike[],
-	url: string,
-): ApiSurfaceClass[] {
+function classesFromSections(sections: SectionLike[], url: string): ApiSurfaceClass[] {
 	const classes: ApiSurfaceClass[] = [];
 	for (const section of sections) {
 		if (!looksLikeClass(section.heading)) continue;
@@ -266,7 +231,7 @@ interface DocsiteLike {
 }
 
 function docsiteData(data: unknown): DocsiteLike | undefined {
-	if (!data || typeof data !== "object") return undefined;
+	if (!data || typeof data !== "object") return;
 	const value = data as {
 		title?: unknown;
 		sections?: unknown;
@@ -290,9 +255,7 @@ function nameFromSignature(signature: string): string | undefined {
 }
 
 function symbolName(heading: string): string | undefined {
-	return heading.match(
-		/`?([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)\s*\(/u,
-	)?.[1];
+	return heading.match(/`?([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)\s*\(/u)?.[1];
 }
 
 function looksLikeClass(heading: string): boolean {
@@ -313,57 +276,53 @@ function firstVersion(
 	pages: ApiSurfaceInputPage[],
 ): string | undefined {
 	for (const page of pages) {
-		const version =
-			docsiteData(page.data)?.version ??
-			versionFromUrl(page.finalUrl ?? page.url);
+		const version = docsiteData(page.data)?.version ?? versionFromUrl(page.finalUrl ?? page.url);
 		if (version) return version;
 	}
 	return versionFromUrl(modules[0]?.url);
 }
 
 function inferProject(pages: ApiSurfaceInputPage[]): string | undefined {
-	const first =
-		pages.find((page) => page.url !== "unknown")?.finalUrl ?? pages[0]?.url;
-	if (!first) return undefined;
+	const first = pages.find((page) => page.url !== "unknown")?.finalUrl ?? pages[0]?.url;
+	if (!first) return;
 	try {
 		const url = new URL(first);
 		return url.hostname.replace(/^www\./u, "");
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }
 
 function versionFromUrl(value?: string): string | undefined {
-	if (!value) return undefined;
+	if (!value) return;
 	try {
 		return new URL(value).pathname
 			.split("/")
-			.find((part) =>
-				/^(?:v?\d+(?:\.\d+){0,3}|latest|next|stable)$/iu.test(part),
-			);
+			.find((part) => /^(?:v?\d+(?:\.\d+){0,3}|latest|next|stable)$/iu.test(part));
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }
 
 function moduleNameFromUrl(value: string): string {
 	try {
 		const url = new URL(value);
-		return titleCase(
-			url.pathname.split("/").filter(Boolean).at(-1) ?? url.hostname,
-		);
+		return titleCase(lastTruthyPart(url.pathname.split("/")) ?? url.hostname);
 	} catch {
 		return value;
 	}
 }
 
+function lastTruthyPart(parts: string[]): string | undefined {
+	for (let i = parts.length - 1; i >= 0; i -= 1) {
+		if (parts[i]) return parts[i];
+	}
+	return undefined;
+}
+
 function firstParagraph(document: AnyNode): string | undefined {
 	return truncateText(
-		cleanText(
-			domutils.textContent(
-				cssSelect.selectOne("main p, article p, p", document) ?? [],
-			),
-		),
+		cleanText(textContent(selectOne("main p, article p, p", document) ?? [])),
 		700,
 	);
 }

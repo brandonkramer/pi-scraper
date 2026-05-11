@@ -1,4 +1,4 @@
-/** @fileoverview Surface-level docstring extraction for source files without typechecking. */
+/** @file Surface-level docstring extraction for source files without typechecking. */
 function withoutUndefined<T extends object>(value: T): T {
 	return Object.fromEntries(
 		Object.entries(value).filter(([, v]) => v !== undefined && v !== ""),
@@ -42,13 +42,9 @@ interface CommentBlock {
 	signature?: string;
 }
 
-export function parseDocstrings(
-	text: string,
-	file = "source",
-): ParsedDocstrings {
+export function parseDocstrings(text: string, file = "source"): ParsedDocstrings {
 	const language = file.endsWith(".py") ? "python" : "js";
-	const blocks =
-		language === "python" ? pythonDocstrings(text) : jsLikeDocstrings(text);
+	const blocks = language === "python" ? pythonDocstrings(text) : jsLikeDocstrings(text);
 	return {
 		file,
 		exports: blocks.flatMap((block) => {
@@ -82,12 +78,8 @@ export function docstringsToMarkdown(result: ParsedDocstrings): string {
 			}
 		}
 		if (item.returns)
-			lines.push(
-				"",
-				`Returns: ${item.returns.description ?? item.returns.type ?? ""}`,
-			);
-		for (const example of item.examples ?? [])
-			lines.push("", "Example:", "```", example, "```");
+			lines.push("", `Returns: ${item.returns.description ?? item.returns.type ?? ""}`);
+		for (const example of item.examples ?? []) lines.push("", "Example:", "```", example, "```");
 		lines.push("");
 	}
 	return lines.join("\n").trim();
@@ -98,8 +90,9 @@ function jsLikeDocstrings(text: string): CommentBlock[] {
 	for (const match of text.matchAll(/\/\*\*([\s\S]*?)\*\//gu)) {
 		const before = text.slice(0, match.index);
 		const lineStart = before.split("\n").length;
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 		const lineEnd = lineStart + (match[0]?.split("\n").length ?? 1) - 1;
-		blocks.push({ text: cleanJsDoc(match[1] ?? ""), lineStart, lineEnd });
+		blocks.push({ text: cleanJsDoc(match[1] || ""), lineStart, lineEnd });
 	}
 	return blocks;
 }
@@ -109,12 +102,13 @@ function pythonDocstrings(text: string): CommentBlock[] {
 	const pattern =
 		/(?:^|\n)(\s*)((?:def|class)\s+[A-Za-z_][\w]*[\s\S]*?:)\s*\n\1\s{2,}(["']{3})([\s\S]*?)\3/gu;
 	for (const match of text.matchAll(pattern)) {
-		const quoteIndex =
-			(match.index ?? 0) + (match[0]?.lastIndexOf(match[3] ?? "'''") ?? 0);
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
+		const quoteIndex = (match.index || 0) + (match[0]?.lastIndexOf(match[3] || "'''") ?? 0);
 		const lineStart = text.slice(0, quoteIndex).split("\n").length;
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 		const lineEnd = lineStart + (match[4]?.split("\n").length ?? 1) - 1;
 		blocks.push({
-			text: (match[4] ?? "").trim(),
+			text: (match[4] || "").trim(),
 			signature: match[2]?.trim(),
 			lineStart,
 			lineEnd,
@@ -136,14 +130,12 @@ function signatureAfter(text: string, lineEnd: number): string | undefined {
 	const signatureLines: string[] = [];
 	for (const line of lines) {
 		const trimmed = line.trim();
-		if (!trimmed || trimmed.startsWith("@") || trimmed.startsWith("//"))
-			continue;
+		if (!trimmed || trimmed.startsWith("@") || trimmed.startsWith("//")) continue;
 		signatureLines.push(trimmed);
-		if (/[{;:]\s*$/u.test(trimmed) || signatureLines.join(" ").includes("=>"))
-			break;
+		if (/[{;:]\s*$/u.test(trimmed) || signatureLines.join(" ").includes("=>")) break;
 		if (signatureLines.length >= 4) break;
 	}
-	const signature = signatureLines.join(" ").replace(/\s+/gu, " ").trim();
+	const signature = signatureLines.join(" ").replaceAll(/\s+/gu, " ").trim();
 	return signature || undefined;
 }
 
@@ -155,9 +147,7 @@ function parseDocBlock(text: string): Omit<ParsedDocExport, "name" | "kind"> {
 	let currentExample: string[] | undefined;
 	for (const line of text.split("\n")) {
 		const trimmed = line.trim();
-		const tag = trimmed.match(
-			/^@(param|arg|argument|returns?|example)\b\s*(.*)$/u,
-		);
+		const tag = trimmed.match(/^@(param|arg|argument|returns?|example)\b\s*(.*)$/u);
 		if (!tag) {
 			if (currentExample) currentExample.push(line);
 			else if (trimmed) description.push(trimmed);
@@ -165,6 +155,7 @@ function parseDocBlock(text: string): Omit<ParsedDocExport, "name" | "kind"> {
 		}
 		if (currentExample) examples.push(currentExample.join("\n").trim());
 		currentExample = undefined;
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 		const body = tag[2] ?? "";
 		if (tag[1] === "example") currentExample = [body].filter(Boolean);
 		else if (tag[1]?.startsWith("return")) returns = parseReturn(body);

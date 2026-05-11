@@ -1,6 +1,4 @@
-/**
- * @fileoverview Shared DOM document element extraction helpers.
- */
+/** @file Shared DOM document element extraction helpers. */
 import type { DomAdapter } from "../dom/adapter.ts";
 import { absoluteUrl } from "../dom/selectors.ts";
 
@@ -16,7 +14,7 @@ export interface DomLink {
 }
 
 export function cleanDomText(value: string): string {
-	return value.replace(/\s+/gu, " ").trim();
+	return value.replaceAll(/\s+/gu, " ").trim();
 }
 
 export function extractDomHeadings(dom: DomAdapter): DomHeading[] {

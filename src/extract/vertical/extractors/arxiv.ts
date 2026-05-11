@@ -1,37 +1,26 @@
-/**
- * @fileoverview extract verticals arxiv module.
- */
+/** @file Extract verticals arxiv module. */
 import { cleanText as sharedCleanText } from "../../text.ts";
-import {
-	capability,
-	type VerticalExtractor,
-} from "../../vertical/capabilities.ts";
+import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 export const arxivExtractor: VerticalExtractor = {
-	capability: capability(
-		"arxiv",
-		["https://arxiv.org/abs/:id", "https://arxiv.org/pdf/:id"],
-		{
-			type: "object",
-			required: ["id", "title"],
-			properties: {
-				id: { type: "string" },
-				title: { type: "string" },
-				summary: { type: "string" },
-				published: { type: "string" },
-			},
+	capability: capability("arxiv", ["https://arxiv.org/abs/:id", "https://arxiv.org/pdf/:id"], {
+		type: "object",
+		required: ["id", "title"],
+		properties: {
+			id: { type: "string" },
+			title: { type: "string" },
+			summary: { type: "string" },
+			published: { type: "string" },
 		},
-	),
+	}),
 	match: (url) => {
-		if (url.hostname !== "arxiv.org") return undefined;
+		if (url.hostname !== "arxiv.org") return;
 		const [kind, rawId, ...rest] = url.pathname.split("/").filter(Boolean);
-		if ((kind !== "abs" && kind !== "pdf") || !rawId || rest.length > 0)
-			return undefined;
+		if ((kind !== "abs" && kind !== "pdf") || !rawId || rest.length > 0) return;
 		return { id: rawId.replace(/\.pdf$/iu, "") };
 	},
 	extract: async (_url, match, context, signal) => {
-		if (!context.fetchText)
-			throw new Error("arxiv extractor requires fetchText support");
+		if (!context.fetchText) throw new Error("arxiv extractor requires fetchText support");
 		const xml = await context.fetchText(
 			`https://export.arxiv.org/api/query?id_list=${encodeURIComponent(match.id)}`,
 			signal,
@@ -52,28 +41,24 @@ export const arxivExtractor: VerticalExtractor = {
 };
 
 function firstTag(xml: string, name: string): string | undefined {
-	return new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`, "iu").exec(
-		xml,
-	)?.[1];
+	return new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`, "iu").exec(xml)?.[1];
 }
 
 function allTags(xml: string, name: string): string[] {
-	return [
-		...xml.matchAll(
-			new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`, "giu"),
-		),
-	].map((match) => match[1] ?? "");
+	return [...xml.matchAll(new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`, "giu"))].map(
+		(match) => match[1] || "",
+	);
 }
 
 function allCategoryTerms(xml: string): string[] {
-	return [...xml.matchAll(/<category\b[^>]*\bterm="([^"]+)"[^>]*>/giu)].map(
-		(match) => decodeXml(match[1] ?? ""),
+	return [...xml.matchAll(/<category\b[^>]*\bterm="([^"]+)"[^>]*>/giu)].map((match) =>
+		decodeXml(match[1] || ""),
 	);
 }
 
 function firstPdfLink(xml: string): string | undefined {
 	return [...xml.matchAll(/<link\b([^>]+)>/giu)]
-		.map((match) => match[1] ?? "")
+		.map((match) => match[1] || "")
 		.find((attrs) => /title="pdf"/iu.test(attrs))
 		?.match(/href="([^"]+)"/iu)?.[1];
 }
@@ -95,9 +80,9 @@ function isPresent<T>(value: T | undefined): value is T {
 
 function decodeXml(value: string): string {
 	return value
-		.replace(/&quot;/gu, '"')
-		.replace(/&apos;/gu, "'")
-		.replace(/&lt;/gu, "<")
-		.replace(/&gt;/gu, ">")
-		.replace(/&amp;/gu, "&");
+		.replaceAll("&quot;", '"')
+		.replaceAll("&apos;", "'")
+		.replaceAll("&lt;", "<")
+		.replaceAll("&gt;", ">")
+		.replaceAll("&amp;", "&");
 }

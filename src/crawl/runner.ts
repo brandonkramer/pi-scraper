@@ -1,25 +1,19 @@
-/**
- * @fileoverview crawl runner module.
- */
+/** @file Crawl runner module. */
 import { DEFAULT_CONCURRENCY, DEFAULT_CRAWL_LIMITS } from "../defaults.ts";
 import { isAbortError } from "../http/abort.ts";
 import { createHttpClient } from "../http/client.ts";
 import { KeyedSemaphore } from "../http/politeness.ts";
-import { discoverSiteUrls, type SiteMapDeps } from "../map/discover.ts";
-import {
-	type ScrapePipelineDeps,
-	type ScrapeResult,
-	scrapeUrl,
-} from "../scrape/pipeline.ts";
-import { resultChars } from "../scrape/result-chars.ts";
 import { hasStructuredError } from "../http/retry.ts";
-import type { CommonScrapeOptions, StructuredError } from "../types.ts";
+import { discoverSiteUrls, type SiteMapDeps } from "../map/discover.ts";
+import { type ScrapePipelineDeps, type ScrapeResult, scrapeUrl } from "../scrape/pipeline.ts";
+import { resultChars } from "../scrape/result-chars.ts";
 import {
 	appendJobError,
 	structuredErrorToJobError,
 	unknownToJobError,
 } from "../storage/jobs/errors.ts";
 import { setupScrapeJob } from "../storage/jobs/setup.ts";
+import type { CommonScrapeOptions, StructuredError } from "../types.ts";
 import { CrawlFrontier, type FrontierItem } from "./frontier.ts";
 import {
 	type CrawlMetadata,
@@ -38,9 +32,7 @@ export interface CrawlProgress {
 	metadata?: CrawlMetadata;
 }
 
-export interface CrawlRunOptions
-	extends CommonScrapeOptions,
-		CrawlStateOptions {
+export interface CrawlRunOptions extends CommonScrapeOptions, CrawlStateOptions {
 	maxPages?: number;
 	maxDepth?: number;
 	sameOrigin?: boolean;
@@ -68,12 +60,11 @@ export async function runCrawl(
 	deps: ScrapePipelineDeps & SiteMapDeps = {},
 	signal?: AbortSignal,
 ): Promise<CrawlRunResult> {
-	const shouldResume =
-		options.crawlId !== undefined && options.resume !== false;
+	const shouldResume = options.crawlId !== undefined && options.resume !== false;
 	const loaded = shouldResume
-		? await loadCrawlState(options.crawlId as string, options).catch(
-				() => undefined,
-			)
+		? await loadCrawlState(options.crawlId as string, options).catch(() => {
+				/* no-op */
+			})
 		: undefined;
 	const state = loaded ?? createCrawlState(seedUrl, options.crawlId);
 	const frontier = new CrawlFrontier({
@@ -88,34 +79,27 @@ export async function runCrawl(
 	if (!loaded) frontier.enqueue(seedUrl, 0);
 
 	if (!loaded && options.seedSitemap === true) {
-		const mapped = await discoverSiteUrls(seedUrl, {}, deps, signal).catch(
-			() => undefined,
-		);
-		for (const entry of mapped?.urls ?? [])
-			frontier.enqueue(entry.url, 1, seedUrl);
+		const mapped = await discoverSiteUrls(seedUrl, {}, deps, signal).catch(() => {
+			/* no-op */
+		});
+		for (const entry of mapped?.urls ?? []) frontier.enqueue(entry.url, 1, seedUrl);
 	}
 
 	const pages: ScrapeResult[] = [];
 	const maxPages = options.maxPages ?? DEFAULT_CRAWL_LIMITS.maxPages;
-	const concurrency = Math.max(
-		1,
-		options.concurrency ?? DEFAULT_CONCURRENCY.global,
-	);
+	const concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY.global);
 	const sharedDeps = deps.httpClient
 		? deps
 		: {
 				...deps,
 				httpClient: createHttpClient({
 					globalConcurrency: concurrency,
-					perHostConcurrency:
-						options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
+					perHostConcurrency: options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
 					retryAttempts: options.retryAttempts,
 				}),
 			};
 	const injectedHostLimits = deps.httpClient
-		? new KeyedSemaphore(
-				options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
-			)
+		? new KeyedSemaphore(options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost)
 		: undefined;
 	const counts = {
 		succeeded: state.metadata?.succeededCount ?? state.results.length,
@@ -129,27 +113,20 @@ export async function runCrawl(
 			params: { seedUrl, ...options },
 			mode: options.mode,
 			format: options.format,
-			initialErrors: state.metadata?.lastError
-				? [state.metadata.lastError]
-				: undefined,
+			initialErrors: state.metadata?.lastError ? [state.metadata.lastError] : undefined,
 		},
 		options,
 	);
-	let {
-		jobManifestPath,
-		errors: jobErrors,
-		totalBytes,
-		totalChars,
-		truncatedPages,
-	} = jobSetup;
+	let { jobManifestPath, errors: jobErrors, totalBytes, totalChars, truncatedPages } = jobSetup;
 	const jobWriter = jobSetup.writer;
 	const progressTotal = counts.succeeded + counts.failed + maxPages;
 	const activeItems = new Map<string, FrontierItem>();
 	let currentDepth = state.metadata?.currentDepth;
 	let maxDepthVisited = state.metadata?.maxDepthVisited ?? 0;
 	let statePath = "";
-	let persistChain: Promise<CrawlMetadata | undefined> =
-		Promise.resolve(undefined);
+	let persistChain: Promise<CrawlMetadata | undefined> = Promise.resolve() as Promise<
+		CrawlMetadata | undefined
+	>;
 
 	const coordinator = new CrawlCoordinator(frontier, maxPages, signal);
 	const queuedMetadata = await persist("queued", undefined, true);
@@ -168,7 +145,9 @@ export async function runCrawl(
 		force = false,
 	): Promise<CrawlMetadata> {
 		persistChain = persistChain
-			.catch(() => undefined)
+			.catch(() => {
+				/* no-op */
+			})
 			.then(async () => {
 				state.frontier = [...activeItems.values(), ...frontier.remaining()];
 				state.visited = frontier.visitedUrls();
@@ -200,9 +179,7 @@ export async function runCrawl(
 						status: status === "running" ? "running" : status,
 						startedAt: new Date().toISOString(),
 						completedAt:
-							status === "running" || status === "queued"
-								? undefined
-								: new Date().toISOString(),
+							status === "running" || status === "queued" ? undefined : new Date().toISOString(),
 						urlsProcessed: counts.succeeded + counts.failed,
 						urlsFailed: counts.failed,
 						errors: jobErrors,
@@ -219,6 +196,7 @@ export async function runCrawl(
 	}
 
 	async function worker(): Promise<void> {
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- defensive guard; runtime conditions can diverge from inferred type
 		while (true) {
 			const item = await coordinator.next();
 			if (!item) return;
@@ -234,26 +212,19 @@ export async function runCrawl(
 				message: progressSummary(processingMetadata, progressTotal),
 				metadata: processingMetadata,
 			});
-			const releaseHost = await injectedHostLimits?.acquire(
-				new URL(item.url).host,
-				signal,
-			);
+			const releaseHost = await injectedHostLimits?.acquire(new URL(item.url).host, signal);
 			let completed = false;
 			try {
 				const result = await scrapeUrl(item.url, options, sharedDeps, signal);
 				pages.push(result);
 				if (result.error) {
 					counts.failed += 1;
-					jobErrors = appendJobError(
-						jobErrors,
-						structuredErrorToJobError(result.error),
-					);
+					jobErrors = appendJobError(jobErrors, structuredErrorToJobError(result.error));
 				} else counts.succeeded += 1;
 				totalBytes += result.downloadedBytes ?? 0;
 				totalChars += resultChars(result);
 				if (result.truncated) truncatedPages += 1;
-				for (const link of resultLinks(result))
-					frontier.enqueue(link, item.depth + 1, item.url);
+				for (const link of resultLinks(result)) frontier.enqueue(link, item.depth + 1, item.url);
 				completed = true;
 				activeItems.delete(item.url);
 				const doneMetadata = await persist(
@@ -277,9 +248,7 @@ export async function runCrawl(
 	}
 
 	try {
-		await Promise.all(
-			Array.from({ length: Math.min(concurrency, maxPages) }, () => worker()),
-		);
+		await Promise.all(Array.from({ length: Math.min(concurrency, maxPages) }, () => worker()));
 		state.results = [
 			...state.results,
 			...pages.map((page) => page.finalUrl ?? page.url ?? "").filter(Boolean),
@@ -306,9 +275,7 @@ export async function runCrawl(
 function resultLinks(result: ScrapeResult): string[] {
 	const links = result.data.links ?? [];
 	return links
-		.map((link) =>
-			typeof link === "string" ? link : (link as { url?: string }).url,
-		)
+		.map((link) => (typeof link === "string" ? link : (link as { url?: string }).url))
 		.filter(Boolean) as string[];
 }
 
@@ -353,19 +320,16 @@ class CrawlCoordinator {
 	async next(): Promise<ReturnType<CrawlFrontier["next"]>> {
 		while (this.scheduled < this.maxPages) {
 			if (this.signal?.aborted)
-				throw (
-					this.signal.reason ?? new DOMException("Crawl aborted", "AbortError")
-				);
+				throw this.signal.reason ?? new DOMException("Crawl aborted", "AbortError");
 			const item = this.frontier.next();
 			if (item) {
 				this.scheduled += 1;
 				this.active += 1;
 				return item;
 			}
-			if (this.active === 0) return undefined;
+			if (this.active === 0) return;
 			await this.waitForWork();
 		}
-		return undefined;
 	}
 
 	done(): void {
@@ -383,10 +347,7 @@ class CrawlCoordinator {
 				cleanup();
 				const index = this.waiters.indexOf(wake);
 				if (index >= 0) this.waiters.splice(index, 1);
-				reject(
-					this.signal?.reason ??
-						new DOMException("Crawl aborted", "AbortError"),
-				);
+				reject(this.signal?.reason ?? new DOMException("Crawl aborted", "AbortError"));
 			};
 			const cleanup = () => this.signal?.removeEventListener("abort", onAbort);
 			this.waiters.push(wake);

@@ -1,16 +1,11 @@
-/**
- * @fileoverview diff snapshots module.
- */
+/** @file Diff snapshots module. */
 import { createHash } from "node:crypto";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+
 import type { ScrapeResult } from "../scrape/pipeline.ts";
 import { openStorageDb } from "../storage/db/open.ts";
-import {
-	ensureDir,
-	type ResolveStorageOptions,
-	resolvePiStoragePaths,
-} from "../storage/paths.ts";
+import { ensureDir, type ResolveStorageOptions, resolvePiStoragePaths } from "../storage/paths.ts";
 import { readResponse } from "../storage/responses/read.ts";
 import type { ResponseStorageMetadata, StructuredError } from "../types.ts";
 import { normalizeUrl } from "../url/normalize.ts";
@@ -101,11 +96,11 @@ export async function loadSnapshot(
 	if (options.snapshotTag) {
 		const indexed = await loadIndexedSnapshot(url, options);
 		if (indexed) return indexed;
-		return loadFileSnapshot(url, options);
+		return await loadFileSnapshot(url, options);
 	}
 	const indexed = await loadIndexedSnapshot(url, options);
 	if (indexed) return indexed;
-	return loadFileSnapshot(url, options);
+	return await loadFileSnapshot(url, options);
 }
 
 export async function listSnapshots(
@@ -115,31 +110,25 @@ export async function listSnapshots(
 	const files = await readdir(dir);
 	const entries: SnapshotListingEntry[] = [];
 	for (const file of files.filter((entry) => entry.endsWith(".json"))) {
-		const snapshotPath = path.join(dir, file);
+		const entryPath = path.join(dir, file);
 		try {
 			const snapshot = normalizeLoadedSnapshot(
-				JSON.parse(await readFile(snapshotPath, "utf8")) as PageSnapshot,
+				JSON.parse(await readFile(entryPath, "utf8")) as PageSnapshot,
 			);
-			if (
-				options.url &&
-				normalizeUrl(snapshot.url) !== normalizeUrl(options.url)
-			)
-				continue;
+			if (options.url && normalizeUrl(snapshot.url) !== normalizeUrl(options.url)) continue;
 			if (
 				options.snapshotName &&
 				(!snapshot.snapshotName ||
-					safeSnapshotName(snapshot.snapshotName) !==
-						safeSnapshotName(options.snapshotName))
+					safeSnapshotName(snapshot.snapshotName) !== safeSnapshotName(options.snapshotName))
 			)
 				continue;
 			if (
 				options.snapshotTag &&
 				(!snapshot.snapshotTag ||
-					safeSnapshotName(snapshot.snapshotTag) !==
-						safeSnapshotName(options.snapshotTag))
+					safeSnapshotName(snapshot.snapshotTag) !== safeSnapshotName(options.snapshotTag))
 			)
 				continue;
-			entries.push({ snapshotPath, metadata: snapshot.metadata });
+			entries.push({ snapshotPath: entryPath, metadata: snapshot.metadata });
 		} catch {
 			/* Ignore corrupt/partial snapshot files during listing. */
 		}
@@ -158,15 +147,12 @@ export async function diffScrapeResult(
 		? { ...options, snapshotTag: options.compareTag, compareTag: undefined }
 		: { ...options, snapshotTag: undefined, compareTag: undefined };
 	const previous = await loadSnapshot(url, baselineOptions);
-	if (options.compareTag && !previous)
-		throw missingSnapshotTagError(url, options);
+	if (options.compareTag && !previous) throw missingSnapshotTagError(url, options);
 	const saved = await saveSnapshot(result, options);
 	const diff = previous
 		? compareSnapshotText(previous.content.text, saved.snapshot.content.text)
 		: undefined;
-	const summary = previous
-		? summarizeSnapshotChanges(previous, saved.snapshot, diff)
-		: undefined;
+	const summary = previous ? summarizeSnapshotChanges(previous, saved.snapshot, diff) : undefined;
 	return {
 		previous,
 		current: saved.snapshot,
@@ -226,22 +212,13 @@ export function summarizeSnapshotChanges(
 		previous.content.paragraphs.join("\n"),
 		current.content.paragraphs.join("\n"),
 	);
-	const changedMetadata = compareMetadata(
-		previous.content.metadata,
-		current.content.metadata,
-	);
+	const changedMetadata = compareMetadata(previous.content.metadata, current.content.metadata);
 	const unchangedAfterNormalization =
 		previous.contentHash !== current.contentHash &&
 		previous.normalizedHash === current.normalizedHash;
 	return {
-		addedHeadings: missingFrom(
-			current.content.headings,
-			previous.content.headings,
-		),
-		removedHeadings: missingFrom(
-			previous.content.headings,
-			current.content.headings,
-		),
+		addedHeadings: missingFrom(current.content.headings, previous.content.headings),
+		removedHeadings: missingFrom(previous.content.headings, current.content.headings),
 		addedLinks: missingLinks(current.content.links, previous.content.links),
 		removedLinks: missingLinks(previous.content.links, current.content.links),
 		changedMetadata,
@@ -261,7 +238,7 @@ export async function updateSnapshotReference(
 	options: SnapshotOptions = {},
 ): Promise<{ snapshot: PageSnapshot; path: string } | undefined> {
 	const snapshot = await loadFileSnapshot(url, options);
-	if (!snapshot) return undefined;
+	if (!snapshot) return;
 	const updated = attachSnapshotResponse(snapshot, response);
 	const filePath = await snapshotPath(url, options);
 	await writeFile(filePath, JSON.stringify(updated, null, 2), { mode: 0o600 });
@@ -273,18 +250,14 @@ async function loadFileSnapshot(
 	url: string,
 	options: SnapshotOptions,
 ): Promise<PageSnapshot | undefined> {
-	return readSnapshotFile(await snapshotPath(url, options));
+	return await readSnapshotFile(await snapshotPath(url, options));
 }
 
-async function readSnapshotFile(
-	filePath: string,
-): Promise<PageSnapshot | undefined> {
+async function readSnapshotFile(filePath: string): Promise<PageSnapshot | undefined> {
 	try {
-		return normalizeLoadedSnapshot(
-			JSON.parse(await readFile(filePath, "utf8")) as PageSnapshot,
-		);
+		return normalizeLoadedSnapshot(JSON.parse(await readFile(filePath, "utf8")) as PageSnapshot);
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }
 
@@ -294,19 +267,14 @@ async function loadIndexedSnapshot(
 ): Promise<PageSnapshot | undefined> {
 	try {
 		const db = await openStorageDb(options);
-		const row = db
-			.prepare(SELECT_SNAPSHOT)
-			.get(normalizeUrl(url), snapshotStorageKey(options)) as
+		const row = db.prepare(SELECT_SNAPSHOT).get(normalizeUrl(url), snapshotStorageKey(options)) as
 			| { response_id: string }
 			| undefined;
-		if (!row) return undefined;
-		const stored = await readResponse<SnapshotDiffResult>(
-			row.response_id,
-			options,
-		);
+		if (!row) return;
+		const stored = await readResponse<SnapshotDiffResult>(row.response_id, options);
 		return normalizeLoadedSnapshot(stored.value.current);
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }
 
@@ -339,24 +307,20 @@ export function attachSnapshotResponse(
 	};
 }
 
-async function snapshotPath(
-	url: string,
-	options: SnapshotOptions,
-): Promise<string> {
+async function snapshotPath(url: string, options: SnapshotOptions): Promise<string> {
 	const dir = await ensureDir(resolvePiStoragePaths(options).snapshots);
-	const name = options.snapshotName
-		? `--${safeSnapshotName(options.snapshotName)}`
-		: "";
-	const tag = options.snapshotTag
-		? `--tag-${safeSnapshotName(options.snapshotTag)}`
-		: "";
+	const name = options.snapshotName ? `--${safeSnapshotName(options.snapshotName)}` : "";
+	const tag = options.snapshotTag ? `--tag-${safeSnapshotName(options.snapshotTag)}` : "";
 	return path.join(dir, `${hash(normalizeUrl(url))}${name}${tag}.json`);
 }
 
 function normalizeLoadedSnapshot(snapshot: PageSnapshot): PageSnapshot {
 	const content = normalizeLoadedContent(snapshot.content);
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 	const normalizedHash = snapshot.normalizedHash ?? snapshot.textHash;
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 	const contentHash = snapshot.contentHash ?? hash(content.rawText);
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 	const metadata = snapshot.metadata ?? {
 		url: snapshot.url,
 		finalUrl: snapshot.finalUrl,
@@ -382,17 +346,20 @@ function normalizeLoadedSnapshot(snapshot: PageSnapshot): PageSnapshot {
 	};
 }
 
-function normalizeLoadedContent(
-	content: NormalizedSnapshotContent,
-): NormalizedSnapshotContent {
+function normalizeLoadedContent(content: NormalizedSnapshotContent): NormalizedSnapshotContent {
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 	const rawText = content.rawText ?? content.text;
 	return {
 		...content,
 		rawText,
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 		headings: content.headings ?? [],
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 		links: content.links ?? [],
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 		metadata: content.metadata ?? {},
 		paragraphs:
+			// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 			content.paragraphs ??
 			rawText
 				.split("\n")
@@ -405,9 +372,7 @@ function compareMetadata(
 	previous: Record<string, string>,
 	current: Record<string, string>,
 ): SnapshotChangeSummary["changedMetadata"] {
-	const keys = [
-		...new Set([...Object.keys(previous), ...Object.keys(current)]),
-	].sort();
+	const keys = [...new Set([...Object.keys(previous), ...Object.keys(current)])].sort();
 	return keys
 		.filter((key) => previous[key] !== current[key])
 		.map((key) => ({ key, previous: previous[key], current: current[key] }))
@@ -416,15 +381,10 @@ function compareMetadata(
 
 function missingFrom(left: string[], right: string[]): string[] {
 	const rightSet = new Set(right.map((value) => value.toLowerCase()));
-	return left
-		.filter((value) => !rightSet.has(value.toLowerCase()))
-		.slice(0, 25);
+	return left.filter((value) => !rightSet.has(value.toLowerCase())).slice(0, 25);
 }
 
-function missingLinks(
-	left: SnapshotLink[],
-	right: SnapshotLink[],
-): SnapshotLink[] {
+function missingLinks(left: SnapshotLink[], right: SnapshotLink[]): SnapshotLink[] {
 	const rightSet = new Set(right.map((link) => link.url));
 	return left.filter((link) => !rightSet.has(link.url)).slice(0, 25);
 }
@@ -455,11 +415,10 @@ function safeSnapshotName(input: string): string {
 	const safe = input
 		.trim()
 		.toLowerCase()
-		.replace(/[^a-z0-9._-]+/gu, "-")
-		.replace(/^-+|-+$/gu, "")
+		.replaceAll(/[^a-z0-9._-]+/gu, "-")
+		.replaceAll(/^-+|-+$/gu, "")
 		.slice(0, 80);
-	if (!safe)
-		throw new Error("snapshotName must contain at least one letter or number");
+	if (!safe) throw new Error("snapshotName must contain at least one letter or number");
 	return safe;
 }
 

@@ -10,30 +10,34 @@
 import { spawnSync } from "node:child_process";
 import process from "node:process";
 
-const inputText = await readStdin();
-const input = parseInput(inputText);
-const toolNames = input.tools.map((tool) => tool.name);
-const prompt = buildPrompt(input, toolNames);
-const result = spawnSync(piBinary(), piArgs(prompt), {
-	cwd: process.cwd(),
-	encoding: "utf8",
-	maxBuffer: 20 * 1024 * 1024,
-});
+await main();
 
-if (result.status !== 0) {
-	process.stderr.write(result.stderr || result.stdout || "pi command failed");
-	process.exit(result.status ?? 1);
+async function main() {
+	const inputText = await readStdin();
+	const input = parseInput(inputText);
+	const toolNames = input.tools.map((tool) => tool.name);
+	const prompt = buildPrompt(input, toolNames);
+	const result = spawnSync(piBinary(), piArgs(prompt), {
+		cwd: process.cwd(),
+		encoding: "utf8",
+		maxBuffer: 20 * 1024 * 1024,
+	});
+
+	if (result.status !== 0) {
+		process.stderr.write(result.stderr || result.stdout || "pi command failed");
+		process.exit(result.status ?? 1);
+	}
+
+	const predictions = parsePredictionEnvelope(result.stdout);
+	if (!predictions) {
+		process.stderr.write(
+			`Pi did not return prediction JSON. Raw stdout:\n${result.stdout}\nRaw stderr:\n${result.stderr}`,
+		);
+		process.exit(1);
+	}
+
+	process.stdout.write(`${JSON.stringify(normalizePredictions(predictions))}\n`);
 }
-
-const predictions = parsePredictionEnvelope(result.stdout);
-if (!predictions) {
-	process.stderr.write(
-		`Pi did not return prediction JSON. Raw stdout:\n${result.stdout}\nRaw stderr:\n${result.stderr}`,
-	);
-	process.exit(1);
-}
-
-process.stdout.write(`${JSON.stringify(normalizePredictions(predictions))}\n`);
 
 function readStdin() {
 	return new Promise((resolve, reject) => {
@@ -53,6 +57,7 @@ function parseInput(text) {
 	} catch (error) {
 		throw new Error(
 			`Expected eval JSON on stdin: ${error instanceof Error ? error.message : String(error)}`,
+			{ cause: error },
 		);
 	}
 }
@@ -117,29 +122,28 @@ function parsePredictionEnvelope(stdout) {
 		const nested = parseJsonLoose(direct.content);
 		if (isPredictionEnvelope(nested)) return nested;
 	}
-	return undefined;
 }
 
 function parseJsonLoose(text) {
 	if (typeof text !== "string") return text;
 	const trimmed = text.trim();
-	if (!trimmed) return undefined;
+	if (!trimmed) return;
 	const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
 	const candidate = fenced ? fenced[1].trim() : trimmed;
 	try {
 		return JSON.parse(candidate);
-	} catch {}
+	} catch { /* ignore */ }
 	return parseDelimitedJson(candidate, "{", "}") ?? parseDelimitedJson(candidate, "[", "]");
 }
 
 function parseDelimitedJson(text, open, close) {
 	const start = text.indexOf(open);
 	const end = text.lastIndexOf(close);
-	if (start < 0 || end <= start) return undefined;
+	if (start < 0 || end <= start) return;
 	try {
 		return JSON.parse(text.slice(start, end + 1));
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }
 

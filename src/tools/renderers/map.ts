@@ -1,17 +1,15 @@
-/**
- * @fileoverview Pi web_map renderer — top-level result/progress card and URL badge rows.
- */
+import { renderProgressCard } from "../../tui/progress.ts";
+import { renderUrlBadgeRow } from "../../tui/rows.ts";
+import { renderText } from "../../tui/text.ts";
+import { muted, separator } from "../../tui/theme.ts";
+import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
+/** @file Pi web_map renderer — top-level result/progress card and URL badge rows. */
 import {
 	isProgress,
 	type PiToolShell,
 	type ProgressDetails,
 	type ResultEnvelope,
 } from "../../types.ts";
-import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
-import { renderText } from "../../tui/text.ts";
-import { muted, separator } from "../../tui/theme.ts";
-import { renderUrlBadgeRow } from "../../tui/rows.ts";
-import { renderProgressCard } from "../../tui/progress.ts";
 export interface MapUrlEntryView {
 	url: string;
 	source?: string;
@@ -37,15 +35,13 @@ export function renderMapResultCard(
 			if (more) lines.push(more);
 			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
 		},
-		invalidate() {},
+		invalidate() {
+			/* no-op */
+		},
 	};
 }
 
-function renderMapRow(
-	entry: MapUrlEntryView,
-	width: number,
-	theme?: RenderTheme,
-): string {
+function renderMapRow(entry: MapUrlEntryView, width: number, theme?: RenderTheme): string {
 	return renderUrlBadgeRow({
 		url: entry.url,
 		badge: entry.source,
@@ -59,9 +55,7 @@ export function renderWebMapResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as
-		| Partial<ResultEnvelope<unknown>>
-		| ProgressDetails;
+	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
 	if (isProgress(details))
 		return renderProgressCard("web_map", details, theme, {
 			allowIcons: false,
@@ -71,7 +65,7 @@ export function renderWebMapResult(
 			urls?: { url: string; source?: string; title?: string }[];
 		}>
 	>;
-	const urls = Array.isArray(envelope.data?.urls) ? envelope.data!.urls : [];
+	const urls = Array.isArray(envelope.data?.urls) ? envelope.data.urls : [];
 	const summary = [
 		theme?.bold?.("web_map") ?? "web_map",
 		`${urls.length} URL(s)`,
@@ -93,6 +87,8 @@ export function renderWebMapResult(
 				lines.push("", muted(`responseId: ${envelope.responseId}`, theme));
 			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
 		},
-		invalidate() {},
+		invalidate() {
+			/* no-op */
+		},
 	};
 }

@@ -1,9 +1,9 @@
 /**
- * @fileoverview web_extract action="vertical" and action="list" handlers — deterministic extractor capabilities and vertical extraction.
+ * @file Web_extract action="vertical" and action="list" handlers — deterministic extractor
+ *   capabilities and vertical extraction.
  */
 import { loadEffectiveConfig } from "../config/settings.ts";
 import type { VerticalExtractionResult } from "../extract/vertical/capabilities.ts";
-import { storedResultGuidance } from "./infra/agentic-context.ts";
 import type { ToolUpdate } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
 import { inputErrorResult, toolResult } from "./infra/result.ts";
@@ -82,10 +82,7 @@ function verticalExtractorText(
 	if (blocked) {
 		return [
 			`${name} returned URL metadata only (${blocked.reason ?? "structured endpoint unavailable"})`,
-			attemptedText(
-				blocked.attemptedEndpoints ??
-					result.sources?.map((source) => source.url),
-			),
+			attemptedText(blocked.attemptedEndpoints ?? result.sources?.map((source) => source.url)),
 		]
 			.filter(Boolean)
 			.join("\n");
@@ -101,9 +98,7 @@ function verticalExtractorText(
 	return `${name} extracted JSON`;
 }
 
-function verticalExtractorGuidance(
-	result: VerticalExtractionResult,
-): string | undefined {
+function verticalExtractorGuidance(result: VerticalExtractionResult): string | undefined {
 	const blocked = blockedSource(result.data);
 	if (blocked?.reason) return blocked.reason;
 	return result.error?.message;
@@ -111,18 +106,14 @@ function verticalExtractorGuidance(
 
 function attemptedText(urls: string[] | undefined): string | undefined {
 	const uniqueUrls = [...new Set(urls?.filter(Boolean) ?? [])];
-	return uniqueUrls.length
-		? `attempted:\n  - ${uniqueUrls.join("\n  - ")}`
-		: undefined;
+	return uniqueUrls.length ? `attempted:\n  - ${uniqueUrls.join("\n  - ")}` : undefined;
 }
 
 function blockedSource(
 	data: unknown,
-):
-	| { blocked?: boolean; reason?: string; attemptedEndpoints?: string[] }
-	| undefined {
+): { blocked?: boolean; reason?: string; attemptedEndpoints?: string[] } | undefined {
 	const source = (data as { source?: unknown } | undefined)?.source;
-	if (!source || typeof source !== "object") return undefined;
+	if (!source || typeof source !== "object") return;
 	const typed = source as {
 		blocked?: boolean;
 		reason?: string;

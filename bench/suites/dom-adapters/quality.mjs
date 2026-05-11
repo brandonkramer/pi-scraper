@@ -3,8 +3,10 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+
 import TurndownService from "turndown";
 import turndownPluginGfm from "turndown-plugin-gfm";
+
 import { intFlag, stringFlag } from "../../lib/cli-args.mjs";
 import {
 	clean,
@@ -13,25 +15,15 @@ import {
 	flagList,
 	loadHtmlFixtures,
 } from "../../lib/fixtures.mjs";
+import { markdownRow, safeSelect, writeBenchmarkReport } from "../../lib/report.mjs";
 import { timedRepeats } from "../../lib/stats.mjs";
-import {
-	markdownRow,
-	safeSelect,
-	writeBenchmarkReport,
-} from "../../lib/report.mjs";
 
-const rootDir = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	"../../..",
-);
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const args = process.argv.slice(2);
 const warmup = intFlag(args, "warmup", 5);
 const repeats = intFlag(args, "repeats", 30);
 const fixtureNames = flagList(args, "fixtures");
-const fixtureDir = path.resolve(
-	rootDir,
-	stringFlag(args, "fixture-dir", "eval/fixtures"),
-);
+const fixtureDir = path.resolve(rootDir, stringFlag(args, "fixture-dir", "eval/fixtures"));
 const adapters = [createCheerioAdapter(), createHtmlparser2Adapter()];
 const scenarios = [
 	{ name: "default" },
@@ -39,8 +31,7 @@ const scenarios = [
 	{ name: "exclude-noise", removeSelector: ".ads,.ad,nav,footer" },
 	{
 		name: "only-main-proxy",
-		rootSelector:
-			"main,article,[role='main'],.content,.main-content,#content,#main,body",
+		rootSelector: "main,article,[role='main'],.content,.main-content,#content,#main,body",
 		firstRootOnly: true,
 	},
 ];
@@ -84,10 +75,10 @@ for (const fixture of fixtures) {
 		const baseline = extractWith(adapters[0], fixture.html, scenario);
 		const tools = [];
 		for (const adapter of adapters) {
-			const timing = await timedRepeats(
-				() => extractWith(adapter, fixture.html, scenario),
-				{ warmup, repeats },
-			);
+			const timing = await timedRepeats(() => extractWith(adapter, fixture.html, scenario), {
+				warmup,
+				repeats,
+			});
 			const sample = extractWith(adapter, fixture.html, scenario);
 			tools.push({
 				name: adapter.name,
@@ -132,10 +123,7 @@ function extractWith(adapter, html, scenario) {
 		.map((node) => scriptText(adapter, doc, node))
 		.filter(isMeaningfulDataIsland);
 	const dataIslandPayload = summarizeDataIslands(dataIslands);
-	const removeSelector = [
-		"script,style,noscript,template,iframe,canvas",
-		scenario.removeSelector,
-	]
+	const removeSelector = ["script,style,noscript,template,iframe,canvas", scenario.removeSelector]
 		.filter(Boolean)
 		.join(",");
 	adapter.remove(doc, select(removeSelector));
@@ -176,15 +164,12 @@ function hasNonEmptyLeaf(value) {
 	if (typeof value === "string") return value.trim().length > 0;
 	if (typeof value === "number" || typeof value === "boolean") return true;
 	if (Array.isArray(value)) return value.some(hasNonEmptyLeaf);
-	if (value && typeof value === "object")
-		return Object.values(value).some(hasNonEmptyLeaf);
+	if (value && typeof value === "object") return Object.values(value).some(hasNonEmptyLeaf);
 	return false;
 }
 
 function contentRoots(adapter, doc, select, scenario) {
-	const roots = scenario.rootSelector
-		? select(scenario.rootSelector)
-		: select("body");
+	const roots = scenario.rootSelector ? select(scenario.rootSelector) : select("body");
 	const selected = scenario.firstRootOnly ? roots.slice(0, 1) : roots;
 	if (selected.length) return selected;
 	return select("html").length ? [] : adapter.root(doc);
@@ -204,7 +189,7 @@ function parseJsonLike(value) {
 	try {
 		return JSON.parse(value);
 	} catch {
-		return undefined;
+		return;
 	}
 }
 
@@ -237,8 +222,7 @@ function firstText(adapter, doc, nodes) {
 function summarizeExtraction(sample) {
 	return {
 		title: sample.metadata.title,
-		description:
-			sample.metadata.description ?? sample.metadata["og:description"],
+		description: sample.metadata.description ?? sample.metadata["og:description"],
 		metadataKeys: Object.keys(sample.metadata).sort(),
 		headingCount: sample.headings.length,
 		linkCount: sample.links.length,
@@ -269,25 +253,20 @@ function compareExtraction(sample, baseline, thresholds) {
 			metadataDelta.changed.length === 0 &&
 			metadataDelta.missing.length === 0 &&
 			sample.dataIslandPayload.count === baseline.dataIslandPayload.count &&
-			sample.dataIslandPayload.jsonCount ===
-				baseline.dataIslandPayload.jsonCount &&
+			sample.dataIslandPayload.jsonCount === baseline.dataIslandPayload.jsonCount &&
 			sample.dataIslandPayload.hash === baseline.dataIslandPayload.hash &&
 			dataIslandKeysDelta.changed.length === 0
 				? "pass"
 				: "review",
 		titleMatch: sample.metadata.title === baseline.metadata.title,
-		descriptionMatch:
-			(sample.metadata.description ?? "") ===
-			(baseline.metadata.description ?? ""),
+		descriptionMatch: (sample.metadata.description ?? "") === (baseline.metadata.description ?? ""),
 		metadataDelta,
 		headingCountDelta: sample.headings.length - baseline.headings.length,
 		linkCountDelta: sample.links.length - baseline.links.length,
-		dataIslandCountDelta:
-			sample.dataIslandPayload.count - baseline.dataIslandPayload.count,
+		dataIslandCountDelta: sample.dataIslandPayload.count - baseline.dataIslandPayload.count,
 		dataIslandJsonCountDelta:
 			sample.dataIslandPayload.jsonCount - baseline.dataIslandPayload.jsonCount,
-		dataIslandHashMatch:
-			sample.dataIslandPayload.hash === baseline.dataIslandPayload.hash,
+		dataIslandHashMatch: sample.dataIslandPayload.hash === baseline.dataIslandPayload.hash,
 		dataIslandKeysDelta,
 		textCharsDelta: sample.text.length - baseline.text.length,
 		markdownCharsDelta: sample.markdown.length - baseline.markdown.length,
@@ -300,9 +279,7 @@ function compareExtraction(sample, baseline, thresholds) {
 function compareObject(sample, baseline) {
 	const sampleKeys = new Set(Object.keys(sample));
 	const baselineKeys = new Set(Object.keys(baseline));
-	const missing = [...baselineKeys]
-		.filter((key) => !sampleKeys.has(key))
-		.sort();
+	const missing = [...baselineKeys].filter((key) => !sampleKeys.has(key)).sort();
 	const added = [...sampleKeys].filter((key) => !baselineKeys.has(key)).sort();
 	const changed = [...baselineKeys]
 		.filter((key) => sampleKeys.has(key) && sample[key] !== baseline[key])
@@ -331,8 +308,7 @@ function shingles(value) {
 	const normalized = clean(value).toLowerCase();
 	if (normalized.length < 5) return new Set([normalized]);
 	const set = new Set();
-	for (let i = 0; i <= normalized.length - 5; i++)
-		set.add(normalized.slice(i, i + 5));
+	for (let i = 0; i <= normalized.length - 5; i++) set.add(normalized.slice(i, i + 5));
 	return set;
 }
 

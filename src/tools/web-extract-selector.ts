@@ -1,9 +1,8 @@
 /**
- * @fileoverview web_extract action="selector" handler.
- *
  * @remarks
- * Fetches HTML, parses with htmlparser2, runs the adaptive selector engine,
- * and converts matched elements into structured extraction output.
+ *   Fetches HTML, parses with htmlparser2, runs the adaptive selector engine, and converts matched
+ *   elements into structured extraction output.
+ * @file Web_extract action="selector" handler.
  */
 import {
 	SelectorInputError,
@@ -117,5 +116,4 @@ function buildGuidance(selectorResult: {
 	if (selectorResult.directMatches > 0 && !selectorResult.saved) {
 		return "Consider enabling autoSave to make this extraction robust against future layout changes.";
 	}
-	return undefined;
 }

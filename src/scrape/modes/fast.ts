@@ -1,28 +1,22 @@
-/**
- * @fileoverview scrape modes fast module.
- */
+/** @file Scrape modes fast module. */
 import type { FetchUrlResult, HttpClient } from "../../http/client.ts";
 import { createHttpClient } from "../../http/client.ts";
-import { parseDocstrings } from "../../parse/markup/docstrings.ts";
-import { extractFastPage } from "../../parse/page/fast.ts";
-import { parseMarkdown, parseMdx, parseRst } from "../../parse/markup/doc.ts";
 import {
 	binaryAttachmentInfo,
 	parseJsonText,
 	type RoutedContentKind,
 	routeContentType,
 } from "../../parse/content/route.ts";
+import { parseMarkdown, parseMdx, parseRst } from "../../parse/markup/doc.ts";
+import { parseDocstrings } from "../../parse/markup/docstrings.ts";
+import { extractFastPage } from "../../parse/page/fast.ts";
 import {
 	docstringsToText,
 	markupDocumentToMarkdown,
 	markupDocumentToText,
 } from "../../serialize/structured-doc.ts";
 import { normalizeWhitespace } from "../../serialize/text.ts";
-import type {
-	CommonScrapeOptions,
-	OutputFormat,
-	ScrapeMode,
-} from "../../types.ts";
+import type { CommonScrapeOptions, OutputFormat, ScrapeMode } from "../../types.ts";
 import { pdfResult } from "../pdf-route.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
 import { renderFormat } from "../render.ts";
@@ -36,7 +30,7 @@ export async function httpScrape(
 	deps: ScrapePipelineDeps,
 	signal?: AbortSignal,
 ): Promise<ScrapeResult> {
-	return responseScrape(
+	return await responseScrape(
 		await httpFetch(input, options, deps, signal),
 		"fast",
 		format,
@@ -51,7 +45,7 @@ async function httpFetch(
 	deps: { httpClient?: Pick<HttpClient, "fetchUrl"> },
 	signal?: AbortSignal,
 ): Promise<FetchUrlResult> {
-	return (deps.httpClient ?? createHttpClient()).fetchUrl(
+	return await (deps.httpClient ?? createHttpClient()).fetchUrl(
 		input,
 		fetchOptions(options),
 		signal,
@@ -86,7 +80,7 @@ export async function responseScrape(
 			},
 		};
 	if (route.kind === "pdf")
-		return pdfResult(
+		return await pdfResult(
 			base,
 			response.body ?? new Uint8Array(),
 			response.file,
@@ -95,20 +89,8 @@ export async function responseScrape(
 			signal,
 		);
 	if (!route.shouldParseHtml)
-		return passthroughResult(
-			base,
-			route.kind,
-			response.text ?? "",
-			format,
-			mode,
-		);
-	return htmlResult(
-		base,
-		response.text ?? "",
-		response.finalUrl,
-		mode,
-		options,
-	);
+		return passthroughResult(base, route.kind, response.text ?? "", format, mode);
+	return htmlResult(base, response.text ?? "", response.finalUrl, mode, options);
 }
 
 function passthroughResult(
@@ -118,11 +100,7 @@ function passthroughResult(
 	format: OutputFormat,
 	mode: ScrapeMode,
 ): ScrapeResult {
-	const parsed = parsePassthroughContent(
-		route,
-		text,
-		base.finalUrl ?? base.url,
-	);
+	const parsed = parsePassthroughContent(route, text, base.finalUrl ?? base.url);
 	const normalized = normalizeWhitespace(parsed.text);
 	const json = route === "json" ? safeParseJson(text) : parsed.json;
 	const rendered = renderFormat(format, {
@@ -218,6 +196,6 @@ function safeParseJson(text: string): unknown {
 	try {
 		return parseJsonText(text);
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }

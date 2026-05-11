@@ -1,17 +1,17 @@
 /**
- * @fileoverview Entry point for the /web-config slash command.
- *
- * Dispatches to sub-actions: status, model-provider, scrape-mode, cache, robots.
- * No-args opens an interactive picker when ctx.ui.select is available.
+ * @file Entry point for the /web-config slash command. Dispatches to sub-actions: status,
+ *   model-provider, scrape-mode, cache, robots. No-args opens an interactive picker when
+ *   ctx.ui.select is available.
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
-import { defineWebCommand, type CommandContext } from "./define.ts";
-import { runWebConfigStatus } from "./web-config-status.ts";
-import { runWebConfigModelProvider } from "./web-config-model-provider.ts";
-import { runWebConfigScrapeMode } from "./web-config-scrape-mode.ts";
-import { runWebConfigCache } from "./web-config-cache.ts";
-import { runWebConfigRobots } from "./web-config-robots.ts";
+
 import { toolResult } from "../tools/infra/result.ts";
+import { defineWebCommand, type CommandContext } from "./define.ts";
+import { runWebConfigCache } from "./web-config-cache.ts";
+import { runWebConfigModelProvider } from "./web-config-model-provider.ts";
+import { runWebConfigRobots } from "./web-config-robots.ts";
+import { runWebConfigScrapeMode } from "./web-config-scrape-mode.ts";
+import { runWebConfigStatus } from "./web-config-status.ts";
 
 export const webConfigSchema = Type.Object({
 	action: Type.Optional(
@@ -33,13 +33,7 @@ export const webConfigSchema = Type.Object({
 
 export type Params = Static<typeof webConfigSchema>;
 
-const ACTION_LABELS = [
-	"Status",
-	"Model provider",
-	"Scrape mode",
-	"Cache",
-	"Robots",
-] as const;
+const ACTION_LABELS = ["Status", "Model provider", "Scrape mode", "Cache", "Robots"] as const;
 
 const LABEL_TO_ACTION: Record<string, string> = {
 	Status: "status",
@@ -49,10 +43,7 @@ const LABEL_TO_ACTION: Record<string, string> = {
 	Robots: "robots",
 };
 
-export async function runWebConfigCommand(
-	params: Params,
-	ctx?: CommandContext,
-) {
+export async function runWebConfigCommand(params: Params, ctx?: CommandContext) {
 	if (!params.action) {
 		if (ctx?.ui?.select) {
 			const picked = await ctx.ui.select("Web config", [...ACTION_LABELS], {
@@ -69,23 +60,27 @@ export async function runWebConfigCommand(
 				action: LABEL_TO_ACTION[picked] as Params["action"],
 			};
 		} else {
-			return runWebConfigStatus(params, ctx);
+			return await runWebConfigStatus(params, ctx);
 		}
 	}
-	switch (params.action) {
+	const action = params.action;
+	if (!action) {
+		return await runWebConfigStatus(params, ctx);
+	}
+	switch (action) {
 		case "status":
-			return runWebConfigStatus(params, ctx);
+			return await runWebConfigStatus(params, ctx);
 		case "model-provider":
-			return runWebConfigModelProvider(params, ctx);
+			return await runWebConfigModelProvider(params, ctx);
 		case "scrape-mode":
-			return runWebConfigScrapeMode(params, ctx);
+			return await runWebConfigScrapeMode(params, ctx);
 		case "cache":
-			return runWebConfigCache(params, ctx);
+			return await runWebConfigCache(params, ctx);
 		case "robots":
-			return runWebConfigRobots(params, ctx);
+			return await runWebConfigRobots(params, ctx);
 		default:
 			return toolResult({
-				text: `Unknown action: ${params.action}. Use status, model-provider, scrape-mode, cache, or robots.`,
+				text: `Unknown action: ${action}. Use status, model-provider, scrape-mode, cache, or robots.`,
 				data: { error: "unknown_action" },
 			});
 	}
@@ -116,8 +111,7 @@ export function parseWebConfigCommandArgs(args: string): Params {
 		}
 		case "cache": {
 			const force = rest.includes("--force");
-			const tokens = rest.filter((t) => t !== "--force");
-			const [op] = tokens;
+			const op = rest.find((t) => t !== "--force");
 			if (op && op !== "stats" && op !== "clear") {
 				throw new Error("Expected cache op 'stats' or 'clear'.");
 			}
@@ -134,13 +128,7 @@ export function parseWebConfigCommandArgs(args: string): Params {
 }
 
 function isKnownAction(value: string): value is NonNullable<Params["action"]> {
-	return [
-		"status",
-		"model-provider",
-		"scrape-mode",
-		"cache",
-		"robots",
-	].includes(value);
+	return ["status", "model-provider", "scrape-mode", "cache", "robots"].includes(value);
 }
 
 export const webConfigCommand = defineWebCommand({

@@ -1,6 +1,4 @@
-/**
- * @fileoverview extract verticals github-release module.
- */
+/** @file Extract verticals github-release module. */
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 interface GitHubReleaseApi {
@@ -22,34 +20,24 @@ interface GitHubReleaseApi {
 }
 
 export const githubReleaseExtractor: VerticalExtractor = {
-	capability: capability(
-		"github_release",
-		["https://github.com/:owner/:repo/releases/tag/:tag"],
-		{
-			type: "object",
-			required: ["owner", "repo", "tag", "url"],
-			properties: {
-				owner: { type: "string" },
-				repo: { type: "string" },
-				tag: { type: "string" },
-				name: { type: "string" },
-				url: { type: "string" },
-			},
+	capability: capability("github_release", ["https://github.com/:owner/:repo/releases/tag/:tag"], {
+		type: "object",
+		required: ["owner", "repo", "tag", "url"],
+		properties: {
+			owner: { type: "string" },
+			repo: { type: "string" },
+			tag: { type: "string" },
+			name: { type: "string" },
+			url: { type: "string" },
 		},
-	),
+	}),
 	match: (url) => {
-		if (url.hostname !== "github.com") return undefined;
+		if (url.hostname !== "github.com") return;
 		const [owner, repo, releases, tagKeyword, ...tagParts] = url.pathname
 			.split("/")
 			.filter(Boolean);
-		if (
-			!owner ||
-			!repo ||
-			releases !== "releases" ||
-			tagKeyword !== "tag" ||
-			tagParts.length === 0
-		)
-			return undefined;
+		if (!owner || !repo || releases !== "releases" || tagKeyword !== "tag" || tagParts.length === 0)
+			return;
 		return { owner, repo, tag: decodeURIComponent(tagParts.join("/")) };
 	},
 	extract: async (_url, match, context, signal) => {

@@ -1,16 +1,12 @@
-/**
- * @fileoverview Job manifest types and file-system CRUD.
- */
+/** @file Job manifest types and file-system CRUD. */
 import { readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+
 import type { OutputFormat, ScrapeMode } from "../../types.ts";
-import {
-	ensureDir,
-	type ResolveStorageOptions,
-	resolvePiStoragePaths,
-} from "../paths.ts";
-import { sanitizeJobParams } from "./sanitize.ts";
+import { ensureDir, type ResolveStorageOptions, resolvePiStoragePaths } from "../paths.ts";
 import type { JobError } from "./errors.ts";
+import { mergeUnique } from "./merge.ts";
+import { sanitizeJobParams } from "./sanitize.ts";
 
 export type JobType = "crawl" | "batch" | "diff" | "snapshot";
 export type JobStatus = "queued" | "running" | "paused" | "done" | "error";
@@ -42,9 +38,7 @@ export interface JobManifest {
 	};
 }
 
-export type JobManifestPatch = Partial<
-	Omit<JobManifest, "jobId" | "jobType" | "createdAt">
->;
+export type JobManifestPatch = Partial<Omit<JobManifest, "jobId" | "jobType" | "createdAt">>;
 
 export async function writeJobManifest(
 	manifest: JobManifest,
@@ -123,7 +117,5 @@ export function createJobManifest(input: {
 }
 
 function safeJobId(jobId: string): string {
-	return jobId.replace(/[^a-zA-Z0-9._-]/gu, "_").slice(0, 160) || "job";
+	return jobId.replaceAll(/[^a-zA-Z0-9._-]/gu, "_").slice(0, 160) || "job";
 }
-
-import { mergeUnique } from "./merge.ts";

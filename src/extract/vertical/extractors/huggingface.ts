@@ -1,6 +1,4 @@
-/**
- * @fileoverview extract verticals huggingface module.
- */
+/** @file Extract verticals huggingface module. */
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 interface HuggingFaceModelApi {
@@ -43,26 +41,21 @@ const reservedModelRoots = new Set([
 ]);
 
 export const huggingFaceModelExtractor: VerticalExtractor = {
-	capability: capability(
-		"huggingface_model",
-		["https://huggingface.co/:owner/:model"],
-		{
-			type: "object",
-			required: ["id"],
-			properties: {
-				id: { type: "string" },
-				author: { type: "string" },
-				pipelineTag: { type: "string" },
-				downloads: { type: "number" },
-				likes: { type: "number" },
-			},
+	capability: capability("huggingface_model", ["https://huggingface.co/:owner/:model"], {
+		type: "object",
+		required: ["id"],
+		properties: {
+			id: { type: "string" },
+			author: { type: "string" },
+			pipelineTag: { type: "string" },
+			downloads: { type: "number" },
+			likes: { type: "number" },
 		},
-	),
+	}),
 	match: (url) => {
-		if (url.hostname !== "huggingface.co") return undefined;
+		if (url.hostname !== "huggingface.co") return;
 		const [owner, name, ...rest] = url.pathname.split("/").filter(Boolean);
-		if (!owner || !name || rest.length > 0 || reservedModelRoots.has(owner))
-			return undefined;
+		if (!owner || !name || rest.length > 0 || reservedModelRoots.has(owner)) return;
 		return { id: `${owner}/${name}` };
 	},
 	extract: async (_url, match, context, signal) => {
@@ -102,12 +95,9 @@ export const huggingFaceDatasetExtractor: VerticalExtractor = {
 		},
 	),
 	match: (url) => {
-		if (url.hostname !== "huggingface.co") return undefined;
-		const [datasets, owner, name, ...rest] = url.pathname
-			.split("/")
-			.filter(Boolean);
-		if (datasets !== "datasets" || !owner || !name || rest.length > 0)
-			return undefined;
+		if (url.hostname !== "huggingface.co") return;
+		const [datasets, owner, name, ...rest] = url.pathname.split("/").filter(Boolean);
+		if (datasets !== "datasets" || !owner || !name || rest.length > 0) return;
 		return { id: `${owner}/${name}` };
 	},
 	extract: async (_url, match, context, signal) => {

@@ -1,18 +1,14 @@
 /**
- * @fileoverview Scrape-mode sub-action for /web-config.
- *
- * Wraps the existing setDefaultMode handler from web-set-mode.ts.
+ * @file Scrape-mode sub-action for /web-config. Wraps the existing setDefaultMode handler from
+ *   web-set-mode.ts.
  */
 import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.ts";
-import { setDefaultMode } from "./web-set-mode.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
 import type { Params } from "./web-config.ts";
+import { setDefaultMode } from "./web-set-mode.ts";
 
-export async function runWebConfigScrapeMode(
-	params: Params,
-	ctx?: CommandContext,
-) {
+export async function runWebConfigScrapeMode(params: Params, ctx?: CommandContext) {
 	let mode = params.mode as (typeof SCRAPE_MODES)[number] | undefined;
 	let format = params.format as (typeof OUTPUT_FORMATS)[number] | undefined;
 
@@ -31,13 +27,9 @@ export async function runWebConfigScrapeMode(
 				mode = picked as (typeof SCRAPE_MODES)[number];
 			}
 			if (!format) {
-				const picked = await ctx.ui.select(
-					"Output format",
-					[...OUTPUT_FORMATS],
-					{
-						signal: ctx.signal,
-					},
-				);
+				const picked = await ctx.ui.select("Output format", [...OUTPUT_FORMATS], {
+					signal: ctx.signal,
+				});
 				if (!picked) {
 					return toolResult({
 						text: "Cancelled.",
@@ -54,5 +46,5 @@ export async function runWebConfigScrapeMode(
 		}
 	}
 
-	return setDefaultMode({ mode, format });
+	return await setDefaultMode({ mode, format });
 }

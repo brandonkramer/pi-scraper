@@ -1,13 +1,8 @@
-/**
- * @fileoverview Pi terminal UI preview and metadata formatting primitives.
- */
+/** @file Pi terminal UI preview and metadata formatting primitives. */
 import type { PiToolShell, ResultEnvelope } from "../types.ts";
 import type { RenderTheme } from "./types.ts";
 
-export function formatPreview(
-	format: string | undefined,
-	content: string,
-): string {
+export function formatPreview(format: string | undefined, content: string): string {
 	if (format === "json") return `\`\`\`json\n${content}\n\`\`\``;
 	if (format === "html") return `\`\`\`html\n${content}\n\`\`\``;
 	return content;
@@ -30,13 +25,8 @@ export function renderMetadataLines(
 	return lines.join("\n");
 }
 
-function metadataLine(
-	label: string,
-	value: string,
-	theme?: RenderTheme,
-): string {
-	const coloredLabel =
-		theme?.fg?.("syntaxKeyword", `${label}: `) ?? `${label}: `;
+function metadataLine(label: string, value: string, theme?: RenderTheme): string {
+	const coloredLabel = theme?.fg?.("syntaxKeyword", `${label}: `) ?? `${label}: `;
 	const coloredValue = theme?.fg?.("syntaxString", value) ?? value;
 	return `${coloredLabel}${coloredValue}`;
 }
@@ -45,20 +35,17 @@ function metadataLine(
  * Pick the first non-empty candidate and collapse whitespace.
  *
  * @remarks
- * Defaults to 180 chars for collapsed-view previews.
- * Pass a custom cap (e.g. 500) for expanded-view excerpts.
+ *   Defaults to 180 chars for collapsed-view previews. Pass a custom cap (e.g. 500) for
+ *   expanded-view excerpts.
  */
 export function pickExcerpt(
 	...args: ReadonlyArray<string | undefined | number>
 ): string | undefined {
 	const mutable = args as Array<string | undefined | number>;
-	const maxChars =
-		typeof mutable.at(-1) === "number" ? (mutable.pop() as number) : 180;
+	const maxChars = typeof mutable.at(-1) === "number" ? (mutable.pop() as number) : 180;
 	for (const value of mutable as Array<string | undefined>) {
-		if (value)
-			return String(value).replace(/\s+/g, " ").trim().slice(0, maxChars);
+		if (value) return value.replaceAll(/\s+/g, " ").trim().slice(0, maxChars);
 	}
-	return undefined;
 }
 
 export function previewText(
@@ -66,12 +53,15 @@ export function previewText(
 	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
 ): string {
 	const data = envelope.data;
-	return String(
+	const value =
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 		envelope.answerContext ??
-			data?.markdown ??
-			data?.text ??
-			data?.title ??
-			result.content[0]?.text ??
-			"",
-	);
+		data?.markdown ??
+		data?.text ??
+		data?.title ??
+		result.content[0]?.text ??
+		"";
+	if (typeof value === "string") return value;
+	if (typeof value === "number" || typeof value === "boolean") return String(value);
+	return JSON.stringify(value);
 }

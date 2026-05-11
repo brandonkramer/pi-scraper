@@ -1,6 +1,4 @@
-/**
- * @fileoverview http fingerprint-types module.
- */
+/** @file Http fingerprint-types module. */
 import type { StructuredError } from "../../types.ts";
 import type { FetchUrlOptions, FetchUrlResult } from "../client.ts";
 import { HttpClientError } from "../errors.ts";
@@ -11,20 +9,17 @@ export interface FingerprintProfile {
 	proxy?: string;
 }
 
-export interface FingerprintFetchOptions
-	extends FetchUrlOptions,
-		FingerprintProfile {}
+export interface FingerprintFetchOptions extends FetchUrlOptions, FingerprintProfile {}
 
 export interface FingerprintFetchAdapter {
-	fetch(
+	fetch: (
 		url: string | URL,
 		options?: FingerprintFetchOptions,
 		signal?: AbortSignal,
-	): Promise<FetchUrlResult>;
+	) => Promise<FetchUrlResult>;
 }
 
-export interface FingerprintBackendKey
-	extends Required<Omit<FingerprintProfile, "proxy">> {
+export interface FingerprintBackendKey extends Required<Omit<FingerprintProfile, "proxy">> {
 	host: string;
 	proxy?: string;
 }
@@ -50,15 +45,15 @@ export interface FingerprintRequestBackend {
 	 * Fetch exactly one already-normalized HTTP(S) URL without following redirects.
 	 *
 	 * @remarks
-	 * This invariant lets pi-scraper revalidate every redirect hop with its shared
-	 * URL safety policy before any next-hop request. Backends that cannot disable
-	 * internal redirect following are not safe to register here.
+	 *   This invariant lets pi-scraper revalidate every redirect hop with its shared URL safety
+	 *   policy before any next-hop request. Backends that cannot disable internal redirect following
+	 *   are not safe to register here.
 	 */
-	fetchOnce(
+	fetchOnce: (
 		url: string,
 		options: FingerprintBackendRequestOptions,
 		signal?: AbortSignal,
-	): Promise<FingerprintBackendResponse>;
+	) => Promise<FingerprintBackendResponse>;
 }
 
 export type FingerprintBackendFactory = (
@@ -97,17 +92,13 @@ export class UnsupportedFingerprintOptionError extends Error {
 	}
 }
 
-export function assertSupportedFingerprintOptions(
-	profile: FingerprintProfile,
-): void {
+export function assertSupportedFingerprintOptions(profile: FingerprintProfile): void {
 	if (profile.proxy) {
 		throw new UnsupportedFingerprintOptionError("proxy");
 	}
 }
 
-export function isFingerprintFetchError(
-	error: unknown,
-): error is { structured: StructuredError } {
+export function isFingerprintFetchError(error: unknown): error is { structured: StructuredError } {
 	return (
 		error instanceof MissingFingerprintBackendError ||
 		error instanceof UnsupportedFingerprintOptionError ||

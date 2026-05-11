@@ -178,7 +178,7 @@
           try {
             return JSON.parse(cookie)?.userId;
           } catch(e) {
-            return undefined;
+            return;
           }
         };
 

@@ -1,7 +1,6 @@
-/**
- * @fileoverview Reusable Pi terminal UI theme text helpers.
- */
+/** @file Reusable Pi terminal UI theme text helpers. */
 import type { MarkdownTheme } from "@earendil-works/pi-tui";
+
 import type { RenderTheme } from "./types.ts";
 
 export function inlineThemeText(
@@ -30,35 +29,26 @@ export function success(text: string, theme?: RenderTheme): string {
 }
 
 export function failure(text: string, theme?: RenderTheme): string {
-	return (
-		inlineThemeText("error", text, theme) ??
-		inlineThemeText("danger", text, theme) ??
-		text
-	);
+	return inlineThemeText("error", text, theme) ?? inlineThemeText("danger", text, theme) ?? text;
 }
 
 export function activity(text: string, theme?: RenderTheme): string {
-	return (
-		inlineThemeText("warning", text, theme) ??
-		inlineThemeText("accent", text, theme) ??
-		text
-	);
+	return inlineThemeText("warning", text, theme) ?? inlineThemeText("accent", text, theme) ?? text;
 }
 
 export function separator(theme?: RenderTheme): string {
-	return `${neutral(" · ", theme)}`;
+	return neutral(" · ", theme);
 }
 
 /**
  * Build a MarkdownTheme from the runtime Pi theme palette.
  *
  * @remarks
- * Each MarkdownTheme slot tries a semantic color name on the host theme.
- * If the host does not define that name, the text falls back to plain.
+ *   Each MarkdownTheme slot tries a semantic color name on the host theme. If the host does not
+ *   define that name, the text falls back to plain.
  */
 export function getMarkdownTheme(theme?: RenderTheme): MarkdownTheme {
-	const themed = (name: string) => (text: string) =>
-		theme?.fg?.(name, text) ?? text;
+	const themed = (name: string) => (text: string) => theme?.fg?.(name, text) ?? text;
 	return {
 		heading: themed("accent"),
 		link: themed("accent"),

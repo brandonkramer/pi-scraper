@@ -1,22 +1,19 @@
 /**
- * @fileoverview web-summarize-discover __tests__ module.
- *
- * Tests lazy capability-filtered discover in web_summarize.
+ * @file Web-summarize-discover **tests** module. Tests lazy capability-filtered discover in
+ *   web_summarize.
  */
 import { describe, expect, it, beforeEach } from "vitest";
-import { createWebSummarizeTool } from "../web-summarize.ts";
+
 import {
 	modelRegistry,
 	initModelAdapterProtocol,
 	type RegisteredAdapter,
 } from "../infra/model-registry.ts";
+import { createWebSummarizeTool } from "../web-summarize.ts";
 
 const signal = new AbortController().signal;
 
-function fakeRegisteredAdapter(
-	id: string,
-	capabilities: readonly string[],
-): RegisteredAdapter {
+function fakeRegisteredAdapter(id: string, capabilities: readonly string[]): RegisteredAdapter {
 	return {
 		id,
 		label: id,
@@ -42,7 +39,7 @@ function mockPiWithFilteredDiscover() {
 			},
 			emit(event: string, payload: unknown) {
 				events.push({ event, payload });
-				handlers.get(event)?.forEach((h) => h(payload));
+				for (const h of handlers.get(event) ?? []) h(payload);
 			},
 		},
 	};
@@ -64,13 +61,15 @@ describe("web_summarize lazy filtered discover", () => {
 			{ content: "page text", sentences: 1 },
 			signal,
 			undefined,
-			{ getFlag: () => undefined },
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
 		);
 
 		// First init-time discover ({}), then lazy filtered discover
-		const discovers = events.filter(
-			(e) => e.event === "pi:model-adapter/discover",
-		);
+		const discovers = events.filter((e) => e.event === "pi:model-adapter/discover");
 		expect(discovers.length).toBeGreaterThanOrEqual(1);
 		const lazy = discovers[discovers.length - 1];
 		expect(lazy?.payload).toEqual({ capabilities: ["summarize"] });
@@ -91,9 +90,7 @@ describe("web_summarize lazy filtered discover", () => {
 				};
 				if (
 					!filter.capabilities ||
-					providerEntry.capabilities.some((c) =>
-						filter.capabilities!.includes(c),
-					)
+					providerEntry.capabilities.some((c) => filter.capabilities!.includes(c))
 				) {
 					modelRegistry.register(providerEntry);
 				}
@@ -108,13 +105,15 @@ describe("web_summarize lazy filtered discover", () => {
 			{ content: "page text", sentences: 1 },
 			signal,
 			undefined,
-			{ getFlag: () => undefined },
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
 		);
 
 		expect(result.content[0]?.text).toContain("from-gemini");
-		const discovers = events.filter(
-			(e) => e.event === "pi:model-adapter/discover",
-		);
+		const discovers = events.filter((e) => e.event === "pi:model-adapter/discover");
 		expect(discovers.length).toBeGreaterThanOrEqual(1);
 	});
 
@@ -129,9 +128,7 @@ describe("web_summarize lazy filtered discover", () => {
 				};
 				if (
 					!filter.capabilities ||
-					providerEntry.capabilities.some((c) =>
-						filter.capabilities!.includes(c),
-					)
+					providerEntry.capabilities.some((c) => filter.capabilities!.includes(c))
 				) {
 					modelRegistry.register(providerEntry);
 				}
@@ -149,7 +146,11 @@ describe("web_summarize lazy filtered discover", () => {
 			{ content: "page text", sentences: 1 },
 			signal,
 			undefined,
-			{ getFlag: () => undefined },
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
 		);
 
 		expect((result.details as { error?: { code: string } }).error?.code).toBe(
@@ -169,9 +170,7 @@ describe("web_summarize lazy filtered discover", () => {
 				};
 				if (
 					!filter.capabilities ||
-					providerEntry.capabilities.some((c) =>
-						filter.capabilities!.includes(c),
-					)
+					providerEntry.capabilities.some((c) => filter.capabilities!.includes(c))
 				) {
 					modelRegistry.register(providerEntry);
 				}
@@ -182,25 +181,21 @@ describe("web_summarize lazy filtered discover", () => {
 
 		const tool = createWebSummarizeTool();
 		// First call
-		await tool.execute(
-			"call",
-			{ content: "page text", sentences: 1 },
-			signal,
-			undefined,
-			{ getFlag: () => undefined },
-		);
+		await tool.execute("call", { content: "page text", sentences: 1 }, signal, undefined, {
+			getFlag: () => {
+				/* no-op */
+			},
+		});
 		const discoversAfterFirst = events.filter(
 			(e) => e.event === "pi:model-adapter/discover",
 		).length;
 
 		// Second call
-		await tool.execute(
-			"call",
-			{ content: "page text", sentences: 1 },
-			signal,
-			undefined,
-			{ getFlag: () => undefined },
-		);
+		await tool.execute("call", { content: "page text", sentences: 1 }, signal, undefined, {
+			getFlag: () => {
+				/* no-op */
+			},
+		});
 		const discoversAfterSecond = events.filter(
 			(e) => e.event === "pi:model-adapter/discover",
 		).length;

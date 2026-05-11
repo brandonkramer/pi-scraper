@@ -1,10 +1,10 @@
-/**
- * @fileoverview Tool-level regression coverage for web_crawl API-surface wiring.
- */
+/** @file Tool-level regression coverage for web_crawl API-surface wiring. */
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { closeStorageDbs } from "../../storage/db/open.ts";
 import { readResponse } from "../../storage/responses/read.ts";
@@ -16,12 +16,8 @@ let crawlRunCount = 0;
 
 vi.mock("../../crawl/runner.ts", () => ({
 	runCrawl: vi.fn(async (seedUrl: string) => {
-		const { createCrawlState, saveCrawlState } = await import(
-			"../../crawl/state.ts"
-		);
-		const { createJobManifest, writeJobManifest } = await import(
-			"../../storage/jobs/manifest.ts"
-		);
+		const { createCrawlState, saveCrawlState } = await import("../../crawl/state.ts");
+		const { createJobManifest, writeJobManifest } = await import("../../storage/jobs/manifest.ts");
 		const crawlId = `crawl-api-surface-${++crawlRunCount}`;
 		const state = createCrawlState(seedUrl, crawlId);
 		state.visited = [seedUrl];
@@ -48,7 +44,7 @@ vi.mock("../../crawl/runner.ts", () => ({
 			pages: [apiReferencePage(seedUrl)],
 			visited: [seedUrl],
 			statePath,
-			metadata: state.metadata!,
+			metadata: state.metadata,
 		};
 	}),
 }));
@@ -94,12 +90,8 @@ describe("web_crawl api-surface extraction", () => {
 		expect(result.content[0]?.text).toContain("package: 1 page(s)");
 		expect(envelope.data.contextPackage?.package.source).toBe("crawl");
 		expect(envelope.data.contextPackage?.package.urlCount).toBe(1);
-		expect(envelope.data.contextPackage?.tree[0]?.breadcrumbs).toContain(
-			"docs.example.com",
-		);
-		expect(envelope.data.contextPackage?.tree[0]?.excerpt).toContain(
-			"fetchMetrics",
-		);
+		expect(envelope.data.contextPackage?.tree[0]?.breadcrumbs).toContain("docs.example.com");
+		expect(envelope.data.contextPackage?.tree[0]?.excerpt).toContain("fetchMetrics");
 
 		const stored = await readResponse<{
 			package: { source: string; crawlId?: string };
@@ -138,17 +130,13 @@ describe("web_crawl api-surface extraction", () => {
 		}>;
 		const requestedSurface = requestedEnvelope.data.apiSurface;
 
-		expect(requestedSurface?.modules[0]?.functions[0]?.name).toBe(
-			"fetchMetrics",
-		);
+		expect(requestedSurface?.modules[0]?.functions[0]?.name).toBe("fetchMetrics");
 		expect(requested.content[0]?.text).toContain("apiSurface: 1 module(s).");
 
 		const stored = await readResponse<{
 			apiSurface?: { modules: Array<{ functions: Array<{ name: string }> }> };
 		}>(requestedEnvelope.responseId!);
-		expect(stored.value.apiSurface?.modules[0]?.functions[0]?.name).toBe(
-			"fetchMetrics",
-		);
+		expect(stored.value.apiSurface?.modules[0]?.functions[0]?.name).toBe("fetchMetrics");
 
 		const plain = await webCrawlTool.execute(
 			"call",

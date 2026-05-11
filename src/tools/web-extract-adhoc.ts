@@ -1,29 +1,18 @@
-/**
- * @fileoverview web_extract action="adhoc" handler — model-backed schema extraction.
- */
+/** @file Web_extract action="adhoc" handler — model-backed schema extraction. */
 import { loadEffectiveConfig } from "../config/settings.ts";
-import {
-	extractAdHoc,
-	MissingExtractInputError,
-} from "../extract/adhoc/index.ts";
+import { extractAdHoc, MissingExtractInputError } from "../extract/adhoc/index.ts";
+import type { ToolExecutionContext } from "./infra/define.ts";
+import { resolveAdapterFromRegistry, resolveProviderPreference } from "./infra/model-adapter.ts";
+import { modelRegistry } from "./infra/model-registry.ts";
 import {
 	missingModelResult,
 	errorResult,
 	adapterNotFoundError,
 	adapterIncompatibleError,
+	toolErrorResult,
 } from "./infra/result.ts";
-import {
-	scrapeInputSummary,
-	scrapeInputToolResult,
-} from "./infra/scrape-input-result.ts";
-import { toolErrorResult } from "./infra/result.ts";
-import {
-	resolveAdapterFromRegistry,
-	resolveProviderPreference,
-} from "./infra/model-adapter.ts";
-import { modelRegistry } from "./infra/model-registry.ts";
+import { scrapeInputSummary, scrapeInputToolResult } from "./infra/scrape-input-result.ts";
 import type { Params, WebExtractToolOptions } from "./web-extract.ts";
-import type { ToolExecutionContext } from "./infra/define.ts";
 
 export async function runAdHocExtraction(
 	params: Params,
@@ -33,14 +22,13 @@ export async function runAdHocExtraction(
 ) {
 	const config = await loadEffectiveConfig();
 	const preference = resolveProviderPreference({
-		paramProvider: params.provider as string | undefined,
+		paramProvider: params.provider,
 		flagProvider: context?.getFlag?.("web-model-provider"),
 		envProvider: process.env.PI_WEB_MODEL_PROVIDER,
 		configProvider: config.modelProvider,
 		capability: "extract",
 	});
-	const adapter =
-		options.modelAdapter ?? resolveAdapterFromRegistry(preference, "extract");
+	const adapter = options.modelAdapter ?? resolveAdapterFromRegistry(preference, "extract");
 	if (!adapter) {
 		if (preference === "off") {
 			return missingModelResult(
@@ -103,9 +91,7 @@ export async function runAdHocExtraction(
 	} catch (error) {
 		return toolErrorResult(
 			error,
-			error instanceof MissingExtractInputError
-				? "MISSING_INPUT"
-				: "EXTRACT_FAILED",
+			error instanceof MissingExtractInputError ? "MISSING_INPUT" : "EXTRACT_FAILED",
 			"extract",
 			params.url,
 		);

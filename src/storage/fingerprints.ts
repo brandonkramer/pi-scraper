@@ -1,9 +1,8 @@
 /**
- * @fileoverview Persist element fingerprints for adaptive selector repair.
- *
  * @remarks
- * Uses the existing Node SQLite boundary rather than a separate dependency.
- * Fingerprints are keyed by (site scope + identifier).
+ *   Uses the existing Node SQLite boundary rather than a separate dependency. Fingerprints are
+ *   keyed by (site scope + identifier).
+ * @file Persist element fingerprints for adaptive selector repair.
  */
 import { openStorageDb } from "./db/open.ts";
 import type { ResolveStorageOptions } from "./paths.ts";
@@ -31,9 +30,7 @@ export interface StoredFingerprint {
 	storedAt: string;
 }
 
-/**
- * Save a fingerprint to storage.
- */
+/** Save a fingerprint to storage. */
 export async function saveFingerprint(
 	identifier: string,
 	scope: string,
@@ -63,9 +60,7 @@ export async function saveFingerprint(
 	});
 }
 
-/**
- * Retrieve a fingerprint by identifier and scope.
- */
+/** Retrieve a fingerprint by identifier and scope. */
 export async function loadFingerprint(
 	identifier: string,
 	scope: string,
@@ -92,7 +87,7 @@ export async function loadFingerprint(
 		  }
 		| undefined;
 
-	if (!row) return undefined;
+	if (!row) return;
 	return {
 		identifier: row.identifier,
 		scope: row.scope,
@@ -104,16 +99,15 @@ export async function loadFingerprint(
 	};
 }
 
-/**
- * Delete a fingerprint.
- */
+/** Delete a fingerprint. */
 export async function deleteFingerprint(
 	identifier: string,
 	scope: string,
 	options: ResolveStorageOptions = {},
 ): Promise<void> {
 	const db = await openStorageDb(options);
-	db.prepare(
-		"DELETE FROM element_fingerprints WHERE identifier = ? AND scope = ?",
-	).run(identifier, scope);
+	db.prepare("DELETE FROM element_fingerprints WHERE identifier = ? AND scope = ?").run(
+		identifier,
+		scope,
+	);
 }

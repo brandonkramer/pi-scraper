@@ -1,6 +1,4 @@
-/**
- * @fileoverview parse llms module.
- */
+/** @file Parse llms module. */
 import { dedupeBy } from "../../url/dedupe.ts";
 import { normalizeUrl } from "../../url/normalize.ts";
 
@@ -9,9 +7,7 @@ export interface AgentReadableCandidate {
 	kind: "markdown_sibling" | "llms_txt" | "llms_entry";
 }
 
-export function likelyAgentReadableUrls(
-	input: string | URL,
-): AgentReadableCandidate[] {
+export function likelyAgentReadableUrls(input: string | URL): AgentReadableCandidate[] {
 	const url = new URL(normalizeUrl(input));
 	const withoutSlash = url.pathname.replace(/\/$/u, "");
 	const markdown = new URL(url);
@@ -25,15 +21,12 @@ export function likelyAgentReadableUrls(
 	];
 }
 
-export function parseLlmsTxt(
-	text: string,
-	baseUrl: string,
-): AgentReadableCandidate[] {
+export function parseLlmsTxt(text: string, baseUrl: string): AgentReadableCandidate[] {
 	const candidates: AgentReadableCandidate[] = [];
 	for (const line of text.split(/\r?\n/u)) {
 		const urls = [...line.matchAll(/https?:\/\/\S+|\[[^\]]+\]\(([^)]+)\)/giu)];
 		for (const match of urls) {
-			const raw = match[1] ?? match[0];
+			const raw = match[1] || match[0];
 			try {
 				candidates.push({
 					url: new URL(raw, baseUrl).toString(),

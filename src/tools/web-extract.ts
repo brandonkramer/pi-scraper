@@ -1,33 +1,19 @@
-/**
- * @fileoverview Pi tool adapter for vertical, pattern, ad hoc, and surface extraction.
- */
+/** @file Pi tool adapter for vertical, pattern, ad hoc, and surface extraction. */
 import { type Static, Type } from "@earendil-works/pi-ai";
+
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
-import { defineWebTool, type WebTool } from "./infra/define.ts";
-import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { renderSimpleCall } from "../tui/call.ts";
+import { renderEnvelopeResult } from "../tui/envelope.ts";
+import { defineWebTool, type WebTool } from "./infra/define.ts";
 import { urlProperty } from "./infra/schemas.ts";
-import { runApiSurfaceExtraction } from "./web-extract-surface.ts";
-import { runSelectorExtractionTool } from "./web-extract-selector.ts";
-import {
-	listDeterministicExtractors,
-	runDeterministicExtractor,
-} from "./web-extract-vertical.ts";
-import {
-	hasPatternRequest,
-	runPatternInspection,
-} from "./web-extract-pattern.ts";
 import { runAdHocExtraction } from "./web-extract-adhoc.ts";
+import { hasPatternRequest, runPatternInspection } from "./web-extract-pattern.ts";
+import { runSelectorExtractionTool } from "./web-extract-selector.ts";
+import { runApiSurfaceExtraction } from "./web-extract-surface.ts";
+import { listDeterministicExtractors, runDeterministicExtractor } from "./web-extract-vertical.ts";
 
-const extractActions = [
-	"list",
-	"vertical",
-	"adhoc",
-	"pattern",
-	"surface",
-	"selector",
-] as const;
+const extractActions = ["list", "vertical", "adhoc", "pattern", "surface", "selector"] as const;
 export const webExtractSchema = Type.Object({
 	action: Type.Optional(Type.Any()),
 	extractor: Type.Optional(Type.Any()),
@@ -128,21 +114,19 @@ export function createWebExtractTool(
 		parameters: webExtractSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate, context) {
 			const action = inferExtractAction(params);
-			if (action === "list") return listDeterministicExtractors();
-			if (action === "vertical")
-				return runDeterministicExtractor(params, signal, onUpdate);
+			if (action === "list") return await listDeterministicExtractors();
+			if (action === "vertical") return await runDeterministicExtractor(params, signal, onUpdate);
 			if (action === "pattern")
-				return runPatternInspection(params, options, signal, onUpdate);
+				return await runPatternInspection(params, options, signal, onUpdate);
 			if (action === "surface")
-				return runApiSurfaceExtraction(params, options, signal, onUpdate);
+				return await runApiSurfaceExtraction(params, options, signal, onUpdate);
 			if (action === "selector")
-				return runSelectorExtractionTool(params, options, signal, onUpdate);
-			return runAdHocExtraction(params, options, signal, context);
+				return await runSelectorExtractionTool(params, options, signal, onUpdate);
+			return await runAdHocExtraction(params, options, signal, context);
 		},
 		renderCall: (args, theme) =>
 			renderSimpleCall("web_extract", renderExtractCallParts(args), theme),
-		renderResult: (result, { expanded }, theme) =>
-			renderEnvelopeResult(result, expanded, theme),
+		renderResult: (result, { expanded }, theme) => renderEnvelopeResult(result, expanded, theme),
 	});
 }
 
@@ -162,12 +146,8 @@ function renderExtractCallParts(params: Params): string[] {
 	const action = inferExtractAction(params);
 	if (action === "list") return ["list"];
 	if (action === "selector")
-		return [
-			"selector",
-			params.selector,
-			params.url ?? "provided content",
-		].filter(Boolean) as string[];
-	return [action, params.extractor, params.url ?? "provided content"].filter(
-		Boolean,
-	) as string[];
+		return ["selector", params.selector, params.url ?? "provided content"].filter(
+			Boolean,
+		) as string[];
+	return [action, params.extractor, params.url ?? "provided content"].filter(Boolean) as string[];
 }

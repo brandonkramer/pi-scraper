@@ -1,11 +1,6 @@
-/**
- * @fileoverview scrape modes browser module.
- */
+/** @file Scrape modes browser module. */
 import type { BrowserRenderer } from "../../browser/playwright.ts";
-import {
-	BrowserRenderError,
-	createPlaywrightRenderer,
-} from "../../browser/playwright.ts";
+import { BrowserRenderError, createPlaywrightRenderer } from "../../browser/playwright.ts";
 import type { FetchUrlResult } from "../../http/client.ts";
 import type { CommonScrapeOptions, OutputFormat } from "../../types.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
@@ -60,9 +55,11 @@ async function browserResponseScrape(
 	deps: ScrapePipelineDeps,
 	signal?: AbortSignal,
 ): Promise<ScrapeResult> {
-	const rendered = await (
-		deps.browserRenderer ?? createPlaywrightRenderer()
-	).fetchRendered(input, options, signal);
+	const rendered = await (deps.browserRenderer ?? createPlaywrightRenderer()).fetchRendered(
+		input,
+		options,
+		signal,
+	);
 	const response: FetchUrlResult = {
 		url: rendered.url,
 		finalUrl: rendered.finalUrl,
@@ -72,7 +69,7 @@ async function browserResponseScrape(
 		text: rendered.html,
 		downloadedBytes: Buffer.byteLength(rendered.html),
 	};
-	return responseScrape(response, "browser", format, options, signal);
+	return await responseScrape(response, "browser", format, options, signal);
 }
 
 function browserStructuredError(error: unknown, url: string) {

@@ -1,6 +1,4 @@
-/**
- * @fileoverview extract verticals npm module.
- */
+/** @file Extract verticals npm module. */
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 interface NpmLatestPackage {
@@ -39,18 +37,18 @@ export const npmPackageExtractor: VerticalExtractor = {
 			url.hostname !== "npmjs.com" &&
 			url.hostname !== "npmx.dev"
 		)
-			return undefined;
+			return;
 		const parts = url.pathname.split("/").filter(Boolean);
-		if (parts[0] !== "package") return undefined;
+		if (parts[0] !== "package") return;
 		const scoped = parts[1]?.startsWith("@");
 		const name = scoped ? `${parts[1]}/${parts[2] ?? ""}` : parts[1];
 		const versionMarker = scoped ? parts[3] : parts[2];
-		const version =
-			versionMarker === "v" ? (scoped ? parts[4] : parts[3]) : undefined;
+		const version = versionMarker === "v" ? (scoped ? parts[4] : parts[3]) : undefined;
 		return name ? { name, ...(version ? { version } : {}) } : undefined;
 	},
 	extract: async (_url, match, context, signal) => {
-		const encodedName = encodeURIComponent(match.name).replace(/%2F/gu, "/");
+		const encodedName = encodeURIComponent(match.name).replaceAll("%2F", "/");
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 		const versionPath = encodeURIComponent(match.version ?? "latest");
 		const pkg = await context.fetchJson<NpmLatestPackage>(
 			`https://registry.npmjs.org/${encodedName}/${versionPath}`,

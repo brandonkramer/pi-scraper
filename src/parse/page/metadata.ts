@@ -1,6 +1,6 @@
-/**
- * @fileoverview parse metadata module.
- */
+import type { DomAdapter } from "../dom/adapter.ts";
+import { absoluteUrl } from "../dom/selectors.ts";
+/** @file Parse metadata module. */
 import {
 	cleanDomText,
 	extractDomHeadings,
@@ -8,8 +8,6 @@ import {
 	type DomHeading,
 	type DomLink,
 } from "./elements.ts";
-import type { DomAdapter } from "../dom/adapter.ts";
-import { absoluteUrl } from "../dom/selectors.ts";
 
 export interface PageMetadata {
 	title?: string;
@@ -25,18 +23,13 @@ export type PageHeading = DomHeading;
 
 export type PageLink = DomLink;
 
-export function extractMetadata(
-	dom: DomAdapter,
-	baseUrl: string,
-): PageMetadata {
+export function extractMetadata(dom: DomAdapter, baseUrl: string): PageMetadata {
 	const meta: Record<string, string> = {};
 	const openGraph: Record<string, string> = {};
 	const twitter: Record<string, string> = {};
 	for (const node of dom.nodes(dom.select("meta"))) {
 		const key =
-			dom.attr(node, "name") ??
-			dom.attr(node, "property") ??
-			dom.attr(node, "http-equiv");
+			dom.attr(node, "name") ?? dom.attr(node, "property") ?? dom.attr(node, "http-equiv");
 		const content = dom.attr(node, "content");
 		if (!key || !content) continue;
 		meta[key] = content;
@@ -44,11 +37,9 @@ export function extractMetadata(
 		if (key.startsWith("twitter:")) twitter[key.slice(8)] = content;
 	}
 	return {
-		title:
-			cleanDomText(dom.text(dom.first(dom.select("title")))) ||
-			meta.title ||
-			openGraph.title,
+		title: cleanDomText(dom.text(dom.first(dom.select("title")))) || meta.title || openGraph.title,
 		description:
+			// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 			meta.description ?? openGraph.description ?? twitter.description,
 		language: dom.attr(dom.first(dom.select("html")), "lang"),
 		canonicalUrl: absoluteUrl(

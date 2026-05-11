@@ -1,18 +1,18 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import * as cheerio from "cheerio";
-import * as cssSelect from "css-select";
+
+import { load as cheerioLoad } from "cheerio";
+import { selectAll } from "css-select";
 import renderDom from "dom-serializer";
-import * as domutils from "domutils";
+import { getAttributeValue, removeElement, textContent } from "domutils";
 import { parseDocument } from "htmlparser2";
 import { parseHTML } from "linkedom";
 
 export function createCheerioAdapter() {
 	return {
 		name: "cheerio",
-		load: (html) => cheerio.load(html),
-		select: ($, selector, root) =>
-			(root ? root.find(selector) : $(selector)).toArray(),
+		load: (html) => cheerioLoad(html),
+		select: ($, selector, root) => (root ? root.find(selector) : $(selector)).toArray(),
 		text: ($, nodes) => $(nodes).text(),
 		attr: ($, node, name) => $(node).attr(name),
 		html: ($, nodes) => nodes.map((node) => $.html(node) ?? "").join("\n"),
@@ -27,16 +27,14 @@ export function createLinkedomAdapter() {
 		load: (html) => parseHTML(html).document,
 		select: (document, selector, roots) => {
 			const base = roots?.length ? roots : [document];
-			return base.flatMap((node) =>
-				Array.from(node.querySelectorAll?.(selector) ?? []),
-			);
+			return base.flatMap((node) => Array.from(node.querySelectorAll?.(selector) ?? []));
 		},
-		text: (_document, nodes) =>
-			nodes.map((node) => node.textContent ?? "").join(""),
+		text: (_document, nodes) => nodes.map((node) => node.textContent ?? "").join(""),
 		attr: (_document, node, name) => node.getAttribute?.(name) ?? undefined,
-		html: (_document, nodes) =>
-			nodes.map((node) => node.outerHTML ?? "").join("\n"),
-		remove: (_document, nodes) => nodes.forEach((node) => node.remove?.()),
+		html: (_document, nodes) => nodes.map((node) => node.outerHTML ?? "").join("\n"),
+		remove: (_document, nodes) => {
+			for (const node of nodes) node.remove?.();
+		},
 		root: (document) => [document],
 	};
 }
@@ -50,12 +48,13 @@ export function createHtmlparser2Adapter() {
 				lowerCaseAttributeNames: true,
 			}),
 		select: (document, selector, roots) =>
-			cssSelect.selectAll(selector, roots?.length ? roots : document.children),
-		text: (_document, nodes) => domutils.textContent(nodes),
-		attr: (_document, node, name) => domutils.getAttributeValue(node, name),
+			selectAll(selector, roots?.length ? roots : document.children),
+		text: (_document, nodes) => textContent(nodes),
+		attr: (_document, node, name) => getAttributeValue(node, name),
 		html: (_document, nodes) => nodes.map((node) => renderDom(node)).join("\n"),
-		remove: (_document, nodes) =>
-			nodes.forEach((node) => domutils.removeElement(node)),
+		remove: (_document, nodes) => {
+			for (const node of nodes) removeElement(node);
+		},
 		root: (document) => document.children,
 	};
 }
@@ -81,7 +80,7 @@ export async function loadHtmlFixtures(dir, fixtureNames = []) {
 
 export function clean(value) {
 	return String(value ?? "")
-		.replace(/\s+/gu, " ")
+		.replaceAll(/\s+/gu, " ")
 		.trim();
 }
 

@@ -1,20 +1,14 @@
-/**
- * @fileoverview Selector extraction runner — domain logic without tool contract.
- */
+/** @file Selector extraction runner — domain logic without tool contract. */
 import { parseDocument } from "htmlparser2";
-import {
-	loadFingerprint,
-	saveFingerprint,
-} from "../../storage/fingerprints.ts";
+
 import {
 	runAdaptiveSelector,
 	type AdaptiveSelectorOptions,
 } from "../../parse/adaptive/selector.ts";
-import {
-	extractFromSelectorResult,
-	type SelectorExtractionResult,
-} from "../selector/css.ts";
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
+import { loadFingerprint, saveFingerprint } from "../../storage/fingerprints.ts";
+import type { ScrapeMode } from "../../types.ts";
+import { extractFromSelectorResult, type SelectorExtractionResult } from "../selector/css.ts";
 
 export interface SelectorRunParams {
 	selector: string;
@@ -54,12 +48,7 @@ export async function runSelectorExtraction(
 		html = params.content;
 		sourceUrl = "provided content";
 	} else if (params.url) {
-		const scrapeResult = await scrapeForSelector(
-			params.url,
-			params.mode,
-			scrapeDeps,
-			signal,
-		);
+		const scrapeResult = await scrapeForSelector(params.url, params.mode, scrapeDeps, signal);
 		if (!scrapeResult) {
 			throw new SelectorInputError(
 				"SELECTOR_FETCH_FAILED",
@@ -94,13 +83,13 @@ export async function runSelectorExtraction(
 		adaptiveOptions,
 		async (id) => {
 			const stored = await loadFingerprint(id, normalizeScope(sourceUrl));
-			if (!stored) return undefined;
+			if (!stored) return;
 			try {
 				return JSON.parse(
 					stored.fingerprintJson,
 				) as import("../../parse/adaptive/fingerprint.ts").ElementFingerprint;
 			} catch {
-				return undefined;
+				/* ignore */
 			}
 		},
 		async (id, fp) => {
@@ -130,11 +119,7 @@ export class SelectorInputError extends Error {
 	phase = "selector_extract";
 	retryable: boolean;
 	url?: string;
-	constructor(
-		code: string,
-		message: string,
-		options: { retryable: boolean; url?: string },
-	) {
+	constructor(code: string, message: string, options: { retryable: boolean; url?: string }) {
 		super(message);
 		this.code = code;
 		this.retryable = options.retryable;
@@ -153,40 +138,33 @@ async function scrapeForSelector(
 		const result = await scrapeUrl(
 			url,
 			{
-				mode: (mode as any) ?? "fast",
+				mode: (mode as ScrapeMode | undefined) ?? "fast",
 			},
 			scrapeDeps ?? {},
 			signal,
 		);
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 		return result.data?.html ?? result.data?.text ?? undefined;
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }
 
-function normalizeSelectorType(
-	value: string | undefined,
-): "css" | "xpath" | "text" {
+function normalizeSelectorType(value: string | undefined): "css" | "xpath" | "text" {
 	if (value === "xpath" || value === "text") return value;
 	return "css";
 }
 
 function normalizeThreshold(value: number | undefined): number {
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- runtime values may be undefined despite TS inference
 	if (value === undefined || value === null) return 0.35;
 	if (value < 0) return 0;
 	if (value > 1) return 1;
 	return value;
 }
 
-function normalizeFormat(
-	value: string | undefined,
-): "text" | "html" | "markdown" | "attribute" {
-	if (
-		value === "text" ||
-		value === "html" ||
-		value === "markdown" ||
-		value === "attribute"
-	) {
+function normalizeFormat(value: string | undefined): "text" | "html" | "markdown" | "attribute" {
+	if (value === "text" || value === "html" || value === "markdown" || value === "attribute") {
 		return value;
 	}
 	return "text";

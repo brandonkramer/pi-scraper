@@ -1,6 +1,4 @@
-/**
- * @fileoverview http politeness module.
- */
+/** @file Http politeness module. */
 import { DEFAULT_CONCURRENCY } from "../defaults.ts";
 import { compactQueue } from "../url/dedupe.ts";
 
@@ -26,9 +24,7 @@ export class Semaphore {
 
 	async acquire(signal?: AbortSignal): Promise<Release> {
 		if (signal?.aborted) {
-			throw (
-				signal.reason ?? new DOMException("Operation aborted", "AbortError")
-			);
+			throw signal.reason ?? new DOMException("Operation aborted", "AbortError");
 		}
 
 		if (this.active < this.limit) {
@@ -36,7 +32,7 @@ export class Semaphore {
 			return () => this.release();
 		}
 
-		return new Promise<Release>((resolve, reject) => {
+		return await new Promise<Release>((resolve, reject) => {
 			const run = () => {
 				cleanup();
 				resolve(() => this.release());
@@ -47,9 +43,7 @@ export class Semaphore {
 				if (index >= this.queueHead) {
 					this.queue.splice(index, 1);
 				}
-				reject(
-					signal?.reason ?? new DOMException("Operation aborted", "AbortError"),
-				);
+				reject(signal?.reason ?? new DOMException("Operation aborted", "AbortError"));
 			};
 			const cleanup = () => signal?.removeEventListener("abort", onAbort);
 
@@ -66,6 +60,7 @@ export class Semaphore {
 	private drain(): void {
 		while (this.active < this.limit) {
 			const next = this.queue[this.queueHead];
+			// oxlint-disable-next-line typescript/no-unnecessary-condition -- defensive guard; runtime conditions can diverge from inferred type
 			if (!next) return;
 			this.active += 1;
 			this.queueHead += 1;
@@ -107,9 +102,7 @@ export class PolitenessController {
 	private readonly hostAvailableAt = new Map<string, number>();
 
 	constructor(private readonly options: PolitenessOptions = {}) {
-		this.globalSemaphore = new Semaphore(
-			options.globalConcurrency ?? DEFAULT_CONCURRENCY.global,
-		);
+		this.globalSemaphore = new Semaphore(options.globalConcurrency ?? DEFAULT_CONCURRENCY.global);
 	}
 
 	async run<T>(
@@ -134,10 +127,7 @@ export class PolitenessController {
 		if (status === 429) {
 			state.last429 = Date.now();
 			if (retryAfterMs !== undefined) {
-				state.retryAfterUntil = Math.max(
-					state.retryAfterUntil ?? 0,
-					Date.now() + retryAfterMs,
-				);
+				state.retryAfterUntil = Math.max(state.retryAfterUntil ?? 0, Date.now() + retryAfterMs);
 			}
 			state.limit = Math.max(1, Math.floor(state.limit / 2));
 			state.semaphore.setLimit(state.limit);
@@ -156,8 +146,7 @@ export class PolitenessController {
 	private hostState(host: string): HostState {
 		const existing = this.hostStates.get(host);
 		if (existing) return existing;
-		const baseLimit =
-			this.options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost;
+		const baseLimit = this.options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost;
 		const created: HostState = {
 			baseLimit,
 			limit: baseLimit,
@@ -167,11 +156,7 @@ export class PolitenessController {
 		return created;
 	}
 
-	private async waitTurn(
-		host: string,
-		crawlDelayMs?: number,
-		signal?: AbortSignal,
-	): Promise<void> {
+	private async waitTurn(host: string, crawlDelayMs?: number, signal?: AbortSignal): Promise<void> {
 		const delayMs = Math.max(this.options.minDelayMs ?? 0, crawlDelayMs ?? 0);
 		const now = Date.now();
 		const availableAt = Math.max(
@@ -188,17 +173,12 @@ export class PolitenessController {
 	}
 }
 
-export function abortableSleep(
-	ms: number,
-	signal?: AbortSignal,
-): Promise<void> {
+export function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
 	if (ms <= 0) {
 		return Promise.resolve();
 	}
 	if (signal?.aborted) {
-		return Promise.reject(
-			signal.reason ?? new DOMException("Operation aborted", "AbortError"),
-		);
+		return Promise.reject(signal.reason ?? new DOMException("Operation aborted", "AbortError"));
 	}
 
 	return new Promise((resolve, reject) => {
@@ -209,9 +189,7 @@ export function abortableSleep(
 		const onAbort = () => {
 			clearTimeout(timer);
 			cleanup();
-			reject(
-				signal?.reason ?? new DOMException("Operation aborted", "AbortError"),
-			);
+			reject(signal?.reason ?? new DOMException("Operation aborted", "AbortError"));
 		};
 		const cleanup = () => signal?.removeEventListener("abort", onAbort);
 		signal?.addEventListener("abort", onAbort, { once: true });

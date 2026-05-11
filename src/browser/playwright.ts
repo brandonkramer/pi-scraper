@@ -1,12 +1,3 @@
-/**
- * @fileoverview browser playwright module.
- */
-import { applyStealthPatches } from "./stealth.ts";
-import {
-	acquireBrowserSession,
-	destroyBrowserSession,
-	releaseBrowserSession,
-} from "./session-pool.ts";
 import { createAbortError } from "../http/abort.ts";
 import {
 	assertSafeFetchUrl,
@@ -15,6 +6,13 @@ import {
 	UrlSafetyError,
 } from "../http/url-safety.ts";
 import type { StructuredError } from "../types.ts";
+import {
+	acquireBrowserSession,
+	destroyBrowserSession,
+	releaseBrowserSession,
+} from "./session-pool.ts";
+/** @file Browser playwright module. */
+import { applyStealthPatches } from "./stealth.ts";
 
 export interface BrowserRenderOptions {
 	timeoutSeconds?: number;
@@ -88,7 +86,7 @@ export async function fetchRendered(
 	options: BrowserRenderOptions = {},
 	signal?: AbortSignal,
 ): Promise<BrowserRenderResult> {
-	return renderWithLoader(input, options, signal, defaultPlaywrightLoader);
+	return await renderWithLoader(input, options, signal, defaultPlaywrightLoader);
 }
 
 async function renderWithLoader(
@@ -102,44 +100,42 @@ async function renderWithLoader(
 		check: safetyCheck,
 		checkedHosts: new Map(),
 	};
-	const safe = await assertSafeBrowserUrl(
-		input,
-		input.toString(),
-		undefined,
-		browserSafety,
-	);
+	const safe = await assertSafeBrowserUrl(input, input.toString(), undefined, browserSafety);
 	const url = safe.normalizedUrl;
 	if (signal?.aborted) throw abortError(url);
 
 	const playwright = await loadPlaywright(url, loader);
-	let browser: any;
+	let browser: Browser | undefined;
 	let abortListener: (() => void) | undefined;
-	let page: any;
+	let page: Page | undefined;
 	let session: { id: string } | undefined;
 
 	try {
 		// 1) Acquire page: pooled session or fresh browser
 		if (options.sessionId) {
+			const launchBrowser: Parameters<typeof acquireBrowserSession>[1]["launchBrowser"] = () =>
+				playwright.chromium
+					.launch({
+						headless: true,
+						proxy: options.proxy ? { server: options.proxy } : undefined,
+					})
+					.then((b: unknown) => b) as ReturnType<
+					Parameters<typeof acquireBrowserSession>[1]["launchBrowser"]
+				>;
 			const s = await acquireBrowserSession(options.sessionId, {
-				launchBrowser: () =>
-					playwright.chromium
-						.launch({
-							headless: true,
-							proxy: options.proxy ? { server: options.proxy } : undefined,
-						})
-						.then((b) => b as any),
+				launchBrowser,
 				profile: options.browserProfile,
 				proxy: options.proxy,
 				headers: options.headers,
 			});
-			page = s.page;
-			browser = s.session.browser;
+			page = s.page as unknown as Page;
+			browser = s.session.browser as unknown as Browser;
 			session = s.session;
 		} else {
-			browser = await playwright.chromium.launch({
+			browser = (await playwright.chromium.launch({
 				headless: true,
 				proxy: options.proxy ? { server: options.proxy } : undefined,
-			});
+			})) as unknown as Browser;
 			const context = await browser.newContext({
 				extraHTTPHeaders: options.headers,
 				serviceWorkers: "block",
@@ -159,7 +155,7 @@ async function renderWithLoader(
 
 		// 2) Apply stealth patches before navigation
 		if (options.stealth) {
-			await applyStealthPatches(page, {
+			await applyStealthPatches(page as unknown as Parameters<typeof applyStealthPatches>[0], {
 				webdriver: true,
 				canvasNoise: options.hideCanvas ?? false,
 				blockWebRTC: options.blockWebRTC ?? false,
@@ -171,7 +167,7 @@ async function renderWithLoader(
 		// 3) Route for blocking + safety checks
 		let blockedRequest: BrowserRenderError | undefined;
 		if (!options.sessionId) {
-			await page.context().route("**/*", async (route: any) => {
+			await page.context().route("**/*", async (route: Route) => {
 				const requestUrl = route.request().url();
 				const routePolicy = browserRoutePolicy(requestUrl);
 				if (routePolicy.action === "allow") {
@@ -179,25 +175,20 @@ async function renderWithLoader(
 					return;
 				}
 				if (routePolicy.action === "block") {
-					blockedRequest ??= blockedRequestError(
-						routePolicy.cause,
-						url,
-						requestUrl,
-					);
-					await route.abort("blockedbyclient").catch(() => undefined);
+					blockedRequest ??= blockedRequestError(routePolicy.cause, url, requestUrl);
+					await route.abort("blockedbyclient").catch(() => {
+						/* no-op */
+					});
 					return;
 				}
 				try {
-					await assertSafeBrowserUrl(
-						requestUrl,
-						url,
-						requestUrl,
-						browserSafety,
-					);
+					await assertSafeBrowserUrl(requestUrl, url, requestUrl, browserSafety);
 				} catch (error) {
 					if (error instanceof BrowserRenderError) {
 						blockedRequest ??= error;
-						await route.abort("blockedbyclient").catch(() => undefined);
+						await route.abort("blockedbyclient").catch(() => {
+							/* no-op */
+						});
 						return;
 					}
 					await route.continue();
@@ -207,7 +198,10 @@ async function renderWithLoader(
 			});
 		}
 
-		const closeOnAbort = () => void page.close().catch(() => undefined);
+		const closeOnAbort = () =>
+			void page?.close().catch(() => {
+				/* no-op */
+			});
 		abortListener = closeOnAbort;
 		signal?.addEventListener("abort", closeOnAbort, { once: true });
 
@@ -244,7 +238,9 @@ async function renderWithLoader(
 				await destroyBrowserSession(session.id);
 			}
 		} else if (browser) {
-			await browser.close().catch(() => undefined);
+			await browser.close().catch(() => {
+				/* no-op */
+			});
 		}
 	}
 }
@@ -302,10 +298,7 @@ async function assertSafeBrowserUrl(
 
 function browserRoutePolicy(
 	rawUrl: string,
-):
-	| { action: "validate" }
-	| { action: "allow" }
-	| { action: "block"; cause: unknown } {
+): { action: "validate" } | { action: "allow" } | { action: "block"; cause: unknown } {
 	let parsed: URL;
 	try {
 		parsed = new URL(rawUrl);
@@ -313,8 +306,7 @@ function browserRoutePolicy(
 		return { action: "block", cause };
 	}
 	const protocol = parsed.protocol.toLowerCase();
-	if (protocol === "http:" || protocol === "https:")
-		return { action: "validate" };
+	if (protocol === "http:" || protocol === "https:") return { action: "validate" };
 	if (protocol === "file:") {
 		return {
 			action: "block",
@@ -346,13 +338,8 @@ function isBenignBrowserScheme(protocol: string): boolean {
 	);
 }
 
-function blockedRequestError(
-	cause: unknown,
-	url: string,
-	finalUrl: string,
-): BrowserRenderError {
-	const causeMessage =
-		cause instanceof Error ? cause.message : "URL failed safety checks";
+function blockedRequestError(cause: unknown, url: string, finalUrl: string): BrowserRenderError {
+	const causeMessage = cause instanceof Error ? cause.message : "URL failed safety checks";
 	return new BrowserRenderError({
 		code: "BROWSER_BLOCKED_PRIVATE_URL",
 		phase: "browser",
@@ -381,11 +368,7 @@ async function autoWaitForChallenge(
 	url: string,
 	timeoutSeconds: number,
 ): Promise<void> {
-	const challengeMarkers = [
-		"Just a moment...",
-		"Checking your browser...",
-		"Please wait...",
-	];
+	const challengeMarkers = ["Just a moment...", "Checking your browser...", "Please wait..."];
 	const maxWaitMs = timeoutSeconds * 1_000;
 	const pollInterval = 1_000;
 	const start = Date.now();
@@ -393,9 +376,7 @@ async function autoWaitForChallenge(
 	while (Date.now() - start < maxWaitMs) {
 		const title = await page.title().catch(() => "");
 		const body = await page.content().catch(() => "");
-		const isChallenge = challengeMarkers.some(
-			(m) => title.includes(m) || body.includes(m),
-		);
+		const isChallenge = challengeMarkers.some((m) => title.includes(m) || body.includes(m));
 		if (!isChallenge) return;
 		await new Promise((resolve) => setTimeout(resolve, pollInterval));
 	}
@@ -444,10 +425,7 @@ interface Request {
 }
 
 interface Page {
-	goto(
-		url: string,
-		options: Record<string, unknown>,
-	): Promise<{ status(): number } | null>;
+	goto(url: string, options: Record<string, unknown>): Promise<{ status(): number } | null>;
 	content(): Promise<string>;
 	title(): Promise<string>;
 	url(): string;

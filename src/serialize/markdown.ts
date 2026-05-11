@@ -1,8 +1,7 @@
-/**
- * @fileoverview serialize markdown module.
- */
+/** @file Serialize markdown module. */
 import TurndownService from "turndown";
-import turndownPluginGfm from "turndown-plugin-gfm";
+import { gfm } from "turndown-plugin-gfm";
+
 import { normalizeWhitespace } from "./text.ts";
 
 export interface MarkdownOptions {
@@ -13,22 +12,20 @@ export interface MarkdownOptions {
  * Converts cleaned HTML to stable Markdown for model-facing output.
  *
  * @remarks
- * Turndown service construction registers rule objects and plugins. Keeping one
- * configured service per image policy avoids repeated setup in hot scrape paths
- * while preserving deterministic output rules.
+ *   Turndown service construction registers rule objects and plugins. Keeping one configured
+ *   service per image policy avoids repeated setup in hot scrape paths while preserving
+ *   deterministic output rules.
  */
-export function htmlToMarkdown(
-	html: string,
-	options: MarkdownOptions = {},
-): string {
-	const service =
-		options.removeImages === false ? keepImagesService : removeImagesService;
+export function htmlToMarkdown(html: string, options: MarkdownOptions = {}): string {
+	const service = options.removeImages === false ? keepImagesService : removeImagesService;
 	return normalizeWhitespace(service.turndown(stripLargeElements(html)));
 }
 
-/** Strip large tables and very long lists before Turndown to avoid expensive conversion
- *  on element-heavy pages where the output is likely to be truncated anyway.
- *  Only applies when HTML exceeds 40 KB. Tables: > 20 rows. Lists: > 100 items. */
+/**
+ * Strip large tables and very long lists before Turndown to avoid expensive conversion on
+ * element-heavy pages where the output is likely to be truncated anyway. Only applies when HTML
+ * exceeds 40 KB. Tables: > 20 rows. Lists: > 100 items.
+ */
 function stripLargeElements(html: string): string {
 	if (html.length < 40_000) return html;
 	// Quick check: does HTML contain tables or lists at all?
@@ -50,13 +47,10 @@ function stripLargeElements(html: string): string {
 	// Strip tables and/or lists if thresholds exceeded
 	let result = html;
 	if (trCount >= 20) {
-		result = result.replace(/<table[\s\S]*?<\/table>/gi, "\n\n");
+		result = result.replaceAll(/<table[\s\S]*?<\/table>/gi, "\n\n");
 	}
 	if (liCount >= 100) {
-		result = result.replace(
-			/<(ul|ol)[\s\S]*?<\/(ul|ol)>/gi,
-			"\n\n[Long list]\n\n",
-		);
+		result = result.replaceAll(/<(ul|ol)[\s\S]*?<\/(ul|ol)>/gi, "\n\n[Long list]\n\n");
 	}
 	return result;
 }
@@ -69,7 +63,7 @@ function createMarkdownService(removeImages: boolean): TurndownService {
 		emDelimiter: "_",
 		strongDelimiter: "**",
 	});
-	turndown.use(turndownPluginGfm.gfm);
+	turndown.use(gfm);
 	turndown.remove(["script", "style", "noscript", "template"]);
 	if (removeImages) {
 		turndown.addRule("removeImages", { filter: "img", replacement: () => "" });
@@ -77,11 +71,11 @@ function createMarkdownService(removeImages: boolean): TurndownService {
 	turndown.addRule("stableLinks", {
 		filter: "a",
 		replacement: (content, node) => {
-			const href = (node as HTMLElement).getAttribute("href");
+			const href = node.getAttribute("href");
 			// Fast path: no href, return content as-is
 			if (!href) return content;
 			// Simple trim instead of full normalizeWhitespace for link labels
-			const label = content.trim().replace(/\s+/gu, " ");
+			const label = content.trim().replaceAll(/\s+/gu, " ");
 			return label ? `[${label}](${href})` : href;
 		},
 	});

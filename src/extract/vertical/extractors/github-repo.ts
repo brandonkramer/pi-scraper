@@ -1,6 +1,4 @@
-/**
- * @fileoverview extract verticals github-repo module.
- */
+/** @file Extract verticals github-repo module. */
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 interface GitHubRepoApi {
@@ -26,11 +24,9 @@ export const githubRepoExtractor: VerticalExtractor = {
 		},
 	}),
 	match: (url) => {
-		if (url.hostname !== "github.com") return undefined;
+		if (url.hostname !== "github.com") return;
 		const [owner, repo, ...rest] = url.pathname.split("/").filter(Boolean);
-		return owner && repo && rest.length === 0 && !repo.includes(".")
-			? { owner, repo }
-			: undefined;
+		return owner && repo && rest.length === 0 && !repo.includes(".") ? { owner, repo } : undefined;
 	},
 	extract: async (_url, match, context, signal) => {
 		const repo = await context.fetchJson<GitHubRepoApi>(

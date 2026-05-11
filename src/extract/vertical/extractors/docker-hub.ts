@@ -1,6 +1,4 @@
-/**
- * @fileoverview extract verticals docker-hub module.
- */
+/** @file Extract verticals docker-hub module. */
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 interface DockerHubRepository {
@@ -19,10 +17,7 @@ interface DockerHubRepository {
 export const dockerHubExtractor: VerticalExtractor = {
 	capability: capability(
 		"docker_hub",
-		[
-			"https://hub.docker.com/r/:namespace/:repo",
-			"https://hub.docker.com/_/:repo",
-		],
+		["https://hub.docker.com/r/:namespace/:repo", "https://hub.docker.com/_/:repo"],
 		{
 			type: "object",
 			required: ["namespace", "name"],
@@ -35,15 +30,12 @@ export const dockerHubExtractor: VerticalExtractor = {
 		},
 	),
 	match: (url) => {
-		if (url.hostname !== "hub.docker.com") return undefined;
-		const [scope, first, second, ...rest] = url.pathname
-			.split("/")
-			.filter(Boolean);
+		if (url.hostname !== "hub.docker.com") return;
+		const [scope, first, second, ...rest] = url.pathname.split("/").filter(Boolean);
 		if (scope === "_" && first && !second && rest.length === 0)
 			return { namespace: "library", repo: first };
 		if (scope === "r" && first && second && rest.length === 0)
 			return { namespace: first, repo: second };
-		return undefined;
 	},
 	extract: async (_url, match, context, signal) => {
 		const repo = await context.fetchJson<DockerHubRepository>(

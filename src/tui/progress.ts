@@ -1,17 +1,11 @@
-/**
- * @fileoverview Pi terminal UI progress primitives — bar, status bridge, and fallback card.
- */
+/** @file Pi terminal UI progress primitives — bar, status bridge, and fallback card. */
 import type { ProgressDetails } from "../types.ts";
-import type { RenderComponent, RenderTheme } from "./types.ts";
-import { renderText } from "./text.ts";
-import { renderStatusGlyph, renderStatusPill } from "./pill.ts";
-import {
-	activityCountSegment,
-	failureCountSegment,
-	successCountSegment,
-} from "./counts.ts";
 import { formatChecklistItem, formatChecklistText } from "./checklist.ts";
+import { activityCountSegment, failureCountSegment, successCountSegment } from "./counts.ts";
+import { renderStatusGlyph, renderStatusPill } from "./pill.ts";
 import type { StatusPillState } from "./pill.ts";
+import { renderText } from "./text.ts";
+import type { RenderComponent, RenderTheme } from "./types.ts";
 
 export function renderProgressBar(progress: number, width = 12): string {
 	const clamped = Math.max(0, Math.min(1, progress));
@@ -20,9 +14,7 @@ export function renderProgressBar(progress: number, width = 12): string {
 	return `[${"=".repeat(Math.max(0, filled - 1))}${filled > 0 ? ">" : ""}${" ".repeat(Math.max(0, empty))}]`;
 }
 
-export function progressStartedAtMs(
-	details: ProgressDetails,
-): number | undefined {
+export function progressStartedAtMs(details: ProgressDetails): number | undefined {
 	const ms = Date.parse(details.timing?.startedAt ?? "");
 	return Number.isFinite(ms) ? ms : undefined;
 }
@@ -49,9 +41,7 @@ export function renderProgressCard(
 		render(width: number) {
 			const statusWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
 			const state = progressPillState(details.state);
-			const count = details.total
-				? ` ${details.current ?? 0}/${details.total}`
-				: "";
+			const count = details.total ? ` ${details.current ?? 0}/${details.total}` : "";
 			const message = details.message ? ` · ${details.message}` : "";
 			const url = details.url ? ` · ${details.url}` : "";
 			const glyph = renderStatusGlyph(state, theme);
@@ -62,9 +52,7 @@ export function renderProgressCard(
 				theme,
 				startedAtMs,
 			});
-			const lines = [
-				`${glyph} ${toolName} ${details.state}${count}${url}${message} ${pill}`,
-			];
+			const lines = [`${glyph} ${toolName} ${details.state}${count}${url}${message} ${pill}`];
 			if (details.checklist?.length) {
 				const formatter = icons ? formatChecklistItem : formatChecklistText;
 				lines.push(...details.checklist.map(formatter));
@@ -86,12 +74,7 @@ export function renderProgressCard(
 						counts.cacheHits === undefined
 							? undefined
 							: icons
-								? activityCountSegment(
-										counts.cacheHits,
-										"cache hits",
-										"ⓞ",
-										theme,
-									)
+								? activityCountSegment(counts.cacheHits, "cache hits", "ⓞ", theme)
 								: `${counts.cacheHits} cache hits`,
 					]
 						.filter(Boolean)
@@ -102,6 +85,8 @@ export function renderProgressCard(
 				padToWidth: true,
 			}).render(width);
 		},
-		invalidate() {},
+		invalidate() {
+			/* no-op */
+		},
 	};
 }

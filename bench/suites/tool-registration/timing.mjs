@@ -4,14 +4,12 @@ import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { intFlag } from "../../lib/cli-args.mjs";
-import { timedRepeats } from "../../lib/stats.mjs";
-import { writeBenchmarkReport } from "../../lib/report.mjs";
 
-const rootDir = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	"../../..",
-);
+import { intFlag } from "../../lib/cli-args.mjs";
+import { writeBenchmarkReport } from "../../lib/report.mjs";
+import { timedRepeats } from "../../lib/stats.mjs";
+
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const args = process.argv.slice(2);
 const warmup = intFlag(args, "warmup", 3);
 const repeats = intFlag(args, "repeats", 20);
@@ -135,6 +133,6 @@ async function mtimeMs(file) {
 	try {
 		return (await stat(file)).mtimeMs;
 	} catch {
-		return undefined;
+		return;
 	}
 }

@@ -1,12 +1,8 @@
-/**
- * @fileoverview browser __tests__ playwright.test module.
- */
+/** @file Browser **tests** playwright.test module. */
 import { describe, expect, it } from "vitest";
+
 import type { SafeUrlResult } from "../../http/url-safety.ts";
-import {
-	createPlaywrightRenderer,
-	type PlaywrightModule,
-} from "../playwright.ts";
+import { createPlaywrightRenderer, type PlaywrightModule } from "../playwright.ts";
 
 const URL = "http://93.184.216.34/page";
 
@@ -95,8 +91,7 @@ describe("createPlaywrightRenderer", () => {
 		const seen: Record<string, unknown> = {};
 		const privateUrl = "http://127.0.0.1/admin";
 		const renderer = createPlaywrightRenderer({
-			loader: async () =>
-				fakePlaywright(seen, { requestUrls: [URL, privateUrl] }),
+			loader: async () => fakePlaywright(seen, { requestUrls: [URL, privateUrl] }),
 		});
 
 		await expect(renderer.fetchRendered(URL)).rejects.toMatchObject({
@@ -109,9 +104,7 @@ describe("createPlaywrightRenderer", () => {
 				finalUrl: privateUrl,
 			},
 		});
-		expect(seen.aborted).toEqual([
-			{ url: privateUrl, errorCode: "blockedbyclient" },
-		]);
+		expect(seen.aborted).toEqual([{ url: privateUrl, errorCode: "blockedbyclient" }]);
 		expect(seen.closed).toBe(true);
 	});
 
@@ -139,8 +132,7 @@ describe("createPlaywrightRenderer", () => {
 		const seen: Record<string, unknown> = {};
 		const flakyUrl = "https://flaky-subresource.invalid/script.js";
 		const renderer = createPlaywrightRenderer({
-			loader: async () =>
-				fakePlaywright(seen, { requestUrls: [URL, flakyUrl] }),
+			loader: async () => fakePlaywright(seen, { requestUrls: [URL, flakyUrl] }),
 			safetyCheck: async (input) => {
 				const value = input.toString();
 				if (value.includes("flaky-subresource.invalid")) {
@@ -198,9 +190,7 @@ describe("createPlaywrightRenderer", () => {
 				finalUrl: fileUrl,
 			},
 		});
-		expect(seen.aborted).toEqual([
-			{ url: fileUrl, errorCode: "blockedbyclient" },
-		]);
+		expect(seen.aborted).toEqual([{ url: fileUrl, errorCode: "blockedbyclient" }]);
 	});
 
 	it("dedupes hostname safety checks within a render", async () => {
@@ -265,20 +255,14 @@ function fakePlaywright(
 							addCookies: async (cookies: Record<string, string>[]) => {
 								seen.cookies = cookies;
 							},
-							route: async (
-								glob: string,
-								handler: (route: FakeRoute) => Promise<void>,
-							) => {
+							route: async (glob: string, handler: (route: FakeRoute) => Promise<void>) => {
 								seen.routeGlob = glob;
 								routeHandler = handler;
 							},
 						};
 						browserContext.newPage = async () => {
 							const page: any = {
-								goto: async (
-									requestUrl: string,
-									gotoOptions: Record<string, unknown>,
-								) => {
+								goto: async (requestUrl: string, gotoOptions: Record<string, unknown>) => {
 									seen.goto = gotoOptions;
 									for (const url of options.requestUrls ?? [requestUrl]) {
 										await routeHandler?.(fakeRoute(seen, url));
@@ -289,7 +273,9 @@ function fakePlaywright(
 								title: async () => "",
 								context: () => browserContext,
 								url: () => options.finalUrl ?? `${URL}#rendered`,
-								close: async () => undefined,
+								close: async () => {
+									/* no-op */
+								},
 							};
 							return page;
 						};
@@ -307,10 +293,7 @@ function fakePlaywright(
 function fakeRoute(seen: Record<string, unknown>, url: string): FakeRoute {
 	return {
 		abort: async (errorCode) => {
-			const aborted =
-				(seen.aborted as
-					| Array<Record<string, string | undefined>>
-					| undefined) ?? [];
+			const aborted = (seen.aborted as Array<Record<string, string | undefined>> | undefined) ?? [];
 			aborted.push({ url, errorCode });
 			seen.aborted = aborted;
 		},

@@ -1,7 +1,6 @@
-/**
- * @fileoverview http robots module.
- */
+/** @file Http robots module. */
 import { createRequire } from "node:module";
+
 import { DEFAULT_USER_AGENT } from "../defaults.ts";
 
 interface RobotsTextFetchResult {
@@ -31,10 +30,7 @@ interface RobotsParserResult {
 }
 
 const require = createRequire(import.meta.url);
-const robotsParser = require("robots-parser") as (
-	url: string,
-	body: string,
-) => RobotsParserResult;
+const robotsParser = require("robots-parser") as (url: string, body: string) => RobotsParserResult;
 
 export interface RobotsRules {
 	isAllowed(url: string, userAgent?: string): boolean;
@@ -44,10 +40,7 @@ export interface RobotsRules {
 
 export interface RobotsCacheOptions {
 	userAgent?: string;
-	fetchText: (
-		url: string,
-		signal?: AbortSignal,
-	) => Promise<{ status: number; text: string }>;
+	fetchText: (url: string, signal?: AbortSignal) => Promise<{ status: number; text: string }>;
 }
 
 export async function loadRobotsText(
@@ -111,10 +104,7 @@ export class RobotsCache {
 		return rules;
 	}
 
-	private cachedLoadRules(
-		robotsUrl: string,
-		signal?: AbortSignal,
-	): Promise<CacheEntry> {
+	private cachedLoadRules(robotsUrl: string, signal?: AbortSignal): Promise<CacheEntry> {
 		const promise = this.loadRules(robotsUrl, signal).then(
 			(entry) => {
 				if (!entry.cacheable && this.cache.get(robotsUrl) === promise) {
@@ -132,10 +122,7 @@ export class RobotsCache {
 		return promise;
 	}
 
-	private async loadRules(
-		robotsUrl: string,
-		signal?: AbortSignal,
-	): Promise<CacheEntry> {
+	private async loadRules(robotsUrl: string, signal?: AbortSignal): Promise<CacheEntry> {
 		try {
 			const response = await this.options.fetchText(robotsUrl, signal);
 			if (response.status >= 500) {
@@ -186,13 +173,10 @@ export function robotsUrlFor(url: string): string {
 export function parseRobots(robotsUrl: string, body: string): RobotsRules {
 	const parser = robotsParser(robotsUrl, body);
 	return {
-		isAllowed: (url, userAgent = DEFAULT_USER_AGENT) =>
-			parser.isAllowed(url, userAgent) !== false,
+		isAllowed: (url, userAgent = DEFAULT_USER_AGENT) => parser.isAllowed(url, userAgent) !== false,
 		crawlDelay: (userAgent = DEFAULT_USER_AGENT) => {
 			const seconds = parser.getCrawlDelay(userAgent);
-			return typeof seconds === "number" && Number.isFinite(seconds)
-				? seconds * 1_000
-				: undefined;
+			return typeof seconds === "number" && Number.isFinite(seconds) ? seconds * 1_000 : undefined;
 		},
 		sitemaps: () => parser.getSitemaps(),
 	};
@@ -204,15 +188,16 @@ function isAbortLike(error: unknown): boolean {
 		(typeof error === "object" &&
 			error !== null &&
 			"structured" in error &&
-			(error as { structured?: { code?: string } }).structured?.code ===
-				"ABORTED")
+			(error as { structured?: { code?: string } }).structured?.code === "ABORTED")
 	);
 }
 
 function allowAllRules(): RobotsRules {
 	return {
 		isAllowed: () => true,
-		crawlDelay: () => undefined,
+		crawlDelay: () => {
+			/* no-op */
+		},
 		sitemaps: () => [],
 	};
 }
@@ -220,7 +205,9 @@ function allowAllRules(): RobotsRules {
 function disallowAllRules(): RobotsRules {
 	return {
 		isAllowed: () => false,
-		crawlDelay: () => undefined,
+		crawlDelay: () => {
+			/* no-op */
+		},
 		sitemaps: () => [],
 	};
 }

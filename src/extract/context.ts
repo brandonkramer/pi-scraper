@@ -1,10 +1,8 @@
 /**
- * @fileoverview Compile completed scrape outputs into bounded context.
- *
- * Context files are local, deterministic summaries of already-fetched pages.
- * They never fetch or infer beyond the scrape payload; each entry keeps enough
- * path/title/excerpt structure for downstream LLM context without replacing the
- * raw stored crawl or batch result.
+ * @file Compile completed scrape outputs into bounded context. Context files are local,
+ *   deterministic summaries of already-fetched pages. They never fetch or infer beyond the scrape
+ *   payload; each entry keeps enough path/title/excerpt structure for downstream LLM context
+ *   without replacing the raw stored crawl or batch result.
  */
 import { PI_TRUNCATION_LIMITS } from "../defaults.ts";
 import type { ScrapeResult } from "../scrape/pipeline.ts";
@@ -55,18 +53,11 @@ const DEFAULT_EXCERPT_CHARS = 800;
 const MIN_EXCERPT_CHARS = 120;
 const SUMMARY_CHARS = 220;
 
-export function compileContext(
-	input: CompileContextInput,
-): CompiledContext {
+export function compileContext(input: CompileContextInput): CompiledContext {
 	const maxBytes = input.maxBytes ?? PI_TRUNCATION_LIMITS.maxBytes;
 	const pages = input.pages.filter((page) => !page.result.error);
-	const totalChars = pages.reduce(
-		(total, page) => total + contentText(page.result).length,
-		0,
-	);
-	const tree = attachChildren(
-		pages.map((page) => entryForPage(page, DEFAULT_EXCERPT_CHARS)),
-	);
+	const totalChars = pages.reduce((total, page) => total + contentText(page.result).length, 0);
+	const tree = attachChildren(pages.map((page) => entryForPage(page, DEFAULT_EXCERPT_CHARS)));
 	const base = {
 		package: {
 			source: input.source,
@@ -104,10 +95,7 @@ function boundPackage(
 	return truncateEntries(base, maxBytes);
 }
 
-function truncateEntries(
-	base: CompiledContext,
-	maxBytes: number,
-): CompiledContext {
+function truncateEntries(base: CompiledContext, maxBytes: number): CompiledContext {
 	const tree: ContextNode[] = [];
 	const packageMeta = { ...base.package, truncated: true };
 	for (const entry of base.tree) {
@@ -124,10 +112,7 @@ function truncateEntries(
 	return { package: packageMeta, tree };
 }
 
-function entryForPage(
-	page: ContextPage,
-	excerptChars: number,
-): ContextNode {
+function entryForPage(page: ContextPage, excerptChars: number): ContextNode {
 	const result = page.result;
 	const url = result.finalUrl ?? result.url ?? page.url;
 	const text = contentText(result);
@@ -153,10 +138,7 @@ function attachChildren(entries: ContextNode[]): ContextNode[] {
 	return entries;
 }
 
-function parentUrl(
-	url: string,
-	entries: Map<string, ContextNode>,
-): ContextNode | undefined {
+function parentUrl(url: string, entries: Map<string, ContextNode>): ContextNode | undefined {
 	try {
 		const current = new URL(url);
 		const parts = current.pathname.split("/").filter(Boolean);
@@ -170,9 +152,8 @@ function parentUrl(
 			if (match && match.url !== url) return match;
 		}
 	} catch {
-		return undefined;
+		/* ignore */
 	}
-	return undefined;
 }
 
 function breadcrumbs(url: string, title?: string): string[] | undefined {
@@ -181,7 +162,7 @@ function breadcrumbs(url: string, title?: string): string[] | undefined {
 		const parts = parsed.pathname
 			.split("/")
 			.filter(Boolean)
-			.map((part) => decodeURIComponent(part).replace(/[-_]+/gu, " "));
+			.map((part) => decodeURIComponent(part).replaceAll(/[-_]+/gu, " "));
 		const crumbs = [parsed.hostname, ...parts];
 		if (title && crumbs.at(-1) !== title) crumbs.push(title);
 		return crumbs;
@@ -195,6 +176,7 @@ function contentText(result: ScrapeResult): string {
 	if (typeof data.markdown === "string") return data.markdown;
 	if (typeof data.text === "string") return data.text;
 	if (typeof data.html === "string") return data.html;
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 	if (data.json !== undefined) return JSON.stringify(data.json) ?? "";
 	return "";
 }
@@ -211,7 +193,7 @@ function clip(text: string, maxChars: number): string {
 }
 
 function normalizeText(text: string): string {
-	return text.replace(/\s+/gu, " ").trim();
+	return text.replaceAll(/\s+/gu, " ").trim();
 }
 
 function responseIdFromResult(result: ScrapeResult): string | undefined {
@@ -223,7 +205,5 @@ function byteLength(value: unknown): number {
 }
 
 function withoutUndefined<T extends Record<string, unknown>>(value: T): T {
-	return Object.fromEntries(
-		Object.entries(value).filter(([, entry]) => entry !== undefined),
-	) as T;
+	return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T;
 }

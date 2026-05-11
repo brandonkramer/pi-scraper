@@ -1,33 +1,25 @@
-/**
- * @fileoverview Pi tool adapter for single-URL scraping and page summaries.
- */
+/** @file Pi tool adapter for single-URL scraping and page summaries. */
 import { Type, type Static } from "@earendil-works/pi-ai";
+
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
-import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.ts";
-import {
-	qualityFromCache,
-	refreshUrlAction,
-	storedTraceContext,
-} from "./infra/agentic-context.ts";
-import { resolveScrapeOptions } from "../scrape/options.ts";
+import { getOrCreateSession } from "../http/session.ts";
 import { describeScrapeResult, formatAge } from "../scrape/describe.ts";
+import { resolveScrapeOptions } from "../scrape/options.ts";
+import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.ts";
+import { renderSimpleCall } from "../tui/call.ts";
+import { qualityFromCache, refreshUrlAction, storedTraceContext } from "./infra/agentic-context.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
 import {
-	errorResult,
 	inputErrorResult,
 	missingModelResult,
-	missingModelError,
-	structuredToolError,
 	toolErrorResult,
 	toolResult,
 } from "./infra/result.ts";
-import { getOrCreateSession } from "../http/session.ts";
-import { sessionLifecycle } from "./infra/session-lifecycle.ts";
 import { sessionOptionSchema, urlProperty } from "./infra/schemas.ts";
 import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
+import { sessionLifecycle } from "./infra/session-lifecycle.ts";
 import { renderWebScrapeResult } from "./renderers/scrape.ts";
-import { renderSimpleCall } from "../tui/call.ts";
 
 const scrapeTasks = ["read", "summarize"] as const;
 
@@ -71,13 +63,12 @@ export function createWebScrapeTool(
 		parameters: webScrapeSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
 			const task = inferScrapeTask(params);
-			if (task === "summarize") return summarizeScrape(params, options, signal);
-			return readScrape(params, signal, onUpdate);
+			if (task === "summarize") return await summarizeScrape(params, options, signal);
+			return await readScrape(params, signal, onUpdate);
 		},
 		renderCall: (args, theme, _context) =>
 			renderSimpleCall("web_scrape", renderScrapeCallParts(args), theme),
-		renderResult: (result, { expanded }, theme) =>
-			renderWebScrapeResult(result, expanded, theme),
+		renderResult: (result, { expanded }, theme) => renderWebScrapeResult(result, expanded, theme),
 	});
 }
 
@@ -120,18 +111,16 @@ async function readScrape(
 	}
 	const { loadEffectiveConfig } = await import("../config/settings.ts");
 	const config = await loadEffectiveConfig();
-	const session = params.sessionId
-		? await getOrCreateSession(params.sessionId)
-		: undefined;
+	const session = params.sessionId ? await getOrCreateSession(params.sessionId) : undefined;
 	if (session) {
-		if ((params as any).browserProfile)
-			session.defaultBrowserProfile = (params as any).browserProfile;
+		const extra = params as Record<string, unknown>;
+		if (extra.browserProfile) session.defaultBrowserProfile = extra.browserProfile as string;
 		if (params.proxy) session.defaultProxy = params.proxy;
 		if (params.mode) session.defaultMode = params.mode;
-		if ((params as any).headers)
+		if (extra.headers)
 			session.defaultHeaders = {
 				...session.defaultHeaders,
-				...(params as any).headers,
+				...(extra.headers as Record<string, string>),
 			};
 	}
 	const scrapeOptions = resolveScrapeOptions(params, config, session);
@@ -172,8 +161,7 @@ async function readScrape(
 	const { storeResponse } = await import("../storage/responses/store.ts");
 	const stored = await storeResponse(result);
 	const shaped = shapeScrapeResult(result, stored.responseId);
-	const { notice: sessionNotice, suffix: sessionSuffix } =
-		await sessionLifecycle(params);
+	const { notice: sessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
 	return toolResult({
 		text: result.error
 			? `Scrape failed: ${result.error.message}`
@@ -197,11 +185,7 @@ async function readScrape(
 	});
 }
 
-async function summarizeScrape(
-	params: Params,
-	options: WebScrapeToolOptions,
-	signal: AbortSignal,
-) {
+async function summarizeScrape(params: Params, options: WebScrapeToolOptions, signal: AbortSignal) {
 	if (!options.modelAdapter) {
 		return missingModelResult(
 			"summarize",
@@ -250,9 +234,10 @@ function shapeScrapeResult(result: ScrapeResult, responseId: string) {
 				id: "page",
 				title: result.data.title,
 				uri: url,
-				excerpt: String(
-					result.data.markdown ?? result.data.text ?? result.data.title ?? "",
-				).slice(0, 240),
+				excerpt: (result.data.markdown ?? result.data.text ?? result.data.title ?? "").slice(
+					0,
+					240,
+				),
 				relevance: "Primary scraped page content.",
 				retrievedAt: result.cache?.fetchedAt ?? new Date().toISOString(),
 				sourceType: "docs",

@@ -1,34 +1,28 @@
-/**
- * @fileoverview Pi tool adapter for model-backed page summaries.
- */
+/** @file Pi tool adapter for model-backed page summaries. */
 import { type Static, Type } from "@earendil-works/pi-ai";
+
 import { loadEffectiveConfig } from "../config/settings.ts";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { summarizePage } from "../summarize/page.ts";
-import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
+import { renderSimpleCall } from "../tui/call.ts";
+import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
+import { resolveAdapterFromRegistry, resolveProviderPreference } from "./infra/model-adapter.ts";
 import {
 	modelRegistry,
 	requestAdapterDiscovery,
 	type ModelCapability,
 } from "./infra/model-registry.ts";
-import { renderEnvelopeResult } from "../tui/envelope.ts";
-import { renderSimpleCall } from "../tui/call.ts";
 import {
 	errorResult,
 	missingModelResult,
-	missingModelError,
 	adapterNotFoundError,
 	adapterIncompatibleError,
-	structuredToolError,
 	toolErrorResult,
 } from "./infra/result.ts";
-import {
-	resolveAdapterFromRegistry,
-	resolveProviderPreference,
-} from "./infra/model-adapter.ts";
 import { scrapeModeOptionSchema, urlProperty } from "./infra/schemas.ts";
+import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
 
 export const webSummarizeSchema = Type.Object({
 	url: Type.Optional(urlProperty()),
@@ -73,15 +67,11 @@ export function createWebSummarizeTool(
 				configProvider: config.modelProvider,
 				capability: "summarize",
 			});
-			let adapter =
-				options.modelAdapter ??
-				resolveAdapterFromRegistry(preference, "summarize");
+			let adapter = options.modelAdapter ?? resolveAdapterFromRegistry(preference, "summarize");
 			if (!adapter && !lazyDiscoverRequested.has("summarize")) {
 				requestAdapterDiscovery(undefined, { capabilities: ["summarize"] });
 				lazyDiscoverRequested.add("summarize");
-				adapter =
-					options.modelAdapter ??
-					resolveAdapterFromRegistry(preference, "summarize");
+				adapter = options.modelAdapter ?? resolveAdapterFromRegistry(preference, "summarize");
 			}
 			if (!adapter) {
 				if (preference === "off") {
@@ -96,12 +86,7 @@ export function createWebSummarizeTool(
 					if (!entry) {
 						const registered = modelRegistry.list().map((e) => e.id);
 						return errorResult(
-							adapterNotFoundError(
-								"summarize",
-								preference,
-								registered,
-								params.url,
-							),
+							adapterNotFoundError("summarize", preference, registered, params.url),
 							`Model adapter "${preference}" is not registered.`,
 						);
 					}
@@ -130,12 +115,7 @@ export function createWebSummarizeTool(
 				);
 				return buildSummarizeToolResult(result, params.url);
 			} catch (error) {
-				return toolErrorResult(
-					error,
-					"SUMMARIZE_FAILED",
-					"summarize",
-					params.url,
-				);
+				return toolErrorResult(error, "SUMMARIZE_FAILED", "summarize", params.url);
 			}
 		},
 		renderCall: (args, theme) =>
@@ -143,14 +123,11 @@ export function createWebSummarizeTool(
 				"web_summarize",
 				[
 					args.url ?? "provided content",
-					args.bullets
-						? `${args.bullets} bullets`
-						: `${args.sentences ?? 3} sentences`,
+					args.bullets ? `${args.bullets} bullets` : `${args.sentences ?? 3} sentences`,
 				],
 				theme,
 			),
-		renderResult: (result, { expanded }, theme) =>
-			renderEnvelopeResult(result, expanded, theme),
+		renderResult: (result, { expanded }, theme) => renderEnvelopeResult(result, expanded, theme),
 	});
 }
 

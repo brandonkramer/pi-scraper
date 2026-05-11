@@ -2,16 +2,14 @@
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+
 import { intFlag } from "../lib/cli-args.mjs";
 import { runEval } from "../lib/runner.mjs";
 
-const rootDir = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	"../..",
-);
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const args = process.argv.slice(2);
-const positional = args.filter((arg) => !arg.startsWith("--"));
-const corpusPath = path.resolve(rootDir, positional[0] ?? "eval/corpus.json");
+const positionalFirst = args.find((arg) => !arg.startsWith("--"));
+const corpusPath = path.resolve(rootDir, positionalFirst ?? "eval/corpus.json");
 const warmup = intFlag(args, "warmup", 3);
 const repeats = intFlag(args, "repeats", 20);
 

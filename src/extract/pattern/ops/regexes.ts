@@ -1,16 +1,10 @@
-/**
- * @fileoverview Regex inspection operation.
- */
-import { MAX_REGEXES, MAX_REGEX_LENGTH, MAX_MATCHES } from "../limits.ts";
-import { PatternInspectError } from "../errors.ts";
 import { boundedInteger, withGlobalFlag } from "../bounds.ts";
+import { PatternInspectError } from "../errors.ts";
+/** @file Regex inspection operation. */
+import { MAX_REGEXES, MAX_REGEX_LENGTH, MAX_MATCHES } from "../limits.ts";
 import type { PatternRegexRequest } from "../types.ts";
 
-export function inspectRegexes(
-	content: string,
-	requests: PatternRegexRequest[],
-	url?: string,
-) {
+export function inspectRegexes(content: string, requests: PatternRegexRequest[], url?: string) {
 	if (requests.length > MAX_REGEXES)
 		throw new PatternInspectError(
 			`regexes is limited to ${MAX_REGEXES} entries.`,
@@ -20,11 +14,7 @@ export function inspectRegexes(
 	return requests.map((request) => inspectRegex(content, request, url));
 }
 
-function inspectRegex(
-	content: string,
-	request: PatternRegexRequest,
-	url?: string,
-) {
+function inspectRegex(content: string, request: PatternRegexRequest, url?: string) {
 	if (!request.pattern || request.pattern.length > MAX_REGEX_LENGTH)
 		throw new PatternInspectError(
 			`regex pattern must be 1-${MAX_REGEX_LENGTH} characters.`,
@@ -56,11 +46,12 @@ function inspectRegex(
 	while ((match = regex.exec(content)) && totalMatches <= maxMatches) {
 		totalMatches += 1;
 		const value = captureValue(match, request);
-		if (!request.includeContains || value.includes(request.includeContains)) {
-			if (!request.dedupe || !seen.has(value)) {
-				seen.add(value);
-				matches.push(formatMatch(content, match, value, request));
-			}
+		if (
+			(!request.includeContains || value.includes(request.includeContains)) &&
+			(!request.dedupe || !seen.has(value))
+		) {
+			seen.add(value);
+			matches.push(formatMatch(content, match, value, request));
 		}
 		if (match[0] === "") regex.lastIndex += 1;
 	}
@@ -95,9 +86,8 @@ function formatMatch(
 	return {
 		value,
 		index: start,
-		groups: match
-			.slice(1)
-			.filter((group): group is string => group !== undefined),
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- runtime values may be undefined despite TS inference
+		groups: match.slice(1).filter((group): group is string => group !== undefined),
 		namedGroups: match.groups,
 		start,
 		end,
@@ -105,14 +95,9 @@ function formatMatch(
 	};
 }
 
-function captureValue(
-	match: RegExpExecArray,
-	request: PatternRegexRequest,
-): string {
-	if (request.captureGroup !== undefined)
-		return match[request.captureGroup] ?? "";
-	if (request.capture === "first") return match[1] ?? "";
-	if (request.capture === "firstNonEmpty")
-		return match.slice(1).find((item) => item) ?? match[0];
+function captureValue(match: RegExpExecArray, request: PatternRegexRequest): string {
+	if (request.captureGroup !== undefined) return match[request.captureGroup] ?? "";
+	if (request.capture === "first") return match[1] || "";
+	if (request.capture === "firstNonEmpty") return match.slice(1).find(Boolean) ?? match[0];
 	return match[0];
 }

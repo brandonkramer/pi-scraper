@@ -1,13 +1,13 @@
 /**
- * @fileoverview Extraction workflow for selector-based adaptive extraction.
- *
  * @remarks
- * Takes the matched elements from the adaptive selector and converts them
- * into structured output (text, html, markdown, or a specific attribute).
+ *   Takes the matched elements from the adaptive selector and converts them into structured output
+ *   (text, html, markdown, or a specific attribute).
+ * @file Extraction workflow for selector-based adaptive extraction.
  */
-import type { Element } from "domhandler";
-import * as domutils from "domutils";
 import renderDom from "dom-serializer";
+import type { Element } from "domhandler";
+import { textContent } from "domutils";
+
 import type { AdaptiveSelectorResult } from "../../parse/adaptive/selector.ts";
 import type {
 	SelectorExtractionOptions,
@@ -15,22 +15,18 @@ import type {
 	SelectorExtractionResult,
 } from "./types.ts";
 
-export {
+export type {
 	SelectorExtractionOptions,
 	SelectorExtractionMatch,
 	SelectorExtractionResult,
 } from "./types.ts";
 
-/**
- * Convert adaptive selector results into structured extraction output.
- */
+/** Convert adaptive selector results into structured extraction output. */
 export function extractFromSelectorResult(
 	selectorResult: AdaptiveSelectorResult,
 	options: SelectorExtractionOptions,
 ): SelectorExtractionResult {
-	const matches = selectorResult.elements.map((el) =>
-		extractElement(el, options),
-	);
+	const matches = selectorResult.elements.map((el) => extractElement(el, options));
 	const text = matches.map((m) => m.content).join("\n\n");
 
 	return {
@@ -53,7 +49,7 @@ function extractElement(
 
 	switch (options.format) {
 		case "text": {
-			const content = domutils.textContent(element).trim();
+			const content = textContent(element).trim();
 			return { content, tag, attributes };
 		}
 		case "html": {
@@ -62,7 +58,7 @@ function extractElement(
 		}
 		case "markdown": {
 			// Best-effort: extract text with tag labels as hints
-			const content = domutils.textContent(element).trim();
+			const content = textContent(element).trim();
 			return { content, tag, attributes };
 		}
 		case "attribute": {
@@ -71,7 +67,7 @@ function extractElement(
 			return { content, tag, attributes };
 		}
 		default: {
-			const content = domutils.textContent(element).trim();
+			const content = textContent(element).trim();
 			return { content, tag, attributes };
 		}
 	}

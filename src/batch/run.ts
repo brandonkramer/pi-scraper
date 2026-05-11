@@ -1,30 +1,22 @@
-/**
- * @fileoverview batch run module.
- */
+/** @file Batch run module. */
 import { randomUUID } from "node:crypto";
+
 import { DEFAULT_CONCURRENCY } from "../defaults.ts";
-import { createHttpClient } from "../http/client.ts";
-import {
-	scrapeUrl,
-	type ScrapePipelineDeps,
-	type ScrapeResult,
-} from "../scrape/pipeline.ts";
 import { isAbortError } from "../http/abort.ts";
-import { resultChars } from "../scrape/result-chars.ts";
+import { createHttpClient } from "../http/client.ts";
 import { hasStructuredError } from "../http/retry.ts";
-import type { CommonScrapeOptions, StructuredError } from "../types.ts";
+import { scrapeUrl, type ScrapePipelineDeps, type ScrapeResult } from "../scrape/pipeline.ts";
+import { resultChars } from "../scrape/result-chars.ts";
+import { normalizeMaybe } from "../storage/db/row-fields.ts";
 import {
 	appendJobError,
 	structuredErrorToJobError,
 	unknownToJobError,
 } from "../storage/jobs/errors.ts";
 import { setupScrapeJob } from "../storage/jobs/setup.ts";
-import {
-	storeResponse,
-	type StoreResponseOptions,
-} from "../storage/responses/store.ts";
+import { storeResponse, type StoreResponseOptions } from "../storage/responses/store.ts";
 import { truncateAndStore } from "../storage/responses/truncate.ts";
-import { normalizeMaybe } from "../storage/db/row-fields.ts";
+import type { CommonScrapeOptions, StructuredError } from "../types.ts";
 
 export interface BatchProgress {
 	state: "queued" | "processing" | "done" | "error";
@@ -33,9 +25,7 @@ export interface BatchProgress {
 	url?: string;
 }
 
-export interface BatchScrapeOptions
-	extends CommonScrapeOptions,
-		StoreResponseOptions {
+export interface BatchScrapeOptions extends CommonScrapeOptions, StoreResponseOptions {
 	concurrency?: number;
 	perHostConcurrency?: number;
 	storeFullResults?: boolean;
@@ -74,7 +64,7 @@ export async function runBatchScrape(
 	deps: ScrapePipelineDeps = {},
 	signal?: AbortSignal,
 ): Promise<BatchScrapeResult> {
-	const items = new Array<BatchItemResult>(urls.length);
+	const items: BatchItemResult[] = Array.from({ length: urls.length });
 	const jobId = randomUUID();
 	const jobSetup = await setupScrapeJob(
 		{
@@ -86,22 +76,16 @@ export async function runBatchScrape(
 		},
 		options,
 	);
-	let { jobManifestPath, errors, totalBytes, totalChars, truncatedPages } =
-		jobSetup;
+	let { jobManifestPath, errors, totalBytes, totalChars, truncatedPages } = jobSetup;
 	const jobWriter = jobSetup.writer;
 	const cache = new Map<
 		string,
-		Promise<
-			{ ok: true; result: ScrapeResult } | { ok: false; error: StructuredError }
-		>
+		Promise<{ ok: true; result: ScrapeResult } | { ok: false; error: StructuredError }>
 	>();
 	let next = 0;
 	const concurrency = Math.max(
 		1,
-		Math.min(
-			options.concurrency ?? DEFAULT_CONCURRENCY.global,
-			urls.length || 1,
-		),
+		Math.min(options.concurrency ?? DEFAULT_CONCURRENCY.global, urls.length || 1),
 	);
 	const sharedDeps = deps.httpClient
 		? deps
@@ -109,8 +93,7 @@ export async function runBatchScrape(
 				...deps,
 				httpClient: createHttpClient({
 					globalConcurrency: concurrency,
-					perHostConcurrency:
-						options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
+					perHostConcurrency: options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
 					retryAttempts: options.retryAttempts,
 				}),
 			};
@@ -119,10 +102,9 @@ export async function runBatchScrape(
 	await updateBatchJob("running", 0, 0, undefined, true);
 	async function worker(): Promise<void> {
 		while (next < urls.length) {
-			if (signal?.aborted)
-				throw signal.reason ?? new DOMException("Batch aborted", "AbortError");
+			if (signal?.aborted) throw signal.reason ?? new DOMException("Batch aborted", "AbortError");
 			const index = next++;
-			const url = urls[index]!;
+			const url = urls[index];
 			options.onProgress?.({
 				state: "processing",
 				current: index,
@@ -140,11 +122,7 @@ export async function runBatchScrape(
 			} else {
 				errors = appendJobError(errors, structuredErrorToJobError(item.error));
 			}
-			await updateBatchJob(
-				"running",
-				items.filter(Boolean).length,
-				errors.length,
-			);
+			await updateBatchJob("running", items.filter(Boolean).length, errors.length);
 			options.onProgress?.({
 				state: item.ok ? "done" : "error",
 				current: index + 1,
@@ -156,9 +134,7 @@ export async function runBatchScrape(
 
 	function scrapeCached(
 		url: string,
-	): Promise<
-		{ ok: true; result: ScrapeResult } | { ok: false; error: StructuredError }
-	> {
+	): Promise<{ ok: true; result: ScrapeResult } | { ok: false; error: StructuredError }> {
 		const key = normalizeMaybe(url);
 		const existing = cache.get(key);
 		if (existing) return existing;
@@ -169,14 +145,10 @@ export async function runBatchScrape(
 
 	async function scrapeItem(
 		url: string,
-	): Promise<
-		{ ok: true; result: ScrapeResult } | { ok: false; error: StructuredError }
-	> {
+	): Promise<{ ok: true; result: ScrapeResult } | { ok: false; error: StructuredError }> {
 		try {
 			const result = await scrapeUrl(url, options, sharedDeps, signal);
-			return result.error
-				? { ok: false, error: result.error }
-				: { ok: true, result };
+			return result.error ? { ok: false, error: result.error } : { ok: true, result };
 		} catch (error) {
 			return { ok: false, error: toStructuredError(error, url) };
 		}
@@ -195,17 +167,11 @@ export async function runBatchScrape(
 		);
 		throw error;
 	}
-	const completed = items.filter(Boolean) as BatchItemResult[];
+	const completed = items.filter(Boolean);
 	const summary = summarize(completed);
 	if (options.storeFullResults === true) {
 		const metadata = await storeResponse(completed, options);
-		await updateBatchJob(
-			"done",
-			completed.length,
-			errors.length,
-			[metadata.responseId],
-			true,
-		);
+		await updateBatchJob("done", completed.length, errors.length, [metadata.responseId], true);
 		return {
 			items: completed,
 			responseId: metadata.responseId,
@@ -221,9 +187,7 @@ export async function runBatchScrape(
 		"done",
 		completed.length,
 		errors.length,
-		truncated.metadata?.responseId
-			? [truncated.metadata.responseId]
-			: undefined,
+		truncated.metadata?.responseId ? [truncated.metadata.responseId] : undefined,
 		true,
 	);
 	return {
@@ -247,8 +211,7 @@ export async function runBatchScrape(
 			{
 				status,
 				startedAt: new Date().toISOString(),
-				completedAt:
-					status === "running" ? undefined : new Date().toISOString(),
+				completedAt: status === "running" ? undefined : new Date().toISOString(),
 				urlsProcessed,
 				urlsFailed,
 				errors,

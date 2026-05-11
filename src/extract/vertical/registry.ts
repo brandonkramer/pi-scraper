@@ -1,13 +1,7 @@
-/**
- * @fileoverview extract registry module.
- */
+/** @file Extract registry module. */
 import { createHttpClient, type HttpClient } from "../../http/client.ts";
 import { hasStructuredError } from "../../http/errors.ts";
-import type {
-	CommonRequestOptions,
-	ExtractorCapability,
-	SourceReference,
-} from "../../types.ts";
+import type { CommonRequestOptions, ExtractorCapability, SourceReference } from "../../types.ts";
 import type {
 	VerticalExtractionResult,
 	VerticalExtractor,
@@ -16,9 +10,9 @@ import type {
 import { arxivExtractor } from "../vertical/extractors/arxiv.ts";
 import { cratesIoExtractor } from "../vertical/extractors/crates-io.ts";
 import { deepWikiExtractor } from "../vertical/extractors/deepwiki.ts";
-import { docstringsExtractor } from "../vertical/extractors/docstrings.ts";
-import { docsiteExtractor } from "../vertical/extractors/docs-site.ts";
 import { dockerHubExtractor } from "../vertical/extractors/docker-hub.ts";
+import { docsiteExtractor } from "../vertical/extractors/docs-site.ts";
+import { docstringsExtractor } from "../vertical/extractors/docstrings.ts";
 import { githubIssueExtractor } from "../vertical/extractors/github-issue.ts";
 import { githubPrExtractor } from "../vertical/extractors/github-pr.ts";
 import { githubReleaseExtractor } from "../vertical/extractors/github-release.ts";
@@ -62,10 +56,7 @@ export const verticalExtractors = [
 export interface VerticalRegistryDeps {
 	context?: VerticalExtractorContext;
 	httpClient?: Pick<HttpClient, "fetchUrl">;
-	requestOptions?: Pick<
-		CommonRequestOptions,
-		"cacheTtlSeconds" | "maxAgeSeconds" | "refresh"
-	>;
+	requestOptions?: Pick<CommonRequestOptions, "cacheTtlSeconds" | "maxAgeSeconds" | "refresh">;
 }
 
 export function listExtractorCapabilities(): ExtractorCapability[] {
@@ -79,9 +70,7 @@ export async function runVerticalExtractor<T = unknown>(
 	signal?: AbortSignal,
 ): Promise<VerticalExtractionResult<T>> {
 	const url = new URL(input.toString());
-	const extractor = verticalExtractors.find(
-		(candidate) => candidate.capability.name === name,
-	);
+	const extractor = verticalExtractors.find((candidate) => candidate.capability.name === name);
 	if (!extractor)
 		return {
 			extractor: name,
@@ -108,8 +97,7 @@ export async function runVerticalExtractor<T = unknown>(
 		const data = await extractor.extract(
 			url,
 			match,
-			deps.context ??
-				httpContext(deps.httpClient, deps.requestOptions, sources),
+			deps.context ?? httpContext(deps.httpClient, deps.requestOptions, sources),
 			signal,
 		);
 		return {
@@ -137,8 +125,7 @@ function verticalError(error: unknown): {
 	if (structured) return structured;
 	return {
 		code: "EXTRACTION_FAILED",
-		message:
-			error instanceof Error ? error.message : "Vertical extraction failed",
+		message: error instanceof Error ? error.message : "Vertical extraction failed",
 		retryable: false,
 	};
 }
@@ -146,20 +133,17 @@ function verticalError(error: unknown): {
 function extractionStructuredError(
 	error: unknown,
 ): { code: string; message: string; retryable: boolean } | undefined {
-	if (!hasStructuredError(error)) return undefined;
+	if (!hasStructuredError(error)) return;
 	return {
 		code: error.structured.code,
 		message: error.structured.message,
-		retryable: Boolean(error.structured.retryable),
+		retryable: error.structured.retryable,
 	};
 }
 
 function httpContext(
 	client: Pick<HttpClient, "fetchUrl"> = createHttpClient(),
-	requestOptions: Pick<
-		CommonRequestOptions,
-		"cacheTtlSeconds" | "maxAgeSeconds" | "refresh"
-	> = {},
+	requestOptions: Pick<CommonRequestOptions, "cacheTtlSeconds" | "maxAgeSeconds" | "refresh"> = {},
 	sources: SourceReference[] = [],
 ): VerticalExtractorContext {
 	return {
@@ -203,11 +187,7 @@ function httpContext(
 	};
 }
 
-function recordVerticalSource(
-	sources: SourceReference[],
-	url: string,
-	provider: string,
-): void {
+function recordVerticalSource(sources: SourceReference[], url: string, provider: string): void {
 	if (sources.some((source) => source.url === url)) return;
 	sources.push({
 		id: `source-${sources.length + 1}`,

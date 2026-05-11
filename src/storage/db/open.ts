@@ -1,15 +1,11 @@
-/**
- * @fileoverview SQLite metadata index lifecycle — open, pool, close.
- */
-import { DatabaseSync, type StatementSync } from "node:sqlite";
 import path from "node:path";
+/** @file SQLite metadata index lifecycle — open, pool, close. */
+import { DatabaseSync, type StatementSync } from "node:sqlite";
+
 import { migrateLegacyFiles } from "../migrations/legacy-files.ts";
-import {
-	ensureDir,
-	type ResolveStorageOptions,
-	resolvePiStoragePaths,
-} from "../paths.ts";
+// oxlint-disable-next-line import/no-cycle -- vertical extractors and storage modules share type contracts; cycle is resolved at call time
 import { runMigrations } from "../migrations/run.ts";
+import { ensureDir, type ResolveStorageOptions, resolvePiStoragePaths } from "../paths.ts";
 
 interface DbEntry {
 	db: DatabaseSync;
@@ -24,9 +20,7 @@ export interface StorageDb {
 	transaction<T>(work: () => T): T;
 }
 
-export async function openStorageDb(
-	options: ResolveStorageOptions = {},
-): Promise<StorageDb> {
+export async function openStorageDb(options: ResolveStorageOptions = {}): Promise<StorageDb> {
 	const paths = resolvePiStoragePaths(options);
 	await ensureDir(paths.root);
 	const dbPath = path.join(paths.root, "index.db");

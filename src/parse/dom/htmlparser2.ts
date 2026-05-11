@@ -1,11 +1,10 @@
-/**
- * @fileoverview parse htmlparser2-dom-adapter module.
- */
-import * as cssSelect from "css-select";
+/** @file Parse htmlparser2-dom-adapter module. */
+import { selectAll } from "css-select";
 import renderDom from "dom-serializer";
 import type { AnyNode, Document } from "domhandler";
-import * as domutils from "domutils";
+import { getAttributeValue, isTag, removeElement, textContent } from "domutils";
 import { parseDocument } from "htmlparser2";
+
 import type { DomAdapter, DomNode, DomSelection } from "../dom/adapter.ts";
 
 class Htmlparser2DomSelection implements DomSelection {
@@ -32,7 +31,7 @@ class Htmlparser2DomAdapter implements DomAdapter {
 	}
 
 	select(selector: string, scope?: DomSelection): DomSelection {
-		return this.wrap(cssSelect.selectAll(selector, this.roots(scope)));
+		return this.wrap(selectAll(selector, this.roots(scope)));
 	}
 
 	selection(nodes: DomNode[]): DomSelection {
@@ -54,9 +53,9 @@ class Htmlparser2DomAdapter implements DomAdapter {
 	text(target: DomSelection | DomNode): string {
 		if (target === undefined || target === null) return "";
 		if (target instanceof Htmlparser2DomSelection) {
-			return domutils.textContent(target.selection);
+			return textContent(target.selection);
 		}
-		return domutils.textContent(target as AnyNode);
+		return textContent(target as AnyNode);
 	}
 
 	html(selection: DomSelection): string {
@@ -64,38 +63,33 @@ class Htmlparser2DomAdapter implements DomAdapter {
 	}
 
 	attr(target: DomSelection | DomNode, name: string): string | undefined {
-		if (target === undefined || target === null) return undefined;
+		if (target === undefined || target === null) return;
 		const node =
-			target instanceof Htmlparser2DomSelection
-				? target.selection[0]
-				: (target as AnyNode);
-		return node && domutils.isTag(node)
-			? domutils.getAttributeValue(node, name)
-			: undefined;
+			target instanceof Htmlparser2DomSelection ? target.selection[0] : (target as AnyNode);
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- defensive guard; runtime conditions can diverge from inferred type
+		return node && isTag(node) ? getAttributeValue(node, name) : undefined;
 	}
 
 	tagName(node: DomNode): string | undefined {
-		if (node === undefined || node === null) return undefined;
+		if (node === undefined || node === null) return;
 		const maybeNode = node as { name?: unknown };
 		return typeof maybeNode.name === "string" ? maybeNode.name : undefined;
 	}
 
 	remove(selector: string, scope?: DomSelection): void {
 		for (const node of this.asSelection(this.select(selector, scope))) {
-			domutils.removeElement(node);
+			removeElement(node);
 		}
 	}
 
 	removeSelection(selection: DomSelection): void {
 		for (const node of this.asSelection(selection)) {
-			domutils.removeElement(node);
+			removeElement(node);
 		}
 	}
 
 	private roots(scope: DomSelection | undefined): AnyNode[] {
-		return scope === undefined
-			? this.document.children
-			: this.asSelection(scope);
+		return scope === undefined ? this.document.children : this.asSelection(scope);
 	}
 
 	private wrap(selection: AnyNode[]): DomSelection {
@@ -104,9 +98,7 @@ class Htmlparser2DomAdapter implements DomAdapter {
 
 	private asSelection(selection: DomSelection): AnyNode[] {
 		if (!(selection instanceof Htmlparser2DomSelection)) {
-			throw new TypeError(
-				"DOM selection belongs to a different adapter backend",
-			);
+			throw new TypeError("DOM selection belongs to a different adapter backend");
 		}
 		return selection.selection;
 	}

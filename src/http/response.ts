@@ -1,7 +1,6 @@
-/**
- * @fileoverview Shared HTTP response materialization helpers.
- */
+/** @file Shared HTTP response materialization helpers. */
 import { Readable } from "node:stream";
+
 import type { CacheMetadata } from "../types.ts";
 import {
 	BodySizeLimitError,
@@ -15,7 +14,10 @@ import {
 import { decodeText } from "./text-decode.ts";
 
 export interface FetchUrlResult {
-	/** Normalized original request URL after URL policy canonicalization, not the verbatim input string. */
+	/**
+	 * Normalized original request URL after URL policy canonicalization, not the verbatim input
+	 * string.
+	 */
 	url: string;
 	/** Normalized URL of the response actually fetched after HTTP redirects. */
 	finalUrl: string;
@@ -99,7 +101,7 @@ export async function materializeFetchStreamResponse(input: {
 	}
 
 	const collected = await collectBody(input.body, input.maxBytes);
-	return materializeFetchBufferResponse({
+	return await materializeFetchBufferResponse({
 		url: input.url,
 		status: input.status,
 		statusText: input.statusText,
@@ -177,15 +179,10 @@ function shouldDownloadBinary(
 ): boolean {
 	return (
 		options.downloadBinary === true ||
-		(options.forceText !== true &&
-			!isTextLikeContentType(contentType) &&
-			!parseablePdf)
+		(options.forceText !== true && !isTextLikeContentType(contentType) && !parseablePdf)
 	);
 }
 
 function isPdfResponse(contentType: string | undefined, url: string): boolean {
-	return (
-		isPdfContentType(contentType) ||
-		new URL(url).pathname.toLowerCase().endsWith(".pdf")
-	);
+	return isPdfContentType(contentType) || new URL(url).pathname.toLowerCase().endsWith(".pdf");
 }

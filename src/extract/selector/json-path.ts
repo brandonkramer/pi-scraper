@@ -1,14 +1,11 @@
 /**
- * @fileoverview Safe, deterministic JSONPath subset for pattern extraction.
+ * @file Safe, deterministic JSONPath subset for pattern extraction. Supported syntax:
  *
- * Supported syntax:
- * - Root `$`
- * - Object properties via `.name`
- * - Array wildcard `[*]`
- * - Array index `[0]`, `[n]`
- *
- * Forbidden: filters, script expressions, recursive descent (`..`), slices,
- * union, arbitrary eval, or network side effects.
+ *   - Root `$`
+ *   - Object properties via `.name`
+ *   - Array wildcard `[*]`
+ *   - Array index `[0]`, `[n]` Forbidden: filters, script expressions, recursive descent (`..`),
+ *     slices, union, arbitrary eval, or network side effects.
  */
 
 import type { StructuredError } from "../../types.ts";
@@ -30,8 +27,7 @@ export interface JsonPathMatchInfo {
 	missing: boolean;
 }
 
-const PATH_TOKEN_RE =
-	/^(?:\.(?<prop>[A-Za-z_$][A-Za-z0-9_$]*)|\[(?<idx>\d+)\]|\[(?<wild>\*)\])/u;
+const PATH_TOKEN_RE = /^(?:\.(?<prop>[A-Za-z_$][A-Za-z0-9_$]*)|\[(?<idx>\d+)\]|\[(?<wild>\*)\])/u;
 
 export function evaluateJsonPath(root: unknown, path: string): JsonPathResult {
 	if (path === "$") return { values: [root], errors: [] };
@@ -62,17 +58,18 @@ export function evaluateJsonPath(root: unknown, path: string): JsonPathResult {
 			return { values: [], errors };
 		}
 		const groups = match.groups;
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- runtime values may be undefined despite TS inference
 		if (groups.prop !== undefined) {
 			current = current.flatMap((item) =>
-				isObjectRecord(item) && groups.prop! in item
-					? [item[groups.prop!]]
-					: [],
+				isObjectRecord(item) && groups.prop in item ? [item[groups.prop]] : [],
 			);
+			// oxlint-disable-next-line typescript/no-unnecessary-condition -- runtime values may be undefined despite TS inference
 		} else if (groups.idx !== undefined) {
 			const idx = Number(groups.idx);
 			current = current.flatMap((item) =>
 				Array.isArray(item) && idx < item.length ? [item[idx]] : [],
 			);
+			// oxlint-disable-next-line typescript/no-unnecessary-condition -- runtime values may be undefined despite TS inference
 		} else if (groups.wild !== undefined) {
 			current = current.flatMap((item) => (Array.isArray(item) ? item : []));
 		}
@@ -115,12 +112,10 @@ export function flattenJsonValues(values: unknown[]): string {
 function flattenOne(value: unknown): string {
 	if (value === null) return "null";
 	if (typeof value === "string") return value;
-	if (typeof value === "number" || typeof value === "boolean")
-		return String(value);
+	if (typeof value === "number" || typeof value === "boolean") return String(value);
 	if (Array.isArray(value)) return value.map(flattenOne).join("\n");
-	if (isObjectRecord(value))
-		return Object.values(value).map(flattenOne).join("\n");
-	return String(value);
+	if (isObjectRecord(value)) return Object.values(value).map(flattenOne).join("\n");
+	return JSON.stringify(value);
 }
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {

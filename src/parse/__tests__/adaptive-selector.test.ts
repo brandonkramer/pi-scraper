@@ -1,13 +1,9 @@
-/**
- * @fileoverview parse __tests__ adaptive-selector.test module.
- */
-import { describe, expect, it } from "vitest";
 import { parseDocument } from "htmlparser2";
+/** @file Parse **tests** adaptive-selector.test module. */
+import { describe, expect, it } from "vitest";
+
+import { type ElementFingerprint } from "../adaptive/fingerprint.ts";
 import { runAdaptiveSelector } from "../adaptive/selector.ts";
-import {
-	fingerprintElement,
-	type ElementFingerprint,
-} from "../adaptive/fingerprint.ts";
 
 describe("adaptive selector", () => {
 	it("directly selects matching elements", async () => {
@@ -150,7 +146,7 @@ describe("adaptive selector", () => {
 				threshold: 0.35,
 				limit: 10,
 			},
-			() => Promise.resolve(undefined),
+			() => Promise.resolve<ElementFingerprint | undefined>(undefined),
 			() => Promise.resolve(),
 		);
 

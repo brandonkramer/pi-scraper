@@ -1,8 +1,7 @@
-/**
- * @fileoverview http __tests__ fingerprint.test module.
- */
+/** @file Http **tests** fingerprint.test module. */
 import { MockAgent } from "undici";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import {
 	createFingerprintFetchAdapter,
 	type FingerprintBackendFactory,
@@ -79,7 +78,7 @@ describe("fingerprint fetch adapter", () => {
 	});
 
 	it("reports a structured missing-backend error when no backend is configured", () => {
-		expect(() => getFingerprintFetchAdapter()).toThrowError(
+		expect(() => getFingerprintFetchAdapter()).toThrow(
 			expect.objectContaining({
 				structured: expect.objectContaining({
 					code: "FINGERPRINT_BACKEND_MISSING",
@@ -105,9 +104,9 @@ describe("fingerprint fetch adapter", () => {
 				{ browserProfile: "chrome" },
 				{ dispatcher: agent, resolveDns: false },
 			);
-			await expect(
-				adapter.fetch("https://configured.example/"),
-			).resolves.toMatchObject({ text: "configured" });
+			await expect(adapter.fetch("https://configured.example/")).resolves.toMatchObject({
+				text: "configured",
+			});
 		} finally {
 			unregister();
 		}
@@ -164,9 +163,7 @@ describe("fingerprint fetch adapter", () => {
 			},
 		);
 
-		await expect(
-			adapter.fetch("https://example.com/start"),
-		).rejects.toMatchObject({
+		await expect(adapter.fetch("https://example.com/start")).rejects.toMatchObject({
 			structured: {
 				code: "PRIVATE_NETWORK_ADDRESS",
 				phase: "url_safety",

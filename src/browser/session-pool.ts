@@ -1,10 +1,9 @@
 /**
- * @fileoverview Browser session pool for Playwright context reuse.
- *
  * @remarks
- * Maintains a pool of persistent Playwright browser + context instances keyed
- * by sessionId. Sessions carry cookies, localStorage, and sessionStorage across
- * multiple page navigations. Pool has max size + LRU eviction to prevent leaks.
+ *   Maintains a pool of persistent Playwright browser + context instances keyed by sessionId.
+ *   Sessions carry cookies, localStorage, and sessionStorage across multiple page navigations. Pool
+ *   has max size + LRU eviction to prevent leaks.
+ * @file Browser session pool for Playwright context reuse.
  */
 import type { Browser, BrowserContext, Page } from "playwright";
 
@@ -30,9 +29,7 @@ export function configurePool(options: BrowserSessionPoolOptions): void {
 	poolOptions = options;
 }
 
-/**
- * Get or create a browser session by ID.
- */
+/** Get or create a browser session by ID. */
 export async function acquireBrowserSession(
 	id: string,
 	options: {
@@ -78,9 +75,7 @@ export async function acquireBrowserSession(
 	return { page, session };
 }
 
-/**
- * Release a session back to the pool without closing.
- */
+/** Release a session back to the pool without closing. */
 export function releaseBrowserSession(id: string): void {
 	const session = sessions.get(id);
 	if (session) {
@@ -88,28 +83,26 @@ export function releaseBrowserSession(id: string): void {
 	}
 }
 
-/**
- * Destroy a session and close its browser.
- */
+/** Destroy a session and close its browser. */
 export async function destroyBrowserSession(id: string): Promise<void> {
 	const session = sessions.get(id);
 	if (!session) return;
 	sessions.delete(id);
-	await session.context.close().catch(() => undefined);
-	await session.browser.close().catch(() => undefined);
+	await session.context.close().catch(() => {
+		/* no-op */
+	});
+	await session.browser.close().catch(() => {
+		/* no-op */
+	});
 }
 
-/**
- * List active session IDs.
- */
+/** List active session IDs. */
 export function listBrowserSessions(): string[] {
 	cleanupIdleSessions();
 	return [...sessions.keys()];
 }
 
-/**
- * Close all sessions.
- */
+/** Close all sessions. */
 export async function closeAllBrowserSessions(): Promise<void> {
 	for (const [id] of sessions) {
 		await destroyBrowserSession(id);
@@ -122,7 +115,9 @@ function cleanupIdleSessions(): void {
 	const cutoff = Date.now() - maxIdle;
 	for (const [id, session] of sessions) {
 		if (session.lastUsedAt < cutoff) {
-			destroyBrowserSession(id).catch(() => undefined);
+			destroyBrowserSession(id).catch(() => {
+				/* no-op */
+			});
 		}
 	}
 }
@@ -135,6 +130,8 @@ function evictLRUSession(): void {
 		}
 	}
 	if (oldest) {
-		destroyBrowserSession(oldest.id).catch(() => undefined);
+		destroyBrowserSession(oldest.id).catch(() => {
+			/* no-op */
+		});
 	}
 }

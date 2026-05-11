@@ -1,6 +1,4 @@
-/**
- * @fileoverview map discover module.
- */
+/** @file Map discover module. */
 import type { HttpClient } from "../http/client.ts";
 import { createHttpClient } from "../http/client.ts";
 import { normalizeUrl } from "../url/normalize.ts";
@@ -52,14 +50,13 @@ export async function discoverSiteUrls(
 	const robotsUrl = robotsUrlForSite(seedUrl);
 	const robots = await fetchText(client, robotsUrl, options, signal);
 	if (robots)
-		for (const sitemap of parseRobotsSitemaps(robots, robotsUrl).sitemaps)
-			sitemaps.add(sitemap);
+		for (const sitemap of parseRobotsSitemaps(robots, robotsUrl).sitemaps) sitemaps.add(sitemap);
 	sitemaps.add(defaultSitemapUrl(seedUrl));
 
 	const queue = [...sitemaps];
 	const maxSitemaps = options.maxSitemaps ?? 20;
 	for (let index = 0; index < queue.length && index < maxSitemaps; index += 1) {
-		const sitemapUrl = queue[index]!;
+		const sitemapUrl = queue[index];
 		const body = await fetchSitemap(client, sitemapUrl, options, signal);
 		if (!body) continue;
 		const parsed = parseSitemapXml(body, sitemapUrl);
@@ -100,7 +97,7 @@ function buildTree(urls: string[]): Record<string, string[]> {
 	const tree: Record<string, string[]> = {};
 	for (const url of urls) {
 		const parsed = new URL(url);
-		const section = parsed.pathname.split("/").filter(Boolean)[0] ?? "/";
+		const section = parsed.pathname.split("/").find(Boolean) ?? "/";
 		tree[section] = [...(tree[section] ?? []), url];
 	}
 	return tree;
@@ -125,7 +122,9 @@ async function fetchText(
 			},
 			signal,
 		)
-		.catch(() => undefined);
+		.catch(() => {
+			/* no-op */
+		});
 	return result?.text;
 }
 
@@ -148,8 +147,10 @@ async function fetchSitemap(
 			},
 			signal,
 		)
-		.catch(() => undefined);
-	if (!result) return undefined;
+		.catch(() => {
+			/* no-op */
+		});
+	if (!result) return;
 	if (url.endsWith(".gz") && result.body) return result.body;
 	return result.text ?? result.body;
 }

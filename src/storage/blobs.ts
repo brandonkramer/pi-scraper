@@ -1,9 +1,8 @@
-/**
- * @fileoverview storage blobs module.
- */
+/** @file Storage blobs module. */
 import { createHash, randomUUID } from "node:crypto";
 import { rename, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+
 import {
 	ensureDir,
 	pathExists,
@@ -25,17 +24,10 @@ export async function writeBlob(
 ): Promise<BlobWriteResult> {
 	const buffer = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
 	const contentHash = createHash("sha256").update(buffer).digest("hex");
-	const target = blobPath(
-		contentHash,
-		extensionForContentType(contentType),
-		options,
-	);
+	const target = blobPath(contentHash, extensionForContentType(contentType), options);
 	await ensureDir(path.dirname(target));
 	if (!(await pathExists(target))) {
-		const tmp = path.join(
-			path.dirname(target),
-			`.${contentHash}.${randomUUID()}.tmp`,
-		);
+		const tmp = path.join(path.dirname(target), `.${contentHash}.${randomUUID()}.tmp`);
 		await writeFile(tmp, buffer, { mode: 0o600 });
 		await rename(tmp, target).catch(async (error: unknown) => {
 			if (await pathExists(target)) return;
@@ -55,9 +47,7 @@ export async function readBlob(
 	contentType = "application/octet-stream",
 	options: ResolveStorageOptions = {},
 ): Promise<Buffer> {
-	return readFile(
-		blobPath(contentHash, extensionForContentType(contentType), options),
-	);
+	return await readFile(blobPath(contentHash, extensionForContentType(contentType), options));
 }
 
 export function blobPath(
@@ -65,19 +55,12 @@ export function blobPath(
 	ext = "bin",
 	options: ResolveStorageOptions = {},
 ): string {
-	const safeHash = contentHash.replace(/[^a-fA-F0-9]/gu, "").toLowerCase();
+	const safeHash = contentHash.replaceAll(/[^a-fA-F0-9]/gu, "").toLowerCase();
 	const shard = safeHash.slice(0, 2) || "00";
-	return path.join(
-		resolvePiStoragePaths(options).root,
-		"blobs",
-		shard,
-		`${safeHash}.${ext}`,
-	);
+	return path.join(resolvePiStoragePaths(options).root, "blobs", shard, `${safeHash}.${ext}`);
 }
 
-export function extensionForContentType(
-	contentType: string | undefined,
-): string {
+export function extensionForContentType(contentType: string | undefined): string {
 	const type = contentType?.split(";")[0]?.trim().toLowerCase() ?? "";
 	if (type === "application/json") return "json";
 	if (type === "text/html") return "html";

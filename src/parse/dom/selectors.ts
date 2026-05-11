@@ -1,6 +1,4 @@
-/**
- * @fileoverview parse selectors module.
- */
+/** @file Parse selectors module. */
 import { normalizeWhitespace } from "../../serialize/text.ts";
 import type { DomAdapter, DomSelection } from "../dom/adapter.ts";
 
@@ -10,10 +8,7 @@ export interface SelectorOptions {
 	removeImages?: boolean;
 }
 
-export function prepareDocument(
-	dom: DomAdapter,
-	options: SelectorOptions = {},
-): void {
+export function prepareDocument(dom: DomAdapter, options: SelectorOptions = {}): void {
 	// Split into simpler selectors for faster parsing
 	dom.remove("script,style,noscript,template");
 	dom.remove("iframe,canvas,svg,math,video,audio,embed,object,param,track");
@@ -21,10 +16,7 @@ export function prepareDocument(
 	for (const selector of options.exclude ?? []) dom.remove(selector);
 }
 
-export function selectedRoots(
-	dom: DomAdapter,
-	options: SelectorOptions = {},
-): DomSelection {
+export function selectedRoots(dom: DomAdapter, options: SelectorOptions = {}): DomSelection {
 	const include = options.include?.filter(Boolean) ?? [];
 	if (include.length > 0) {
 		return dom.selection([
@@ -44,14 +36,11 @@ export function outerHtml(dom: DomAdapter, root: DomSelection): string {
 	return dom.html(root);
 }
 
-export function absoluteUrl(
-	href: string | undefined,
-	baseUrl: string,
-): string | undefined {
-	if (!href) return undefined;
+export function absoluteUrl(href: string | undefined, baseUrl: string): string | undefined {
+	if (!href) return;
 	try {
 		return new URL(href, baseUrl).toString();
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }

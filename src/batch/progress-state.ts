@@ -1,8 +1,6 @@
-/**
- * @fileoverview Batch/crawl progress view state and update helpers.
- */
-import type { BatchItemResult } from "./run.ts";
 import type { ProgressDetails } from "../types.ts";
+/** @file Batch/crawl progress view state and update helpers. */
+import type { BatchItemResult } from "./run.ts";
 
 export type BatchProgressStatus = "queued" | "processing" | "done" | "error";
 
@@ -24,9 +22,7 @@ export interface BatchProgressView {
 	label?: string;
 }
 
-export function isBatchProgress(
-	details: ProgressDetails<unknown>,
-): details is ProgressDetails<{
+export function isBatchProgress(details: ProgressDetails<unknown>): details is ProgressDetails<{
 	batchProgress: BatchProgressView;
 	spinnerTick?: number;
 }> {
@@ -34,15 +30,11 @@ export function isBatchProgress(
 	return isBatchProgressView(data?.batchProgress);
 }
 
-export function isBatchProgressView(
-	value: unknown,
-): value is BatchProgressView {
+export function isBatchProgressView(value: unknown): value is BatchProgressView {
 	return typeof value === "object" && value !== null && "items" in value;
 }
 
-export function cloneBatchProgress(
-	progress: BatchProgressView,
-): BatchProgressView {
+export function cloneBatchProgress(progress: BatchProgressView): BatchProgressView {
 	return { ...progress, items: progress.items.map((item) => ({ ...item })) };
 }
 
@@ -55,6 +47,7 @@ export function updateIndexedBatchProgress(
 	if (state === "queued") return;
 	const index = state === "processing" ? current : current - 1;
 	const item = progress.items[index];
+	// oxlint-disable-next-line typescript/no-unnecessary-condition -- defensive guard; runtime conditions can diverge from inferred type
 	if (!item) return;
 	applyProgressItemStatus(item, state, url);
 	recountBatchProgress(progress);
@@ -90,8 +83,7 @@ function applyProgressItemStatus(
 }
 
 function batchStatusFromState(state: string): BatchProgressStatus {
-	if (state === "done" || state === "error" || state === "processing")
-		return state;
+	if (state === "done" || state === "error" || state === "processing") return state;
 	return state === "queued" || state === "waiting" ? "queued" : "processing";
 }
 
@@ -99,12 +91,8 @@ function recountBatchProgress(progress: BatchProgressView): void {
 	progress.completed = progress.items.filter(
 		(entry) => entry.status === "done" || entry.status === "error",
 	).length;
-	progress.succeeded = progress.items.filter(
-		(entry) => entry.status === "done",
-	).length;
-	progress.failed = progress.items.filter(
-		(entry) => entry.status === "error",
-	).length;
+	progress.succeeded = progress.items.filter((entry) => entry.status === "done").length;
+	progress.failed = progress.items.filter((entry) => entry.status === "error").length;
 }
 
 interface CrawlPageLike {
@@ -137,7 +125,7 @@ export function batchProgressFromItems(
 	items: readonly BatchItemResult[],
 	concurrency?: number,
 ): BatchProgressView {
-	const succeeded = items.filter((item) => item.ok === true).length;
+	const succeeded = items.filter((item) => item.ok).length;
 	const failed = items.length - succeeded;
 	return {
 		total: items.length,
@@ -147,11 +135,11 @@ export function batchProgressFromItems(
 		concurrency: concurrency ?? items.length,
 		items: items.map((item) => ({
 			url:
-				item.ok && item.result
-					? (item.result.finalUrl ?? item.result.url ?? item.url)
-					: item.url,
-			status: item.ok === false ? "error" : "done",
-			error: item.ok === false ? item.error?.message : undefined,
+				// oxlint-disable-next-line typescript/no-unnecessary-condition -- defensive guard; runtime conditions can diverge from inferred type
+				item.ok && item.result ? (item.result.finalUrl ?? item.result.url ?? item.url) : item.url,
+			status: !item.ok ? "error" : "done",
+			// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
+			error: !item.ok ? item.error?.message : undefined,
 		})),
 	};
 }

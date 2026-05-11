@@ -1,40 +1,30 @@
 /**
- * @fileoverview web_crawl action="run" handler — crawl execution, API-surface building, context packaging, and URL resolution.
+ * @file Web_crawl action="run" handler — crawl execution, API-surface building, context packaging,
+ *   and URL resolution.
  */
-import { loadEffectiveConfig } from "../config/settings.ts";
-import { runCrawl } from "../crawl/runner.ts";
-import {
-	loadCrawlMetadata,
-	updateCrawlMetadata,
-	type CrawlMetadata,
-} from "../crawl/state.ts";
-import {
-	aggregateFreshness,
-	freshnessFromTimestamp,
-} from "../storage/cache/freshness.ts";
-import type { ScrapeResult } from "../scrape/pipeline.ts";
-import { updateJobManifest } from "../storage/jobs/manifest.ts";
-import { storeResponseWithId } from "../storage/responses/store.ts";
-import type { FreshnessMetadata } from "../types.ts";
-import { storedResultGuidance } from "./infra/agentic-context.ts";
-import { storeCompiledContext } from "../storage/context/build.ts";
-import { sessionLifecycle } from "./infra/session-lifecycle.ts";
-import { emitProgress } from "./infra/progress.ts";
 import {
 	cloneBatchProgress,
 	type BatchProgressView,
 	batchProgressFromCrawlPages,
 	updateUrlBatchProgress,
 } from "../batch/progress-state.ts";
-import { inputErrorResult, toolResult } from "./infra/result.ts";
+import { loadEffectiveConfig } from "../config/settings.ts";
+import { runCrawl } from "../crawl/runner.ts";
+import { loadCrawlMetadata, updateCrawlMetadata, type CrawlMetadata } from "../crawl/state.ts";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
+import { freshnessFromTimestamp } from "../storage/cache/freshness.ts";
+import { storeCompiledContext } from "../storage/context/build.ts";
+import { updateJobManifest } from "../storage/jobs/manifest.ts";
+import { storeResponseWithId } from "../storage/responses/store.ts";
+import type { FreshnessMetadata } from "../types.ts";
+import { storedResultGuidance } from "./infra/agentic-context.ts";
 import type { ToolUpdate } from "./infra/define.ts";
+import { emitProgress } from "./infra/progress.ts";
+import { inputErrorResult, toolResult } from "./infra/result.ts";
+import { sessionLifecycle } from "./infra/session-lifecycle.ts";
 import type { Params } from "./web-crawl.ts";
 
-export async function crawlRun(
-	params: Params,
-	signal: AbortSignal,
-	onUpdate?: ToolUpdate,
-) {
+export async function crawlRun(params: Params, signal: AbortSignal, onUpdate?: ToolUpdate) {
 	const url = await resolveRunUrl(params);
 	if (!url) {
 		return inputErrorResult(
@@ -81,38 +71,26 @@ export async function crawlRun(
 		signal,
 	);
 	const apiSurface = await maybeBuildApiSurface(params, crawl.pages);
-	const { metadata: finalStored } = await storeResponseWithId(
-		(responseId) => {
-			crawl.metadata = { ...crawl.metadata, responseId };
-			return apiSurface ? { ...crawl, apiSurface } : crawl;
-		},
-	);
+	const { metadata: finalStored } = await storeResponseWithId((responseId) => {
+		crawl.metadata = { ...crawl.metadata, responseId };
+		return apiSurface ? { ...crawl, apiSurface } : crawl;
+	});
 	crawl.metadata = await updateCrawlMetadata(crawl.crawlId, {
 		responseId: finalStored.responseId,
 		status: crawl.metadata.status,
 	});
-	const contextPackage = await compileCrawlContext(
-		params,
-		crawl.crawlId,
-		crawl.pages,
-	);
+	const contextPackage = await compileCrawlContext(params, crawl.crawlId, crawl.pages);
 	const responseIds = contextPackage?.responseId
 		? [finalStored.responseId, contextPackage.responseId]
 		: [finalStored.responseId];
 	const manifest = await updateJobManifest(crawl.crawlId, { responseIds });
-	const freshness = crawlFreshness(
-		crawl.metadata,
-		config.scrapeDefaults.maxAgeSeconds,
-	);
-	const surfaceText = apiSurface
-		? ` apiSurface: ${apiSurface.modules.length} module(s).`
-		: "";
+	const freshness = crawlFreshness(crawl.metadata, config.scrapeDefaults.maxAgeSeconds);
+	const surfaceText = apiSurface ? ` apiSurface: ${apiSurface.modules.length} module(s).` : "";
 	const packageText = contextPackage
 		? ` package: ${contextPackage.value.package.urlCount} page(s), packageResponseId: ${contextPackage.responseId}.`
 		: "";
 	const text = `Crawl ${crawl.crawlId}: ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}.${surfaceText}${packageText} responseId: ${finalStored.responseId}`;
-	const { notice: sessionNotice, suffix: sessionSuffix } =
-		await sessionLifecycle(params);
+	const { notice: sessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
 	return toolResult({
 		text: text + sessionSuffix,
 		data: {
@@ -145,20 +123,14 @@ export async function crawlRun(
 }
 
 async function maybeBuildApiSurface(params: Params, pages: ScrapeResult[]) {
-	if (params.extract !== "api-surface") return undefined;
-	const { buildApiSurfaceFromScrapes } = await import(
-		"../extract/api-surface/index.ts"
-	);
+	if (params.extract !== "api-surface") return;
+	const { buildApiSurfaceFromScrapes } = await import("../extract/api-surface/index.ts");
 	return buildApiSurfaceFromScrapes(pages);
 }
 
-async function compileCrawlContext(
-	params: Params,
-	crawlId: string,
-	pages: ScrapeResult[],
-) {
-	if (params.compile !== true) return undefined;
-	return storeCompiledContext({
+async function compileCrawlContext(params: Params, crawlId: string, pages: ScrapeResult[]) {
+	if (params.compile !== true) return;
+	return await storeCompiledContext({
 		source: "crawl",
 		crawlId,
 		pages: pages.map((result) => ({
@@ -171,19 +143,16 @@ async function compileCrawlContext(
 
 async function resolveRunUrl(params: Params): Promise<string | undefined> {
 	if (params.url) return params.url;
-	if (!params.crawlId || params.resume !== true) return undefined;
+	if (!params.crawlId || params.resume !== true) return;
 	try {
 		const metadata = await loadCrawlMetadata(params.crawlId);
 		return metadata.seedUrl;
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }
 
-export function crawlFreshness(
-	crawl: CrawlMetadata,
-	maxAgeSeconds?: number,
-): FreshnessMetadata {
+export function crawlFreshness(crawl: CrawlMetadata, maxAgeSeconds?: number): FreshnessMetadata {
 	return (
 		freshnessFromTimestamp(crawl.updatedAt, maxAgeSeconds) ?? {
 			cachedAt: crawl.updatedAt,

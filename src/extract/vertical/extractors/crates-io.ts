@@ -1,6 +1,4 @@
-/**
- * @fileoverview extract verticals crates-io module.
- */
+/** @file Extract verticals crates-io module. */
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 interface CratesIoResponse {
@@ -31,11 +29,9 @@ export const cratesIoExtractor: VerticalExtractor = {
 		},
 	}),
 	match: (url) => {
-		if (url.hostname !== "crates.io") return undefined;
+		if (url.hostname !== "crates.io") return;
 		const [crates, name, ...rest] = url.pathname.split("/").filter(Boolean);
-		return crates === "crates" && name && rest.length === 0
-			? { name }
-			: undefined;
+		return crates === "crates" && name && rest.length === 0 ? { name } : undefined;
 	},
 	extract: async (_url, match, context, signal) => {
 		const response = await context.fetchJson<CratesIoResponse>(

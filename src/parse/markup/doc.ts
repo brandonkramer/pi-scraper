@@ -1,4 +1,4 @@
-/** @fileoverview Lightweight markdown/MDX/RST structure extraction for raw documentation files. */
+/** @file Lightweight markdown/MDX/RST structure extraction for raw documentation files. */
 
 export type MarkupDocFormat = "markdown" | "mdx" | "rst";
 
@@ -56,7 +56,7 @@ export function parseMdx(text: string, file?: string): MarkupDocument {
 }
 
 export function parseRst(text: string, file?: string): MarkupDocument {
-	const lines = text.replace(/\r\n?/gu, "\n").split("\n");
+	const lines = text.replaceAll(/\r\n?/gu, "\n").split("\n");
 	const headings: MarkupHeading[] = [];
 	const codeBlocks: MarkupCodeBlock[] = [];
 	const directives: NonNullable<MarkupDocument["directives"]> = [];
@@ -65,6 +65,7 @@ export function parseRst(text: string, file?: string): MarkupDocument {
 		const line = lines[index] ?? "";
 		const next = lines[index + 1] ?? "";
 		if (line.trim() && isRstUnderline(next, line.trim().length)) {
+			// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
 			const level = rstHeadingLevel(next.trim()[0] ?? "=");
 			headings.push({ level, text: line.trim(), line: index + 1 });
 			markdownLines.push(`${"#".repeat(level)} ${line.trim()}`);
@@ -73,7 +74,7 @@ export function parseRst(text: string, file?: string): MarkupDocument {
 		}
 		const directive = line.match(/^\.\.\s+([A-Za-z0-9_-]+)::\s*(.*)$/u);
 		if (directive) {
-			const name = directive[1] ?? "directive";
+			const name = directive[1] || "directive";
 			const value = directive[2]?.trim() || undefined;
 			directives.push({ name, value, line: index + 1 });
 			if (["code-block", "code", "sourcecode"].includes(name)) {
@@ -126,7 +127,7 @@ function splitFrontmatter(text: string): {
 	body: string;
 	frontmatter?: MarkupDocument["frontmatter"];
 } {
-	const normalized = text.replace(/\r\n?/gu, "\n");
+	const normalized = text.replaceAll(/\r\n?/gu, "\n");
 	if (!normalized.startsWith("---\n")) return { body: normalized };
 	const end = normalized.indexOf("\n---", 4);
 	if (end < 0) return { body: normalized };
@@ -141,13 +142,13 @@ function parseYamlPairs(text: string): MarkupDocument["frontmatter"] {
 	for (const line of text.split("\n")) {
 		const match = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/u);
 		if (!match) continue;
-		values[match[1] ?? ""] = parseYamlScalar(match[2] ?? "");
+		values[match[1] || ""] = parseYamlScalar(match[2] || "");
 	}
 	return values;
 }
 
 function parseYamlScalar(value: string): string | boolean | number | string[] {
-	const trimmed = value.trim().replace(/^['"]|['"]$/gu, "");
+	const trimmed = value.trim().replaceAll(/^['"]|['"]$/gu, "");
 	if (trimmed === "true") return true;
 	if (trimmed === "false") return false;
 	if (/^-?\d+(\.\d+)?$/u.test(trimmed)) return Number(trimmed);
@@ -167,8 +168,8 @@ function extractMarkdownHeadings(text: string): MarkupHeading[] {
 		return match
 			? [
 					{
-						level: match[1]?.length ?? 1,
-						text: match[2] ?? "",
+						level: match[1]?.length || 1,
+						text: match[2] || "",
 						line: index + 1,
 					},
 				]
@@ -186,7 +187,7 @@ function extractMarkdownCodeBlocks(text: string): MarkupCodeBlock[] {
 		const fence = line.match(/^(```|~~~)\s*([^`]*)$/u);
 		if (!open && fence) {
 			open = {
-				fence: fence[1] ?? "```",
+				fence: fence[1] || "```",
 				language: fence[2]?.trim() || undefined,
 				lineStart: index + 1,
 			};
@@ -211,12 +212,10 @@ function extractMarkdownCodeBlocks(text: string): MarkupCodeBlock[] {
 function extractMarkdownLinks(text: string): MarkupLink[] {
 	const links: MarkupLink[] = [];
 	for (const [index, line] of text.split("\n").entries()) {
-		for (const match of line.matchAll(
-			/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/gu,
-		)) {
+		for (const match of line.matchAll(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/gu)) {
 			links.push({
-				text: match[1] ?? "",
-				href: match[2] ?? "",
+				text: match[1] || "",
+				href: match[2] || "",
 				line: index + 1,
 			});
 		}
@@ -230,7 +229,7 @@ function extractMdxComponents(text: string): MdxComponent[] {
 		return match
 			? [
 					{
-						name: match[1] ?? "Component",
+						name: match[1] || "Component",
 						attributes: match[2]?.trim() || undefined,
 						line: index + 1,
 					},
@@ -241,27 +240,25 @@ function extractMdxComponents(text: string): MdxComponent[] {
 
 function stripMdxJsx(text: string): string {
 	return text
-		.replace(/^\s*import\s+.*$/gmu, "")
-		.replace(/^\s*export\s+.*$/gmu, "")
-		.replace(/^\s*<[A-Z][\s\S]*?>\s*$/gmu, "")
-		.replace(/<\/?[A-Z][A-Za-z0-9.]*\b[^>]*>/gu, "");
+		.replaceAll(/^\s*import\s+.*$/gmu, "")
+		.replaceAll(/^\s*export\s+.*$/gmu, "")
+		.replaceAll(/^\s*<[A-Z][\s\S]*?>\s*$/gmu, "")
+		.replaceAll(/<\/?[A-Z][A-Za-z0-9.]*\b[^>]*>/gu, "");
 }
 
 function plainTextFromMarkdown(text: string): string {
 	return text
-		.replace(/```[\s\S]*?```/gu, " ")
-		.replace(/^#{1,6}\s+/gmu, "")
-		.replace(/\[([^\]]+)\]\([^)]+\)/gu, "$1")
-		.replace(/[*_`>~-]/gu, " ")
-		.replace(/\s+/gu, " ")
+		.replaceAll(/```[\s\S]*?```/gu, " ")
+		.replaceAll(/^#{1,6}\s+/gmu, "")
+		.replaceAll(/\[([^\]]+)\]\([^)]+\)/gu, "$1")
+		.replaceAll(/[*_`>~-]/gu, " ")
+		.replaceAll(/\s+/gu, " ")
 		.trim();
 }
 
 function isRstUnderline(line: string, width: number): boolean {
 	const trimmed = line.trim();
-	return (
-		trimmed.length >= Math.max(3, width) && /^([=\-~^"#*+])\1+$/u.test(trimmed)
-	);
+	return trimmed.length >= Math.max(3, width) && /^([=\-~^"#*+])\1+$/u.test(trimmed);
 }
 
 function rstHeadingLevel(marker: string): number {

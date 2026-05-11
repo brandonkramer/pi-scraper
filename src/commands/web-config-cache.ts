@@ -1,8 +1,7 @@
-/**
- * @fileoverview Cache sub-action for /web-config.
- */
+/** @file Cache sub-action for /web-config. */
 import { readdir, stat, unlink } from "node:fs/promises";
 import path from "node:path";
+
 import { resolvePiStoragePaths } from "../storage/paths.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
@@ -11,7 +10,7 @@ import type { Params } from "./web-config.ts";
 export async function runWebConfigCache(params: Params, ctx?: CommandContext) {
 	const op = params.op ?? "stats";
 	if (op === "stats") {
-		return showCacheStats();
+		return await showCacheStats();
 	}
 	// clear
 	if (ctx?.ui?.confirm) {
@@ -47,9 +46,7 @@ async function showCacheStats() {
 	});
 }
 
-async function dirStats(
-	dir: string,
-): Promise<{ count: number; bytes: number }> {
+async function dirStats(dir: string): Promise<{ count: number; bytes: number }> {
 	try {
 		const entries = await readdir(dir, { withFileTypes: true });
 		let count = 0;

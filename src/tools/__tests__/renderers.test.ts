@@ -1,11 +1,10 @@
-/**
- * @fileoverview Renderer contract tests for Pi web tool cards.
- */
+/** @file Renderer contract tests for Pi web tool cards. */
 import { describe, expect, it } from "vitest";
-import type { ToolRenderContext } from "../infra/define.ts";
-import type { RenderComponent } from "../../tui/types.ts";
-import { progressShell } from "../infra/progress.ts";
+
 import { renderEnvelopeResult } from "../../tui/envelope.ts";
+import type { RenderComponent } from "../../tui/types.ts";
+import type { ToolRenderContext } from "../infra/define.ts";
+import { progressShell } from "../infra/progress.ts";
 import { toolResult } from "../infra/result.ts";
 import { webBatchTool } from "../web-batch.ts";
 import { webCrawlTool } from "../web-crawl.ts";
@@ -16,18 +15,16 @@ const partialContext = {
 	expanded: false,
 	isPartial: true,
 	state: {},
-	invalidate: () => undefined,
+	invalidate: () => {
+		/* no-op */
+	},
 } satisfies ToolRenderContext<never>;
 
 describe("web tool renderers", () => {
 	it("renders web_scrape calls without loader or title check", () => {
 		const params = { url: "https://example.com", mode: "fast" as const };
-		const loading = text(
-			webScrapeTool.renderCall?.(params, undefined, partialContext as never),
-		);
-		const done = text(
-			webScrapeTool.renderCall?.(params, undefined, { isPartial: false }),
-		);
+		const loading = text(webScrapeTool.renderCall?.(params, undefined, partialContext as never));
+		const done = text(webScrapeTool.renderCall?.(params, undefined, { isPartial: false }));
 
 		expect(loading).toContain("web_scrape");
 		expect(loading).not.toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/u);
@@ -47,9 +44,7 @@ describe("web tool renderers", () => {
 			responseId: "r-scrape",
 		});
 
-		const collapsed = text(
-			webScrapeTool.renderResult?.(result, { expanded: false }),
-		);
+		const collapsed = text(webScrapeTool.renderResult?.(result, { expanded: false }));
 		expect(collapsed).not.toContain("web_scrape · 1/1 done");
 		expect(collapsed).not.toContain("ok 1");
 		expect(collapsed).not.toContain("err 0");
@@ -57,19 +52,14 @@ describe("web tool renderers", () => {
 		expect(collapsed).toContain("200");
 		expect(collapsed).toContain("(ctrl+o to expand)");
 		expect(collapsed).not.toContain("✓ web_scrape");
-		const expanded = text(
-			webScrapeTool.renderResult?.(result, { expanded: true }),
-		);
+		const expanded = text(webScrapeTool.renderResult?.(result, { expanded: true }));
 		expect(expanded).toContain("Scrape details:");
 		expect(expanded).toContain("status 200 · fast · markdown");
 		expect(expanded).toContain("title: Example Domain");
 		expect(expanded).toContain("responseId: r-scrape");
-		expect(
-			terminalWidthSafe(
-				webScrapeTool.renderResult?.(result, { expanded: true }),
-				32,
-			),
-		).toBe(true);
+		expect(terminalWidthSafe(webScrapeTool.renderResult?.(result, { expanded: true }), 32)).toBe(
+			true,
+		);
 	});
 
 	it("renders scrape progress as row card with checklist", () => {
@@ -81,15 +71,11 @@ describe("web tool renderers", () => {
 				{ id: "fetch", label: "fetching page", state: "pending" },
 			],
 		});
-		const rendered = text(
-			webScrapeTool.renderResult?.(progress, { expanded: false }),
-		);
+		const rendered = text(webScrapeTool.renderResult?.(progress, { expanded: false }));
 		expect(rendered).toMatch(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏] https:\/\/example\.com/u);
 		expect(rendered).toContain("loading");
 		expect(rendered).toContain("web_scrape loading");
-		const expanded = text(
-			webScrapeTool.renderResult?.(progress, { expanded: true }),
-		);
+		const expanded = text(webScrapeTool.renderResult?.(progress, { expanded: true }));
 		expect(expanded).toContain("URL validated");
 		expect(expanded).toContain("fetching page");
 		expect(expanded).not.toContain("✓ URL validated");
@@ -118,18 +104,12 @@ describe("web tool renderers", () => {
 			responseId: "r-crawl",
 		});
 		const doneTitle = text(
-			webCrawlTool.renderCall?.(
-				{ url: "https://example.com", maxPages: 1 },
-				undefined,
-				{ isPartial: false },
-			),
+			webCrawlTool.renderCall?.({ url: "https://example.com", maxPages: 1 }, undefined, {
+				isPartial: false,
+			}),
 		);
-		const collapsed = text(
-			webCrawlTool.renderResult?.(result, { expanded: false }),
-		);
-		const expanded = text(
-			webCrawlTool.renderResult?.(result, { expanded: true }),
-		);
+		const collapsed = text(webCrawlTool.renderResult?.(result, { expanded: false }));
+		const expanded = text(webCrawlTool.renderResult?.(result, { expanded: true }));
 		expect(doneTitle).toContain("web_crawl https://example.com max 1");
 		expect(doneTitle).not.toContain("✓ web_crawl");
 		expect(collapsed).toContain("✓ 2 succeeded");
@@ -185,23 +165,17 @@ describe("web tool renderers", () => {
 			responseId: "r-batch",
 		});
 		const doneTitle = text(
-			webBatchTool.renderCall?.(
-				{ urls: ["https://a.test", "https://b.test"] },
-				undefined,
-				{ isPartial: false },
-			),
+			webBatchTool.renderCall?.({ urls: ["https://a.test", "https://b.test"] }, undefined, {
+				isPartial: false,
+			}),
 		);
-		const collapsed = text(
-			webBatchTool.renderResult?.(result, { expanded: false }),
-		);
+		const collapsed = text(webBatchTool.renderResult?.(result, { expanded: false }));
 		expect(doneTitle).toContain("web_batch 2 urls");
 		expect(doneTitle).not.toContain("✓ web_batch");
 		expect(collapsed).toContain("✓ 1 succeeded");
 		expect(collapsed).toContain("✖ 1 failed");
 		expect(collapsed).toContain("ⓞ  1 cache hits");
-		const expanded = text(
-			webBatchTool.renderResult?.(result, { expanded: true }),
-		);
+		const expanded = text(webBatchTool.renderResult?.(result, { expanded: true }));
 		expect(expanded).toContain("Per-URL details:");
 		expect(expanded).toContain("status 200 · fast · markdown");
 		expect(expanded).toContain("title: A Test");
@@ -228,9 +202,7 @@ describe("web tool renderers", () => {
 				},
 			},
 		});
-		const rendered = text(
-			webBatchTool.renderResult?.(progress, { expanded: false }),
-		);
+		const rendered = text(webBatchTool.renderResult?.(progress, { expanded: false }));
 
 		expect(rendered).toContain("web_batch");
 		expect(rendered).toContain("1/3 done");
@@ -276,9 +248,7 @@ describe("web tool renderers", () => {
 			text: "Batch scrape complete",
 			data: [{ ok: true, url: "https://a.test" }],
 		});
-		const collapsed = text(
-			webBatchTool.renderResult?.(result, { expanded: false }),
-		);
+		const collapsed = text(webBatchTool.renderResult?.(result, { expanded: false }));
 
 		expect(collapsed).toContain("✖ 0 failed");
 		expect(collapsed).toContain("ⓞ  0 cache hits");
@@ -301,12 +271,8 @@ describe("web tool renderers", () => {
 			},
 		});
 
-		expect(
-			text(webBatchTool.renderResult?.(batch, { expanded: false })),
-		).toContain("0 succeeded");
-		expect(
-			text(webCrawlTool.renderResult?.(crawl, { expanded: false })),
-		).toContain("0 succeeded");
+		expect(text(webBatchTool.renderResult?.(batch, { expanded: false }))).toContain("0 succeeded");
+		expect(text(webCrawlTool.renderResult?.(crawl, { expanded: false }))).toContain("0 succeeded");
 	});
 
 	it("renders diff baseline, unchanged, and changed states", () => {
@@ -331,18 +297,18 @@ describe("web tool renderers", () => {
 			},
 		});
 
-		expect(
-			text(webDiffTool.renderResult?.(baseline, { expanded: false })),
-		).toContain("saved baseline");
-		expect(
-			text(webDiffTool.renderResult?.(unchanged, { expanded: false })),
-		).toContain("no content changes");
-		expect(
-			text(webDiffTool.renderResult?.(changed, { expanded: false })),
-		).toContain("changed: 2 changed, 1 added, 0 removed");
-		expect(
-			text(webDiffTool.renderResult?.(changed, { expanded: false })),
-		).not.toContain("⚠ changed");
+		expect(text(webDiffTool.renderResult?.(baseline, { expanded: false }))).toContain(
+			"saved baseline",
+		);
+		expect(text(webDiffTool.renderResult?.(unchanged, { expanded: false }))).toContain(
+			"no content changes",
+		);
+		expect(text(webDiffTool.renderResult?.(changed, { expanded: false }))).toContain(
+			"changed: 2 changed, 1 added, 0 removed",
+		);
+		expect(text(webDiffTool.renderResult?.(changed, { expanded: false }))).not.toContain(
+			"⚠ changed",
+		);
 	});
 
 	it("keeps generic done descriptions icon-free", () => {
@@ -352,9 +318,7 @@ describe("web tool renderers", () => {
 			url: "https://example.com",
 		});
 
-		expect(text(renderEnvelopeResult(result, false))).toContain(
-			"done · https://example.com",
-		);
+		expect(text(renderEnvelopeResult(result, false))).toContain("done · https://example.com");
 		expect(text(renderEnvelopeResult(result, false))).not.toContain("✓ done");
 	});
 });
@@ -363,30 +327,17 @@ function text(component: RenderComponent | undefined): string {
 	return component?.render(120).join("\n") ?? "";
 }
 
-function terminalWidthSafe(
-	component: RenderComponent | undefined,
-	width: number,
-): boolean {
-	return (
-		component
-			?.render(width)
-			.every((line) => terminalVisibleWidth(line) <= width) ?? false
-	);
+function terminalWidthSafe(component: RenderComponent | undefined, width: number): boolean {
+	return component?.render(width).every((line) => terminalVisibleWidth(line) <= width) ?? false;
 }
 
-function terminalWidthFilled(
-	component: RenderComponent | undefined,
-	width: number,
-): boolean {
-	return (
-		component
-			?.render(width)
-			.every((line) => terminalVisibleWidth(line) === width) ?? false
-	);
+function terminalWidthFilled(component: RenderComponent | undefined, width: number): boolean {
+	return component?.render(width).every((line) => terminalVisibleWidth(line) === width) ?? false;
 }
 
-function terminalVisibleWidth(text: string): number {
-	const stripped = text.replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, "");
+function terminalVisibleWidth(value: string): number {
+	// eslint-disable-next-line no-control-regex -- ANSI CSI escape sequence
+	const stripped = value.replaceAll(/\u001B\[[0-?]*[ -/]*[@-~]/g, "");
 	let width = 0;
 	for (const char of stripped) {
 		width += emojiOrWideCharPattern.test(char) ? 2 : 1;

@@ -1,6 +1,4 @@
-/**
- * @fileoverview storage freshness module.
- */
+/** @file Storage freshness module. */
 import type { CacheMetadata, FreshnessMetadata } from "../../types.ts";
 
 export type Staleness = "fresh" | "aging" | "stale" | "expired" | "revalidated";
@@ -23,10 +21,7 @@ export function freshnessMetadata(
 	nowOrOptions: number | { now?: number; maxAgeSeconds?: number } = Date.now(),
 	maxAgeSeconds = ttlSeconds,
 ): CacheFreshness {
-	const now =
-		typeof nowOrOptions === "number"
-			? nowOrOptions
-			: (nowOrOptions.now ?? Date.now());
+	const now = typeof nowOrOptions === "number" ? nowOrOptions : (nowOrOptions.now ?? Date.now());
 	const freshnessMaxAgeSeconds =
 		typeof nowOrOptions === "number"
 			? maxAgeSeconds
@@ -62,7 +57,7 @@ export function freshnessFromTimestamp(
 	maxAgeSeconds = DEFAULT_MAX_FRESHNESS_AGE_SECONDS,
 	now = Date.now(),
 ): FreshnessMetadata | undefined {
-	if (!cachedAt) return undefined;
+	if (!cachedAt) return;
 	const ageSeconds = ageSince(cachedAt, now);
 	return {
 		cachedAt,
@@ -75,7 +70,7 @@ export function freshnessFromTimestamp(
 export function freshnessFromCache(
 	cache: CacheMetadata | undefined,
 ): FreshnessMetadata | undefined {
-	if (!cache?.cached) return undefined;
+	if (!cache?.cached) return;
 	return {
 		cachedAt: cache.cachedAt ?? cache.fetchedAt,
 		ageSeconds: cache.ageSeconds,
@@ -88,7 +83,7 @@ export function aggregateFreshness(
 	items: Array<FreshnessMetadata | undefined>,
 ): FreshnessMetadata | undefined {
 	const present = items.filter(Boolean) as FreshnessMetadata[];
-	if (present.length === 0) return undefined;
+	if (present.length === 0) return;
 	const oldest = present.reduce((left, right) =>
 		(right.ageSeconds ?? -1) > (left.ageSeconds ?? -1) ? right : left,
 	);
@@ -100,9 +95,7 @@ export function guidanceWithFreshness(
 	freshness: FreshnessMetadata | undefined,
 ): string | undefined {
 	if (!freshness?.stale) return guidance;
-	return guidance
-		? `${guidance} ${STALE_ASSISTANT_GUIDANCE}`
-		: STALE_ASSISTANT_GUIDANCE;
+	return guidance ? `${guidance} ${STALE_ASSISTANT_GUIDANCE}` : STALE_ASSISTANT_GUIDANCE;
 }
 
 function ageSince(iso: string, now: number): number {

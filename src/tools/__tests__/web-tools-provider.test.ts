@@ -1,13 +1,13 @@
 /**
- * @fileoverview web-tools-provider __tests__ module.
- *
- * Tests model-adapter protocol routing in web_summarize and web_extract action=adhoc.
+ * @file Web-tools-provider **tests** module. Tests model-adapter protocol routing in web_summarize
+ *   and web_extract action=adhoc.
  */
 import { describe, expect, it, beforeEach } from "vitest";
-import { createWebSummarizeTool } from "../web-summarize.ts";
-import { createWebExtractTool } from "../web-extract.ts";
-import { modelRegistry } from "../infra/model-registry.ts";
+
 import type { ModelAdapter, ModelRequest } from "../../extract/adhoc/model.ts";
+import { modelRegistry } from "../infra/model-registry.ts";
+import { createWebExtractTool } from "../web-extract.ts";
+import { createWebSummarizeTool } from "../web-summarize.ts";
 
 const signal = new AbortController().signal;
 
@@ -48,7 +48,11 @@ describe("web_summarize provider routing", () => {
 			{ content: "page text", sentences: 1 },
 			signal,
 			undefined,
-			{ getFlag: () => undefined },
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
 		);
 		expect(result.content[0]?.text).toContain("from-gemini");
 	});
@@ -62,7 +66,11 @@ describe("web_summarize provider routing", () => {
 			{ content: "page text", sentences: 1, provider: "ollama" },
 			signal,
 			undefined,
-			{ getFlag: () => undefined },
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
 		);
 		expect(result.content[0]?.text).toContain("from-ollama");
 	});
@@ -114,11 +122,7 @@ describe("web_summarize provider routing", () => {
 				},
 			},
 		});
-		const result = await tool.execute(
-			"call",
-			{ content: "page text", sentences: 1 },
-			signal,
-		);
+		const result = await tool.execute("call", { content: "page text", sentences: 1 }, signal);
 		expect(result.content[0]?.text).toContain("injected");
 	});
 });
@@ -136,7 +140,11 @@ describe("web_extract action=adhoc provider routing", () => {
 			{ content: "page text", prompt: "extract" },
 			signal,
 			undefined,
-			{ getFlag: () => undefined },
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
 		);
 		expect((result.details as { error?: unknown }).error).toBeUndefined();
 	});
@@ -150,7 +158,11 @@ describe("web_extract action=adhoc provider routing", () => {
 			{ content: "page text", prompt: "extract", provider: "ollama" },
 			signal,
 			undefined,
-			{ getFlag: () => undefined },
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
 		);
 		expect((result.details as { error?: unknown }).error).toBeUndefined();
 	});
@@ -164,11 +176,7 @@ describe("web_extract action=adhoc provider routing", () => {
 				},
 			},
 		});
-		const result = await tool.execute(
-			"call",
-			{ content: "page text", prompt: "extract" },
-			signal,
-		);
+		const result = await tool.execute("call", { content: "page text", prompt: "extract" }, signal);
 		expect((result.details as { error?: unknown }).error).toBeUndefined();
 	});
 

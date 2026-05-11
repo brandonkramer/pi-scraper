@@ -1,9 +1,6 @@
-/**
- * @fileoverview summarize page module.
- */
+/** @file Summarize page module. */
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
-import type { ScrapeResult } from "../scrape/pipeline.ts";
-import { type ScrapePipelineDeps, scrapeUrl } from "../scrape/pipeline.ts";
+import { type ScrapePipelineDeps, type ScrapeResult, scrapeUrl } from "../scrape/pipeline.ts";
 import type { CommonScrapeOptions } from "../types.ts";
 
 export interface PageSummaryOptions extends CommonScrapeOptions {
@@ -38,7 +35,8 @@ export async function summarizePage(
 	);
 	return {
 		input: prepared.input,
-		summary: response.text ?? String(response.data ?? ""),
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
+		summary: response.text ?? response.data ?? "",
 		raw: response.raw,
 		usage: response.usage,
 	};
@@ -58,12 +56,7 @@ async function prepareSummaryInput(
 	if (!options.url) {
 		throw new Error("summarizePage requires url or content");
 	}
-	const scrape = await scrapeUrl(
-		options.url,
-		{ ...options, format: "markdown" },
-		deps,
-		signal,
-	);
+	const scrape = await scrapeUrl(options.url, { ...options, format: "markdown" }, deps, signal);
 	return {
 		content: scrape.data.markdown ?? scrape.data.text ?? "",
 		input: { url: options.url, source: "scrape", scrape },
@@ -71,7 +64,6 @@ async function prepareSummaryInput(
 }
 
 function summaryPrompt(options: PageSummaryOptions): string {
-	if (options.bullets)
-		return `Summarize this page in ${options.bullets} bullets.`;
+	if (options.bullets) return `Summarize this page in ${options.bullets} bullets.`;
 	return `Summarize this page in ${options.sentences ?? 3} sentences.`;
 }

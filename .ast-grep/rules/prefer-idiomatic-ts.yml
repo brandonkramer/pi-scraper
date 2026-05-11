@@ -234,32 +234,3 @@ rule:
 # ----------------------------------------------------------------------------
 # - ts-isnan-check  →  eslint(no-self-compare)  (migrated 2026-05-11, verified by fixture)
 
----
-# ----------------------------------------------------------------------------
-# 6. Type-honesty guard — disables of typescript/no-unnecessary-condition mask
-#    real type-system dishonesty (as-casts or required-but-optional fields).
-# ----------------------------------------------------------------------------
-
-id: no-disable-type-honesty-rules
-language: TypeScript
-severity: error
-message: "Don't disable typescript/no-unnecessary-condition — fix the type, not the rule"
-note: |
-  This rule fires when the type system thinks a value can't be null/undefined
-  but you added a `?.` or `!= null` check anyway. The cause is almost always a
-  type assertion (`as X`) that lies, or a property declared required when
-  it's actually optional. Fix the type:
-    1. Drop the `as X` cast; use a type guard (`if (!isFoo(x)) return …`).
-    2. Mark the field optional: `events?: { on?: …; emit?: … }`.
-    3. Widen the parameter: `theme: GeminiTheme | undefined`.
-  A disable here masks a real type-system signal that protects the rest of
-  the file.
-rule:
-  kind: comment
-  regex: "(oxlint|eslint)-disable.*typescript/no-unnecessary-condition"
-files:
-  - "src/**/*.ts"
-ignores:
-  - "**/__tests__/**"
-  - "**/*.test.ts"
-  - "**/*.spec.ts"

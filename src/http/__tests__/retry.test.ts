@@ -1,10 +1,10 @@
-/**
- * @fileoverview http __tests__ retry.test module.
- */
+/** @file Http **tests** retry.test module. */
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { MockAgent } from "undici";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { createHttpClient } from "../client.ts";
 
 let agents: MockAgent[] = [];
@@ -52,9 +52,10 @@ describe("HttpClient retry and rate-limit policy", () => {
 				headers: { "content-type": "text/plain" },
 			});
 
-		await expect(
-			client.fetchUrl("https://example.com/flaky"),
-		).resolves.toMatchObject({ status: 200, text: "ok" });
+		await expect(client.fetchUrl("https://example.com/flaky")).resolves.toMatchObject({
+			status: 200,
+			text: "ok",
+		});
 	});
 
 	it("respects Retry-After seconds before retrying", async () => {
@@ -182,9 +183,7 @@ describe("HttpClient retry and rate-limit policy", () => {
 			}, 10);
 		});
 
-		await new Promise<void>((resolve) =>
-			server.listen(0, "127.0.0.1", resolve),
-		);
+		await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
 		const { port } = server.address() as AddressInfo;
 		const client = createHttpClient({
 			allowPrivateNetwork: true,
@@ -192,18 +191,19 @@ describe("HttpClient retry and rate-limit policy", () => {
 			retryAttempts: 1,
 		});
 		try {
-			await expect(
-				client.fetchUrl(`http://127.0.0.1:${port}/limited`),
-			).resolves.toMatchObject({ status: 429 });
+			await expect(client.fetchUrl(`http://127.0.0.1:${port}/limited`)).resolves.toMatchObject({
+				status: 429,
+			});
 			const paths = ["/a", "/b", "/c", "/d"];
-			await Promise.all(
-				paths.map((path) => client.fetchUrl(`http://127.0.0.1:${port}${path}`)),
-			);
+			await Promise.all(paths.map((path) => client.fetchUrl(`http://127.0.0.1:${port}${path}`)));
 			expect(maxSecondWave).toBeLessThanOrEqual(2);
 		} finally {
-			await new Promise<void>((resolve, reject) =>
-				server.close((error) => (error ? reject(error) : resolve())),
-			);
+			await new Promise<void>((resolve, reject) => {
+				server.close((error) => {
+					if (error) reject(error);
+					else resolve();
+				});
+			});
 		}
 	});
 });

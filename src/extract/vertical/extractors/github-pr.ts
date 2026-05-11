@@ -1,6 +1,4 @@
-/**
- * @fileoverview extract verticals github-pr module.
- */
+/** @file Extract verticals github-pr module. */
 import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
 
 interface GitHubPullApi {
@@ -23,36 +21,23 @@ interface GitHubPullApi {
 }
 
 export const githubPrExtractor: VerticalExtractor = {
-	capability: capability(
-		"github_pr",
-		["https://github.com/:owner/:repo/pull/:number"],
-		{
-			type: "object",
-			required: ["owner", "repo", "number", "title", "state", "url"],
-			properties: {
-				owner: { type: "string" },
-				repo: { type: "string" },
-				number: { type: "number" },
-				title: { type: "string" },
-				state: { type: "string" },
-				url: { type: "string" },
-			},
+	capability: capability("github_pr", ["https://github.com/:owner/:repo/pull/:number"], {
+		type: "object",
+		required: ["owner", "repo", "number", "title", "state", "url"],
+		properties: {
+			owner: { type: "string" },
+			repo: { type: "string" },
+			number: { type: "number" },
+			title: { type: "string" },
+			state: { type: "string" },
+			url: { type: "string" },
 		},
-	),
+	}),
 	match: (url) => {
-		if (url.hostname !== "github.com") return undefined;
-		const [owner, repo, type, number, ...rest] = url.pathname
-			.split("/")
-			.filter(Boolean);
-		if (
-			!owner ||
-			!repo ||
-			type !== "pull" ||
-			!number ||
-			rest.length > 0 ||
-			!/^\d+$/u.test(number)
-		)
-			return undefined;
+		if (url.hostname !== "github.com") return;
+		const [owner, repo, type, number, ...rest] = url.pathname.split("/").filter(Boolean);
+		if (!owner || !repo || type !== "pull" || !number || rest.length > 0 || !/^\d+$/u.test(number))
+			return;
 		return { owner, repo, number };
 	},
 	extract: async (_url, match, context, signal) => {

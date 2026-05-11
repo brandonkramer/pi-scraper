@@ -1,7 +1,6 @@
-/**
- * @fileoverview tools __tests__ tool-contract.test module.
- */
+/** @file Tools **tests** tool-contract.test module. */
 import { describe, expect, it } from "vitest";
+
 import type { WebTool } from "../infra/define.ts";
 import { webTools } from "../infra/register.ts";
 
@@ -50,17 +49,10 @@ const discriminatorChecks: Record<string, RegExp[]> = {
 	web_scrape: [/read|fetch|extract/iu, /URL|content/iu],
 	web_summarize: [/summarize/iu, /URL|content/iu, /multi-source/iu],
 	web_crawl: [/crawl/iu, /status|list/iu, /pages|linked-page/iu],
-	web_map: [
-		/robots\/sitemaps\/llms/iu,
-		/no bodies|no page bodies|does not fetch page content/iu,
-	],
+	web_map: [/robots\/sitemaps\/llms/iu, /no bodies|no page bodies|does not fetch page content/iu],
 	web_batch: [/per-URL/iu],
 	web_diff: [/compare/iu, /snapshot/iu],
-	web_extract: [
-		/verticals?|extractors?/iu,
-		/patterns|regex/iu,
-		/JSON\/schema/iu,
-	],
+	web_extract: [/verticals?|extractors?/iu, /patterns|regex/iu, /JSON\/schema/iu],
 	web_get_result: [/retrieve/iu, /stored response|job manifest/iu],
 };
 
@@ -74,26 +66,22 @@ describe("web tool contracts", () => {
 			name: tool.name,
 			tokens: approximateTokens(serializeContract(tool).length),
 		}));
-		const totalTokens = contractStats.reduce(
-			(total, stat) => total + stat.tokens,
-			0,
-		);
+		const totalTokens = contractStats.reduce((total, stat) => total + stat.tokens, 0);
 		expect(totalTokens).toBeLessThanOrEqual(1960);
 		for (const stat of contractStats) {
 			const name = stat.name as (typeof expectedNames)[number];
-			expect(stat.tokens, stat.name).toBeLessThanOrEqual(
-				perToolTokenCeilings[name],
-			);
+			expect(stat.tokens).toBeLessThanOrEqual(perToolTokenCeilings[name]);
 		}
 	});
 
 	it("keeps advanced scrape fields off lean tools", () => {
 		for (const tool of webTools) {
 			const fields = schemaProperties(tool);
-			for (const field of scrapeOnlyFields) {
-				if (tool.name === "web_scrape") expect(fields).toContain(field);
-				else expect(fields, `${tool.name}.${field}`).not.toContain(field);
-			}
+			const isScrape = tool.name === "web_scrape";
+			const missing = scrapeOnlyFields.filter((f) =>
+				isScrape ? !fields.includes(f) : fields.includes(f),
+			);
+			expect(missing).toEqual([]);
 		}
 
 		for (const tool of webTools) {

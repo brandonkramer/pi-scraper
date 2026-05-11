@@ -5,17 +5,10 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const rootDir = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	"../../..",
-);
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const outDir = path.join(rootDir, "bench/.build/tool-contract-eval");
 const args = process.argv.slice(2);
-const focused = valueList(args, "--focused") ?? [
-	"web_scrape",
-	"web_crawl",
-	"web_extract",
-];
+const focused = valueList(args, "--focused") ?? ["web_scrape", "web_crawl", "web_extract"];
 const runEmpirical = flag(args, "--empirical");
 
 await rm(outDir, { recursive: true, force: true });
@@ -60,9 +53,7 @@ if (runEmpirical) {
 	try {
 		printEmpiricalMetrics(measureEmpiricalOverhead(tools));
 	} catch (error) {
-		console.error(
-			`EMPIRICAL_ERROR: ${error instanceof Error ? error.message : String(error)}`,
-		);
+		console.error(`EMPIRICAL_ERROR: ${error instanceof Error ? error.message : String(error)}`);
 		console.error(
 			"Note: Empirical measurement requires a provider/model that returns token counts in JSON mode.",
 		);
@@ -123,12 +114,8 @@ function printStaticMetrics(report) {
 	const focusDescriptionTotal = sumFocused(report.perTool, "description");
 	const focusContractTotal = sumFocused(report.perTool, "contract");
 	console.log(`METRIC description_tokens=${report.descriptionTokens}`);
-	console.log(
-		`METRIC skill_description_tokens=${report.skillDescriptionTokens}`,
-	);
-	console.log(
-		`METRIC combined_description_tokens=${report.combinedDescriptionTokens}`,
-	);
+	console.log(`METRIC skill_description_tokens=${report.skillDescriptionTokens}`);
+	console.log(`METRIC combined_description_tokens=${report.combinedDescriptionTokens}`);
 	console.log(`METRIC focus_description_tokens=${focusDescriptionTotal}`);
 	console.log(`METRIC focus_contract_tokens=${focusContractTotal}`);
 	console.log(`METRIC contract_tokens=${report.contractTokens}`);
@@ -139,19 +126,14 @@ function printStaticMetrics(report) {
 			contract: 0,
 		};
 		const metricName = tool.name.slice(4);
-		console.log(
-			`METRIC ${metricName}_description_tokens=${tokens.description}`,
-		);
+		console.log(`METRIC ${metricName}_description_tokens=${tokens.description}`);
 		console.log(`METRIC ${metricName}_contract_tokens=${tokens.contract}`);
 	}
 	console.log(`METRIC tool_count=${tools.length}`);
 }
 
 function sumFocused(perTool, key) {
-	return focused.reduce(
-		(sum, name) => sum + (perTool.get(name)?.[key] ?? 0),
-		0,
-	);
+	return focused.reduce((sum, name) => sum + (perTool.get(name)?.[key] ?? 0), 0);
 }
 
 function measureEmpiricalOverhead(tools) {
@@ -178,24 +160,14 @@ function runPiMeasurement({ toolNames }) {
 	const parsed = parseJsonLoose(result.stdout);
 	const inputTokens = findInputTokens(parsed);
 	if (!Number.isFinite(inputTokens)) {
-		throw new Error(
-			`Could not find input token usage in Pi JSON output:\n${result.stdout}`,
-		);
+		throw new Error(`Could not find input token usage in Pi JSON output:\n${result.stdout}`);
 	}
 	return { inputTokens };
 }
 
 function piArgs(toolNames) {
-	const prompt =
-		process.env.PI_TOOL_CONTRACT_PROMPT ??
-		"Reply with exactly OK. Do not call tools.";
-	const args = [
-		"--no-skills",
-		"--no-context-files",
-		"--no-session",
-		"--mode",
-		"json",
-	];
+	const prompt = process.env.PI_TOOL_CONTRACT_PROMPT ?? "Reply with exactly OK. Do not call tools.";
+	const args = ["--no-skills", "--no-context-files", "--no-session", "--mode", "json"];
 	if (toolNames.length === 0) {
 		args.push("--no-tools", "--no-extensions");
 	} else {
@@ -265,7 +237,7 @@ function findInputTokens(value) {
 			if (nested && typeof nested === "object") queue.push(nested);
 		}
 	}
-	return undefined;
+	return;
 }
 
 function isInputTokenKey(key) {
@@ -278,7 +250,7 @@ function isTotalTokenKey(key) {
 
 function valueList(args, flagName) {
 	const index = args.indexOf(flagName);
-	if (index < 0) return undefined;
+	if (index < 0) return;
 	return (args[index + 1] ?? "")
 		.split(",")
 		.map((item) => item.trim())

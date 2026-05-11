@@ -47,15 +47,11 @@ export async function buildAndImport(rootDir) {
 		);
 		await writeFile(marker, "");
 	}
-	const pipeline = await import(
-		pathToFileURL(path.join(outDir, "scrape/pipeline.js")).toString()
-	);
+	const pipeline = await import(pathToFileURL(path.join(outDir, "scrape/pipeline.js")).toString());
 	const markdown = await import(
 		pathToFileURL(path.join(outDir, "serialize/markdown.js")).toString()
 	);
-	const fast = await import(
-		pathToFileURL(path.join(outDir, "parse/fast.js")).toString()
-	);
+	const fast = await import(pathToFileURL(path.join(outDir, "parse/fast.js")).toString());
 	return {
 		scrapeUrl: pipeline.scrapeUrl,
 		htmlToMarkdown: markdown.htmlToMarkdown,
@@ -85,6 +81,6 @@ async function mtimeMs(file) {
 	try {
 		return (await stat(file)).mtimeMs;
 	} catch {
-		return undefined;
+		/* ignore */
 	}
 }

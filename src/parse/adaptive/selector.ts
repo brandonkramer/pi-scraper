@@ -1,20 +1,17 @@
 /**
- * @fileoverview Adaptive CSS/XPath selector with fingerprint-based relocation.
- *
  * @remarks
- * When a direct selector returns no matches, this module retrieves a stored
- * fingerprint and scans candidate elements to find the best structural match.
- * The approach is deterministic and local — no LLM or external service.
+ *   When a direct selector returns no matches, this module retrieves a stored fingerprint and scans
+ *   candidate elements to find the best structural match. The approach is deterministic and local —
+ *   no LLM or external service.
+ * @file Adaptive CSS/XPath selector with fingerprint-based relocation.
  */
-import * as cssSelect from "css-select";
-import type { Document, Element } from "domhandler";
+import { selectAll } from "css-select";
 import { ElementType } from "domelementtype";
-import * as domutils from "domutils";
+import type { Document, Element } from "domhandler";
+import { getElementsByTagType, isTag, textContent } from "domutils";
+
+import { fingerprintElement, type ElementFingerprint } from "./fingerprint.ts";
 import { compareFingerprints } from "./similarity.ts";
-import {
-	fingerprintElement,
-	type ElementFingerprint,
-} from "./fingerprint.ts";
 
 export interface AdaptiveSelectorOptions {
 	/** CSS or XPath selector string. */
@@ -66,28 +63,15 @@ export interface AdaptiveSelectorResult {
  * @param options — selector + adaptive controls
  * @param loadFingerprint — async callback to retrieve a stored fingerprint
  * @param saveFingerprint — async callback to save a fingerprint
- * @returns matched elements with strategy metadata
+ * @returns Matched elements with strategy metadata
  */
 export async function runAdaptiveSelector(
 	document: Document,
 	options: AdaptiveSelectorOptions,
-	loadFingerprint: (
-		identifier: string,
-	) => Promise<ElementFingerprint | undefined>,
-	saveFingerprint: (
-		identifier: string,
-		fingerprint: ElementFingerprint,
-	) => Promise<void>,
+	loadFingerprint: (identifier: string) => Promise<ElementFingerprint | undefined>,
+	saveFingerprint: (identifier: string, fingerprint: ElementFingerprint) => Promise<void>,
 ): Promise<AdaptiveSelectorResult> {
-	const {
-		selector,
-		selectorType,
-		identifier,
-		adaptive,
-		autoSave,
-		threshold,
-		limit,
-	} = options;
+	const { selector, selectorType, identifier, adaptive, autoSave, threshold, limit } = options;
 
 	// 1. Try direct selection
 	const direct = selectDirect(document, selector, selectorType);
@@ -145,24 +129,24 @@ function selectDirect(
 	selectorType: "css" | "xpath" | "text",
 ): Element[] {
 	if (selectorType === "css") {
-		return cssSelect.selectAll(selector, document.children);
+		return selectAll(selector, document.children);
 	}
 	if (selectorType === "xpath") {
 		// htmlparser2 does not natively support XPath; convert basic cases or return empty
 		// For now, XPath falls back to CSS if it starts with a simple path, else empty
 		try {
-			return cssSelect.selectAll(selector, document.children);
+			return selectAll(selector, document.children);
 		} catch {
 			return [];
 		}
 	}
 	// text search: find all elements whose text contains the needle
 	const needle = selector.toLowerCase();
-	const all = domutils.getElementsByTagType(ElementType.Tag, document, true);
+	const all = getElementsByTagType(ElementType.Tag, document, true);
 	return all
-		.filter((el): el is Element => domutils.isTag(el))
+		.filter((el): el is Element => isTag(el))
 		.filter((el) => {
-			const text = domutils.textContent(el).toLowerCase();
+			const text = textContent(el).toLowerCase();
 			return text.includes(needle);
 		});
 }
@@ -178,9 +162,9 @@ function relocateByFingerprint(
 	stored: ElementFingerprint,
 	threshold: number,
 ): Candidate[] {
-	const all = domutils
-		.getElementsByTagType(ElementType.Tag, document, true)
-		.filter((el): el is Element => domutils.isTag(el));
+	const all = getElementsByTagType(ElementType.Tag, document, true).filter((el): el is Element =>
+		isTag(el),
+	);
 	const candidates: Candidate[] = [];
 
 	for (const element of all) {

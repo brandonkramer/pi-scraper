@@ -1,6 +1,4 @@
-/**
- * @fileoverview Job parameter sanitization — strips secret keys from persisted params.
- */
+/** @file Job parameter sanitization — strips secret keys from persisted params. */
 import { isUnknownRecord } from "../../types.ts";
 
 const SECRET_KEY_PATTERN =
@@ -14,15 +12,11 @@ export function sanitizeJobParams(value: unknown): Record<string, unknown> {
 function sanitizeValue(value: unknown, depth: number): unknown {
 	if (depth > 4) return "[truncated]";
 	if (value === null || value === undefined) return value;
-	if (
-		typeof value === "string" ||
-		typeof value === "number" ||
-		typeof value === "boolean"
-	)
+	if (typeof value === "string" || typeof value === "number" || typeof value === "boolean")
 		return value;
 	if (Array.isArray(value))
 		return value.slice(0, 100).map((item) => sanitizeValue(item, depth + 1));
-	if (!isUnknownRecord(value)) return undefined;
+	if (!isUnknownRecord(value)) return;
 	const output: Record<string, unknown> = {};
 	for (const [key, entry] of Object.entries(value)) {
 		if (SECRET_KEY_PATTERN.test(key)) continue;

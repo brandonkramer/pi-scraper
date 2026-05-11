@@ -9,39 +9,43 @@ const rootDir = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
 	"../..",
 );
-const args = process.argv.slice(2);
-const predictionsPath = valueFlag(args, "--predictions");
-const outDir =
-	valueFlag(args, "--out-dir") ??
-	path.join(rootDir, "bench/results/tool-selection");
-const fixtures = JSON.parse(
-	await readFile(
-		path.join(rootDir, "eval/tool-selection/prompts.json"),
-		"utf8",
-	),
-);
-const tools = await loadWebTools();
-const contracts = tools.map((tool) => ({
-	name: tool.name,
-	label: tool.label,
-	description: tool.description,
-	parameters: tool.parameters,
-}));
-const predictions = await loadPredictions({
-	predictionsPath,
-	contracts,
-	fixtures,
-});
-const report = buildReport({ contracts, fixtures, predictions });
-const markdown = renderMarkdown(report);
-await mkdir(outDir, { recursive: true });
-await writeFile(
-	path.join(outDir, "latest.json"),
-	`${JSON.stringify(report, null, 2)}\n`,
-);
-await writeFile(path.join(outDir, "latest.md"), `${markdown}\n`);
-console.log(markdown);
-console.log(`\nJSON: ${path.join(outDir, "latest.json")}`);
+await main();
+
+async function main() {
+	const args = process.argv.slice(2);
+	const predictionsPath = valueFlag(args, "--predictions");
+	const outDir =
+		valueFlag(args, "--out-dir") ??
+		path.join(rootDir, "bench/results/tool-selection");
+	const fixtures = JSON.parse(
+		await readFile(
+			path.join(rootDir, "eval/tool-selection/prompts.json"),
+			"utf8",
+		),
+	);
+	const tools = await loadWebTools();
+	const contracts = tools.map((tool) => ({
+		name: tool.name,
+		label: tool.label,
+		description: tool.description,
+		parameters: tool.parameters,
+	}));
+	const predictions = await loadPredictions({
+		predictionsPath,
+		contracts,
+		fixtures,
+	});
+	const report = buildReport({ contracts, fixtures, predictions });
+	const markdown = renderMarkdown(report);
+	await mkdir(outDir, { recursive: true });
+	await writeFile(
+		path.join(outDir, "latest.json"),
+		`${JSON.stringify(report, null, 2)}\n`,
+	);
+	await writeFile(path.join(outDir, "latest.md"), `${markdown}\n`);
+	console.log(markdown);
+	console.log(`\nJSON: ${path.join(outDir, "latest.json")}`);
+}
 
 async function loadWebTools() {
 	const outDir = path.join(rootDir, "bench/.build/tool-selection-eval");

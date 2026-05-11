@@ -1,8 +1,7 @@
-/**
- * @fileoverview crawl state module.
- */
+/** @file Crawl state module. */
 import { randomUUID } from "node:crypto";
 import path from "node:path";
+
 import { openStorageDb, type StorageDb } from "../storage/db/open.ts";
 import type { ResolveStorageOptions } from "../storage/paths.ts";
 import { resolvePiStoragePaths } from "../storage/paths.ts";
@@ -58,10 +57,7 @@ interface MetadataRow {
 	updated_at: string;
 }
 
-export function createCrawlState(
-	seedUrl: string,
-	crawlId: string = randomUUID(),
-): CrawlState {
+export function createCrawlState(seedUrl: string, crawlId: string = randomUUID()): CrawlState {
 	const now = new Date().toISOString();
 	return {
 		crawlId,
@@ -119,15 +115,13 @@ export async function loadCrawlState(
 ): Promise<CrawlState> {
 	const metadata = await loadCrawlMetadata(crawlId, options);
 	const db = await openStorageDb(options);
-	const frontier = db
-		.prepare(SELECT_FRONTIER)
-		.all(crawlId) as unknown as FrontierItem[];
-	const visited = (
-		db.prepare(SELECT_VISITED).all(crawlId) as Array<{ url: string }>
-	).map((row) => row.url);
-	const results = (
-		db.prepare(SELECT_RESULTS).all(crawlId) as Array<{ url: string }>
-	).map((row) => row.url);
+	const frontier = db.prepare(SELECT_FRONTIER).all(crawlId) as unknown as FrontierItem[];
+	const visited = (db.prepare(SELECT_VISITED).all(crawlId) as Array<{ url: string }>).map(
+		(row) => row.url,
+	);
+	const results = (db.prepare(SELECT_RESULTS).all(crawlId) as Array<{ url: string }>).map(
+		(row) => row.url,
+	);
 	return {
 		crawlId: metadata.crawlId,
 		seedUrl: metadata.seedUrl,
@@ -145,9 +139,9 @@ export async function loadCrawlMetadata(
 	options: ResolveStorageOptions = {},
 ): Promise<CrawlMetadata> {
 	const db = await openStorageDb(options);
-	const row = db
-		.prepare("SELECT * FROM crawl_metadata WHERE crawl_id = ?")
-		.get(crawlId) as MetadataRow | undefined;
+	const row = db.prepare("SELECT * FROM crawl_metadata WHERE crawl_id = ?").get(crawlId) as
+		| MetadataRow
+		| undefined;
 	if (!row) throw new Error(`Crawl state not found: ${crawlId}`);
 	return metadataFromRow(row);
 }
@@ -160,7 +154,7 @@ export async function updateCrawlMetadata(
 	const state = await loadCrawlState(crawlId, options);
 	state.metadata = { ...normalizeCrawlMetadata(state), ...patch };
 	await saveCrawlState(state, options);
-	return loadCrawlMetadata(crawlId, options);
+	return await loadCrawlMetadata(crawlId, options);
 }
 
 export async function listCrawlMetadata(
@@ -194,11 +188,7 @@ function normalizeCrawlMetadata(state: CrawlState): CrawlMetadata {
 	};
 }
 
-function createCrawlMetadata(
-	crawlId: string,
-	seedUrl: string,
-	now: string,
-): CrawlMetadata {
+function createCrawlMetadata(crawlId: string, seedUrl: string, now: string): CrawlMetadata {
 	return {
 		crawlId,
 		seedUrl,
@@ -253,29 +243,20 @@ function replaceFrontier(
 	);
 	for (const item of wanted.values()) {
 		const current = existing.get(item.url);
-		if (
-			!current ||
-			current.depth !== item.depth ||
-			current.parentUrl !== item.parentUrl
-		) {
+		if (!current || current.depth !== item.depth || current.parentUrl !== item.parentUrl) {
 			upsert.run(crawlId, item.url, item.depth, item.parentUrl ?? null, now);
 		}
 	}
 	deleteRemoved(db, "crawl_frontier", crawlId, wanted);
 }
 
-function replaceVisited(
-	db: StorageDb,
-	crawlId: string,
-	visited: string[],
-	now: string,
-): void {
+function replaceVisited(db: StorageDb, crawlId: string, visited: string[], now: string): void {
 	const wanted = new Set(visited);
 	const existing = new Set(
 		(
-			db
-				.prepare("SELECT url FROM crawl_visited WHERE crawl_id = ?")
-				.all(crawlId) as Array<{ url: string }>
+			db.prepare("SELECT url FROM crawl_visited WHERE crawl_id = ?").all(crawlId) as Array<{
+				url: string;
+			}>
 		).map((row) => row.url),
 	);
 	const insert = db.prepare(
@@ -287,11 +268,7 @@ function replaceVisited(
 	deleteRemoved(db, "crawl_visited", crawlId, wanted);
 }
 
-function replaceResults(
-	db: StorageDb,
-	crawlId: string,
-	results: string[],
-): void {
+function replaceResults(db: StorageDb, crawlId: string, results: string[]): void {
 	const wanted = new Set(results);
 	const existing = new Map(
 		(
@@ -303,9 +280,9 @@ function replaceResults(
 	const upsert = db.prepare(
 		"INSERT OR REPLACE INTO crawl_results (crawl_id, url, position) VALUES (?, ?, ?)",
 	);
-	results.forEach((url, index) => {
+	for (const [index, url] of results.entries()) {
 		if (existing.get(url) !== index) upsert.run(crawlId, url, index);
-	});
+	}
 	deleteRemoved(db, "crawl_results", crawlId, wanted);
 }
 
@@ -315,19 +292,17 @@ function deleteRemoved(
 	crawlId: string,
 	wanted: Set<string> | Map<string, unknown>,
 ): void {
-	const rows = db
-		.prepare(`SELECT url FROM ${table} WHERE crawl_id = ?`)
-		.all(crawlId) as Array<{ url: string }>;
-	const remove = db.prepare(
-		`DELETE FROM ${table} WHERE crawl_id = ? AND url = ?`,
-	);
+	const rows = db.prepare(`SELECT url FROM ${table} WHERE crawl_id = ?`).all(crawlId) as Array<{
+		url: string;
+	}>;
+	const remove = db.prepare(`DELETE FROM ${table} WHERE crawl_id = ? AND url = ?`);
 	for (const row of rows) {
 		if (!wanted.has(row.url)) remove.run(crawlId, row.url);
 	}
 }
 
 function safeCrawlId(crawlId: string): string {
-	return crawlId.replace(/[^a-zA-Z0-9._-]/gu, "_");
+	return crawlId.replaceAll(/[^a-zA-Z0-9._-]/gu, "_");
 }
 
 const UPSERT_METADATA = `INSERT OR REPLACE INTO crawl_metadata

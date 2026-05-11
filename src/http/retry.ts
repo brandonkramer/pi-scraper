@@ -1,6 +1,4 @@
-/**
- * @fileoverview http retry module.
- */
+/** @file Http retry module. */
 import { DEFAULT_RETRY } from "../defaults.ts";
 import type { CommonRequestOptions } from "../types.ts";
 import { BodySizeLimitError } from "./download.ts";
@@ -21,8 +19,8 @@ export function shouldStopRetrying(
 	return (
 		error instanceof RobotsDeniedError ||
 		error instanceof BodySizeLimitError ||
-		(isClientError(error) && error.structured.retryable === false) ||
-		(hasStructuredError(error) && error.structured.retryable === false) ||
+		(isClientError(error) && !error.structured.retryable) ||
+		(hasStructuredError(error) && !error.structured.retryable) ||
 		signal?.aborted === true ||
 		attempt >= attempts
 	);
@@ -48,9 +46,7 @@ export function retryDelayMs(
 	return Math.round(base + Math.random() * jitterMs);
 }
 
-export function parseRetryAfterMs(
-	value: string | undefined,
-): number | undefined {
+export function parseRetryAfterMs(value: string | undefined): number | undefined {
 	return parseRetryAfter(value);
 }
 
@@ -58,7 +54,7 @@ export { hasStructuredError } from "./errors.ts";
 
 function parseRetryAfter(value: string | undefined): number | undefined {
 	if (!value) {
-		return undefined;
+		return;
 	}
 	const seconds = Number.parseInt(value, 10);
 	if (Number.isFinite(seconds)) {

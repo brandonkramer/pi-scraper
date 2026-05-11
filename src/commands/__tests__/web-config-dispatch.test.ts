@@ -1,11 +1,7 @@
-/**
- * @fileoverview web-config-dispatch __tests__ module.
- */
+/** @file Web-config-dispatch **tests** module. */
 import { describe, expect, it } from "vitest";
-import {
-	parseWebConfigCommandArgs,
-	runWebConfigCommand,
-} from "../web-config.ts";
+
+import { parseWebConfigCommandArgs, runWebConfigCommand } from "../web-config.ts";
 
 describe("parseWebConfigCommandArgs", () => {
 	it("returns empty for no args (picker path)", () => {
@@ -70,7 +66,7 @@ describe("parseWebConfigCommandArgs", () => {
 	});
 
 	it("throws on unknown action", () => {
-		expect(() => parseWebConfigCommandArgs("unknown")).toThrow();
+		expect(() => parseWebConfigCommandArgs("unknown")).toThrow(/.*/);
 	});
 });
 
@@ -79,7 +75,9 @@ describe("runWebConfigCommand dispatch", () => {
 		let selectCalled = false;
 		const ctx = {
 			ui: {
-				notify() {},
+				notify() {
+					/* no-op */
+				},
 				async select(_title: string, choices: readonly string[]) {
 					selectCalled = true;
 					return choices[0]; // "Status"
@@ -99,10 +97,10 @@ describe("runWebConfigCommand dispatch", () => {
 	it("cancels when picker returns undefined", async () => {
 		const ctx = {
 			ui: {
-				notify() {},
-				async select() {
-					return undefined;
+				notify() {
+					/* no-op */
 				},
+				select: async (): Promise<string | undefined> => undefined,
 			},
 		};
 		const result = await runWebConfigCommand({}, ctx);
