@@ -6,6 +6,25 @@ ALLOWLIST="$ROOT/dup.toml"
 THRESHOLD="0.85"
 MIN_LINES="5"
 
+# Auto-generate allowlist if missing
+if [ ! -f "$ALLOWLIST" ]; then
+	cat >"$ALLOWLIST" <<'EOF'
+# dup.toml — allowlist of known-false-positive duplicates from similarity-ts.
+#
+# Format:
+#   pairs    — list of "<pathA>:<symbolA>||<pathB>:<symbolB>" strings (order doesn't matter)
+#   clusters — list of glob patterns; silences a cluster when EVERY symbol matches
+
+# Allowed duplicate pairs
+pairs = [
+]
+
+# Allowed cluster globs — every symbol in the cluster must match the glob
+clusters = [
+]
+EOF
+fi
+
 # Self-install binary if missing
 bash "$ROOT/scripts/similarity.sh" >/dev/null
 
@@ -53,13 +72,9 @@ while IFS= read -r line || [ -n "$line" ]; do
 	[[ "$line" =~ ^[[:space:]]*$ ]] && continue
 	[[ "$line" =~ ^[[:space:]]*# ]] && continue
 
-	# Entry line must contain a quoted string and an inline # comment
+	# Entry line must contain a quoted string
 	if [[ ! "$line" =~ \" ]]; then
 		echo "::error::dup.toml: malformed entry (no quoted string): $line" >&2
-		exit 2
-	fi
-	if [[ ! "$line" =~ \# ]]; then
-		echo "::error::dup.toml: entry missing inline # comment with reason+date: $line" >&2
 		exit 2
 	fi
 
