@@ -145,7 +145,7 @@ function parentUrl(url: string, entries: Map<string, ContextNode>): ContextNode 
 		while (parts.length > 0) {
 			parts.pop();
 			const parent = new URL(current);
-			parent.pathname = parts.length ? `/${parts.join("/")}/` : "/";
+			parent.pathname = parts.length > 0 ? `/${parts.join("/")}/` : "/";
 			parent.search = "";
 			parent.hash = "";
 			const match = entries.get(parent.toString());

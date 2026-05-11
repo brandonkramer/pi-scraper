@@ -78,9 +78,7 @@ describe("web tool contracts", () => {
 		for (const tool of webTools) {
 			const fields = schemaProperties(tool);
 			const isScrape = tool.name === "web_scrape";
-			const missing = scrapeOnlyFields.filter((f) =>
-				isScrape ? !fields.includes(f) : fields.includes(f),
-			);
+			const missing = scrapeOnlyFields.filter((f) => fields.includes(f) === !isScrape);
 			expect(missing).toEqual([]);
 		}
 

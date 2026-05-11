@@ -121,5 +121,8 @@ export const huggingFaceDatasetExtractor: VerticalExtractor = {
 };
 
 function encodeRepoId(id: string): string {
-	return id.split("/").map(encodeURIComponent).join("/");
+	return id
+		.split("/")
+		.map((part) => encodeURIComponent(part))
+		.join("/");
 }

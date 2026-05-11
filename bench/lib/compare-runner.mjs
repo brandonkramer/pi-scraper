@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
 import { buildAndImport } from "./build-pipeline.mjs";
 import { intFlag, stringFlag } from "./cli-args.mjs";
 import { perfRow } from "./report.mjs";
@@ -87,9 +88,7 @@ async function runCompare({ fixtures, tools, warmup, repeats, perCase }) {
 			});
 		}
 		cases.push({
-			fixture:
-				fixture.label ??
-				path.relative(fixture.rootDir ?? process.cwd(), fixture.path),
+			fixture: fixture.label ?? path.relative(fixture.rootDir ?? process.cwd(), fixture.path),
 			...(perCase ? perCase(fixture, toolResults) : {}),
 			tools: toolResults,
 		});
@@ -97,13 +96,7 @@ async function runCompare({ fixtures, tools, warmup, repeats, perCase }) {
 	return cases;
 }
 
-async function writeCompareReport({
-	rootDir,
-	kind,
-	resultPath,
-	report,
-	markdown,
-}) {
+async function writeCompareReport({ rootDir, kind, resultPath, report, markdown }) {
 	await writeSuiteReport({
 		rootDir,
 		suite: resultPath?.suite ?? kind,
@@ -114,17 +107,11 @@ async function writeCompareReport({
 	});
 }
 
-function renderCompareMarkdown({
-	title,
-	report,
-	caseHeading,
-	qualityHeader,
-	qualityRow,
-}) {
+function renderCompareMarkdown({ title, report, caseHeading, qualityHeader, qualityRow }) {
 	const lines = [
-		`# ${title}`,
+		`# ${String(title)}`,
 		"",
-		`Generated: ${report.generatedAt} · Node: ${report.nodeVersion} · warmup ${report.modeFlags.warmup} × repeats ${report.modeFlags.repeats}`,
+		`Generated: ${String(report.generatedAt)} · Node: ${String(report.nodeVersion)} · warmup ${String(report.modeFlags.warmup)} × repeats ${String(report.modeFlags.repeats)}`,
 		"",
 	];
 	const qualityRows = aggregateQuality(report.cases);
@@ -134,7 +121,7 @@ function renderCompareMarkdown({
 			"",
 			"| Tool | Cases | Mean structure score | Perfect cases |",
 			"| --- | ---: | ---: | ---: |",
-			...qualityRows.map(qualityAggregateRow),
+			...qualityRows.map((row) => qualityAggregateRow(row)),
 			"",
 		);
 	}
@@ -145,12 +132,12 @@ function renderCompareMarkdown({
 			"",
 			"| Tool | Cases | Median of medians | Mean of means | Best median cases |",
 			"| --- | ---: | ---: | ---: | ---: |",
-			...aggregateRows.map(aggregateRow),
+			...aggregateRows.map((row) => aggregateRow(row)),
 			"",
 		);
 	}
 	for (const c of report.cases) {
-		lines.push(`## ${caseHeading(c)}`, "");
+		lines.push(`## ${String(caseHeading(c))}`, "");
 		lines.push("### Quality", "", qualityHeader);
 		for (const tool of c.tools) lines.push(qualityRow(tool));
 		lines.push("");
@@ -167,11 +154,7 @@ function renderCompareMarkdown({
 }
 
 function aggregateQuality(cases) {
-	if (
-		!cases.every((c) =>
-			c.tools.every((tool) => Number.isFinite(tool.quality.structure_score)),
-		)
-	) {
+	if (!cases.every((c) => c.tools.every((tool) => Number.isFinite(tool.quality.structure_score)))) {
 		return [];
 	}
 	const byTool = new Map();
@@ -187,13 +170,11 @@ function aggregateQuality(cases) {
 			byTool.set(tool.name, row);
 		}
 	}
-	return [...byTool.values()].sort(
-		(a, b) => average(b.scores) - average(a.scores),
-	);
+	return [...byTool.values()].toSorted((a, b) => average(b.scores) - average(a.scores));
 }
 
 function qualityAggregateRow(row) {
-	return `| ${row.name} | ${row.scores.length} | ${round(average(row.scores))} | ${row.perfectCases} |`;
+	return `| ${String(row.name)} | ${String(row.scores.length)} | ${String(round(average(row.scores)))} | ${String(row.perfectCases)} |`;
 }
 
 function aggregatePerformance(cases) {
@@ -213,13 +194,11 @@ function aggregatePerformance(cases) {
 			byTool.set(tool.name, row);
 		}
 	}
-	return [...byTool.values()].sort(
-		(a, b) => average(a.medians) - average(b.medians),
-	);
+	return [...byTool.values()].toSorted((a, b) => average(a.medians) - average(b.medians));
 }
 
 function aggregateRow(row) {
-	return `| ${row.name} | ${row.medians.length} | ${round(average(row.medians))} | ${round(average(row.means))} | ${row.bestMedianCases} |`;
+	return `| ${String(row.name)} | ${String(row.medians.length)} | ${String(round(average(row.medians)))} | ${String(round(average(row.means)))} | ${String(row.bestMedianCases)} |`;
 }
 
 function average(values) {

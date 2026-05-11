@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import type { ModelAdapter, ModelRequest } from "../../extract/adhoc/model.ts";
+import type { ModelAdapter, ModelRequest, ModelResponse } from "../../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
 import { renderText } from "../../tui/text.ts";
 import type { RenderComponent } from "../../tui/types.ts";
@@ -13,6 +13,16 @@ import { registerWebTools } from "../infra/register.ts";
 import { createWebExtractTool, webExtractTool } from "../web-extract.ts";
 import { createWebScrapeTool } from "../web-scrape.ts";
 import { createWebSummarizeTool } from "../web-summarize.ts";
+
+function summarizeOrExtractAdapter(request: ModelRequest): string | { ok: boolean } {
+	return request.task === "summarize" ? "registered summary" : { ok: true };
+}
+
+function fixtureHeadingAdapter(request: ModelRequest): string {
+	return request.input.includes("Fixture Heading")
+		? "Summary from scraped page."
+		: "Summary from provided content.";
+}
 
 const signal = new AbortController().signal;
 
@@ -276,9 +286,7 @@ describe("selected web tool handlers", () => {
 	it("registers model-backed extract and scrape-summary paths", async () => {
 		const registered: WebTool[] = [];
 		const registrar = {
-			modelAdapter: fakeModelAdapter((request) =>
-				request.task === "summarize" ? "registered summary" : { ok: true },
-			),
+			modelAdapter: fakeModelAdapter(summarizeOrExtractAdapter),
 			registerTool(tool: WebTool) {
 				registered.push(tool);
 			},
@@ -314,11 +322,7 @@ describe("selected web tool handlers", () => {
 
 	it("runs provided-content and URL-backed summarization with an injected model adapter", async () => {
 		const tool = createWebScrapeTool({
-			modelAdapter: fakeModelAdapter((request) =>
-				request.input.includes("Fixture Heading")
-					? "Summary from scraped page."
-					: "Summary from provided content.",
-			),
+			modelAdapter: fakeModelAdapter(fixtureHeadingAdapter),
 			scrapeDeps: fakeScrapeDeps(),
 		});
 
@@ -350,11 +354,7 @@ describe("selected web tool handlers", () => {
 
 	it("runs dedicated provided-content and URL-backed summarization", async () => {
 		const tool = createWebSummarizeTool({
-			modelAdapter: fakeModelAdapter((request) =>
-				request.input.includes("Fixture Heading")
-					? "Summary from scraped page."
-					: "Summary from provided content.",
-			),
+			modelAdapter: fakeModelAdapter(fixtureHeadingAdapter),
 			scrapeDeps: fakeScrapeDeps(),
 		});
 
@@ -528,7 +528,7 @@ function renderComponentText(component: RenderComponent | undefined): string {
 
 function fakeModelAdapter(respond: (request: ModelRequest) => unknown): ModelAdapter {
 	return {
-		async run<T = unknown>(request: ModelRequest) {
+		async run<T = unknown>(request: ModelRequest): Promise<ModelResponse<T>> {
 			const data = respond(request);
 			return {
 				data: data as T,

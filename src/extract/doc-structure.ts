@@ -40,7 +40,7 @@ export function sectionFromHeading(
 		level,
 		anchor: headingAnchor(heading),
 		content: sectionContent(contentNodes, options.contentChars),
-		codeBlocks: codeBlocks.length ? codeBlocks : undefined,
+		codeBlocks: codeBlocks.length > 0 ? codeBlocks : undefined,
 	});
 }
 

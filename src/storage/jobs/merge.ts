@@ -1,14 +1,10 @@
-/**
- * @fileoverview Shared job manifest merge utilities.
- */
+/** @file Shared job manifest merge utilities. */
 
-/**
- * Merge two optional string arrays, deduplicating and filtering empties.
- */
+/** Merge two optional string arrays, deduplicating and filtering empties. */
 export function mergeUnique(
 	left: string[] | undefined,
 	right: string[] | undefined,
 ): string[] | undefined {
 	const merged = [...(left ?? []), ...(right ?? [])].filter(Boolean);
-	return merged.length ? [...new Set(merged)] : undefined;
+	return merged.length > 0 ? [...new Set(merged)] : undefined;
 }

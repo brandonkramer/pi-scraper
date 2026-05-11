@@ -1,8 +1,7 @@
-/**
- * @fileoverview Ad-hoc extraction types.
- */
+/** @file Ad-hoc extraction types. */
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import type { CommonScrapeOptions } from "../../types.ts";
+import type { ModelUsage } from "../adhoc/model.ts";
 
 export interface AdHocExtractOptions extends CommonScrapeOptions {
 	url?: string;
@@ -15,7 +14,7 @@ export interface AdHocExtractResult<T = unknown> {
 	input: { url?: string; source: "provided" | "scrape"; scrape?: ScrapeResult };
 	data: T;
 	raw?: unknown;
-	usage?: import("../adhoc/model.ts").ModelUsage;
+	usage?: ModelUsage;
 }
 
 export class MissingExtractInputError extends Error {

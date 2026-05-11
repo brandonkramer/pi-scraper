@@ -20,9 +20,9 @@ export function extractReadable(html: string, _url: string): ReadableExtraction 
 	try {
 		const { document } = parseHTML(html);
 		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
+		const h1Text = (document.querySelector("h1")?.textContent ?? "").trim();
 		const fallbackTitle =
-			(document.querySelector("h1")?.textContent ?? "").trim() ||
-			(document.querySelector("title")?.textContent ?? "").trim();
+			h1Text.length > 0 ? h1Text : (document.querySelector("title")?.textContent ?? "").trim();
 		const clone = document.cloneNode(true) as Document;
 		if (!isProbablyReaderable(clone)) {
 			return { ok: false, reason: "unsuitable" };
@@ -33,7 +33,12 @@ export function extractReadable(html: string, _url: string): ReadableExtraction 
 		}
 		return {
 			ok: true,
-			title: article.title || fallbackTitle || undefined,
+			title:
+				article.title && article.title.length > 0
+					? article.title
+					: fallbackTitle.length > 0
+						? fallbackTitle
+						: undefined,
 			excerpt: article.excerpt ?? undefined,
 			byline: article.byline ?? undefined,
 			siteName: article.siteName ?? undefined,

@@ -11,26 +11,34 @@ export function renderMarkdown(report) {
 	const lines = [
 		"# pi-scraper extraction eval",
 		"",
-		`Generated: ${report.generatedAt}`,
-		`Package: ${report.packageVersion} · Node: ${report.nodeVersion} · Git: ${report.gitSha ?? "unknown"}`,
-		`Summary: ${passed} passed, ${skipped} skipped, ${failed} failed`,
+		`Generated: ${String(report.generatedAt)}`,
+		`Package: ${String(report.packageVersion)} · Node: ${String(report.nodeVersion)} · Git: ${String(report.gitSha ?? "unknown")}`,
+		`Summary: ${String(passed)} passed, ${String(skipped)} skipped, ${String(failed)} failed`,
 		"",
 		"## Signals",
 		"",
 		"| Case | Verdict | Fixture | Bytes | Markdown chars | Signals |",
 		"| --- | --- | --- | ---: | ---: | --- |",
-		...report.results.map((result) => `| ${signalRow(result).map(escapeCell).join(" | ")} |`),
+		...report.results.map(
+			(result) =>
+				`| ${signalRow(result)
+					.map((cell) => escapeCell(cell))
+					.join(" | ")} |`,
+		),
 	];
 	const perfRows = report.results.filter((result) => result.perf);
 	if (perfRows.length > 0) {
 		lines.push(
 			"",
-			`## Performance — scrapeUrl(fast), warmup ${report.modeFlags?.warmup ?? "?"} × repeats ${report.modeFlags?.repeats ?? "?"}`,
+			`## Performance — scrapeUrl(fast), warmup ${String(report.modeFlags?.warmup ?? "?")} × repeats ${String(report.modeFlags?.repeats ?? "?")}`,
 			"",
 			"| Case | Samples | Min ms | Median ms | Mean ms | P95 ms | Max ms | Stddev ms |",
 			"| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
 			...perfRows.map(
-				(result) => `| ${perfCells(result.id, result.perf).map(escapeCell).join(" | ")} |`,
+				(result) =>
+					`| ${perfCells(result.id, result.perf)
+						.map((cell) => escapeCell(cell))
+						.join(" | ")} |`,
 			),
 		);
 	}
@@ -41,14 +49,13 @@ export function renderMarkdown(report) {
 function signalStatus(name, context) {
 	const { html, markdown, text, scrape, fixtureExt } = context;
 	const cleanedHtml = scrape?.html ?? html;
-	const lower = `${html}\n${markdown}\n${text}`.toLowerCase();
+	const lower = [html, markdown, text].join("\n").toLowerCase();
 	const links = scrape?.links ?? [];
 	const dataIslandLen = scrape?.signals?.dataIslandTextLength ?? 0;
 	const headingsCount = (cleanedHtml.match(/<h[1-6][\s>]/giu) ?? []).length;
-	const blocked = Boolean(
-		scrape?.blocked ||
-		/captcha|access denied|blocked|cloudflare|verify you are human/iu.test(lower),
-	);
+	const blocked =
+		scrape?.blocked === true ||
+		/captcha|access denied|blocked|cloudflare|verify you are human/iu.test(lower);
 	const browserUsed = (scrape?.extractionPath ?? []).includes("browser");
 	const pass = {
 		title: Boolean(scrape?.title),
@@ -57,7 +64,7 @@ function signalStatus(name, context) {
 		headings: headingsCount > 0,
 		links: links.length > 0,
 		internal_links: links.length > 0,
-		metadata: Boolean(scrape?.title || scrape?.description),
+		metadata: Boolean(scrape?.title) || Boolean(scrape?.description),
 		// Cleaned HTML may strip <script> tags; fall back to raw fixture HTML for the JSON-LD probe.
 		json_ld: /application\/ld\+json/iu.test(cleanedHtml) || /application\/ld\+json/iu.test(html),
 		price_or_features: /\$\d|\bpricing\b|\bfeatures?\b|\bplans?\b/iu.test(lower),
@@ -93,7 +100,7 @@ function signalRow(result) {
 		result.verdict === "pass"
 			? "✅ pass"
 			: result.verdict === "skipped"
-				? `⏭ skipped (${result.skipped})`
+				? `⏭ skipped (${String(result.skipped)})`
 				: "❌ fail";
 	return [
 		result.id,
@@ -106,7 +113,7 @@ function signalRow(result) {
 }
 
 function signalSummary(signals) {
-	return signals.map((signal) => `${iconFor(signal.status)} ${signal.name}`).join("<br>");
+	return signals.map((signal) => `${iconFor(signal.status)} ${String(signal.name)}`).join("<br>");
 }
 
 function iconFor(status) {

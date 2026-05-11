@@ -33,7 +33,9 @@ export const arxivExtractor: VerticalExtractor = {
 			summary: arxivText(firstTag(entry, "summary")),
 			published: arxivText(firstTag(entry, "published")),
 			updated: arxivText(firstTag(entry, "updated")),
-			authors: allTags(entry, "name").map(arxivText).filter(isPresent),
+			authors: allTags(entry, "name")
+				.map((tag) => arxivText(tag))
+				.filter((item) => isPresent(item)),
 			categories: allCategoryTerms(entry),
 			pdfUrl: firstPdfLink(entry),
 		};

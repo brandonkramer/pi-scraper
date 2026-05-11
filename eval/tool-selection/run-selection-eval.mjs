@@ -3,12 +3,9 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
-const rootDir = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	"../..",
-);
+const rootDir = path.resolve(import.meta.dirname, "../..");
 await main();
 
 async function main() {
@@ -142,7 +139,7 @@ function buildReport({ contracts, fixtures, predictions }) {
 		negatives.filter((row) => row.passed).length,
 		negatives.length,
 	);
-	const criticalConfusions = rows.filter(isCriticalConfusion);
+	const criticalConfusions = rows.filter((row) => isCriticalConfusion(row));
 	return {
 		kind: "tool-selection-eval",
 		generatedAt: new Date().toISOString(),
@@ -178,28 +175,28 @@ function buildReport({ contracts, fixtures, predictions }) {
 }
 
 function isCriticalConfusion(row) {
-	const prompt = row.prompt.toLowerCase();
+	const prompt = String(row.prompt).toLowerCase();
 	const tags = row.tags.join(" ");
 	if (
 		["web_scrape", "web_summarize"].includes(row.actualTool) &&
-		/multi-source|citations/.test(`${prompt} ${tags}`)
+		/multi-source|citations/u.test([prompt, tags].join(" "))
 	)
 		return true;
 	if (
 		["web_scrape", "web_summarize", "web_crawl"].includes(row.actualTool) &&
-		/research|recent articles|open-ended/.test(`${prompt} ${tags}`) &&
-		!/https?:\/\//.test(prompt)
+		/research|recent articles|open-ended/u.test([prompt, tags].join(" ")) &&
+		!/https?:\/\//u.test(prompt)
 	)
 		return true;
 	if (
 		row.expectedTool === "web_extract" &&
-		/vertical|known-site|typed|github|npm|deepwiki/.test(`${prompt} ${tags}`) &&
+		/vertical|known-site|typed|github|npm|deepwiki/u.test([prompt, tags].join(" ")) &&
 		row.actualArgs?.action === "adhoc"
 	)
 		return true;
 	if (
 		row.actualTool === "web_map" &&
-		/reading pages|extract page|read-pages/.test(`${prompt} ${tags}`)
+		/reading pages|extract page|read-pages/u.test([prompt, tags].join(" "))
 	)
 		return true;
 	return false;
@@ -220,24 +217,24 @@ function renderMarkdown(report) {
 	return [
 		"# tool-selection eval",
 		"",
-		`Generated: ${report.generatedAt}`,
-		`Mode: ${report.predictionMode}`,
-		`Contract estimate: ${report.contractTokenEstimate} tokens`,
+		`Generated: ${String(report.generatedAt)}`,
+		`Mode: ${String(report.predictionMode)}`,
+		`Contract estimate: ${String(report.contractTokenEstimate)} tokens`,
 		"",
 		"## Summary",
 		"",
-		`Passed: ${report.metrics.passed}/${report.metrics.total}`,
+		`Passed: ${String(report.metrics.passed)}/${String(report.metrics.total)}`,
 		`Positive exact tool accuracy: ${(report.metrics.positiveAccuracy * 100).toFixed(1)}%`,
 		`Negative no-tool precision: ${(report.metrics.negativePrecision * 100).toFixed(1)}%`,
-		`Critical confusions: ${report.metrics.criticalConfusions}`,
+		`Critical confusions: ${String(report.metrics.criticalConfusions)}`,
 		"",
 		"## Failures",
 		"",
-		report.failures.length
+		report.failures.length > 0
 			? report.failures
 					.map(
 						(row) =>
-							`- ${row.id}: expected ${row.expectedTool ?? "none"}, got ${row.actualTool ?? "none"}`,
+							`- ${String(row.id)}: expected ${String(row.expectedTool ?? "none")}, got ${String(row.actualTool ?? "none")}`,
 					)
 					.join("\n")
 			: "None.",

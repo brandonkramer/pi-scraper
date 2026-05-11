@@ -1,10 +1,10 @@
-/**
- * @fileoverview storage __tests__ results.test module.
- */
+/** @file Storage **tests** results.test module. */
 import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { resolvePiStoragePaths } from "../../paths.ts";
 import { readResponse } from "../read.ts";
 import { storeResponse } from "../store.ts";
@@ -23,9 +23,7 @@ afterEach(async () => {
 describe("storage paths and results", () => {
 	it("resolves default runtime storage under ~/.pi/scraper", () => {
 		const paths = resolvePiStoragePaths();
-		expect(paths.root).toBe(
-			path.join(process.env.HOME ?? "", ".pi", "scraper"),
-		);
+		expect(paths.root).toBe(path.join(homedir(), ".pi", "scraper"));
 		expect(paths.results).toBe(path.join(paths.root, "results"));
 		expect(paths.crawl).toBe(path.join(paths.root, "crawl"));
 		expect(paths.snapshots).toBe(path.join(paths.root, "snapshots"));
@@ -39,21 +37,14 @@ describe("storage paths and results", () => {
 	});
 
 	it("stores and retrieves values by responseId", async () => {
-		const metadata = await storeResponse(
-			{ ok: true },
-			{ rootDir, responseId: "abc" },
-		);
+		const metadata = await storeResponse({ ok: true }, { rootDir, responseId: "abc" });
 		const stored = await readResponse<{ ok: boolean }>("abc", { rootDir });
 		expect(metadata.responseId).toBe("abc");
 		expect(stored.value.ok).toBe(true);
 	});
 
 	it("stores full output when text exceeds inline limits", async () => {
-		const output = await truncateAndStore(
-			"x".repeat(60_000),
-			{ full: true },
-			{ rootDir },
-		);
+		const output = await truncateAndStore("x".repeat(60_000), { full: true }, { rootDir });
 		expect(output.truncated).toBe(true);
 		expect(output.metadata?.responseId).toBeTruthy();
 		expect(output.text.length).toBeLessThan(60_000);

@@ -1,14 +1,20 @@
-/**
- * @fileoverview web-config-status __tests__ module.
- */
+/** @file Web-config-status **tests** module. */
 import { describe, expect, it } from "vitest";
-import { runWebConfigStatus } from "../web-config-status.ts";
+
+import type { ModelResponse } from "../../extract/adhoc/model.ts";
 import { modelRegistry } from "../../tools/infra/model-registry.ts";
+import { runWebConfigStatus } from "../web-config-status.ts";
+
+type WebConfigStatusResult = Awaited<ReturnType<typeof runWebConfigStatus>>;
+
+function firstContentText(result: WebConfigStatusResult): string {
+	return result.content[0]?.text ?? "";
+}
 
 describe("runWebConfigStatus", () => {
 	it("report contains effective config", async () => {
 		const result = await runWebConfigStatus({ action: "status" }, {});
-		const text = result.content[0]?.text ?? "";
+		const text = firstContentText(result);
 		expect(text).toContain("Effective config:");
 		expect(text).toContain("scrapeMode:");
 	});
@@ -20,13 +26,13 @@ describe("runWebConfigStatus", () => {
 			capabilities: ["summarize"],
 			priority: 50,
 			adapter: {
-				async run<T>(_req: unknown, _signal?: unknown) {
+				async run<T>(_req: unknown, _signal?: unknown): Promise<ModelResponse<T>> {
 					return { data: "" as T };
 				},
 			},
 		});
 		const result = await runWebConfigStatus({ action: "status" }, {});
-		const text = result.content[0]?.text ?? "";
+		const text = firstContentText(result);
 		expect(text).toContain("test-adapter");
 		expect(text).toContain("priority 50");
 		modelRegistry.unregister("test-adapter");
@@ -35,7 +41,7 @@ describe("runWebConfigStatus", () => {
 	it("report shows empty registry", async () => {
 		modelRegistry.clear();
 		const result = await runWebConfigStatus({ action: "status" }, {});
-		const text = result.content[0]?.text ?? "";
+		const text = firstContentText(result);
 		expect(text).toContain("Registered adapters: 0");
 	});
 

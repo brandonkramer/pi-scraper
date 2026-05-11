@@ -44,7 +44,7 @@ function readStdin() {
 		let data = "";
 		process.stdin.setEncoding("utf8");
 		process.stdin.on("data", (chunk) => {
-			data += chunk;
+			data += String(chunk);
 		});
 		process.stdin.on("end", () => resolve(data));
 		process.stdin.on("error", reject);
@@ -63,12 +63,15 @@ function parseInput(text) {
 }
 
 function buildPrompt(input, toolNames) {
+	const actualToolHint = Array.isArray(toolNames)
+		? toolNames.map(String).join(" | ")
+		: String(toolNames);
 	return `You are evaluating pi-scraper tool selection.
 Choose at most one tool for each fixture. Do not execute tools.
 Choose by user intent even when a fixture says "this site", "this page", "homepage", or "arbitrary page" without an explicit URL.
 Use null for multi-source search/research, open-ended research, or unrelated prompts.
 Return ONLY valid JSON, no markdown, in this shape:
-{"predictions":[{"id":"fixture id","actualTool":"${toolNames.join(" | ")} | null","actualArgs":{}}]}
+{"predictions":[{"id":"fixture id","actualTool":"${actualToolHint} | null","actualArgs":{}}]}
 
 Routing cues:
 - web_scrape: read/fetch/extract one URL page.
@@ -86,7 +89,7 @@ ${JSON.stringify(input)}`;
 }
 
 function piBinary() {
-	return process.env.PI_TOOL_SELECTION_PI_BIN || "pi";
+	return process.env.PI_TOOL_SELECTION_PI_BIN ?? "pi";
 }
 
 function piArgs(prompt) {
@@ -128,11 +131,13 @@ function parseJsonLoose(text) {
 	if (typeof text !== "string") return text;
 	const trimmed = text.trim();
 	if (!trimmed) return;
-	const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+	const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/iu);
 	const candidate = fenced ? fenced[1].trim() : trimmed;
 	try {
 		return JSON.parse(candidate);
-	} catch { /* ignore */ }
+	} catch {
+		/* ignore */
+	}
 	return parseDelimitedJson(candidate, "{", "}") ?? parseDelimitedJson(candidate, "[", "]");
 }
 

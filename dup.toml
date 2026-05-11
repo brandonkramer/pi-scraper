@@ -44,6 +44,9 @@ pairs = [
   "src/extract/api-surface/selection.ts:uniqueBy||src/extract/api-surface/tree.ts:dedupeByName",
   "src/extract/api-surface/selection.ts:uniqueBy||src/url/dedupe.ts:dedupeBy",
 
+  # Test server factories — similar HTTP mock structure, different test domains
+  "src/http/__tests__/client.test.ts:createRobotsTestServer||src/http/__tests__/retry.test.ts:createRetryTestServer",
+
   # Post-edit clusters — cross-domain async try/catch shape
   "src/commands/web-config.ts:runWebConfigCommand||src/extract/vertical/extractors/reddit/post.ts:fetchFirstAllowedRedditEndpoint",
   "src/commands/web-config.ts:runWebConfigCommand||src/http/session.ts:buildCookieHeader",

@@ -35,16 +35,18 @@ export async function runDeterministicExtractor(
 			"Provide extractor and url for vertical extraction.",
 		);
 	}
+	const extractor: string = params.extractor;
+	const url: string = params.url;
 	const config = await loadEffectiveConfig();
 	await emitProgress(onUpdate, {
 		state: "processing",
-		url: params.url,
-		message: `extractor ${params.extractor}`,
+		url,
+		message: `extractor ${extractor}`,
 	});
 	const { runVerticalExtractor } = await import("../extract/vertical/registry.ts");
 	const result = await runVerticalExtractor(
-		params.extractor,
-		params.url,
+		extractor,
+		url,
 		{
 			requestOptions: {
 				cacheTtlSeconds: config.scrapeDefaults.cacheTtlSeconds,
@@ -56,18 +58,18 @@ export async function runDeterministicExtractor(
 	);
 	const firstSourceUrl = result.sources?.[0]?.url;
 	return toolResult({
-		text: verticalExtractorText(params.extractor, result),
+		text: verticalExtractorText(extractor, result),
 		data: result,
-		url: params.url,
+		url,
 		format: "json",
 		sources: result.sources,
 		summary: result.error
-			? `${params.extractor} failed · ${params.url}`
-			: `${params.extractor} done${firstSourceUrl ? ` · source: ${firstSourceUrl}` : ` · ${params.url}`}`,
+			? `${extractor} failed · ${url}`
+			: `${extractor} done${firstSourceUrl ? ` · source: ${firstSourceUrl}` : ` · ${url}`}`,
 		error: result.error && {
 			...result.error,
 			phase: "vertical_extract",
-			url: params.url,
+			url,
 		},
 		assistantGuidance: verticalExtractorGuidance(result),
 	});
@@ -106,7 +108,7 @@ function verticalExtractorGuidance(result: VerticalExtractionResult): string | u
 
 function attemptedText(urls: string[] | undefined): string | undefined {
 	const uniqueUrls = [...new Set(urls?.filter(Boolean) ?? [])];
-	return uniqueUrls.length ? `attempted:\n  - ${uniqueUrls.join("\n  - ")}` : undefined;
+	return uniqueUrls.length > 0 ? `attempted:\n  - ${uniqueUrls.join("\n  - ")}` : undefined;
 }
 
 function blockedSource(

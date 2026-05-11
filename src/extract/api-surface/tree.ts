@@ -54,8 +54,8 @@ export function buildApiSurface(pages: ApiSurfaceInputPage[]): ApiSurfaceTree {
 		project: inferProject(pages),
 		version: firstVersion(modules, pages),
 		modules,
-		errors: errors.length ? errors : undefined,
-		fallback: modules.some(hasApiSymbols)
+		errors: errors.length > 0 ? errors : undefined,
+		fallback: modules.some((module) => hasApiSymbols(module))
 			? undefined
 			: {
 					kind: "flat-markdown",
@@ -76,7 +76,7 @@ function moduleFromPage(page: ApiSurfaceInputPage): ApiSurfaceModule {
 		description: page.description ?? parsed.description,
 		url,
 		functions: parsed.functions,
-		classes: parsed.classes.length ? parsed.classes : undefined,
+		classes: parsed.classes.length > 0 ? parsed.classes : undefined,
 	});
 }
 
@@ -94,7 +94,7 @@ function moduleFromDocsite(
 		description: docsite.summary ?? page.description,
 		url,
 		functions,
-		classes: classes.length ? classes : undefined,
+		classes: classes.length > 0 ? classes : undefined,
 	});
 }
 
@@ -264,11 +264,11 @@ function looksLikeClass(heading: string): boolean {
 
 function examples(blocks: SectionLike["codeBlocks"]): string[] | undefined {
 	const values = blocks?.map((block) => block.code).filter(Boolean) ?? [];
-	return values.length ? values.slice(0, 3) : undefined;
+	return values.length > 0 ? values.slice(0, 3) : undefined;
 }
 
 function hasApiSymbols(module: ApiSurfaceModule): boolean {
-	return module.functions.length > 0 || Boolean(module.classes?.length);
+	return module.functions.length > 0 || (module.classes?.length ?? 0) > 0;
 }
 
 function firstVersion(

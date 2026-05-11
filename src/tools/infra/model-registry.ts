@@ -54,7 +54,7 @@ export class ModelRegistry {
 		if (preference === "auto") {
 			const candidates = this.order
 				.map((id) => this.entries.get(id))
-				.filter((e): e is RegisteredAdapter => Boolean(e && e.capabilities.includes(capability)));
+				.filter((e): e is RegisteredAdapter => e?.capabilities.includes(capability) ?? false);
 			if (candidates.length === 0) return;
 			let best = candidates[0];
 			for (const c of candidates) {

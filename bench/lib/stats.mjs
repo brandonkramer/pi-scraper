@@ -11,7 +11,7 @@ export async function timedRepeats(fn, { warmup, repeats }) {
 
 export function summarize(samples) {
 	if (samples.length === 0) return;
-	const sorted = [...samples].sort((a, b) => a - b);
+	const sorted = [...samples].toSorted((a, b) => a - b);
 	const n = sorted.length;
 	const sum = sorted.reduce((acc, value) => acc + value, 0);
 	const mean = sum / n;

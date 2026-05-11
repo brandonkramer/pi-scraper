@@ -2,11 +2,11 @@
 import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
 import { intFlag, stringFlag } from "./cli-args.mjs";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const rootDir = path.resolve(import.meta.dirname, "../..");
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).toString()) {
 	const args = process.argv.slice(2);

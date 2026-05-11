@@ -1,14 +1,14 @@
-/**
- * @fileoverview storage __tests__ sqlite-storage.test module.
- */
+/** @file Storage **tests** sqlite-storage.test module. */
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { createCrawlState, loadCrawlState } from "../../crawl/state.ts";
-import { closeStorageDbs } from "../db/open.ts";
 import { writeBlob } from "../blobs.ts";
+import { closeStorageDbs } from "../db/open.ts";
 import { readResponse } from "../responses/read.ts";
 import { storeResponse } from "../responses/store.ts";
 import { searchResponses, setFtsAvailabilityForTests } from "../search.ts";
@@ -47,7 +47,8 @@ describe("SQLite-backed storage", () => {
 	});
 
 	it("indexes stored scrape text when FTS5 is available", async () => {
-		if (!(await searchResponses("probe", { rootDir })).supported) return;
+		const search = await searchResponses("probe", { rootDir });
+		expect(search.supported, "FTS5 must be available for this test").toBe(true);
 		await storeResponse(
 			{
 				url: "https://example.com/docs",
@@ -105,10 +106,7 @@ describe("SQLite-backed storage", () => {
 		legacy.visited = ["https://example.com"];
 		legacy.results = ["https://example.com"];
 		await mkdir(path.join(rootDir, "crawl", "old-crawl"), { recursive: true });
-		await writeFile(
-			path.join(rootDir, "crawl", "old-crawl", "state.json"),
-			JSON.stringify(legacy),
-		);
+		await writeFile(path.join(rootDir, "crawl", "old-crawl", "state.json"), JSON.stringify(legacy));
 
 		const migrated = await loadCrawlState("old-crawl", { rootDir });
 		closeStorageDbs();

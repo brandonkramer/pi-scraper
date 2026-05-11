@@ -108,7 +108,7 @@ export async function crawlRun(params: Params, signal: AbortSignal, onUpdate?: T
 		truncated: true,
 		freshness,
 		diagnostics: {
-			sessionNotice: sessionNotice || undefined,
+			sessionNotice: sessionNotice ?? undefined,
 			batchProgress: batchProgressFromCrawlPages(crawl.pages),
 			jobId: crawl.crawlId,
 			jobManifestPath: manifest.path,

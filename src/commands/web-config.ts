@@ -80,7 +80,7 @@ export async function runWebConfigCommand(params: Params, ctx?: CommandContext) 
 			return await runWebConfigRobots(params, ctx);
 		default:
 			return toolResult({
-				text: `Unknown action: ${action}. Use status, model-provider, scrape-mode, cache, or robots.`,
+				text: "Unknown action. Use status, model-provider, scrape-mode, cache, or robots.",
 				data: { error: "unknown_action" },
 			});
 	}
@@ -91,7 +91,7 @@ export function parseWebConfigCommandArgs(args: string): Params {
 	if (!trimmed) return {};
 	if (trimmed.startsWith("{")) return JSON.parse(trimmed) as Params;
 
-	const [action, ...rest] = trimmed.split(/\s+/);
+	const [action, ...rest] = trimmed.split(/\s+/u);
 	if (!isKnownAction(action)) {
 		throw new Error(
 			`Unknown action: ${action}. Use status, model-provider, scrape-mode, cache, or robots.`,

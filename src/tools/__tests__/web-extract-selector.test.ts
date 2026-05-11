@@ -1,10 +1,10 @@
-/**
- * @fileoverview tools __tests__ web-extract-selector.test module.
- */
+/** @file Tools **tests** web-extract-selector.test module. */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { runSelectorExtractionTool } from "../web-extract-selector.ts";
 
 let homeDir: string;
@@ -30,7 +30,7 @@ describe("web_extract action=selector", () => {
 				selector: ".product-card",
 				selectorType: "css",
 				content:
-					"\u003chtml\u003e\u003cbody\u003e\u003cdiv class='product-card'\u003e\u003ch2\u003eProduct 1\u003c/h2\u003e\u003c/div\u003e\u003c/div\u003e\u003c/body\u003e\u003c/html\u003e",
+					"\u003Chtml\u003E\u003Cbody\u003E\u003Cdiv class='product-card'\u003E\u003Ch2\u003EProduct 1\u003C/h2\u003E\u003C/div\u003E\u003C/div\u003E\u003C/body\u003E\u003C/html\u003E",
 				identifier: "test-products",
 				autoSave: false,
 				adaptive: false,
@@ -47,7 +47,7 @@ describe("web_extract action=selector", () => {
 
 	it("saves fingerprint with autoSave", async () => {
 		const content =
-			"\u003chtml\u003e\u003cbody\u003e\u003cdiv class='card'\u003e\u003ch2\u003eProduct 1\u003c/h2\u003e\u003c/div\u003e\u003c/body\u003e\u003c/html\u003e";
+			"\u003Chtml\u003E\u003Cbody\u003E\u003Cdiv class='card'\u003E\u003Ch2\u003EProduct 1\u003C/h2\u003E\u003C/div\u003E\u003C/body\u003E\u003C/html\u003E";
 
 		// First call with autoSave
 		const first = await runSelectorExtractionTool(
@@ -74,7 +74,7 @@ describe("web_extract action=selector", () => {
 				selector: ".card",
 				selectorType: "css",
 				content:
-					"\u003chtml\u003e\u003cbody\u003e\u003cdiv class='wrapper'\u003e\u003cdiv class='new-card'\u003e\u003ch2\u003eProduct 1\u003c/h2\u003e\u003c/div\u003e\u003c/div\u003e\u003c/body\u003e\u003c/html\u003e",
+					"\u003Chtml\u003E\u003Cbody\u003E\u003Cdiv class='wrapper'\u003E\u003Cdiv class='new-card'\u003E\u003Ch2\u003EProduct 1\u003C/h2\u003E\u003C/div\u003E\u003C/div\u003E\u003C/body\u003E\u003C/html\u003E",
 				identifier: "autosave-test",
 				autoSave: false,
 				adaptive: true,
@@ -95,8 +95,7 @@ describe("web_extract action=selector", () => {
 				action: "selector",
 				selector: ".does-not-exist",
 				selectorType: "css",
-				content:
-					".product-card\u003eh2\u003eProduct 1\u003c/h2\u003e\u003c/div\u003e",
+				content: ".product-card\u003Eh2\u003EProduct 1\u003C/h2\u003E\u003C/div\u003E",
 				identifier: "no-match-test",
 				adaptive: false,
 				autoSave: false,
@@ -131,7 +130,7 @@ describe("web_extract action=selector", () => {
 				selector: "Product 1",
 				selectorType: "text",
 				content:
-					"\u003chtml\u003e\u003cbody\u003e\u003cdiv\u003e\u003ch2\u003eProduct 1\u003c/h2\u003e\u003c/div\u003e\u003c/body\u003e\u003c/html\u003e",
+					"\u003Chtml\u003E\u003Cbody\u003E\u003Cdiv\u003E\u003Ch2\u003EProduct 1\u003C/h2\u003E\u003C/div\u003E\u003C/body\u003E\u003C/html\u003E",
 				identifier: "text-test",
 				autoSave: false,
 				adaptive: false,

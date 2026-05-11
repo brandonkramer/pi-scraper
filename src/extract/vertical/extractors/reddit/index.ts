@@ -218,5 +218,5 @@ function parseRedditPostUrl(url: URL): RedditPostMatch | undefined {
 
 function cleanPostId(value: string | undefined): string | undefined {
 	const cleaned = value?.match(/^[A-Za-z0-9]+/u)?.[0]?.toLowerCase();
-	return cleaned || undefined;
+	return cleaned ?? undefined;
 }

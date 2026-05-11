@@ -7,6 +7,7 @@ import {
 	isBatchProgress,
 	isBatchProgressView,
 } from "../../batch/progress-state.ts";
+import type { BatchItemResult } from "../../batch/run.ts";
 import { renderBatchProgressCard, renderBatchResultCard } from "../../tui/batch.ts";
 import {
 	activityCountSegment,
@@ -123,9 +124,7 @@ export function renderWebBatchResult(
 			allowIcons: true,
 		});
 	}
-	const envelope = details as Partial<
-		ResultEnvelope<import("../../batch/run.ts").BatchItemResult[]>
-	>;
+	const envelope = details as Partial<ResultEnvelope<BatchItemResult[]>>;
 	const items = Array.isArray(envelope.data) ? envelope.data : [];
 	const succeeded = items.filter((item) => item.ok).length;
 	const failed = items.length - succeeded;

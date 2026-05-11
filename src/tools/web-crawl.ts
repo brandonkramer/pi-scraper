@@ -55,7 +55,7 @@ export const webCrawlTool = defineWebTool({
 			[
 				args.action,
 				args.url ?? args.crawlId ?? args.seed,
-				args.maxPages ? `max ${args.maxPages}` : undefined,
+				args.maxPages ? `max ${String(args.maxPages)}` : undefined,
 			].filter(Boolean) as string[],
 			theme,
 		),

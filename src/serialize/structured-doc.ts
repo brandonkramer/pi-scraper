@@ -1,10 +1,7 @@
-/** @fileoverview Stable text serializers for code-adjacent parsed documentation. */
+/** @file Stable text serializers for code-adjacent parsed documentation. */
 
-import {
-	docstringsToMarkdown,
-	type ParsedDocstrings,
-} from "../parse/markup/docstrings.ts";
 import type { MarkupDocument } from "../parse/markup/doc.ts";
+import { docstringsToMarkdown, type ParsedDocstrings } from "../parse/markup/docstrings.ts";
 
 export function markupDocumentToMarkdown(document: MarkupDocument): string {
 	return document.markdown || document.text;
@@ -14,7 +11,7 @@ export function markupDocumentToText(document: MarkupDocument): string {
 	const parts = [
 		document.frontmatter ? frontmatterText(document.frontmatter) : undefined,
 		document.text,
-		document.codeBlocks.length
+		document.codeBlocks.length > 0
 			? `${document.codeBlocks.length} code block(s): ${document.codeBlocks
 					.map((block) => block.language)
 					.filter(Boolean)
@@ -32,9 +29,6 @@ export function docstringsToText(document: ParsedDocstrings): string {
 
 function frontmatterText(frontmatter: Record<string, unknown>): string {
 	return Object.entries(frontmatter)
-		.map(
-			([key, value]) =>
-				`${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`,
-		)
+		.map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`)
 		.join("\n");
 }

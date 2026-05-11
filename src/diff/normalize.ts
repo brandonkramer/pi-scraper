@@ -124,7 +124,7 @@ function snapshotMetadata(result: ScrapeResult): Record<string, string> {
 	if (result.data.description) entries.description = result.data.description;
 	flattenMetadata(entries, "metadata", result.data.metadata);
 	return Object.fromEntries(
-		Object.entries(entries).sort(([left], [right]) => left.localeCompare(right)),
+		Object.entries(entries).toSorted(([left], [right]) => left.localeCompare(right)),
 	);
 }
 

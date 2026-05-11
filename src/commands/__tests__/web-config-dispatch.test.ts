@@ -66,7 +66,7 @@ describe("parseWebConfigCommandArgs", () => {
 	});
 
 	it("throws on unknown action", () => {
-		expect(() => parseWebConfigCommandArgs("unknown")).toThrow(/.*/);
+		expect(() => parseWebConfigCommandArgs("unknown")).toThrow(/.*/u);
 	});
 });
 
@@ -80,7 +80,8 @@ describe("runWebConfigCommand dispatch", () => {
 				},
 				async select(_title: string, choices: readonly string[]) {
 					selectCalled = true;
-					return choices[0]; // "Status"
+					// "Status"
+					return choices[0];
 				},
 			},
 		};

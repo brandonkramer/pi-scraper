@@ -39,8 +39,7 @@ const scrapeIntentWithUrl =
 
 describe("tool-selection fixtures", () => {
 	it("reference only registered web tools", () => {
-		for (const fixture of fixtures) {
-			if (!fixture.expectedTool) continue;
+		for (const fixture of positiveFixtures()) {
 			expect(
 				toolsByName.has(fixture.expectedTool),
 				`${fixture.id} references ${fixture.expectedTool}`,
@@ -62,9 +61,10 @@ describe("tool-selection fixtures", () => {
 	});
 
 	it("keeps negative fixtures from accidentally targeting pi-scraper", () => {
-		for (const fixture of fixtures.filter((item) => item.expectedTool === null)) {
+		for (const fixture of negativeFixtures()) {
 			expect(fixture.tags).toContain("negative");
-			if (!scrapeIntentWithUrl.test(fixture.prompt)) continue;
+		}
+		for (const fixture of negativeScrapeIntentFixtures()) {
 			expect(fixture.rationale).toMatch(
 				/companion|not pi-scraper|not a single|unrelated|not public|unsupported/iu,
 			);
@@ -74,10 +74,7 @@ describe("tool-selection fixtures", () => {
 	it("covers every tool with a positive and a contrast fixture", () => {
 		for (const tool of webTools) {
 			const positives = fixtures.filter((fixture) => fixture.expectedTool === tool.name);
-			const contrasts = fixtures.filter(
-				(fixture) =>
-					fixture.expectedTool !== tool.name && fixture.tags.includes(`contrast:${tool.name}`),
-			);
+			const contrasts = contrastFixturesFor(tool.name);
 			expect(positives.length, `${tool.name} positive coverage`).toBeGreaterThan(0);
 			expect(contrasts.length, `${tool.name} contrast coverage`).toBeGreaterThan(0);
 		}
@@ -88,6 +85,20 @@ function positiveFixtures(): Array<ToolSelectionFixture & { expectedTool: `web_$
 	return fixtures.filter(
 		(fixture): fixture is ToolSelectionFixture & { expectedTool: `web_${string}` } =>
 			fixture.expectedTool !== null,
+	);
+}
+
+function negativeFixtures(): ToolSelectionFixture[] {
+	return fixtures.filter((fixture) => fixture.expectedTool === null);
+}
+
+function negativeScrapeIntentFixtures(): ToolSelectionFixture[] {
+	return negativeFixtures().filter((fixture) => scrapeIntentWithUrl.test(fixture.prompt));
+}
+
+function contrastFixturesFor(toolName: string): ToolSelectionFixture[] {
+	return fixtures.filter(
+		(fixture) => fixture.expectedTool !== toolName && fixture.tags.includes(`contrast:${toolName}`),
 	);
 }
 

@@ -64,8 +64,8 @@ function parseDeepWiki(text: string, owner: string, repo: string): DeepWikiResul
 
 function cleanDeepWikiText(text: string): string {
 	return text
-		.replaceAll(/<[^>]+>/g, " ")
-		.replaceAll(/\s+/g, " ")
+		.replaceAll(/<[^>]+>/gu, " ")
+		.replaceAll(/\s+/gu, " ")
 		.trim();
 }
 
@@ -95,7 +95,7 @@ function extractTextSections(text: string): string[] {
 	// DeepWiki navigation is exposed as flattened text after static HTML cleanup.
 	// Parse the segment after the last-indexed marker and before the Glossary item.
 	const startMatch = text.match(/Last indexed:[^)]*\)\s*/iu);
-	if (!startMatch || startMatch.index === undefined) return [];
+	if (startMatch?.index === undefined) return [];
 	const startIdx = startMatch.index + startMatch[0].length;
 
 	const endIdx = text.indexOf("Glossary", startIdx);
@@ -179,7 +179,7 @@ function dedupeCleanedSections(sections: string[]): string[] {
 
 function cleanSectionName(section: string): string {
 	return section
-		.replace(/^[^A-Za-z0-9]+/, "")
+		.replace(/^[^A-Za-z0-9]+/u, "")
 		.replace(/[^A-Za-z0-9&/._\s-]+$/u, "")
 		.trim();
 }

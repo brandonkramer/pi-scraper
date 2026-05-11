@@ -1,5 +1,5 @@
 /** @file Summarize page module. */
-import type { ModelAdapter } from "../extract/adhoc/model.ts";
+import type { ModelAdapter, ModelUsage } from "../extract/adhoc/model.ts";
 import { type ScrapePipelineDeps, type ScrapeResult, scrapeUrl } from "../scrape/pipeline.ts";
 import type { CommonScrapeOptions } from "../types.ts";
 
@@ -14,7 +14,7 @@ export interface PageSummaryResult {
 	input: { url?: string; source: "provided" | "scrape"; scrape?: ScrapeResult };
 	summary: string;
 	raw?: unknown;
-	usage?: import("../extract/adhoc/model.ts").ModelUsage;
+	usage?: ModelUsage;
 }
 
 export async function summarizePage(

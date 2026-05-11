@@ -1,10 +1,10 @@
-/**
- * @fileoverview tools __tests__ truncation.test module.
- */
+/** @file Tools **tests** truncation.test module. */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { PI_TRUNCATION_LIMITS } from "../../defaults.ts";
 import { readResponse } from "../../storage/responses/read.ts";
 import { truncateAndStore } from "../../storage/responses/truncate.ts";
@@ -38,11 +38,15 @@ describe("truncated full output storage", () => {
 			path.join(homeDir, ".pi", "scraper", "blobs"),
 		);
 
-		const retrieved = await readResponse<typeof payload>(
-			truncated.metadata?.responseId ?? "",
-		);
+		const retrieved = await readResponse<typeof payload>(responseIdFrom(truncated));
 
 		expect(retrieved.value.kind).toBe("large-output");
 		expect(retrieved.value.text.length).toBe(fullText.length);
 	});
 });
+
+function responseIdFrom(result: Awaited<ReturnType<typeof truncateAndStore>>): string {
+	const responseId = result.metadata?.responseId;
+	if (!responseId) throw new Error("Expected stored responseId");
+	return responseId;
+}

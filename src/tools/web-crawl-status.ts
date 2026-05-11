@@ -32,8 +32,9 @@ export async function crawlStatus(params: Params) {
 			"Provide crawlId for crawl status.",
 		);
 	}
+	const crawlId = String(params.crawlId);
 	try {
-		const metadata = await loadCrawlMetadata(params.crawlId);
+		const metadata = await loadCrawlMetadata(crawlId);
 		const entry = enrichCrawl(metadata);
 		const done = entry.succeededCount + entry.failedCount;
 		return toolResult({
@@ -55,20 +56,21 @@ export async function crawlStatus(params: Params) {
 			"CRAWL_STATUS_NOT_FOUND",
 			"crawl",
 			error instanceof Error ? error.message : "Crawl status not found.",
-			`Crawl status not found: ${params.crawlId}`,
+			`Crawl status not found: ${crawlId}`,
 		);
 	}
 }
 
 export async function crawlList(params: Params) {
 	const limit = params.limit ?? 20;
+	const seed = params.seed === undefined ? undefined : String(params.seed);
 	const crawls = await listCrawlMetadata({
-		seed: params.seed,
+		seed,
 		status: params.status as CrawlStatus | undefined,
 		limit,
 	});
 	const entries = crawls.map((crawl) => enrichCrawl(crawl));
-	const scope = params.seed ? ` for ${params.seed}` : "";
+	const scope = seed ? ` for ${seed}` : "";
 	if (entries.length === 0) {
 		return toolResult({
 			text: `No prior crawls${scope}.`,
@@ -174,11 +176,12 @@ function crawlQuality(entries: CrawlEntry[], limit: number): AgenticQualitySigna
 			entry.freshness.stale || entry.staleness === "stale" || entry.staleness === "expired",
 	);
 	return {
-		confidence: stale.length ? "medium" : "high",
-		freshness: stale.length ? "stale_possible" : "current",
+		confidence: stale.length > 0 ? "medium" : "high",
+		freshness: stale.length > 0 ? "stale_possible" : "current",
 		coverage: entries.length >= limit ? "top_n_only" : "complete",
-		knownGaps: stale.length
-			? [`${stale.length} crawl(s) are stale or expired and should not be treated as current.`]
-			: undefined,
+		knownGaps:
+			stale.length > 0
+				? [`${stale.length} crawl(s) are stale or expired and should not be treated as current.`]
+				: undefined,
 	};
 }

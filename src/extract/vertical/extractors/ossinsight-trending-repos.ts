@@ -56,7 +56,7 @@ export const ossInsightTrendingReposExtractor: VerticalExtractor<OssInsightTrend
 			`https://api.ossinsight.io/v1/trends/repos/?period=${encodeURIComponent(period)}&language=${encodeURIComponent(language)}`,
 			signal,
 		);
-		return { period, language, rows: rowsOf(payload).map(trimTrendingRow) };
+		return { period, language, rows: rowsOf(payload).map((row) => trimTrendingRow(row)) };
 	},
 };
 

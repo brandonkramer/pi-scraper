@@ -109,7 +109,7 @@ function formatModelUsage(u: ModelUsage): string | undefined {
 	if (typeof u.outputTokens === "number") parts.push(`${u.outputTokens} out`);
 	if (typeof u.totalTokens === "number") parts.push(`${u.totalTokens} total`);
 	if (typeof u.costUSD === "number") parts.push(formatCostUSD(u.costUSD));
-	return parts.length ? parts.join(" · ") : undefined;
+	return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
 function formatCostUSD(cost: number): string {

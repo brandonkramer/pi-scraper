@@ -15,6 +15,42 @@ afterEach(async () => {
 	agents = [];
 });
 
+function closeServer(server: ReturnType<typeof createServer>): Promise<void> {
+	return new Promise((resolve, reject) => {
+		server.close((error) => {
+			if (error) reject(error);
+			else resolve();
+		});
+	});
+}
+
+type RobotsServerState = {
+	robotsHits: number;
+	activePages: number;
+	maxActivePages: number;
+};
+
+function createRobotsTestServer(state: RobotsServerState) {
+	return createServer((request, response) => {
+		if (request.url === "/robots.txt") {
+			state.robotsHits += 1;
+			setTimeout(() => {
+				response.writeHead(200, { "content-type": "text/plain" });
+				response.end("User-agent: *\nAllow: /");
+			}, 25);
+			return;
+		}
+
+		state.activePages += 1;
+		state.maxActivePages = Math.max(state.maxActivePages, state.activePages);
+		setTimeout(() => {
+			response.writeHead(200, { "content-type": "text/plain" });
+			response.end(request.url as string);
+			state.activePages -= 1;
+		}, 10);
+	});
+}
+
 function mockClient(retryAttempts = 1): {
 	agent: MockAgent;
 	client: ReturnType<typeof createHttpClient>;
@@ -129,7 +165,7 @@ describe("HttpClient", () => {
 		const result = await client.fetchUrl("https://example.com/image");
 		expect(result.file?.downloadedBytes).toBe(3);
 		expect(result.file?.contentType).toBe("image/png");
-		await expect(readFile(result.file?.path ?? "")).resolves.toEqual(Buffer.from([1, 2, 3]));
+		await expect(readFile(result.file!.path)).resolves.toEqual(Buffer.from([1, 2, 3]));
 	});
 
 	it("keeps parseable PDF bytes in memory under maxBytes", async () => {
@@ -279,29 +315,12 @@ describe("HttpClient", () => {
 	});
 
 	it("handles crawl-like same-host pressure with slow robots and default per-host limits", async () => {
-		let activePages = 0;
-		let maxActivePages = 0;
-		let robotsHits = 0;
-		const server = createServer((request, response) => {
-			if (request.url === "/robots.txt") {
-				robotsHits += 1;
-				setTimeout(() => {
-					response.writeHead(200, { "content-type": "text/plain" });
-					response.end("User-agent: *\nAllow: /");
-				}, 25);
-				return;
-			}
+		const state: RobotsServerState = { robotsHits: 0, activePages: 0, maxActivePages: 0 };
+		const server = createRobotsTestServer(state);
 
-			activePages += 1;
-			maxActivePages = Math.max(maxActivePages, activePages);
-			setTimeout(() => {
-				response.writeHead(200, { "content-type": "text/plain" });
-				response.end(request.url ?? "");
-				activePages -= 1;
-			}, 10);
+		await new Promise<void>((resolve) => {
+			server.listen(0, "127.0.0.1", resolve);
 		});
-
-		await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
 		const { port } = server.address() as AddressInfo;
 		const client = createHttpClient({ allowPrivateNetwork: true });
 		try {
@@ -310,15 +329,10 @@ describe("HttpClient", () => {
 				paths.map((path) => client.fetchUrl(`http://127.0.0.1:${port}${path}`)),
 			);
 			expect(results.map((result) => result.text)).toEqual(paths);
-			expect(robotsHits).toBe(1);
-			expect(maxActivePages).toBeLessThanOrEqual(2);
+			expect(state.robotsHits).toBe(1);
+			expect(state.maxActivePages).toBeLessThanOrEqual(2);
 		} finally {
-			await new Promise<void>((resolve, reject) => {
-				server.close((error) => {
-					if (error) reject(error);
-					else resolve();
-				});
-			});
+			await closeServer(server);
 		}
 	});
 

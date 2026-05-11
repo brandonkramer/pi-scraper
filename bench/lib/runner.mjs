@@ -167,7 +167,7 @@ function caseResult(testCase, fixture, rootDir, signals, metrics, perf) {
 
 async function findFixture(fixturesDir, id) {
 	for (const ext of FIXTURE_EXTS) {
-		const candidate = path.join(fixturesDir, `${id}${ext}`);
+		const candidate = path.join(fixturesDir, `${String(id)}${ext}`);
 		try {
 			await stat(candidate);
 			return { path: candidate, ext };

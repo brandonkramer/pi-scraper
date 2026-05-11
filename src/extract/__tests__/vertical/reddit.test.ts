@@ -1,7 +1,6 @@
-/**
- * @fileoverview extract __tests__ reddit.test module.
- */
+/** @file Extract **tests** reddit.test module. */
 import { describe, expect, it } from "vitest";
+
 import type { VerticalExtractorContext } from "../../vertical/capabilities.ts";
 import { runVerticalExtractor } from "../../vertical/registry.ts";
 
@@ -71,6 +70,26 @@ function contextFor(status: number, text: string): VerticalExtractorContext {
 	};
 }
 
+function fallbackToAllowedRedditHostContext(attempted: string[]): VerticalExtractorContext {
+	return {
+		fetchJson: async () => {
+			throw new Error("Reddit extractor should use fetchPage");
+		},
+		fetchPage: async (url) => {
+			attempted.push(url);
+			if (url.startsWith("https://www.reddit.com/r/")) {
+				throw robotsDenied(url);
+			}
+			return {
+				text: redditJson,
+				status: 200,
+				finalUrl: url,
+				contentType: "application/json",
+			};
+		},
+	};
+}
+
 function robotsDenied(url: string): Error & {
 	structured: { code: string; message: string; retryable: boolean };
 } {
@@ -112,14 +131,12 @@ describe("reddit vertical extractor", () => {
 					id: "c1",
 					author: "octo",
 					body: "Thanks for the details.",
-					permalink:
-						"https://www.reddit.com/r/announcements/comments/14f4h6s/x/c1/",
+					permalink: "https://www.reddit.com/r/announcements/comments/14f4h6s/x/c1/",
 				},
 			],
 			source: {
 				provider: "reddit",
-				endpoint:
-					"https://www.reddit.com/r/announcements/comments/14f4h6s.json?limit=5&raw_json=1",
+				endpoint: "https://www.reddit.com/r/announcements/comments/14f4h6s.json?limit=5&raw_json=1",
 			},
 		});
 	});
@@ -140,8 +157,7 @@ describe("reddit vertical extractor", () => {
 			data: {
 				id: "14f4h6s",
 				source: {
-					endpoint:
-						"https://www.reddit.com/comments/14f4h6s.json?limit=5&raw_json=1",
+					endpoint: "https://www.reddit.com/comments/14f4h6s.json?limit=5&raw_json=1",
 				},
 			},
 		});
@@ -152,25 +168,7 @@ describe("reddit vertical extractor", () => {
 		const result = await runVerticalExtractor(
 			"reddit",
 			"https://www.reddit.com/r/announcements/comments/14f4h6s/slug/",
-			{
-				context: {
-					fetchJson: async () => {
-						throw new Error("Reddit extractor should use fetchPage");
-					},
-					fetchPage: async (url) => {
-						attempted.push(url);
-						if (url.startsWith("https://www.reddit.com/r/")) {
-							throw robotsDenied(url);
-						}
-						return {
-							text: redditJson,
-							status: 200,
-							finalUrl: url,
-							contentType: "application/json",
-						};
-					},
-				},
-			},
+			{ context: fallbackToAllowedRedditHostContext(attempted) },
 		);
 
 		expect(attempted).toEqual([
@@ -180,8 +178,7 @@ describe("reddit vertical extractor", () => {
 		expect(result.data).toMatchObject({
 			id: "14f4h6s",
 			source: {
-				endpoint:
-					"https://old.reddit.com/r/announcements/comments/14f4h6s.json?limit=5&raw_json=1",
+				endpoint: "https://old.reddit.com/r/announcements/comments/14f4h6s.json?limit=5&raw_json=1",
 			},
 		});
 	});
@@ -213,8 +210,7 @@ describe("reddit vertical extractor", () => {
 			},
 		});
 		expect(
-			(result.data as { source?: { attemptedEndpoints?: string[] } }).source
-				?.attemptedEndpoints,
+			(result.data as { source?: { attemptedEndpoints?: string[] } }).source?.attemptedEndpoints,
 		).toHaveLength(4);
 	});
 

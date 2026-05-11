@@ -75,7 +75,7 @@ export const ossInsightCollectionRankingExtractor: VerticalExtractor<OssInsightC
 				},
 				metric,
 				period,
-				rows: rowsOf(payload).map(trimRankingRow),
+				rows: rowsOf(payload).map((row) => trimRankingRow(row)),
 			};
 		},
 	};

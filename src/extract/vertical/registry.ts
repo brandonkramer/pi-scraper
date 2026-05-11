@@ -104,13 +104,13 @@ export async function runVerticalExtractor<T = unknown>(
 			extractor: name,
 			url: url.toString(),
 			data: data as T,
-			sources: sources.length ? sources : undefined,
+			sources: sources.length > 0 ? sources : undefined,
 		};
 	} catch (error) {
 		return {
 			extractor: name,
 			url: url.toString(),
-			sources: sources.length ? sources : undefined,
+			sources: sources.length > 0 ? sources : undefined,
 			error: verticalError(error),
 		};
 	}

@@ -36,21 +36,21 @@ function stripLargeElements(html: string): string {
 	let trCount = 0;
 	let liCount = 0;
 	if (hasTable) {
-		const trMatches = html.match(/<tr[\s>]/gi);
+		const trMatches = html.match(/<tr[\s>]/giu);
 		trCount = trMatches ? trMatches.length : 0;
 	}
 	if (hasList) {
-		const liMatches = html.match(/<li[\s>]/gi);
+		const liMatches = html.match(/<li[\s>]/giu);
 		liCount = liMatches ? liMatches.length : 0;
 	}
 	if (trCount < 20 && liCount < 100) return html;
 	// Strip tables and/or lists if thresholds exceeded
 	let result = html;
 	if (trCount >= 20) {
-		result = result.replaceAll(/<table[\s\S]*?<\/table>/gi, "\n\n");
+		result = result.replaceAll(/<table[\s\S]*?<\/table>/giu, "\n\n");
 	}
 	if (liCount >= 100) {
-		result = result.replaceAll(/<(ul|ol)[\s\S]*?<\/(ul|ol)>/gi, "\n\n[Long list]\n\n");
+		result = result.replaceAll(/<(ul|ol)[\s\S]*?<\/(ul|ol)>/giu, "\n\n[Long list]\n\n");
 	}
 	return result;
 }

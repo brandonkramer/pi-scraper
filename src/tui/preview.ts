@@ -44,7 +44,7 @@ export function pickExcerpt(
 	const mutable = args as Array<string | undefined | number>;
 	const maxChars = typeof mutable.at(-1) === "number" ? (mutable.pop() as number) : 180;
 	for (const value of mutable as Array<string | undefined>) {
-		if (value) return value.replaceAll(/\s+/g, " ").trim().slice(0, maxChars);
+		if (value) return value.replaceAll(/\s+/gu, " ").trim().slice(0, maxChars);
 	}
 }
 

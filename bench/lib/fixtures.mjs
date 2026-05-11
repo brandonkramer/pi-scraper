@@ -12,7 +12,7 @@ export function createCheerioAdapter() {
 	return {
 		name: "cheerio",
 		load: (html) => cheerioLoad(html),
-		select: ($, selector, root) => (root ? root.find(selector) : $(selector)).toArray(),
+		select: ($, selector, root) => $(selector, root).toArray(),
 		text: ($, nodes) => $(nodes).text(),
 		attr: ($, node, name) => $(node).attr(name),
 		html: ($, nodes) => nodes.map((node) => $.html(node) ?? "").join("\n"),
@@ -63,7 +63,7 @@ export async function loadHtmlFixtures(dir, fixtureNames = []) {
 	const entries = await readdir(dir, { withFileTypes: true });
 	const names = new Set(fixtureNames);
 	const out = [];
-	for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+	for (const entry of entries.toSorted((a, b) => a.name.localeCompare(b.name))) {
 		if (!entry.isFile() || !entry.name.endsWith(".html")) continue;
 		const id = entry.name.replace(/\.html$/u, "");
 		if (names.size > 0 && !names.has(id)) continue;
@@ -85,7 +85,8 @@ export function clean(value) {
 }
 
 export function flagList(argv, name) {
-	const match = argv.find((arg) => arg.startsWith(`--${name}=`));
+	const prefix = `--${String(name)}=`;
+	const match = argv.find((arg) => arg.startsWith(prefix));
 	if (!match) return [];
 	return match
 		.split("=")[1]

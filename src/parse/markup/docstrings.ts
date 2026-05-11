@@ -164,7 +164,7 @@ function parseDocBlock(text: string): Omit<ParsedDocExport, "name" | "kind"> {
 	if (currentExample) examples.push(currentExample.join("\n").trim());
 	return withoutUndefined({
 		description: description.join("\n"),
-		parameters: params.length ? params : undefined,
+		parameters: params.length > 0 ? params : undefined,
 		returns,
 		examples: examples.filter(Boolean),
 	});

@@ -1,11 +1,7 @@
-/**
- * @fileoverview health __tests__ session-start.test module.
- */
+/** @file Health **tests** session-start.test module. */
 import { describe, expect, it } from "vitest";
-import {
-	registerSessionStartHealthChecks,
-	runSessionStartHealthChecks,
-} from "../session-start.ts";
+
+import { registerSessionStartHealthChecks, runSessionStartHealthChecks } from "../session-start.ts";
 
 describe("session-start health checks", () => {
 	it("registers a non-blocking session_start listener", async () => {
@@ -23,7 +19,9 @@ describe("session-start health checks", () => {
 
 		const result = handler?.();
 		expect(result).toBeUndefined();
-		await new Promise((resolve) => setTimeout(resolve, 0));
+		await new Promise((resolve) => {
+			setTimeout(resolve, 0);
+		});
 		expect(warnings[0]).toContain("PLAYWRIGHT_UNAVAILABLE");
 	});
 

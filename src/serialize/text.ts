@@ -6,7 +6,7 @@
 export function normalizeWhitespace(text: string): string {
 	// Quick check if text is already clean (most common case)
 	// Look for any characters that need normalization: \r, \t, \n\n\n, or multiple spaces
-	if (!/[\r\t]| \n|\n |\n{3,}| {2}/.test(text)) {
+	if (!/[\r\t]| \n|\n |\n{3,}| {2}/u.test(text)) {
 		return text.trim();
 	}
 	return text

@@ -14,6 +14,7 @@ import type {
 	SelectedCodeBlock,
 	SelectedTable,
 	SelectedSymbol,
+	SymbolIncludeType,
 } from "./types.ts";
 
 export type {
@@ -41,7 +42,7 @@ export function selectSymbolContent(
 	options: SymbolSelectionOptions,
 ): SymbolSelectionResult | undefined {
 	const include = normalizedInclude(options);
-	if (!include.length) return;
+	if (include.length === 0) return;
 	const parsed = parseSelectableContent(content, options.sourceFormat ?? "text");
 	const sections = uniqueSections([
 		...matchesForType(parsed, include, "heading"),
@@ -138,7 +139,7 @@ function selectHeadings(content: string, sourceFormat: PatternSourceFormat): Sel
 			});
 		}
 	}
-	return headings.sort((a, b) => a.start - b.start);
+	return headings.toSorted((a, b) => a.start - b.start);
 }
 
 function sectionsFromHeadings(content: string, headings: SelectedSection[]): SelectedSection[] {
@@ -180,7 +181,7 @@ function selectCodeBlocks(content: string, sourceFormat: PatternSourceFormat): S
 			});
 		}
 	}
-	return blocks.sort((a, b) => a.start - b.start);
+	return blocks.toSorted((a, b) => a.start - b.start);
 }
 
 function extractTables(content: string, sourceFormat: PatternSourceFormat): SelectedTable[] {
@@ -205,7 +206,7 @@ function extractTables(content: string, sourceFormat: PatternSourceFormat): Sele
 			});
 		}
 	}
-	return tables.sort((a, b) => a.start - b.start);
+	return tables.toSorted((a, b) => a.start - b.start);
 }
 
 function symbolsFromCodeBlock(block: SelectedCodeBlock): SelectedSymbol[] {
@@ -251,7 +252,7 @@ function isCodeDeclaration(kind: string | undefined, tail: string | undefined): 
 	return false;
 }
 
-function matchesForType<T extends import("./types.ts").SymbolIncludeType>(
+function matchesForType<T extends SymbolIncludeType>(
 	parsed: ParsedContent,
 	include: SymbolIncludeFilter[],
 	type: T,
@@ -263,7 +264,7 @@ function matchesForType<T extends import("./types.ts").SymbolIncludeType>(
 		);
 }
 
-type ExtractedFor<T extends import("./types.ts").SymbolIncludeType> = T extends "code-block"
+type ExtractedFor<T extends SymbolIncludeType> = T extends "code-block"
 	? SelectedCodeBlock
 	: T extends "table"
 		? SelectedTable
@@ -271,7 +272,7 @@ type ExtractedFor<T extends import("./types.ts").SymbolIncludeType> = T extends 
 			? SelectedSymbol
 			: SelectedSection;
 
-function collectionForType<T extends import("./types.ts").SymbolIncludeType>(
+function collectionForType<T extends SymbolIncludeType>(
 	parsed: ParsedContent,
 	type: T,
 ): ExtractedFor<T>[] {

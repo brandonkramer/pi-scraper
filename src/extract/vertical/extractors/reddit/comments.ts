@@ -31,5 +31,5 @@ export function extractTopComments(listing: RedditListing<RedditCommentData> | u
 				permalink: absoluteRedditUrl(data.permalink),
 			});
 		});
-	return topComments.length ? topComments : undefined;
+	return topComments.length > 0 ? topComments : undefined;
 }

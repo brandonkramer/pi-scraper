@@ -227,7 +227,6 @@ rule:
         kind: number
         regex: ^[1-9][0-9]*$
 
-
 # ----------------------------------------------------------------------------
 # Removed (oxlint covers) — paper trail for migrated sub-rules.
 # Verify any future migration with a fixture test before deleting.

@@ -1,3 +1,4 @@
+import type { SelectorExtractionResult } from "../extract/selector/css.ts";
 /**
  * @remarks
  *   Fetches HTML, parses with htmlparser2, runs the adaptive selector engine, and converts matched
@@ -90,7 +91,7 @@ function buildSummary(
 		score?: number;
 		saved: boolean;
 	},
-	_extractResult: import("../extract/selector/css.ts").SelectorExtractionResult,
+	_extractResult: SelectorExtractionResult,
 ): string {
 	if (selectorResult.strategy === "direct") {
 		return `Selector matched ${selectorResult.directMatches} element(s)${selectorResult.saved ? "; 🔒 fingerprint saved" : ""}.`;

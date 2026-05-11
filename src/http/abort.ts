@@ -1,6 +1,4 @@
-/**
- * @fileoverview Shared AbortSignal helpers for fetch, browser, and parser adapters.
- */
+/** @file Shared AbortSignal helpers for fetch, browser, and parser adapters. */
 
 export function createAbortError(message = "Operation aborted"): Error {
 	const error = new Error(message);
@@ -9,16 +7,10 @@ export function createAbortError(message = "Operation aborted"): Error {
 }
 
 export function isAbortError(error: unknown, signal?: AbortSignal): boolean {
-	return (
-		signal?.aborted === true ||
-		(error instanceof Error && error.name === "AbortError")
-	);
+	return signal?.aborted === true || (error instanceof Error && error.name === "AbortError");
 }
 
-export function throwIfAborted(
-	signal: AbortSignal | undefined,
-	message?: string,
-): void {
+export function throwIfAborted(signal: AbortSignal | undefined, message?: string): void {
 	if (!signal?.aborted) return;
 	throw signal.reason ?? createAbortError(message);
 }
@@ -31,7 +23,8 @@ export function abortable<T>(
 	if (!signal) return promise;
 	throwIfAborted(signal, message);
 	return new Promise((resolve, reject) => {
-		const onAbort = () => reject(signal.reason ?? createAbortError(message));
+		const onAbort = () =>
+			reject(signal.reason instanceof Error ? signal.reason : createAbortError(message));
 		signal.addEventListener("abort", onAbort, { once: true });
 		promise.then(resolve, reject).finally(() => {
 			signal.removeEventListener("abort", onAbort);

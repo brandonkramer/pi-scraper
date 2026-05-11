@@ -15,10 +15,7 @@ export async function writeSuiteReport({
 		: path.join(rootDir, "bench/results", suite);
 	const historyDir = path.join(dir, "history");
 	await mkdir(historyDir, { recursive: true });
-	const safeName = jsonName ?? `${timestamp}.json`;
-	await writeFile(
-		path.join(historyDir, safeName),
-		`${JSON.stringify(report, null, 2)}\n`,
-	);
+	const safeName = jsonName ?? `${String(timestamp)}.json`;
+	await writeFile(path.join(historyDir, safeName), `${JSON.stringify(report, null, 2)}\n`);
 	await writeFile(path.join(dir, "latest.md"), markdown);
 }

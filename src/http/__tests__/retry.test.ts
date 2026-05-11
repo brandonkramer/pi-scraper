@@ -35,6 +35,47 @@ function allowRobots(agent: MockAgent, origin: string): void {
 	agent.get(origin).intercept({ path: "/robots.txt" }).reply(404, "");
 }
 
+type RetryServerState = {
+	activePages: number;
+	maxSecondWave: number;
+	limited: boolean;
+};
+
+function createRetryTestServer(state: RetryServerState) {
+	return createServer((request, response) => {
+		if (request.url === "/robots.txt") {
+			response.writeHead(404, { "content-type": "text/plain" });
+			response.end("");
+			return;
+		}
+		if (request.url === "/limited" && !state.limited) {
+			state.limited = true;
+			response.writeHead(429, {
+				"content-type": "text/plain",
+				"retry-after": "0",
+			});
+			response.end("slow down");
+			return;
+		}
+		state.activePages += 1;
+		state.maxSecondWave = Math.max(state.maxSecondWave, state.activePages);
+		setTimeout(() => {
+			response.writeHead(200, { "content-type": "text/plain" });
+			response.end(request.url as string);
+			state.activePages -= 1;
+		}, 10);
+	});
+}
+
+function closeServer(server: ReturnType<typeof createServer>): Promise<void> {
+	return new Promise((resolve, reject) => {
+		server.close((error) => {
+			if (error) reject(error);
+			else resolve();
+		});
+	});
+}
+
 describe("HttpClient retry and rate-limit policy", () => {
 	it("retries retryable status responses", async () => {
 		const { agent, client } = mockClient(2);
@@ -156,34 +197,12 @@ describe("HttpClient retry and rate-limit policy", () => {
 	});
 
 	it("reduces same-host concurrency after 429 responses", async () => {
-		let activePages = 0;
-		let maxSecondWave = 0;
-		let limited = false;
-		const server = createServer((request, response) => {
-			if (request.url === "/robots.txt") {
-				response.writeHead(404, { "content-type": "text/plain" });
-				response.end("");
-				return;
-			}
-			if (request.url === "/limited" && !limited) {
-				limited = true;
-				response.writeHead(429, {
-					"content-type": "text/plain",
-					"retry-after": "0",
-				});
-				response.end("slow down");
-				return;
-			}
-			activePages += 1;
-			maxSecondWave = Math.max(maxSecondWave, activePages);
-			setTimeout(() => {
-				response.writeHead(200, { "content-type": "text/plain" });
-				response.end(request.url ?? "");
-				activePages -= 1;
-			}, 10);
-		});
+		const state: RetryServerState = { activePages: 0, maxSecondWave: 0, limited: false };
+		const server = createRetryTestServer(state);
 
-		await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+		await new Promise<void>((resolve) => {
+			server.listen(0, "127.0.0.1", resolve);
+		});
 		const { port } = server.address() as AddressInfo;
 		const client = createHttpClient({
 			allowPrivateNetwork: true,
@@ -196,14 +215,9 @@ describe("HttpClient retry and rate-limit policy", () => {
 			});
 			const paths = ["/a", "/b", "/c", "/d"];
 			await Promise.all(paths.map((path) => client.fetchUrl(`http://127.0.0.1:${port}${path}`)));
-			expect(maxSecondWave).toBeLessThanOrEqual(2);
+			expect(state.maxSecondWave).toBeLessThanOrEqual(2);
 		} finally {
-			await new Promise<void>((resolve, reject) => {
-				server.close((error) => {
-					if (error) reject(error);
-					else resolve();
-				});
-			});
+			await closeServer(server);
 		}
 	});
 });

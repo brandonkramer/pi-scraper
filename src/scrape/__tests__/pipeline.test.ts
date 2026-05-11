@@ -1,23 +1,16 @@
-/**
- * @fileoverview scrape __tests__ pipeline.test module.
- */
+/** @file Scrape **tests** pipeline.test module. */
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+
 import { describe, expect, it, vi } from "vitest";
-import {
-	BrowserRenderError,
-	type BrowserRenderer,
-} from "../../browser/playwright.ts";
+
+import { BrowserRenderError, type BrowserRenderer } from "../../browser/playwright.ts";
 import type { FetchUrlResult } from "../../http/client.ts";
 import type { FingerprintFetchAdapter } from "../../http/fingerprint/index.ts";
 import { type ScrapePipelineDeps, scrapeUrl } from "../pipeline.ts";
 
 const URL = "https://example.com/page";
-const rootDir = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	"../../..",
-);
+const rootDir = path.resolve(import.meta.dirname, "../../..");
 const pdfFixture = path.join(rootDir, "eval/fixtures/pdf-document.pdf");
 
 describe("scrapeUrl", () => {
@@ -54,17 +47,14 @@ describe("scrapeUrl", () => {
 		const result = await scrapeUrl(
 			URL,
 			{ mode: "auto" },
-			deps(
-				htmlResponse("<html><body><h1>Short</h1><p>Thin.</p></body></html>"),
-				{
-					readableExtractor: () => ({
-						ok: true,
-						title: "Readable",
-						textContent: readableText,
-						contentHtml: `<article><p>${readableText}</p></article>`,
-					}),
-				},
-			),
+			deps(htmlResponse("<html><body><h1>Short</h1><p>Thin.</p></body></html>"), {
+				readableExtractor: () => ({
+					ok: true,
+					title: "Readable",
+					textContent: readableText,
+					contentHtml: `<article><p>${readableText}</p></article>`,
+				}),
+			}),
 		);
 
 		expect(result.mode).toBe("readable");
@@ -250,11 +240,7 @@ describe("scrapeUrl", () => {
 				});
 			}),
 		};
-		const result = await scrapeUrl(
-			URL,
-			{ mode: "browser" },
-			{ browserRenderer: renderer },
-		);
+		const result = await scrapeUrl(URL, { mode: "browser" }, { browserRenderer: renderer });
 
 		expect(result.error?.code).toBe("BROWSER_UNAVAILABLE");
 		expect(result.mode).toBe("browser");
@@ -277,11 +263,7 @@ function htmlResponse(html: string, status = 200): FetchUrlResult {
 	};
 }
 
-function textResponse(
-	url: string,
-	contentType: string,
-	text: string,
-): FetchUrlResult {
+function textResponse(url: string, contentType: string, text: string): FetchUrlResult {
 	return {
 		...baseResponse(url, contentType),
 		text,
@@ -290,11 +272,7 @@ function textResponse(
 	};
 }
 
-function baseResponse(
-	url: string,
-	contentType: string,
-	status = 200,
-): FetchUrlResult {
+function baseResponse(url: string, contentType: string, status = 200): FetchUrlResult {
 	return {
 		url,
 		finalUrl: url,

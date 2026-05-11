@@ -28,7 +28,7 @@ describe("assertSafeUrl", () => {
 		"http://[2001:db8::1]/",
 		"http://[2002::1]/",
 	])("blocks unsafe URL %s", (url) => {
-		expect(() => assertSafeUrl(url)).toThrow(/.*/);
+		expect(() => assertSafeUrl(url)).toThrow(/.*/u);
 	});
 
 	it("can explicitly allow private addresses for controlled tests", () => {
@@ -71,6 +71,6 @@ describe("assertSafeUrl", () => {
 		expect(() => assertPublicAddresses(["93.184.216.34"], "https://example.com/")).not.toThrow();
 		expect(() =>
 			assertPublicAddresses(["93.184.216.34", "10.0.0.1"], "https://example.com/"),
-		).toThrow(/.*/);
+		).toThrow(/.*/u);
 	});
 });

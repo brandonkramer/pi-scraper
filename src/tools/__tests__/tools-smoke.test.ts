@@ -24,6 +24,24 @@ afterEach(async () => {
 	await rm(homeDir, { recursive: true, force: true });
 });
 
+function formatSmokeStatus(envelope: ResultEnvelope): string {
+	return envelope.error ? `error:${envelope.error.code}` : `status:${envelope.status ?? "ok"}`;
+}
+
+function formatSmokeDuration(envelope: ResultEnvelope): string {
+	return typeof envelope.timing?.durationMs === "number"
+		? `${envelope.timing.durationMs.toFixed(0)}ms`
+		: "-";
+}
+
+function formatSmokeUpdates(updates: unknown[]): string {
+	return updates.length > 0 ? `updates:${updates.length}` : "updates:0";
+}
+
+function firstText(result: { content: Array<{ text?: string }> }): string {
+	return result.content[0]?.text ?? "";
+}
+
 describe("registered web tools smoke test", () => {
 	for (const tool of webTools) {
 		it(`${tool.name} → returns Pi result shell, renders call/result`, async () => {
@@ -45,18 +63,10 @@ describe("registered web tools smoke test", () => {
 			).toBeTruthy();
 
 			const envelope = result.details as ResultEnvelope;
-			const text = result.content[0]?.text ?? "";
-			const preview = text.replaceAll(/\s+/g, " ").trim().slice(0, 80);
-			const status = envelope.error
-				? `error:${envelope.error.code}`
-				: `status:${envelope.status ?? "ok"}`;
-			const durationMs =
-				typeof envelope.timing?.durationMs === "number"
-					? `${envelope.timing.durationMs.toFixed(0)}ms`
-					: "-";
-			const updateNote = updates.length > 0 ? `updates:${updates.length}` : "updates:0";
+			const text = firstText(result);
+			const preview = text.replaceAll(/\s+/gu, " ").trim().slice(0, 80);
 			console.info(
-				`[smoke] ${tool.name.padEnd(22)} ${status.padEnd(28)} ${durationMs.padEnd(8)} ${updateNote.padEnd(12)} ${preview}`,
+				`[smoke] ${tool.name.padEnd(22)} ${formatSmokeStatus(envelope).padEnd(28)} ${formatSmokeDuration(envelope).padEnd(8)} ${formatSmokeUpdates(updates).padEnd(12)} ${preview}`,
 			);
 		});
 	}

@@ -4,7 +4,7 @@
  */
 import { describe, expect, it, beforeEach } from "vitest";
 
-import type { ModelAdapter, ModelRequest } from "../../extract/adhoc/model.ts";
+import type { ModelAdapter, ModelRequest, ModelResponse } from "../../extract/adhoc/model.ts";
 import { modelRegistry } from "../infra/model-registry.ts";
 import { createWebExtractTool } from "../web-extract.ts";
 import { createWebSummarizeTool } from "../web-summarize.ts";
@@ -20,7 +20,7 @@ function fakeAdapter(
 	const adapter: ModelAdapter & { id: string; calls: ModelRequest[] } = {
 		id,
 		calls,
-		async run<T>(req: ModelRequest, _signal?: AbortSignal) {
+		async run<T>(req: ModelRequest, _signal?: AbortSignal): Promise<ModelResponse<T>> {
 			calls.push(req);
 			return { data: `from-${id}` as T };
 		},
@@ -117,7 +117,7 @@ describe("web_summarize provider routing", () => {
 		fakeAdapter("gemini", ["summarize"]);
 		const tool = createWebSummarizeTool({
 			modelAdapter: {
-				async run<T>() {
+				async run<T>(): Promise<ModelResponse<T>> {
 					return { data: "injected" as T };
 				},
 			},
@@ -171,7 +171,7 @@ describe("web_extract action=adhoc provider routing", () => {
 		fakeAdapter("gemini", ["extract"]);
 		const tool = createWebExtractTool({
 			modelAdapter: {
-				async run<T>() {
+				async run<T>(): Promise<ModelResponse<T>> {
 					return { data: "injected" as T };
 				},
 			},

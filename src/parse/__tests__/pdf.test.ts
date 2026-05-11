@@ -1,16 +1,12 @@
-/**
- * @fileoverview parse __tests__ pdf.test module.
- */
+/** @file Parse **tests** pdf.test module. */
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
+
 import { extractPdfText } from "../content/pdf.ts";
 
-const rootDir = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	"../../..",
-);
+const rootDir = path.resolve(import.meta.dirname, "../../..");
 const pdfFixture = path.join(rootDir, "eval/fixtures/pdf-document.pdf");
 
 describe("extractPdfText", () => {

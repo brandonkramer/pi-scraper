@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
 
 import { intFlag } from "../lib/cli-args.mjs";
 import { runEval } from "../lib/runner.mjs";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const rootDir = path.resolve(import.meta.dirname, "../..");
 const args = process.argv.slice(2);
 const positionalFirst = args.find((arg) => !arg.startsWith("--"));
 const corpusPath = path.resolve(rootDir, positionalFirst ?? "eval/corpus.json");

@@ -214,7 +214,9 @@ async function renderWithLoader(
 		} catch (error) {
 			throw blockedRequest ?? error;
 		}
-		if (blockedRequest) throw blockedRequest;
+		if (blockedRequest instanceof BrowserRenderError) {
+			throw new BrowserRenderError(blockedRequest.structured);
+		}
 		if (signal?.aborted) throw abortError(url);
 
 		// 4) Auto-wait for challenge pages
@@ -378,7 +380,9 @@ async function autoWaitForChallenge(
 		const body = await page.content().catch(() => "");
 		const isChallenge = challengeMarkers.some((m) => title.includes(m) || body.includes(m));
 		if (!isChallenge) return;
-		await new Promise((resolve) => setTimeout(resolve, pollInterval));
+		await new Promise((resolve) => {
+			setTimeout(resolve, pollInterval);
+		});
 	}
 	// Timeout exceeded — challenge still present
 	throw new BrowserRenderError({

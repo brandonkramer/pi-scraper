@@ -40,8 +40,8 @@ export const webGetResultTool = defineWebTool({
 		renderSimpleCall(
 			"web_get_result",
 			[
-				args.jobId ? `job:${args.jobId}` : args.responseId,
-				args.snapshotUrl ? `snapshots:${args.snapshotUrl}` : undefined,
+				args.jobId ? `job:${String(args.jobId)}` : args.responseId,
+				args.snapshotUrl ? `snapshots:${String(args.snapshotUrl)}` : undefined,
 			],
 			theme,
 		),

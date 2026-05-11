@@ -119,7 +119,7 @@ function prepareJsonSource(
 	}
 	const paths = meta.jsonPaths?.length ? meta.jsonPaths : ["$"];
 	const { values, infos, errors } = evaluateJsonPaths(parsed.data, paths);
-	if (errors.length) {
+	if (errors.length > 0) {
 		throw new PatternInspectError(
 			errors.map((e) => `${e.path}: ${e.message}`).join("; "),
 			errors[0].code,

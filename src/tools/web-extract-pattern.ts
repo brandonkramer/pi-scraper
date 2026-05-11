@@ -1,6 +1,4 @@
-/**
- * @fileoverview web_extract action="pattern" handler — deterministic pattern inspection.
- */
+/** @file Web_extract action="pattern" handler — deterministic pattern inspection. */
 import { loadEffectiveConfig } from "../config/settings.ts";
 import {
 	inspectPatterns,
@@ -14,17 +12,16 @@ import { toolResult, toolErrorResult } from "./infra/result.ts";
 import type { Params, WebExtractToolOptions } from "./web-extract.ts";
 
 export function hasPatternRequest(params: Params): boolean {
-	return Boolean(
-		params.sourceFormat ||
-			params.include?.length ||
-			params.extractSchema ||
-			params.length ||
-			params.markers?.length ||
-			params.contains?.length ||
-			params.excerpts?.length ||
-			params.regexes?.length ||
-			params.sections?.length,
-	);
+	if (params.sourceFormat) return true;
+	if (Array.isArray(params.include) && params.include.length > 0) return true;
+	if (params.extractSchema) return true;
+	if (params.length > 0) return true;
+	if (Array.isArray(params.markers) && params.markers.length > 0) return true;
+	if (Array.isArray(params.contains) && params.contains.length > 0) return true;
+	if (Array.isArray(params.excerpts) && params.excerpts.length > 0) return true;
+	if (Array.isArray(params.regexes) && params.regexes.length > 0) return true;
+	if (Array.isArray(params.sections) && params.sections.length > 0) return true;
+	return false;
 }
 
 export async function runPatternInspection(
@@ -51,15 +48,10 @@ export async function runPatternInspection(
 			options.scrapeDeps ?? {},
 			signal,
 		);
-		const foundMarkers =
-			result.markers?.filter((item) => item.found).length ?? 0;
-		const foundContains =
-			result.contains?.filter((item) => item.found).length ?? 0;
-		const matchCount =
-			result.regexes?.reduce((total, item) => total + item.matches.length, 0) ??
-			0;
-		const sectionCount =
-			result.sections?.filter((item) => item.found).length ?? 0;
+		const foundMarkers = result.markers?.filter((item) => item.found).length ?? 0;
+		const foundContains = result.contains?.filter((item) => item.found).length ?? 0;
+		const matchCount = result.regexes?.reduce((total, item) => total + item.matches.length, 0) ?? 0;
+		const sectionCount = result.sections?.filter((item) => item.found).length ?? 0;
 		const summary = `Pattern inspection complete: ${result.source.length} chars, ${foundMarkers} marker(s), ${foundContains} contains hit(s), ${matchCount} regex match(es), ${sectionCount} section(s).`;
 		return toolResult({
 			text: summarizePatternInspection(result),
@@ -80,9 +72,7 @@ export async function runPatternInspection(
 	} catch (error) {
 		return toolErrorResult(
 			error,
-			error instanceof PatternInspectError
-				? error.structured.code
-				: "PATTERN_EXTRACT_FAILED",
+			error instanceof PatternInspectError ? error.structured.code : "PATTERN_EXTRACT_FAILED",
 			"pattern_extract",
 			params.url,
 		);

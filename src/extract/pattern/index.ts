@@ -1,5 +1,5 @@
 /** @file Pattern extraction public entrypoint. */
-import type { ScrapeResult } from "../../scrape/pipeline.ts";
+import type { ScrapePipelineDeps, ScrapeResult } from "../../scrape/pipeline.ts";
 import type { CommonScrapeOptions } from "../../types.ts";
 import { selectSymbolContent } from "../api-surface/selection.ts";
 import type {
@@ -17,12 +17,14 @@ import {
 	inspectSections,
 } from "./ops/index.ts";
 import { preparePatternSource } from "./runner.ts";
+import type { SectionRangeRequest, SectionRangeResult } from "./section-ranges.ts";
+import type { PatternExcerptRequest, PatternRegexRequest } from "./types.ts";
 
 const SOURCE_FORMATS = ["text", "markdown", "html", "json"] as const;
 
 export type PatternSourceFormat = (typeof SOURCE_FORMATS)[number];
 
-export type PatternSectionRequest = import("./section-ranges.ts").SectionRangeRequest;
+export type PatternSectionRequest = SectionRangeRequest;
 
 export interface PatternInspectOptions extends Omit<CommonScrapeOptions, "include"> {
 	url?: string;
@@ -32,8 +34,8 @@ export interface PatternInspectOptions extends Omit<CommonScrapeOptions, "includ
 	length?: boolean;
 	markers?: string[];
 	contains?: string[];
-	excerpts?: import("./types.ts").PatternExcerptRequest[];
-	regexes?: import("./types.ts").PatternRegexRequest[];
+	excerpts?: PatternExcerptRequest[];
+	regexes?: PatternRegexRequest[];
 	sections?: PatternSectionRequest[];
 	include?: SymbolIncludeFilter[];
 	extractSchema?: ExtractSchemaPreset;
@@ -84,7 +86,7 @@ export interface PatternInspectResult {
 		totalMatches: number;
 		truncated: boolean;
 	}>;
-	sections?: import("./section-ranges.ts").SectionRangeResult[];
+	sections?: SectionRangeResult[];
 	selection?: SymbolSelectionResult;
 }
 
@@ -92,7 +94,7 @@ export { PatternInspectError };
 
 export async function inspectPatterns(
 	options: PatternInspectOptions,
-	deps: import("../../scrape/pipeline.ts").ScrapePipelineDeps = {},
+	deps: ScrapePipelineDeps = {},
 	signal?: AbortSignal,
 ): Promise<PatternInspectResult> {
 	const prepared = await preparePatternSource(options, deps, signal);

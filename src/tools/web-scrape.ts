@@ -87,13 +87,13 @@ function renderScrapeCallParts(params: Params): string[] {
 			"summarize",
 			params.url ?? "provided content",
 			params.bullets
-				? `${params.bullets} bullets`
+				? `${String(params.bullets)} bullets`
 				: params.sentences
-					? `${params.sentences} sentences`
+					? `${String(params.sentences)} sentences`
 					: undefined,
 		].filter(Boolean) as string[];
 	}
-	return [`(${params.mode ?? "auto"} → ${params.format ?? "markdown"})`];
+	return [`(${String(params.mode ?? "auto")} → ${String(params.format ?? "markdown")})`];
 }
 
 async function readScrape(

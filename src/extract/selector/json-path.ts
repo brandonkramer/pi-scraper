@@ -49,7 +49,7 @@ export function evaluateJsonPath(root: unknown, path: string): JsonPathResult {
 
 	while (remaining.length > 0) {
 		const match = PATH_TOKEN_RE.exec(remaining);
-		if (!match || !match.groups) {
+		if (!match?.groups) {
 			errors.push({
 				path,
 				code: "JSON_PATH_UNSUPPORTED",
@@ -106,15 +106,18 @@ export function evaluateJsonPaths(
 }
 
 export function flattenJsonValues(values: unknown[]): string {
-	return values.map(flattenOne).join("\n");
+	return values.map((value) => flattenOne(value)).join("\n");
 }
 
 function flattenOne(value: unknown): string {
 	if (value === null) return "null";
 	if (typeof value === "string") return value;
 	if (typeof value === "number" || typeof value === "boolean") return String(value);
-	if (Array.isArray(value)) return value.map(flattenOne).join("\n");
-	if (isObjectRecord(value)) return Object.values(value).map(flattenOne).join("\n");
+	if (Array.isArray(value)) return value.map((v) => flattenOne(v)).join("\n");
+	if (isObjectRecord(value))
+		return Object.values(value)
+			.map((v) => flattenOne(v))
+			.join("\n");
 	return JSON.stringify(value);
 }
 

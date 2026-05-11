@@ -1,5 +1,6 @@
 /** @file Reddit post fetch and parse logic. */
 import { stripUndefined } from "../../../text.ts";
+import type { VerticalExtractorContext } from "../../../vertical/capabilities.ts";
 // oxlint-disable-next-line import/no-cycle -- vertical extractors and storage modules share type contracts; cycle is resolved at call time
 import { extractTopComments } from "./comments.ts";
 import {
@@ -20,9 +21,7 @@ const COMMENT_LIMIT = 5;
 
 export async function fetchFirstAllowedRedditEndpoint(
 	match: RedditPostMatch,
-	fetchPage: NonNullable<
-		import("../../../vertical/capabilities.ts").VerticalExtractorContext["fetchPage"]
-	>,
+	fetchPage: NonNullable<VerticalExtractorContext["fetchPage"]>,
 	signal?: AbortSignal,
 ): Promise<RedditPostResult> {
 	const endpoints = redditEndpoints(match);
@@ -199,7 +198,7 @@ function parseRedditResponse(
 function redditListings(
 	parsed: unknown,
 ): [RedditListing<RedditPostData>, RedditListing<RedditCommentData> | undefined] {
-	if (Array.isArray(parsed) && parsed.length >= 1) {
+	if (Array.isArray(parsed) && parsed.length > 0) {
 		return [
 			parsed[0] as RedditListing<RedditPostData>,
 			parsed[1] as RedditListing<RedditCommentData> | undefined,

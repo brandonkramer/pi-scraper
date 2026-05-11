@@ -4,6 +4,7 @@
  */
 import { describe, expect, it, beforeEach } from "vitest";
 
+import type { ModelResponse } from "../../extract/adhoc/model.ts";
 import {
 	modelRegistry,
 	initModelAdapterProtocol,
@@ -20,7 +21,7 @@ function fakeRegisteredAdapter(id: string, capabilities: readonly string[]): Reg
 		capabilities: capabilities as RegisteredAdapter["capabilities"],
 		priority: 50,
 		adapter: {
-			async run<T>() {
+			async run<T>(): Promise<ModelResponse<T>> {
 				return { data: `from-${id}` as T };
 			},
 		},
@@ -28,9 +29,11 @@ function fakeRegisteredAdapter(id: string, capabilities: readonly string[]): Reg
 }
 
 /** Build a mock Pi whose events honour DiscoverPayload filters. */
+type DiscoverHandlers = Map<string, Array<(payload: unknown) => void>>;
+
 function mockPiWithFilteredDiscover() {
 	const events: Array<{ event: string; payload: unknown }> = [];
-	const handlers = new Map<string, Array<(payload: unknown) => void>>();
+	const handlers: DiscoverHandlers = new Map();
 	const pi = {
 		events: {
 			on(event: string, handler: (payload: unknown) => void) {
@@ -44,6 +47,32 @@ function mockPiWithFilteredDiscover() {
 		},
 	};
 	return { pi, events, handlers };
+}
+
+function registerFilteredProvider(
+	handlers: DiscoverHandlers,
+	providerEntry: RegisteredAdapter,
+): void {
+	handlers.set("pi:model-adapter/discover", [
+		(payload: unknown) => {
+			const filter = payload as {
+				capabilities?: readonly string[];
+			};
+			if (matchesDiscoverFilter(providerEntry, filter.capabilities)) {
+				modelRegistry.register(providerEntry);
+			}
+		},
+	]);
+}
+
+function matchesDiscoverFilter(
+	providerEntry: RegisteredAdapter,
+	capabilities: readonly string[] | undefined,
+): boolean {
+	return (
+		capabilities === undefined ||
+		providerEntry.capabilities.some((capability) => capabilities.includes(capability))
+	);
 }
 
 describe("web_summarize lazy filtered discover", () => {
@@ -71,7 +100,7 @@ describe("web_summarize lazy filtered discover", () => {
 		// First init-time discover ({}), then lazy filtered discover
 		const discovers = events.filter((e) => e.event === "pi:model-adapter/discover");
 		expect(discovers.length).toBeGreaterThanOrEqual(1);
-		const lazy = discovers[discovers.length - 1];
+		const lazy = discovers.at(-1);
 		expect(lazy?.payload).toEqual({ capabilities: ["summarize"] });
 		expect((result.details as { error?: { code: string } }).error?.code).toBe(
 			"MODEL_ADAPTER_MISSING",
@@ -83,19 +112,7 @@ describe("web_summarize lazy filtered discover", () => {
 
 		// Register a provider that honours the discover filter
 		const providerEntry = fakeRegisteredAdapter("gemini", ["summarize"]);
-		handlers.set("pi:model-adapter/discover", [
-			(payload: unknown) => {
-				const filter = payload as {
-					capabilities?: readonly string[];
-				};
-				if (
-					!filter.capabilities ||
-					providerEntry.capabilities.some((c) => filter.capabilities!.includes(c))
-				) {
-					modelRegistry.register(providerEntry);
-				}
-			},
-		]);
+		registerFilteredProvider(handlers, providerEntry);
 
 		initModelAdapterProtocol(pi);
 
@@ -121,19 +138,7 @@ describe("web_summarize lazy filtered discover", () => {
 		const { pi, handlers } = mockPiWithFilteredDiscover();
 
 		const providerEntry = fakeRegisteredAdapter("chatbot", ["chat" as string]);
-		handlers.set("pi:model-adapter/discover", [
-			(payload: unknown) => {
-				const filter = payload as {
-					capabilities?: readonly string[];
-				};
-				if (
-					!filter.capabilities ||
-					providerEntry.capabilities.some((c) => filter.capabilities!.includes(c))
-				) {
-					modelRegistry.register(providerEntry);
-				}
-			},
-		]);
+		registerFilteredProvider(handlers, providerEntry);
 
 		initModelAdapterProtocol(pi);
 		// Init-time discover (payload {}) registers all providers.
@@ -163,19 +168,7 @@ describe("web_summarize lazy filtered discover", () => {
 		const { pi, events, handlers } = mockPiWithFilteredDiscover();
 
 		const providerEntry = fakeRegisteredAdapter("gemini", ["summarize"]);
-		handlers.set("pi:model-adapter/discover", [
-			(payload: unknown) => {
-				const filter = payload as {
-					capabilities?: readonly string[];
-				};
-				if (
-					!filter.capabilities ||
-					providerEntry.capabilities.some((c) => filter.capabilities!.includes(c))
-				) {
-					modelRegistry.register(providerEntry);
-				}
-			},
-		]);
+		registerFilteredProvider(handlers, providerEntry);
 
 		initModelAdapterProtocol(pi);
 

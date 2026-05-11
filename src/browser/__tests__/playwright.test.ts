@@ -6,6 +6,26 @@ import { createPlaywrightRenderer, type PlaywrightModule } from "../playwright.t
 
 const URL = "http://93.184.216.34/page";
 
+async function flakySafetyCheck(input: string | URL): Promise<SafeUrlResult> {
+	const value = input.toString();
+	if (value.includes("flaky-subresource.invalid")) {
+		throw Object.assign(new Error("getaddrinfo ENOTFOUND"), {
+			code: "ENOTFOUND",
+		});
+	}
+	return safeResult(value);
+}
+
+async function countingSafetyCheck(
+	input: string | URL,
+	checks: Map<string, number>,
+): Promise<SafeUrlResult> {
+	const value = input.toString();
+	const hostname = new globalThis.URL(value).hostname;
+	checks.set(hostname, (checks.get(hostname) ?? 0) + 1);
+	return safeResult(value);
+}
+
 describe("createPlaywrightRenderer", () => {
 	it("returns structured missing-browser errors from the lazy loader", async () => {
 		const renderer = createPlaywrightRenderer({
@@ -133,15 +153,7 @@ describe("createPlaywrightRenderer", () => {
 		const flakyUrl = "https://flaky-subresource.invalid/script.js";
 		const renderer = createPlaywrightRenderer({
 			loader: async () => fakePlaywright(seen, { requestUrls: [URL, flakyUrl] }),
-			safetyCheck: async (input) => {
-				const value = input.toString();
-				if (value.includes("flaky-subresource.invalid")) {
-					throw Object.assign(new Error("getaddrinfo ENOTFOUND"), {
-						code: "ENOTFOUND",
-					});
-				}
-				return safeResult(value);
-			},
+			safetyCheck: flakySafetyCheck,
 		});
 
 		await expect(renderer.fetchRendered(URL)).resolves.toMatchObject({
@@ -202,12 +214,7 @@ describe("createPlaywrightRenderer", () => {
 				fakePlaywright(seen, {
 					requestUrls: [URL, `${URL}?asset=1`, otherHost, `${otherHost}?v=2`],
 				}),
-			safetyCheck: async (input) => {
-				const value = input.toString();
-				const hostname = new globalThis.URL(value).hostname;
-				checks.set(hostname, (checks.get(hostname) ?? 0) + 1);
-				return safeResult(value);
-			},
+			safetyCheck: (input) => countingSafetyCheck(input, checks),
 		});
 
 		await expect(renderer.fetchRendered(URL)).resolves.toMatchObject({
@@ -259,25 +266,25 @@ function fakePlaywright(
 								seen.routeGlob = glob;
 								routeHandler = handler;
 							},
-						};
-						browserContext.newPage = async () => {
-							const page: any = {
-								goto: async (requestUrl: string, gotoOptions: Record<string, unknown>) => {
-									seen.goto = gotoOptions;
-									for (const url of options.requestUrls ?? [requestUrl]) {
-										await routeHandler?.(fakeRoute(seen, url));
-									}
-									return { status: () => 204 };
-								},
-								content: async () => "<html>rendered</html>",
-								title: async () => "",
-								context: () => browserContext,
-								url: () => options.finalUrl ?? `${URL}#rendered`,
-								close: async () => {
-									/* no-op */
-								},
-							};
-							return page;
+							newPage: async () => {
+								const page: any = {
+									goto: async (requestUrl: string, gotoOptions: Record<string, unknown>) => {
+										seen.goto = gotoOptions;
+										for (const url of options.requestUrls ?? [requestUrl]) {
+											await routeHandler?.(fakeRoute(seen, url));
+										}
+										return { status: () => 204 };
+									},
+									content: async () => "<html>rendered</html>",
+									title: async () => "",
+									context: () => browserContext,
+									url: () => options.finalUrl ?? `${URL}#rendered`,
+									close: async () => {
+										/* no-op */
+									},
+								};
+								return page;
+							},
 						};
 						return browserContext;
 					},

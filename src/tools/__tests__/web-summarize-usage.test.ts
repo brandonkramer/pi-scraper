@@ -1,22 +1,23 @@
 /**
- * @fileoverview web-summarize-usage __tests__ module.
- *
- * Tests ModelUsage plumbing from adapter response through to envelope.
+ * @file Web-summarize-usage **tests** module. Tests ModelUsage plumbing from adapter response
+ *   through to envelope.
  */
 import { describe, expect, it } from "vitest";
-import { createWebSummarizeTool } from "../web-summarize.ts";
+
 import type {
 	ModelAdapter,
 	ModelRequest,
+	ModelResponse,
 	ModelUsage,
 } from "../../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
+import { createWebSummarizeTool } from "../web-summarize.ts";
 
 const signal = new AbortController().signal;
 
 function mockAdapter(usage?: ModelUsage): ModelAdapter {
 	return {
-		async run<T>(_req: ModelRequest, _signal?: AbortSignal) {
+		async run<T>(_req: ModelRequest, _signal?: AbortSignal): Promise<ModelResponse<T>> {
 			return { data: "summary text" as T, usage };
 		},
 	};
@@ -60,9 +61,7 @@ describe("web_summarize ModelUsage forwarding", () => {
 			{ url: "https://example.com/page", sentences: 3 },
 			signal,
 		);
-		expect(
-			(result.details as { modelUsage?: ModelUsage }).modelUsage,
-		).toEqual(usage);
+		expect((result.details as { modelUsage?: ModelUsage }).modelUsage).toEqual(usage);
 	});
 
 	it("forwards partial usage (tokens but no cost)", async () => {
@@ -80,8 +79,7 @@ describe("web_summarize ModelUsage forwarding", () => {
 			{ url: "https://example.com/page", sentences: 3 },
 			signal,
 		);
-		const modelUsage = (result.details as { modelUsage?: ModelUsage })
-			.modelUsage;
+		const modelUsage = (result.details as { modelUsage?: ModelUsage }).modelUsage;
 		expect(modelUsage?.provider).toBe("ollama");
 		expect(modelUsage?.inputTokens).toBe(100);
 		expect(modelUsage?.outputTokens).toBe(50);
@@ -98,9 +96,7 @@ describe("web_summarize ModelUsage forwarding", () => {
 			{ url: "https://example.com/page", sentences: 3 },
 			signal,
 		);
-		expect(
-			(result.details as { modelUsage?: ModelUsage }).modelUsage,
-		).toBeUndefined();
+		expect((result.details as { modelUsage?: ModelUsage }).modelUsage).toBeUndefined();
 	});
 
 	it("passes through garbage usage without validation", async () => {
@@ -117,8 +113,7 @@ describe("web_summarize ModelUsage forwarding", () => {
 			{ url: "https://example.com/page", sentences: 3 },
 			signal,
 		);
-		const modelUsage = (result.details as { modelUsage?: ModelUsage })
-			.modelUsage;
+		const modelUsage = (result.details as { modelUsage?: ModelUsage }).modelUsage;
 		expect(modelUsage?.provider).toBe("bad-adapter");
 		expect(modelUsage?.inputTokens).toBe("234");
 	});

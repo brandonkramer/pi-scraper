@@ -101,10 +101,10 @@ export const webDiffTool = defineWebTool({
 				snapshotTag: params.snapshotTag,
 			});
 			await updateJobManifest(jobId, {
-				status: errors.length ? "error" : "done",
+				status: errors.length > 0 ? "error" : "done",
 				completedAt: new Date().toISOString(),
 				urlsProcessed: 1,
-				urlsFailed: errors.length ? 1 : 0,
+				urlsFailed: errors.length > 0 ? 1 : 0,
 				errors,
 				totalBytes: diff.current.metadata.contentLength,
 				totalChars: diff.current.content.text.length,
@@ -169,7 +169,7 @@ function diffProgressMessage(params: Params): string {
 		params.snapshotName ? `snapshot '${params.snapshotName}'` : undefined,
 		params.compareTag ? `tag '${params.compareTag}'` : undefined,
 	].filter(Boolean);
-	return labels.length ? `diffing against ${labels.join(" ")}` : "diffing against snapshot";
+	return labels.length > 0 ? `diffing against ${labels.join(" ")}` : "diffing against snapshot";
 }
 
 function shapeDiffResult(

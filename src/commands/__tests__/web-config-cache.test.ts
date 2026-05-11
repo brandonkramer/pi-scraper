@@ -3,10 +3,16 @@ import { describe, expect, it } from "vitest";
 
 import { runWebConfigCache } from "../web-config-cache.ts";
 
+type WebConfigCacheResult = Awaited<ReturnType<typeof runWebConfigCache>>;
+
+function firstContentText(result: WebConfigCacheResult): string {
+	return result.content[0]?.text ?? "";
+}
+
 describe("runWebConfigCache", () => {
 	it("stats returns counts and bytes", async () => {
 		const result = await runWebConfigCache({ action: "cache", op: "stats" }, {});
-		const text = result.content[0]?.text ?? "";
+		const text = firstContentText(result);
 		expect(text).toContain("Results:");
 		expect(text).toContain("Snapshots:");
 	});

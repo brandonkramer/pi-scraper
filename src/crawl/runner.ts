@@ -347,7 +347,11 @@ class CrawlCoordinator {
 				cleanup();
 				const index = this.waiters.indexOf(wake);
 				if (index >= 0) this.waiters.splice(index, 1);
-				reject(this.signal?.reason ?? new DOMException("Crawl aborted", "AbortError"));
+				reject(
+					this.signal?.reason instanceof Error
+						? this.signal.reason
+						: new DOMException("Crawl aborted", "AbortError"),
+				);
 			};
 			const cleanup = () => this.signal?.removeEventListener("abort", onAbort);
 			this.waiters.push(wake);

@@ -1,7 +1,8 @@
-/**
- * @fileoverview model-registry __tests__ module.
- */
+/** @file Model-registry **tests** module. */
 import { describe, expect, it, beforeEach } from "vitest";
+
+import type { ModelResponse } from "../../extract/adhoc/model.ts";
+import { resolveProviderPreference } from "../infra/model-adapter.ts";
 import {
 	ModelRegistry,
 	validateAdapterPayload,
@@ -9,7 +10,6 @@ import {
 	requestAdapterDiscovery,
 	type RegisteredAdapter,
 } from "../infra/model-registry.ts";
-import { resolveProviderPreference } from "../infra/model-adapter.ts";
 
 function fakeAdapter(id: string): RegisteredAdapter {
 	return {
@@ -18,7 +18,7 @@ function fakeAdapter(id: string): RegisteredAdapter {
 		capabilities: ["summarize", "extract"],
 		priority: 50,
 		adapter: {
-			async run<T>(_req: unknown, _signal?: unknown) {
+			async run<T>(_req: unknown, _signal?: unknown): Promise<ModelResponse<T>> {
 				return { data: id as T };
 			},
 		},
@@ -46,19 +46,17 @@ describe("ModelRegistry", () => {
 	it("resolves auto by priority", async () => {
 		registry.register({ ...fakeAdapter("low"), priority: 10 });
 		registry.register({ ...fakeAdapter("high"), priority: 90 });
-		const resolved = registry.resolve("auto", "summarize");
-		const result =
-			resolved && (await resolved.run({ task: "summarize", input: "" }));
-		expect(result?.data).toBe("high");
+		const resolved = registry.resolve("auto", "summarize")!;
+		const result = await resolved.run({ task: "summarize", input: "" });
+		expect(result.data).toBe("high");
 	});
 
 	it("resolves auto by registration order on tie", async () => {
 		registry.register(fakeAdapter("first"));
 		registry.register(fakeAdapter("second"));
-		const resolved = registry.resolve("auto", "summarize");
-		const result =
-			resolved && (await resolved.run({ task: "summarize", input: "" }));
-		expect(result?.data).toBe("first");
+		const resolved = registry.resolve("auto", "summarize")!;
+		const result = await resolved.run({ task: "summarize", input: "" });
+		expect(result.data).toBe("first");
 	});
 
 	it("returns undefined for auto when no adapter matches capability", () => {

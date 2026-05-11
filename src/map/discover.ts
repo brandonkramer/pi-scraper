@@ -87,7 +87,7 @@ export async function discoverSiteUrls(
 
 	return {
 		seedUrl,
-		urls: [...found.values()].sort((a, b) => a.url.localeCompare(b.url)),
+		urls: [...found.values()].toSorted((a, b) => a.url.localeCompare(b.url)),
 		tree: buildTree([...found.keys()]),
 		sitemaps: [...sitemaps],
 	};

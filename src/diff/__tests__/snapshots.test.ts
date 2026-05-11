@@ -17,6 +17,10 @@ import {
 	updateSnapshotReference,
 } from "../snapshots.ts";
 
+function snapshotTagComparator(left: string | undefined, right: string | undefined): number {
+	return (left ?? "").localeCompare(right ?? "");
+}
+
 let rootDir: string;
 
 beforeEach(async () => {
@@ -150,9 +154,7 @@ describe("snapshot diffing", () => {
 		expect(second.compareTag).toBe("v1.0.0");
 		expect(tagged?.content.text).toBe("Version one docs");
 		expect(
-			entries
-				.map((entry) => entry.metadata.snapshotTag)
-				.sort((a, b) => (a ?? "").localeCompare(b ?? "")),
+			entries.map((entry) => entry.metadata.snapshotTag).toSorted(snapshotTagComparator),
 		).toEqual(["v1.0.0", "v2.0.0"]);
 	});
 

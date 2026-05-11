@@ -43,7 +43,11 @@ export class Semaphore {
 				if (index >= this.queueHead) {
 					this.queue.splice(index, 1);
 				}
-				reject(signal?.reason ?? new DOMException("Operation aborted", "AbortError"));
+				reject(
+					signal?.reason instanceof Error
+						? signal.reason
+						: new DOMException("Operation aborted", "AbortError"),
+				);
 			};
 			const cleanup = () => signal?.removeEventListener("abort", onAbort);
 
@@ -178,7 +182,11 @@ export function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> 
 		return Promise.resolve();
 	}
 	if (signal?.aborted) {
-		return Promise.reject(signal.reason ?? new DOMException("Operation aborted", "AbortError"));
+		return Promise.reject(
+			signal.reason instanceof Error
+				? signal.reason
+				: new DOMException("Operation aborted", "AbortError"),
+		);
 	}
 
 	return new Promise((resolve, reject) => {
@@ -189,7 +197,11 @@ export function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> 
 		const onAbort = () => {
 			clearTimeout(timer);
 			cleanup();
-			reject(signal?.reason ?? new DOMException("Operation aborted", "AbortError"));
+			reject(
+				signal?.reason instanceof Error
+					? signal.reason
+					: new DOMException("Operation aborted", "AbortError"),
+			);
 		};
 		const cleanup = () => signal?.removeEventListener("abort", onAbort);
 		signal?.addEventListener("abort", onAbort, { once: true });

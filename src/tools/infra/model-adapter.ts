@@ -75,7 +75,7 @@ function normalizeModelResponse<T>(request: ModelRequest, raw: unknown): ModelRe
 		return raw as unknown as ModelResponse<T>;
 	}
 	const text = extractText(raw);
-	const data = request.task === "extract" ? parseJsonOrText<T>(text) : (text as T);
+	const data = request.task === "extract" ? (parseJsonOrText(text) as T) : (text as T);
 	return { data, text, raw };
 }
 
@@ -99,11 +99,11 @@ function extractText(value: unknown): string {
 	return JSON.stringify(value);
 }
 
-function parseJsonOrText<T>(text: string): T {
+function parseJsonOrText(text: string): unknown {
 	try {
-		return JSON.parse(text) as T;
+		return JSON.parse(text);
 	} catch {
-		return text as T;
+		return text;
 	}
 }
 

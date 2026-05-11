@@ -38,9 +38,7 @@ export async function getOrCreateSession(
 	options: ResolveStorageOptions = {},
 ): Promise<FetchSession> {
 	let session = memorySessions.get(id);
-	if (!session) {
-		session = await loadPersistedSession(id, options);
-	}
+	session ??= await loadPersistedSession(id, options);
 	if (!session) {
 		session = {
 			id,

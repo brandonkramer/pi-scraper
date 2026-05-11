@@ -170,7 +170,7 @@ export async function listCrawlMetadata(
 	const rows = db
 		.prepare(LIST_CRAWLS)
 		.all(seedLike, status, options.limit ?? 20) as unknown as MetadataRow[];
-	return rows.map(metadataFromRow);
+	return rows.map((row) => metadataFromRow(row));
 }
 
 function normalizeCrawlMetadata(state: CrawlState): CrawlMetadata {

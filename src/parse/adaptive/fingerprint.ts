@@ -127,7 +127,7 @@ function buildParent(element: Element): ElementFingerprint["parent"] | undefined
 function buildSiblings(element: Element): string[] | undefined {
 	const parent = element.parent;
 	// oxlint-disable-next-line typescript/no-unnecessary-condition -- defensive guard; runtime conditions can diverge from inferred type
-	if (!parent || !parent.children) return;
+	if (!parent?.children) return;
 	const siblings = parent.children
 		.filter((child) => child !== element && isTag(child))
 		.map((child) => (child as Element).name.toLowerCase());

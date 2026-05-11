@@ -1,6 +1,5 @@
 /**
- * @fileoverview envelope-usage __tests__ module.
- *
+ * @file Envelope-usage **tests** module.
  * Tests ModelUsage formatting in the envelope renderer.
  */
 import { describe, expect, it } from "vitest";
@@ -21,7 +20,7 @@ function formatModelUsage(u: {
 	if (typeof u.outputTokens === "number") parts.push(`${u.outputTokens} out`);
 	if (typeof u.totalTokens === "number") parts.push(`${u.totalTokens} total`);
 	if (typeof u.costUSD === "number") parts.push(formatCostUSD(u.costUSD));
-	return parts.length ? parts.join(" · ") : undefined;
+	return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
 function formatCostUSD(cost: number): string {
@@ -41,9 +40,7 @@ describe("formatModelUsage", () => {
 			totalTokens: 421,
 			costUSD: 0.0023,
 		});
-		expect(line).toBe(
-			"gemini-acp · gemini-2.0-flash · 234 in · 187 out · 421 total · $0.0023",
-		);
+		expect(line).toBe("gemini-acp · gemini-2.0-flash · 234 in · 187 out · 421 total · $0.0023");
 	});
 
 	it("renders provider + model only", () => {

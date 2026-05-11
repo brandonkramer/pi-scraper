@@ -337,7 +337,7 @@ function terminalWidthFilled(component: RenderComponent | undefined, width: numb
 
 function terminalVisibleWidth(value: string): number {
 	// eslint-disable-next-line no-control-regex -- ANSI CSI escape sequence
-	const stripped = value.replaceAll(/\u001B\[[0-?]*[ -/]*[@-~]/g, "");
+	const stripped = value.replaceAll(/\u001B\[[0-?]*[ -/]*[@-~]/gu, "");
 	let width = 0;
 	for (const char of stripped) {
 		width += emojiOrWideCharPattern.test(char) ? 2 : 1;

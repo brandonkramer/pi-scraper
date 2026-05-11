@@ -133,7 +133,7 @@ export async function listSnapshots(
 			/* Ignore corrupt/partial snapshot files during listing. */
 		}
 	}
-	return entries.sort((left, right) =>
+	return entries.toSorted((left, right) =>
 		right.metadata.timestamp.localeCompare(left.metadata.timestamp),
 	);
 }
@@ -372,7 +372,7 @@ function compareMetadata(
 	previous: Record<string, string>,
 	current: Record<string, string>,
 ): SnapshotChangeSummary["changedMetadata"] {
-	const keys = [...new Set([...Object.keys(previous), ...Object.keys(current)])].sort();
+	const keys = [...new Set([...Object.keys(previous), ...Object.keys(current)])].toSorted();
 	return keys
 		.filter((key) => previous[key] !== current[key])
 		.map((key) => ({ key, previous: previous[key], current: current[key] }))

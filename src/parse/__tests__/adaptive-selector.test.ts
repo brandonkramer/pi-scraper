@@ -2,7 +2,7 @@ import { parseDocument } from "htmlparser2";
 /** @file Parse **tests** adaptive-selector.test module. */
 import { describe, expect, it } from "vitest";
 
-import { type ElementFingerprint } from "../adaptive/fingerprint.ts";
+import type { ElementFingerprint } from "../adaptive/fingerprint.ts";
 import { runAdaptiveSelector } from "../adaptive/selector.ts";
 
 describe("adaptive selector", () => {
@@ -111,7 +111,8 @@ describe("adaptive selector", () => {
 		const result = await runAdaptiveSelector(
 			doc2,
 			{
-				selector: "#p1", // old selector doesn't match anymore
+				// old selector doesn't match anymore
+				selector: "#p1",
 				selectorType: "css",
 				identifier: "product-p1",
 				adaptive: true,

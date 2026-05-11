@@ -1,6 +1,7 @@
 /** @file Selector extraction runner — domain logic without tool contract. */
 import { parseDocument } from "htmlparser2";
 
+import type { ElementFingerprint } from "../../parse/adaptive/fingerprint.ts";
 import {
 	runAdaptiveSelector,
 	type AdaptiveSelectorOptions,
@@ -85,9 +86,7 @@ export async function runSelectorExtraction(
 			const stored = await loadFingerprint(id, normalizeScope(sourceUrl));
 			if (!stored) return;
 			try {
-				return JSON.parse(
-					stored.fingerprintJson,
-				) as import("../../parse/adaptive/fingerprint.ts").ElementFingerprint;
+				return JSON.parse(stored.fingerprintJson) as ElementFingerprint;
 			} catch {
 				/* ignore */
 			}

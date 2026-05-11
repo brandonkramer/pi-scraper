@@ -142,9 +142,13 @@ function extractBreadcrumbs(document: AnyNode, url: URL): string[] {
 					.filter(Boolean),
 			),
 		];
-		if (values.length) return values;
+		if (values.length > 0) return values;
 	}
-	return url.pathname.split("/").filter(Boolean).slice(0, -1).map(titleCase);
+	return url.pathname
+		.split("/")
+		.filter(Boolean)
+		.slice(0, -1)
+		.map((segment) => titleCase(segment));
 }
 
 function extractSections(document: AnyNode): DocSection[] {
@@ -169,7 +173,7 @@ function extractMdnSignature(document: AnyNode, title: string): DocSiteResult["a
 	return stripUndefined({
 		name: title.replace(/\s*\(.*$/u, "").trim(),
 		signature: signature || title,
-		parameters: parameters.length ? parameters : undefined,
+		parameters: parameters.length > 0 ? parameters : undefined,
 		returns: extractReturns(document),
 	});
 }

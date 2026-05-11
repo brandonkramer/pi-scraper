@@ -1,6 +1,4 @@
-/**
- * @fileoverview parse noise module.
- */
+/** @file Parse noise module. */
 import type { DomAdapter, DomNode, DomSelection } from "../dom/adapter.ts";
 import { visibleText } from "../dom/selectors.ts";
 
@@ -45,7 +43,7 @@ export function rankMainCandidates(dom: DomAdapter): MainContentCandidate[] {
 		);
 	})
 		.filter((candidate) => candidate.textLength > 0)
-		.sort((left, right) => right.score - left.score)
+		.toSorted((left, right) => right.score - left.score)
 		.map((candidate) => {
 			const { node, ...publicCandidate } = candidate;
 			candidateNodes.set(publicCandidate, node);
@@ -61,10 +59,7 @@ export function linkDensity(
 	if (textLength === 0) return 0;
 	const linkTextLength = dom
 		.nodes(dom.select("a", root))
-		.reduce<number>(
-			(sum, node) => sum + visibleText(dom, dom.selection([node])).length,
-			0,
-		);
+		.reduce<number>((sum, node) => sum + visibleText(dom, dom.selection([node])).length, 0);
 	return Math.min(1, linkTextLength / textLength);
 }
 
@@ -77,9 +72,7 @@ function scoreCandidate(
 ): ScoredMainContentCandidate {
 	const textLength = visibleText(dom, root).length;
 	const density = linkDensity(dom, root, textLength);
-	const semanticBoost = ["main", "article", '[role="main"]'].includes(selector)
-		? 500
-		: 0;
+	const semanticBoost = ["main", "article", '[role="main"]'].includes(selector) ? 500 : 0;
 	return {
 		node,
 		selector: index === 0 ? selector : `${selector}:eq(${index})`,

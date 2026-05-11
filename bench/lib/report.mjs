@@ -1,12 +1,6 @@
 import { writeSuiteReport } from "./results.mjs";
 
-export async function writeBenchmarkReport({
-	rootDir,
-	suite,
-	kind,
-	report,
-	markdown,
-}) {
+export async function writeBenchmarkReport({ rootDir, suite, kind, report, markdown }) {
 	await writeSuiteReport({
 		rootDir,
 		suite,
@@ -43,14 +37,10 @@ export function perfCells(label, perf) {
 }
 
 export function markdownRow(values) {
-	return `| ${values.join(" | ")} |`;
+	return "| " + values.join(" | ") + " |";
 }
 
 export function markdownTable(headers, rows, align = []) {
 	const separator = headers.map((_, index) => align[index] ?? "---");
-	return [
-		markdownRow(headers),
-		markdownRow(separator),
-		...rows.map(markdownRow),
-	];
+	return [markdownRow(headers), markdownRow(separator), ...rows.map((row) => markdownRow(row))];
 }

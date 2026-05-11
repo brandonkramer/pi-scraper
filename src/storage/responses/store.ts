@@ -29,8 +29,8 @@ export async function storeResponseWithId<T>(
 	return { value, metadata };
 }
 
-export async function storeResponse<T>(
-	value: T,
+export async function storeResponse(
+	value: unknown,
 	options: StoreResponseOptions = {},
 ): Promise<ResponseStorageMetadata> {
 	const responseId = options.responseId ?? createResponseId();
