@@ -2,13 +2,8 @@
 import type { PiCommandRegistrar, WebCommand } from "./define.ts";
 import { webConfigCommand } from "./web-config.ts";
 import { webReloadConfigCommand } from "./web-reload-config.ts";
-import { webSetModeCommand } from "./web-set-mode.ts";
 
-export const webCommands: readonly WebCommand[] = [
-	webSetModeCommand,
-	webConfigCommand,
-	webReloadConfigCommand,
-];
+export const webCommands: readonly WebCommand[] = [webConfigCommand, webReloadConfigCommand];
 
 export function registerWebCommands(pi: PiCommandRegistrar): void {
 	for (const command of webCommands) {

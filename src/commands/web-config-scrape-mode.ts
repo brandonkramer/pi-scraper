@@ -1,12 +1,40 @@
 /**
- * @file Scrape-mode sub-action for /web-config. Wraps the existing setDefaultMode handler from
- *   web-set-mode.ts.
+ * @file Scrape-mode sub-action for /web-config. Handles interactive picker and persists the
+ *   selected mode and format.
  */
+import { type Static, StringEnum, Type } from "@earendil-works/pi-ai";
+
+import { type ConfigOptions, type WebConfig, updateConfig } from "../config/settings.ts";
 import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
 import type { Params } from "./web-config.ts";
-import { setDefaultMode } from "./web-set-mode.ts";
+
+export const webSetModeSchema = Type.Object({
+	mode: Type.Optional(StringEnum(SCRAPE_MODES, { description: "Default scrape mode." })),
+	format: Type.Optional(
+		StringEnum(OUTPUT_FORMATS, {
+			description: "Optional default output format.",
+		}),
+	),
+	scrapeDefaults: Type.Optional(Type.Unknown({ description: "Advanced scrape defaults." })),
+});
+
+type SetModeParams = Static<typeof webSetModeSchema>;
+
+export async function setDefaultMode(params: SetModeParams, options: ConfigOptions = {}) {
+	const patch: WebConfig = {
+		scrapeMode: params.mode,
+		outputFormat: params.format,
+		scrapeDefaults: params.scrapeDefaults as WebConfig["scrapeDefaults"],
+	};
+	const config = await updateConfig(patch, options);
+	return toolResult({
+		text: `Web defaults saved: ${config.scrapeMode} (${config.outputFormat}), ${Object.keys(config.scrapeDefaults).length} advanced option(s).`,
+		data: config,
+		format: "json",
+	});
+}
 
 export async function runWebConfigScrapeMode(params: Params, ctx?: CommandContext) {
 	let mode = params.mode as (typeof SCRAPE_MODES)[number] | undefined;
