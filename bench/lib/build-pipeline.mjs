@@ -33,11 +33,15 @@ export async function buildAndImport(rootDir) {
 				"false",
 				"--target",
 				"ES2022",
+				"--lib",
+				"ES2023,DOM",
 				"--module",
 				"NodeNext",
 				"--moduleResolution",
 				"NodeNext",
 				"--skipLibCheck",
+				"--allowImportingTsExtensions",
+				"--rewriteRelativeImportExtensions",
 				"--types",
 				"node",
 				...DECLARATION_ENTRIES,
@@ -51,7 +55,7 @@ export async function buildAndImport(rootDir) {
 	const markdown = await import(
 		pathToFileURL(path.join(outDir, "serialize/markdown.js")).toString()
 	);
-	const fast = await import(pathToFileURL(path.join(outDir, "parse/fast.js")).toString());
+	const fast = await import(pathToFileURL(path.join(outDir, "parse/page/fast.js")).toString());
 	return {
 		scrapeUrl: pipeline.scrapeUrl,
 		htmlToMarkdown: markdown.htmlToMarkdown,
