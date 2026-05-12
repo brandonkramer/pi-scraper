@@ -42,14 +42,28 @@ export const arxivExtractor: VerticalExtractor = {
 	},
 };
 
+const tagRegexCache = new Map<string, RegExp>();
+
 function firstTag(xml: string, name: string): string | undefined {
-	return new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`, "iu").exec(xml)?.[1];
+	const key = `${name}:i`;
+	let regex = tagRegexCache.get(key);
+	if (!regex) {
+		// oxlint-disable-next-line security/detect-non-literal-regexp -- name is a hardcoded tag name, not user input
+		regex = new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`, "iu");
+		tagRegexCache.set(key, regex);
+	}
+	return regex.exec(xml)?.[1];
 }
 
 function allTags(xml: string, name: string): string[] {
-	return [...xml.matchAll(new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`, "giu"))].map(
-		(match) => match[1] || "",
-	);
+	const key = `${name}:gi`;
+	let regex = tagRegexCache.get(key);
+	if (!regex) {
+		// oxlint-disable-next-line security/detect-non-literal-regexp -- name is a hardcoded tag name, not user input
+		regex = new RegExp(`<${name}\\b[^>]*>([\\s\\S]*?)</${name}>`, "giu");
+		tagRegexCache.set(key, regex);
+	}
+	return [...xml.matchAll(regex)].map((match) => match[1] || "");
 }
 
 function allCategoryTerms(xml: string): string[] {

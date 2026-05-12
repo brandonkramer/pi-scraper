@@ -1,18 +1,13 @@
-/**
- * @fileoverview http client module.
- */
-import {
-	getOrCreateSession,
-	mergeSessionHeaders,
-	updateSessionCookies,
-} from "./session.ts";
 import { request, type Dispatcher } from "undici";
+
 import {
 	DEFAULT_MAX_BYTES,
 	DEFAULT_RETRY,
 	DEFAULT_TIMEOUT_SECONDS,
 	DEFAULT_USER_AGENT,
 } from "../defaults.ts";
+import { findFreshFetch, recordFetch } from "../storage/cache/fetch-cache.ts";
+import type { ResolveStorageOptions } from "../storage/paths.ts";
 import type { CommonRequestOptions } from "../types.ts";
 import { normalizeHeaders } from "./download.ts";
 import { HttpClientError, httpClientErrorFromUnknown } from "./errors.ts";
@@ -20,6 +15,7 @@ import { createDefaultDispatcher } from "./guarded-agent.ts";
 import { PolitenessController, abortableSleep } from "./politeness.ts";
 import { followRedirects } from "./redirects.ts";
 import { fetchWithRequestPolicy } from "./request-policy.ts";
+import { materializeFetchStreamResponse, type FetchUrlResult } from "./response.ts";
 import {
 	isRetryableStatus,
 	isIdempotentMethod,
@@ -27,19 +23,11 @@ import {
 	retryDelayMs,
 	shouldStopRetrying,
 } from "./retry.ts";
-import { RobotsCache } from "./robots.ts";
-import {
-	materializeFetchStreamResponse,
-	type FetchUrlResult,
-} from "./response.ts";
+import { type CacheEntry, RobotsCache } from "./robots.ts";
+/** @file Http client module. */
+import { getOrCreateSession, mergeSessionHeaders, updateSessionCookies } from "./session.ts";
 import { withTimeout } from "./timeout.ts";
-import { findFreshFetch, recordFetch } from "../storage/cache/fetch-cache.ts";
-import type { ResolveStorageOptions } from "../storage/paths.ts";
-import {
-	assertSafeFetchUrl,
-	type SafeUrlResult,
-	type UrlSafetyOptions,
-} from "./url-safety.ts";
+import { assertSafeFetchUrl, type SafeUrlResult, type UrlSafetyOptions } from "./url-safety.ts";
 
 export { HttpClientError } from "./errors.ts";
 export { createFetchUrlResult } from "./response.ts";
@@ -64,6 +52,13 @@ export interface FetchUrlOptions extends CommonRequestOptions {
 	cookies?: Record<string, string>;
 }
 
+const sharedRobotsCache = new Map<string, Promise<CacheEntry>>();
+
+/** Clear the shared robots.txt cache. Intended for test isolation. */
+export function clearSharedRobotsCache(): void {
+	sharedRobotsCache.clear();
+}
+
 export class HttpClient {
 	private readonly dispatcher: Dispatcher;
 	private readonly userAgent: string;
@@ -80,6 +75,7 @@ export class HttpClient {
 		this.robots = new RobotsCache({
 			userAgent: this.userAgent,
 			fetchText: (url, signal) => this.fetchRobotsText(url, signal),
+			cache: sharedRobotsCache,
 		});
 	}
 
@@ -98,24 +94,14 @@ export class HttpClient {
 		const safe = await this.safeFetchUrl(input);
 		try {
 			const ttl = fetchOptions.cacheTtlSeconds;
-			if (
-				fetchOptions.method !== "HEAD" &&
-				ttl &&
-				ttl > 0 &&
-				fetchOptions.refresh !== true
-			) {
+			if (fetchOptions.method !== "HEAD" && ttl && ttl > 0 && fetchOptions.refresh !== true) {
 				const hit = await findFreshFetch(safe.normalizedUrl, ttl, {
 					...this.options.storage,
 					maxAgeSeconds: fetchOptions.maxAgeSeconds,
 				});
 				if (hit) return hit;
 			}
-			const result = await this.fetchWithRetries(
-				safe,
-				fetchOptions,
-				signal,
-				true,
-			);
+			const result = await this.fetchWithRetries(safe, fetchOptions, signal, true);
 			if (fetchOptions.method !== "HEAD" && ttl && ttl > 0) {
 				await recordFetch(result, { ...this.options.storage, ttlSeconds: ttl });
 			}
@@ -158,9 +144,7 @@ export class HttpClient {
 		applyPolicy: boolean,
 	): Promise<FetchUrlResult> {
 		const attempts = isIdempotentMethod(options.method)
-			? (options.retryAttempts ??
-				this.options.retryAttempts ??
-				DEFAULT_RETRY.attempts)
+			? (options.retryAttempts ?? this.options.retryAttempts ?? DEFAULT_RETRY.attempts)
 			: 1;
 		let lastError: unknown;
 
@@ -203,8 +187,7 @@ export class HttpClient {
 						signal,
 						attempt,
 						attempts,
-						(value): value is HttpClientError =>
-							value instanceof HttpClientError,
+						(value): value is HttpClientError => value instanceof HttpClientError,
 					)
 				) {
 					throw httpFetchError(error, initialSafe.normalizedUrl, options);
@@ -221,8 +204,7 @@ export class HttpClient {
 		options: FetchUrlOptions,
 		parentSignal?: AbortSignal,
 	): Promise<FetchUrlResult> {
-		const timeoutMs =
-			(options.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1_000;
+		const timeoutMs = (options.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1_000;
 		const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
 		const { signal, cleanup } = withTimeout(parentSignal, timeoutMs);
 
@@ -292,11 +274,7 @@ export function createHttpClient(options?: HttpClientOptions): HttpClient {
 	return new HttpClient(options);
 }
 
-function httpFetchError(
-	error: unknown,
-	url: string,
-	options: FetchUrlOptions,
-): HttpClientError {
+function httpFetchError(error: unknown, url: string, options: FetchUrlOptions): HttpClientError {
 	return httpClientErrorFromUnknown(error, url, options, {
 		code: "HTTP_FETCH_FAILED",
 		phase: "fetch",

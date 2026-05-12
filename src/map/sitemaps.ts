@@ -37,9 +37,17 @@ export function defaultSitemapUrl(seedUrl: string): string {
 	return `${parsed.protocol}//${parsed.host}/sitemap.xml`;
 }
 
+const tagTextRegexCache = new Map<string, RegExp>();
+
 function tagText(block: string, tag: string): string | undefined {
-	const escaped = tag.replaceAll(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-	const match = block.match(new RegExp(`<${escaped}[^>]*>([\\s\\S]*?)<\\/${escaped}>`, "iu"));
+	let regex = tagTextRegexCache.get(tag);
+	if (!regex) {
+		const escaped = tag.replaceAll(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+		// oxlint-disable-next-line security/detect-non-literal-regexp -- tag is a hardcoded element name, not user input
+		regex = new RegExp(`<${escaped}[^>]*>([\\s\\S]*?)<\\/${escaped}>`, "iu");
+		tagTextRegexCache.set(tag, regex);
+	}
+	const match = regex.exec(block);
 	return match?.[1]?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/u, "$1").trim();
 }
 

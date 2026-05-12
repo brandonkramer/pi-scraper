@@ -300,12 +300,29 @@ function matchesFilter(
 	return true;
 }
 
+const safePatternCache = new Map<string, RegExp>();
+const SAFE_PATTERN_CACHE_LIMIT = 50;
+
 function safePattern(pattern: string): RegExp {
-	try {
-		return new RegExp(pattern, "iu");
-	} catch {
-		return /$a/u;
+	let regex = safePatternCache.get(pattern);
+	if (regex) {
+		// Bump to most-recent (true LRU)
+		safePatternCache.delete(pattern);
+		safePatternCache.set(pattern, regex);
+		return regex;
 	}
+	try {
+		// oxlint-disable-next-line security/detect-non-literal-regexp -- pattern is user-supplied but cached to avoid re-compilation across many items
+		regex = new RegExp(pattern, "iu");
+	} catch {
+		regex = /$a/u;
+	}
+	if (safePatternCache.size >= SAFE_PATTERN_CACHE_LIMIT) {
+		const firstKey = safePatternCache.keys().next().value as string;
+		safePatternCache.delete(firstKey);
+	}
+	safePatternCache.set(pattern, regex);
+	return regex;
 }
 
 function searchableText(

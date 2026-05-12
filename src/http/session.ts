@@ -32,11 +32,24 @@ interface SerializedCookie {
 
 const memorySessions = new Map<string, FetchSession>();
 
+interface SessionPoolOptions {
+	maxPoolSize?: number;
+	maxIdleMs?: number;
+}
+
+let sessionPoolOptions: SessionPoolOptions = {};
+
+/** Configure in-memory session pool limits. */
+export function configureSessionPool(options: SessionPoolOptions): void {
+	sessionPoolOptions = options;
+}
+
 /** Get an existing session from memory, load from SQLite, or create a new empty one. */
 export async function getOrCreateSession(
 	id: string,
 	options: ResolveStorageOptions = {},
 ): Promise<FetchSession> {
+	cleanupIdleSessions();
 	let session = memorySessions.get(id);
 	session ??= await loadPersistedSession(id, options);
 	if (!session) {
@@ -46,11 +59,37 @@ export async function getOrCreateSession(
 			lastUsedAt: new Date().toISOString(),
 			cookies: [],
 		};
+		const maxSize = sessionPoolOptions.maxPoolSize ?? 100;
+		if (memorySessions.size >= maxSize) {
+			evictLRUSession();
+		}
 		memorySessions.set(id, session);
 	} else {
 		session.lastUsedAt = new Date().toISOString();
 	}
 	return session;
+}
+
+function cleanupIdleSessions(): void {
+	const maxIdle = sessionPoolOptions.maxIdleMs ?? 24 * 60 * 60 * 1_000;
+	const cutoffMs = Date.now() - maxIdle;
+	for (const [sid, sess] of memorySessions) {
+		if (new Date(sess.lastUsedAt).getTime() < cutoffMs) {
+			memorySessions.delete(sid);
+		}
+	}
+}
+
+function evictLRUSession(): void {
+	let oldest: FetchSession | undefined;
+	for (const sess of memorySessions.values()) {
+		if (!oldest || sess.lastUsedAt < oldest.lastUsedAt) {
+			oldest = sess;
+		}
+	}
+	if (oldest) {
+		memorySessions.delete(oldest.id);
+	}
 }
 
 /** Persist a memory session to SQLite. */

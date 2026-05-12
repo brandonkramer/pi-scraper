@@ -6,13 +6,14 @@ import type { AddressInfo } from "node:net";
 import { MockAgent } from "undici";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createHttpClient, HttpClientError } from "../client.ts";
+import { clearSharedRobotsCache, createHttpClient, HttpClientError } from "../client.ts";
 
 let agents: MockAgent[] = [];
 
 afterEach(async () => {
 	await Promise.all(agents.map((agent) => agent.close()));
 	agents = [];
+	clearSharedRobotsCache();
 });
 
 function closeServer(server: ReturnType<typeof createServer>): Promise<void> {

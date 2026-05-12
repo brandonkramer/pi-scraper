@@ -41,6 +41,7 @@ export interface RobotsRules {
 export interface RobotsCacheOptions {
 	userAgent?: string;
 	fetchText: (url: string, signal?: AbortSignal) => Promise<{ status: number; text: string }>;
+	cache?: Map<string, Promise<CacheEntry>>;
 }
 
 export async function loadRobotsText(
@@ -65,7 +66,7 @@ export async function loadRobotsText(
 	};
 }
 
-interface CacheEntry {
+export interface CacheEntry {
 	rules: RobotsRules;
 	fetchedAt: number;
 	cacheable: boolean;
@@ -79,11 +80,12 @@ export class RobotsDeniedError extends Error {
 }
 
 export class RobotsCache {
-	private readonly cache = new Map<string, Promise<CacheEntry>>();
+	private readonly cache: Map<string, Promise<CacheEntry>>;
 	private readonly userAgent: string;
 
 	constructor(private readonly options: RobotsCacheOptions) {
 		this.userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
+		this.cache = options.cache ?? new Map();
 	}
 
 	async rulesFor(url: string, signal?: AbortSignal): Promise<RobotsRules> {
