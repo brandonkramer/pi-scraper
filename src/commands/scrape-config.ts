@@ -1,6 +1,6 @@
 /**
  * @file Entry point for the /scrape-config slash command. Dispatches to sub-actions: status,
- *   model-provider, scrape-mode, cache, robots. No-args opens an interactive picker when
+ *   model-provider, scrape-mode, cache, robots, reload. No-args opens an interactive picker when
  *   ctx.ui.select is available.
  */
 import { type Static, Type } from "@earendil-works/pi-ai";
@@ -106,7 +106,7 @@ export function parseScrapeConfigCommandArgs(args: string): Params {
 	const [action, ...rest] = trimmed.split(/\s+/u);
 	if (!isKnownAction(action)) {
 		throw new Error(
-			`Unknown action: ${action}. Use status, model-provider, scrape-mode, cache, or robots.`,
+			`Unknown action: ${action}. Use status, model-provider, scrape-mode, cache, robots, or reload.`,
 		);
 	}
 
@@ -148,7 +148,7 @@ function isKnownAction(value: string): value is NonNullable<Params["action"]> {
 export const scrapeConfigCommand = defineWebCommand({
 	name: "scrape-config",
 	description:
-		"Inspect effective web config (including live adapter resolution), set model-provider/scrape-mode/robots defaults, or manage the response cache.",
+		"Inspect effective scrape config (including live adapter resolution), set model-provider/scrape-mode/robots defaults, manage the response cache, or reload config from disk.",
 	parameters: scrapeConfigSchema,
 	parseArgs: parseScrapeConfigCommandArgs,
 	execute: (params, ctx) => runScrapeConfigCommand(params, ctx),

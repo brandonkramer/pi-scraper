@@ -1,4 +1,4 @@
-/** @file Web-config-status **tests** module. */
+/** @file Scrape-config-status **tests** module. */
 import { describe, expect, it } from "vitest";
 
 import type { ModelResponse } from "../../extract/adhoc/model.ts";

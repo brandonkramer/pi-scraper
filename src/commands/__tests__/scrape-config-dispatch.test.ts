@@ -1,4 +1,4 @@
-/** @file Web-config-dispatch **tests** module. */
+/** @file Scrape-config-dispatch **tests** module. */
 import { describe, expect, it } from "vitest";
 
 import { parseScrapeConfigCommandArgs, runScrapeConfigCommand } from "../scrape-config.ts";

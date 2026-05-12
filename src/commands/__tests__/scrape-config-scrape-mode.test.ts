@@ -1,4 +1,4 @@
-/** @file Web-config-scrape-mode **tests** module. */
+/** @file Scrape-config-scrape-mode **tests** module. */
 import { describe, expect, it } from "vitest";
 
 import { runScrapeConfigScrapeMode } from "../scrape-config-scrape-mode.ts";

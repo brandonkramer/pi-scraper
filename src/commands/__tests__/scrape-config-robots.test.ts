@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-/** @file Web-config-robots **tests** module. */
+/** @file Scrape-config-robots **tests** module. */
 import { describe, expect, it } from "vitest";
 
 import { runScrapeConfigRobots } from "../scrape-config-robots.ts";

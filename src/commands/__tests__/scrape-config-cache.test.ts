@@ -1,4 +1,4 @@
-/** @file Web-config-cache **tests** module. */
+/** @file Scrape-config-cache **tests** module. */
 import { describe, expect, it } from "vitest";
 
 import { runScrapeConfigCache } from "../scrape-config-cache.ts";

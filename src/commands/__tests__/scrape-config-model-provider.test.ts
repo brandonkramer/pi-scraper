@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-/** @file Web-config-model-provider **tests** module. */
+/** @file Scrape-config-model-provider **tests** module. */
 import { describe, expect, it } from "vitest";
 
 import { runScrapeConfigModelProvider } from "../scrape-config-model-provider.ts";
