@@ -1,11 +1,15 @@
 import { createAbortError } from "../http/abort.ts";
+import { assertSafeFetchUrl } from "../http/url-safety.ts";
 import {
-	assertSafeFetchUrl,
-	assertSafeUrl,
-	type SafeUrlResult,
-	UrlSafetyError,
-} from "../http/url-safety.ts";
-import type { StructuredError } from "../types.ts";
+	assertSafeBrowserUrl,
+	BrowserRenderError,
+	createBrowserRouteGuard,
+	type BrowserRouteGuard,
+	type BrowserSafetyCheck,
+	type BrowserContext,
+	type BrowserSafetyState,
+	type Page,
+} from "./route-guard.ts";
 import {
 	acquireBrowserSession,
 	destroyBrowserSession,
@@ -13,6 +17,8 @@ import {
 } from "./session-pool.ts";
 /** @file Browser playwright module. */
 import { applyStealthPatches } from "./stealth.ts";
+
+export { BrowserRenderError } from "./route-guard.ts";
 
 export interface BrowserRenderOptions {
 	timeoutSeconds?: number;
@@ -49,16 +55,6 @@ export interface BrowserRenderer {
 		options?: BrowserRenderOptions,
 		signal?: AbortSignal,
 	): Promise<BrowserRenderResult>;
-}
-
-export class BrowserRenderError extends Error {
-	readonly structured: StructuredError;
-
-	constructor(structured: StructuredError) {
-		super(structured.message);
-		this.name = "BrowserRenderError";
-		this.structured = structured;
-	}
 }
 
 export interface PlaywrightRendererFactoryOptions {
@@ -108,6 +104,7 @@ async function renderWithLoader(
 	let browser: Browser | undefined;
 	let abortListener: (() => void) | undefined;
 	let page: Page | undefined;
+	let guard: BrowserRouteGuard | undefined;
 	let session: { id: string } | undefined;
 
 	try {
@@ -124,12 +121,14 @@ async function renderWithLoader(
 				>;
 			const s = await acquireBrowserSession(options.sessionId, {
 				launchBrowser,
+				safetyCheck,
 				profile: options.browserProfile,
 				proxy: options.proxy,
 				headers: options.headers,
 			});
 			page = s.page as unknown as Page;
 			browser = s.session.browser as unknown as Browser;
+			guard = s.session.guard;
 			session = s.session;
 		} else {
 			browser = (await playwright.chromium.launch({
@@ -141,6 +140,9 @@ async function renderWithLoader(
 				serviceWorkers: "block",
 				userAgent: options.browserProfile,
 			});
+			guard = createBrowserRouteGuard(safetyCheck, browserSafety.checkedHosts);
+			// oxlint-disable-next-line typescript/no-explicit-any -- bridge between route-guard.ts minimal Route and Playwright's full Route type
+			await context.route("**/*", guard.handler as (route: any) => Promise<void>);
 			if (options.cookies) {
 				await context.addCookies(
 					Object.entries(options.cookies).map(([name, value]) => ({
@@ -164,40 +166,6 @@ async function renderWithLoader(
 			});
 		}
 
-		// 3) Route for blocking + safety checks
-		let blockedRequest: BrowserRenderError | undefined;
-		if (!options.sessionId) {
-			await page.context().route("**/*", async (route: Route) => {
-				const requestUrl = route.request().url();
-				const routePolicy = browserRoutePolicy(requestUrl);
-				if (routePolicy.action === "allow") {
-					await route.continue();
-					return;
-				}
-				if (routePolicy.action === "block") {
-					blockedRequest ??= blockedRequestError(routePolicy.cause, url, requestUrl);
-					await route.abort("blockedbyclient").catch(() => {
-						/* no-op */
-					});
-					return;
-				}
-				try {
-					await assertSafeBrowserUrl(requestUrl, url, requestUrl, browserSafety);
-				} catch (error) {
-					if (error instanceof BrowserRenderError) {
-						blockedRequest ??= error;
-						await route.abort("blockedbyclient").catch(() => {
-							/* no-op */
-						});
-						return;
-					}
-					await route.continue();
-					return;
-				}
-				await route.continue();
-			});
-		}
-
 		const closeOnAbort = () =>
 			void page?.close().catch(() => {
 				/* no-op */
@@ -212,14 +180,13 @@ async function renderWithLoader(
 				timeout: (options.timeoutSeconds ?? 20) * 1_000,
 			});
 		} catch (error) {
-			throw blockedRequest ?? error;
+			throw guard.consumeError(page, url) ?? error;
 		}
-		if (blockedRequest instanceof BrowserRenderError) {
-			throw new BrowserRenderError(blockedRequest.structured);
-		}
+		const blocked = guard.consumeError(page, url);
+		if (blocked) throw blocked;
 		if (signal?.aborted) throw abortError(url);
 
-		// 4) Auto-wait for challenge pages
+		// 3) Auto-wait for challenge pages
 		if (options.autoWait) {
 			await autoWaitForChallenge(page, url, options.timeoutSeconds ?? 20);
 		}
@@ -264,93 +231,6 @@ async function loadPlaywright(
 			cause,
 		});
 	}
-}
-
-type BrowserSafetyCheck = (input: string | URL) => Promise<SafeUrlResult>;
-
-interface BrowserSafetyState {
-	check: BrowserSafetyCheck;
-	checkedHosts: Map<string, Promise<SafeUrlResult>>;
-}
-
-async function assertSafeBrowserUrl(
-	input: string | URL,
-	url: string,
-	finalUrl?: string,
-	state?: BrowserSafetyState,
-): Promise<SafeUrlResult> {
-	try {
-		if (!state) return await assertSafeFetchUrl(input);
-		const safe = assertSafeUrl(input);
-		const hostKey = safe.url.hostname.toLowerCase();
-		let hostCheck = state.checkedHosts.get(hostKey);
-		if (!hostCheck) {
-			hostCheck = state.check(safe.normalizedUrl);
-			state.checkedHosts.set(hostKey, hostCheck);
-		}
-		await hostCheck;
-		return safe;
-	} catch (cause) {
-		if (cause instanceof UrlSafetyError || cause instanceof TypeError) {
-			throw blockedRequestError(cause, url, finalUrl ?? input.toString());
-		}
-		throw cause;
-	}
-}
-
-function browserRoutePolicy(
-	rawUrl: string,
-): { action: "validate" } | { action: "allow" } | { action: "block"; cause: unknown } {
-	let parsed: URL;
-	try {
-		parsed = new URL(rawUrl);
-	} catch (cause) {
-		return { action: "block", cause };
-	}
-	const protocol = parsed.protocol.toLowerCase();
-	if (protocol === "http:" || protocol === "https:") return { action: "validate" };
-	if (protocol === "file:") {
-		return {
-			action: "block",
-			cause: new UrlSafetyError(
-				"BROWSER_BLOCKED_FILE_URL",
-				`Blocked browser request to local file URL: ${rawUrl}`,
-				rawUrl,
-			),
-		};
-	}
-	if (isBenignBrowserScheme(protocol)) return { action: "allow" };
-	return {
-		action: "block",
-		cause: new UrlSafetyError(
-			"UNSUPPORTED_URL_SCHEME",
-			`Blocked browser request to unsupported URL scheme: ${protocol}`,
-			rawUrl,
-		),
-	};
-}
-
-function isBenignBrowserScheme(protocol: string): boolean {
-	return (
-		protocol === "about:" ||
-		protocol === "blob:" ||
-		protocol === "chrome-extension:" ||
-		protocol === "data:" ||
-		protocol === "devtools:"
-	);
-}
-
-function blockedRequestError(cause: unknown, url: string, finalUrl: string): BrowserRenderError {
-	const causeMessage = cause instanceof Error ? cause.message : "URL failed safety checks";
-	return new BrowserRenderError({
-		code: "BROWSER_BLOCKED_PRIVATE_URL",
-		phase: "browser",
-		message: `Blocked browser request to unsafe URL: ${finalUrl}. ${causeMessage}`,
-		retryable: false,
-		url,
-		finalUrl,
-		cause,
-	});
 }
 
 function abortError(url: string): BrowserRenderError {
@@ -410,29 +290,4 @@ export interface PlaywrightModule {
 interface Browser {
 	newContext(options: Record<string, unknown>): Promise<BrowserContext>;
 	close(): Promise<void>;
-}
-
-interface BrowserContext {
-	addCookies(cookies: Array<Record<string, string>>): Promise<void>;
-	newPage(): Promise<Page>;
-	route(glob: string, handler: (route: Route) => Promise<void>): Promise<void>;
-}
-
-interface Route {
-	abort(errorCode?: string): Promise<void>;
-	continue(): Promise<void>;
-	request(): Request;
-}
-
-interface Request {
-	url(): string;
-}
-
-interface Page {
-	goto(url: string, options: Record<string, unknown>): Promise<{ status(): number } | null>;
-	content(): Promise<string>;
-	title(): Promise<string>;
-	url(): string;
-	close(): Promise<void>;
-	context(): BrowserContext;
 }

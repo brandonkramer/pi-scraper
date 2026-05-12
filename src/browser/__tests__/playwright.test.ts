@@ -235,7 +235,7 @@ interface FakePlaywrightOptions {
 interface FakeRoute {
 	abort(errorCode?: string): Promise<void>;
 	continue(): Promise<void>;
-	request(): { url(): string };
+	request(): { url(): string; frame(): { page(): any } };
 }
 
 function safeResult(value: string): SafeUrlResult {
@@ -271,7 +271,7 @@ function fakePlaywright(
 									goto: async (requestUrl: string, gotoOptions: Record<string, unknown>) => {
 										seen.goto = gotoOptions;
 										for (const url of options.requestUrls ?? [requestUrl]) {
-											await routeHandler?.(fakeRoute(seen, url));
+											await routeHandler?.(fakeRoute(seen, url, page));
 										}
 										return { status: () => 204 };
 									},
@@ -297,7 +297,7 @@ function fakePlaywright(
 	};
 }
 
-function fakeRoute(seen: Record<string, unknown>, url: string): FakeRoute {
+function fakeRoute(seen: Record<string, unknown>, url: string, page: any): FakeRoute {
 	return {
 		abort: async (errorCode) => {
 			const aborted = (seen.aborted as Array<Record<string, string | undefined>> | undefined) ?? [];
@@ -309,6 +309,6 @@ function fakeRoute(seen: Record<string, unknown>, url: string): FakeRoute {
 			continued.push(url);
 			seen.continued = continued;
 		},
-		request: () => ({ url: () => url }),
+		request: () => ({ url: () => url, frame: () => ({ page: () => page }) }),
 	};
 }

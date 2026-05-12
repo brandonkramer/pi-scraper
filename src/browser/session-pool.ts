@@ -7,10 +7,15 @@
  */
 import type { Browser, BrowserContext, Page } from "playwright";
 
+import type { SafeUrlResult } from "../http/url-safety.ts";
+import { createBrowserRouteGuard } from "./route-guard.ts";
+import type { BrowserRouteGuard, BrowserSafetyCheck } from "./route-guard.ts";
+
 export interface BrowserSession {
 	id: string;
 	browser: Browser;
 	context: BrowserContext;
+	guard: BrowserRouteGuard;
 	lastUsedAt: number;
 	createdAt: number;
 	profile?: string;
@@ -34,9 +39,11 @@ export async function acquireBrowserSession(
 	id: string,
 	options: {
 		launchBrowser: () => Promise<Browser>;
+		safetyCheck: BrowserSafetyCheck;
 		profile?: string;
 		proxy?: string;
 		headers?: Record<string, string>;
+		checkedHosts?: Map<string, Promise<SafeUrlResult>>;
 	},
 ): Promise<{ page: Page; session: BrowserSession }> {
 	cleanupIdleSessions();
@@ -59,11 +66,15 @@ export async function acquireBrowserSession(
 		extraHTTPHeaders: options.headers,
 		proxy: options.proxy ? { server: options.proxy } : undefined,
 	});
+	const guard = createBrowserRouteGuard(options.safetyCheck, options.checkedHosts);
+	// oxlint-disable-next-line typescript/no-explicit-any -- bridge between route-guard.ts minimal Route and Playwright's full Route type
+	await context.route("**/*", guard.handler as (route: any) => Promise<void>);
 
 	session = {
 		id,
 		browser,
 		context,
+		guard,
 		createdAt: Date.now(),
 		lastUsedAt: Date.now(),
 		profile: options.profile,
