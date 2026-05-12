@@ -129,7 +129,6 @@ async function renderWithLoader(
 			page = s.page as unknown as Page;
 			browser = s.session.browser as unknown as Browser;
 			guard = s.session.guard;
-			guard.resetCheckedHosts(browserSafety.checkedHosts);
 			session = s.session;
 		} else {
 			browser = (await playwright.chromium.launch({
@@ -141,7 +140,7 @@ async function renderWithLoader(
 				serviceWorkers: "block",
 				userAgent: options.browserProfile,
 			});
-			guard = createBrowserRouteGuard(safetyCheck, browserSafety.checkedHosts);
+			guard = createBrowserRouteGuard(safetyCheck);
 			// oxlint-disable-next-line typescript/no-explicit-any -- bridge between route-guard.ts minimal Route and Playwright's full Route type
 			await context.route("**/*", guard.handler as (route: any) => Promise<void>);
 			if (options.cookies) {
@@ -155,6 +154,7 @@ async function renderWithLoader(
 			}
 			page = await context.newPage();
 		}
+		guard.setCheckedHostsForPage(page, browserSafety.checkedHosts);
 
 		// 2) Apply stealth patches before navigation
 		if (options.stealth) {

@@ -128,11 +128,23 @@ function hostDomainMatches(host: string, cookieDomain: string): boolean {
 	return h === d || h.endsWith("." + d);
 }
 
+/** RFC 6265 §5.1.4 default-path: directory of the request URI path. */
+function defaultCookiePath(uriPath: string): string {
+	if (uriPath[0] !== "/") return "/";
+	const lastSlash = uriPath.lastIndexOf("/");
+	if (lastSlash === 0) return "/";
+	return uriPath.slice(0, lastSlash);
+}
+
 /**
  * Parse a raw Set-Cookie header into a serialized cookie. Rejects cross-origin Domain attributes
- * per RFC 6265 §5.3 step 6.
+ * per RFC 6265 §5.3 step 6; defaults missing Path per §5.1.4.
  */
-export function parseSetCookie(setCookie: string, host: string): SerializedCookie | undefined {
+export function parseSetCookie(
+	setCookie: string,
+	host: string,
+	requestPath: string,
+): SerializedCookie | undefined {
 	const parts = setCookie.split(";").map((p) => p.trim());
 	const [nameValue] = parts;
 	const eq = nameValue.indexOf("=");
@@ -144,7 +156,9 @@ export function parseSetCookie(setCookie: string, host: string): SerializedCooki
 		const [key, val] = part.split("=").map((s) => s.trim());
 		const lower = key.toLowerCase();
 		if (lower === "domain") cookie.domain = val.toLowerCase().replace(/^\./u, "");
-		if (lower === "path") cookie.path = val;
+		// RFC 6265 §5.2.4: take the last Path attribute; an invalid (empty or non-"/") value
+		// resets cookie.path so the default-path fallback below applies.
+		if (lower === "path") cookie.path = val.startsWith("/") ? val : undefined;
 		if (lower === "expires") cookie.expires = val;
 		if (lower === "httponly") cookie.httpOnly = true;
 		if (lower === "secure") cookie.secure = true;
@@ -157,7 +171,7 @@ export function parseSetCookie(setCookie: string, host: string): SerializedCooki
 		cookie.domain = host.toLowerCase();
 		cookie.hostOnly = true;
 	}
-	cookie.path ??= "/";
+	cookie.path ??= defaultCookiePath(requestPath);
 	return cookie;
 }
 
@@ -222,9 +236,10 @@ export function updateSessionCookies(
 	session: FetchSession,
 	setCookieHeaders: string[],
 	host: string,
+	requestPath: string,
 ): void {
 	for (const header of setCookieHeaders) {
-		const cookie = parseSetCookie(header, host);
+		const cookie = parseSetCookie(header, host, requestPath);
 		// Rejected by origin validation
 		if (!cookie) continue;
 		// Remove old cookie with same name/domain/hostOnly/path

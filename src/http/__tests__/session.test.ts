@@ -71,7 +71,7 @@ describe("session persistence", () => {
 
 	it("preserves domain scope across SQLite roundtrip", async () => {
 		const first = await getOrCreateSession("roundtrip");
-		updateSessionCookies(first, ["foo=bar; Domain=example.com"], "example.com");
+		updateSessionCookies(first, ["foo=bar; Domain=example.com"], "example.com", "/");
 		await saveSessionToStorage("roundtrip");
 
 		const { deleteSession } = await import("../session.ts");
@@ -84,7 +84,7 @@ describe("session persistence", () => {
 
 describe("parseSetCookie", () => {
 	it("sets hostOnly when no Domain attribute is present", () => {
-		const cookie = parseSetCookie("foo=bar", "acme.com")!;
+		const cookie = parseSetCookie("foo=bar", "acme.com", "/")!;
 		expect(cookie.name).toBe("foo");
 		expect(cookie.value).toBe("bar");
 		expect(cookie.domain).toBe("acme.com");
@@ -93,40 +93,88 @@ describe("parseSetCookie", () => {
 	});
 
 	it("strips leading dot and lowercases explicit Domain", () => {
-		const cookie = parseSetCookie("foo=bar; Domain=.Example.COM", "example.com")!;
+		const cookie = parseSetCookie("foo=bar; Domain=.Example.COM", "example.com", "/")!;
 		expect(cookie.domain).toBe("example.com");
 		expect(cookie.hostOnly).toBe(false);
 		expect(cookie.path).toBe("/");
 	});
 
 	it("preserves Secure, HttpOnly, SameSite", () => {
-		const cookie = parseSetCookie("foo=bar; Secure; HttpOnly; SameSite=Strict", "acme.com")!;
+		const cookie = parseSetCookie("foo=bar; Secure; HttpOnly; SameSite=Strict", "acme.com", "/")!;
 		expect(cookie.secure).toBe(true);
 		expect(cookie.httpOnly).toBe(true);
 		expect(cookie.sameSite).toBe("Strict");
 	});
 
 	it("rejects cross-origin Domain attribute", () => {
-		expect(parseSetCookie("sid=x; Domain=victim.com", "attacker.com")).toBeUndefined();
+		expect(parseSetCookie("sid=x; Domain=victim.com", "attacker.com", "/")).toBeUndefined();
 	});
 
 	it("accepts exact host Domain match", () => {
-		const cookie = parseSetCookie("sid=x; Domain=example.com", "example.com")!;
+		const cookie = parseSetCookie("sid=x; Domain=example.com", "example.com", "/")!;
 		expect(cookie.domain).toBe("example.com");
 		expect(cookie.hostOnly).toBe(false);
 	});
 
 	it("accepts subdomain response for parent Domain", () => {
-		const cookie = parseSetCookie("sid=x; Domain=example.com", "sub.example.com")!;
+		const cookie = parseSetCookie("sid=x; Domain=example.com", "sub.example.com", "/")!;
 		expect(cookie.domain).toBe("example.com");
 	});
 
 	it("rejects suffix-match Domain (badexample.com vs example.com)", () => {
-		expect(parseSetCookie("sid=x; Domain=example.com", "badexample.com")).toBeUndefined();
+		expect(parseSetCookie("sid=x; Domain=example.com", "badexample.com", "/")).toBeUndefined();
 	});
 
 	it("rejects unrelated Domain", () => {
-		expect(parseSetCookie("sid=x; Domain=other.com", "example.com")).toBeUndefined();
+		expect(parseSetCookie("sid=x; Domain=other.com", "example.com", "/")).toBeUndefined();
+	});
+
+	it("defaults missing Path to the request URI directory (RFC 6265 §5.1.4)", () => {
+		// uri-path with multiple slashes — strip to last "/"
+		expect(parseSetCookie("foo=bar", "acme.com", "/account/login")?.path).toBe("/account");
+		expect(parseSetCookie("foo=bar", "acme.com", "/account/orders/123")?.path).toBe(
+			"/account/orders",
+		);
+		// uri-path with a single leading slash — output "/"
+		expect(parseSetCookie("foo=bar", "acme.com", "/login")?.path).toBe("/");
+		// uri-path is exactly "/" — output "/"
+		expect(parseSetCookie("foo=bar", "acme.com", "/")?.path).toBe("/");
+		// uri-path empty — output "/"
+		expect(parseSetCookie("foo=bar", "acme.com", "")?.path).toBe("/");
+		// uri-path lacks leading slash — output "/"
+		expect(parseSetCookie("foo=bar", "acme.com", "abc")?.path).toBe("/");
+	});
+
+	it("preserves explicit Path attribute over default-path", () => {
+		const cookie = parseSetCookie("foo=bar; Path=/admin", "acme.com", "/account/login")!;
+		expect(cookie.path).toBe("/admin");
+	});
+
+	it("falls back to default-path when explicit Path is empty or invalid (RFC 6265 §5.2.4)", () => {
+		// Path= (empty) — fall back to default-path
+		expect(parseSetCookie("foo=bar; Path=", "acme.com", "/account/login")?.path).toBe("/account");
+		// Path=abc (no leading "/") — fall back to default-path
+		expect(parseSetCookie("foo=bar; Path=abc", "acme.com", "/account/login")?.path).toBe(
+			"/account",
+		);
+		// Both invalid Path cases at root path → "/"
+		expect(parseSetCookie("foo=bar; Path=", "acme.com", "/")?.path).toBe("/");
+		expect(parseSetCookie("foo=bar; Path=oops", "acme.com", "/")?.path).toBe("/");
+	});
+
+	it("uses the last Path attribute when multiple are present (RFC 6265 §5.2.4 storage)", () => {
+		// Last Path is invalid → resets to default-path even though an earlier valid Path exists
+		expect(
+			parseSetCookie("foo=bar; Path=/admin; Path=oops", "acme.com", "/account/login")?.path,
+		).toBe("/account");
+		// Last Path is valid → wins over earlier invalid Path
+		expect(
+			parseSetCookie("foo=bar; Path=oops; Path=/admin", "acme.com", "/account/login")?.path,
+		).toBe("/admin");
+		// Both valid → last wins
+		expect(
+			parseSetCookie("foo=bar; Path=/admin; Path=/billing", "acme.com", "/account/login")?.path,
+		).toBe("/billing");
 	});
 });
 
@@ -278,11 +326,11 @@ describe("updateSessionCookies", () => {
 			lastUsedAt: "",
 			cookies: [],
 		};
-		updateSessionCookies(session, ["foo=old; Domain=acme.com; Path=/"], "acme.com");
+		updateSessionCookies(session, ["foo=old; Domain=acme.com; Path=/"], "acme.com", "/");
 		expect(session.cookies).toHaveLength(1);
 		expect(session.cookies[0]?.value).toBe("old");
 
-		updateSessionCookies(session, ["foo=new; Domain=acme.com; Path=/"], "acme.com");
+		updateSessionCookies(session, ["foo=new; Domain=acme.com; Path=/"], "acme.com", "/");
 		expect(session.cookies).toHaveLength(1);
 		expect(session.cookies[0]?.value).toBe("new");
 	});
@@ -295,9 +343,9 @@ describe("updateSessionCookies", () => {
 			cookies: [],
 		};
 		// Host-only (no Domain attribute)
-		updateSessionCookies(session, ["foo=host"], "acme.com");
+		updateSessionCookies(session, ["foo=host"], "acme.com", "/");
 		// Domain-scoped
-		updateSessionCookies(session, ["foo=domain; Domain=acme.com"], "acme.com");
+		updateSessionCookies(session, ["foo=domain; Domain=acme.com"], "acme.com", "/");
 		expect(session.cookies).toHaveLength(2);
 	});
 
@@ -308,8 +356,20 @@ describe("updateSessionCookies", () => {
 			lastUsedAt: "",
 			cookies: [],
 		};
-		updateSessionCookies(session, ["sid=x; Domain=victim.com"], "attacker.com");
+		updateSessionCookies(session, ["sid=x; Domain=victim.com"], "attacker.com", "/");
 		expect(session.cookies).toHaveLength(0);
+	});
+
+	it("threads request path into default-path for cookies without Path", () => {
+		const session: FetchSession = {
+			id: "s",
+			createdAt: "",
+			lastUsedAt: "",
+			cookies: [],
+		};
+		updateSessionCookies(session, ["foo=bar"], "acme.com", "/account/login");
+		expect(session.cookies).toHaveLength(1);
+		expect(session.cookies[0]?.path).toBe("/account");
 	});
 });
 

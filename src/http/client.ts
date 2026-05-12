@@ -260,6 +260,7 @@ export class HttpClient {
 						session,
 						Array.isArray(setCookie) ? setCookie : [setCookie],
 						urlObj.hostname,
+						urlObj.pathname,
 					);
 				}
 			}

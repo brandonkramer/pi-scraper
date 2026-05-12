@@ -25,8 +25,12 @@ export interface BrowserSafetyState {
 export interface BrowserRouteGuard {
 	handler: (route: Route) => Promise<void>;
 	consumeError(page: Page, url: string): BrowserRenderError | undefined;
-	/** Replace the checked-hosts map. Must only be called before the render's goto starts. */
-	resetCheckedHosts(checkedHosts: Map<string, Promise<SafeUrlResult>>): void;
+	/**
+	 * Bind a page-scoped checked-hosts map for handler dedup. Must be called after the page is
+	 * created and before page.goto() is invoked. Per-page binding isolates concurrent renders that
+	 * share a session context.
+	 */
+	setCheckedHostsForPage(page: Page, checkedHosts: Map<string, Promise<SafeUrlResult>>): void;
 }
 
 interface BlockedEntry {
@@ -34,15 +38,9 @@ interface BlockedEntry {
 	finalUrl: string;
 }
 
-export function createBrowserRouteGuard(
-	safetyCheck: BrowserSafetyCheck,
-	checkedHosts?: Map<string, Promise<SafeUrlResult>>,
-): BrowserRouteGuard {
+export function createBrowserRouteGuard(safetyCheck: BrowserSafetyCheck): BrowserRouteGuard {
 	const blockedByPage = new WeakMap<Page, BlockedEntry>();
-	const browserSafety: BrowserSafetyState = {
-		check: safetyCheck,
-		checkedHosts: checkedHosts ?? new Map(),
-	};
+	const checkedHostsByPage = new WeakMap<Page, Map<string, Promise<SafeUrlResult>>>();
 
 	async function handler(route: Route): Promise<void> {
 		let page: Page;
@@ -70,8 +68,18 @@ export function createBrowserRouteGuard(
 			});
 			return;
 		}
+		const checkedHosts = checkedHostsByPage.get(page);
+		if (!checkedHosts) {
+			// Render hasn't bound a checked-hosts map yet. Deny rather than validate against a
+			// shared/leaked map.
+			await route.abort("blockedbyclient").catch(() => {
+				/* no-op */
+			});
+			return;
+		}
+		const pageState: BrowserSafetyState = { check: safetyCheck, checkedHosts };
 		try {
-			await assertSafeBrowserUrl(requestUrl, requestUrl, requestUrl, browserSafety);
+			await assertSafeBrowserUrl(requestUrl, requestUrl, requestUrl, pageState);
 		} catch (error) {
 			if (error instanceof BrowserRenderError) {
 				if (!blockedByPage.has(page)) {
@@ -95,11 +103,14 @@ export function createBrowserRouteGuard(
 		return blockedRequestError(entry.cause, url, entry.finalUrl);
 	}
 
-	function resetCheckedHosts(newMap: Map<string, Promise<SafeUrlResult>>): void {
-		browserSafety.checkedHosts = newMap;
+	function setCheckedHostsForPage(
+		page: Page,
+		checkedHosts: Map<string, Promise<SafeUrlResult>>,
+	): void {
+		checkedHostsByPage.set(page, checkedHosts);
 	}
 
-	return { handler, consumeError, resetCheckedHosts };
+	return { handler, consumeError, setCheckedHostsForPage };
 }
 
 export async function assertSafeBrowserUrl(

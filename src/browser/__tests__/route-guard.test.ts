@@ -49,6 +49,7 @@ describe("createBrowserRouteGuard", () => {
 	it("allows http and https subresources", async () => {
 		const guard = createBrowserRouteGuard(alwaysSafe);
 		const page = fakePage();
+		guard.setCheckedHostsForPage(page, new Map());
 		const actions: string[] = [];
 		const route = {
 			...fakeRoute("https://cdn.example.com/script.js", page),
@@ -124,6 +125,7 @@ describe("createBrowserRouteGuard", () => {
 	it("blocks private IPs via safety check", async () => {
 		const guard = createBrowserRouteGuard(alwaysUnsafe);
 		const page = fakePage();
+		guard.setCheckedHostsForPage(page, new Map());
 		const route = {
 			...fakeRoute("http://127.0.0.1/admin", page),
 			abort: async () => undefined,
@@ -138,6 +140,7 @@ describe("createBrowserRouteGuard", () => {
 	it("blocks AWS metadata IP", async () => {
 		const guard = createBrowserRouteGuard(alwaysUnsafe);
 		const page = fakePage();
+		guard.setCheckedHostsForPage(page, new Map());
 		const route = {
 			...fakeRoute("http://169.254.169.254/latest/meta-data/", page),
 			abort: async () => undefined,
@@ -151,6 +154,7 @@ describe("createBrowserRouteGuard", () => {
 	it("only records the first blocked subresource per page", async () => {
 		const guard = createBrowserRouteGuard(alwaysUnsafe);
 		const page = fakePage();
+		guard.setCheckedHostsForPage(page, new Map());
 		const route1 = { ...fakeRoute("http://127.0.0.1/a", page), abort: async () => undefined };
 		const route2 = { ...fakeRoute("http://127.0.0.1/b", page), abort: async () => undefined };
 
@@ -163,6 +167,7 @@ describe("createBrowserRouteGuard", () => {
 	it("clears error after consumeError so reuse is safe", async () => {
 		const guard = createBrowserRouteGuard(alwaysUnsafe);
 		const page = fakePage();
+		guard.setCheckedHostsForPage(page, new Map());
 		const route = { ...fakeRoute("http://127.0.0.1/admin", page), abort: async () => undefined };
 
 		await guard.handler(route);
@@ -173,6 +178,7 @@ describe("createBrowserRouteGuard", () => {
 	it("supports two separate renders on the same page", async () => {
 		const guard = createBrowserRouteGuard(alwaysUnsafe);
 		const page = fakePage();
+		guard.setCheckedHostsForPage(page, new Map());
 		const routeA = { ...fakeRoute("http://127.0.0.1/a", page), abort: async () => undefined };
 		const routeB = { ...fakeRoute("http://127.0.0.1/b", page), abort: async () => undefined };
 
@@ -209,25 +215,43 @@ describe("createBrowserRouteGuard", () => {
 		expect(aborted).toEqual(["blockedbyclient"]);
 	});
 
-	it("resetCheckedHosts replaces the Map so per-render dedup is isolated", async () => {
-		const map1 = new Map<string, Promise<SafeUrlResult>>();
-		const map2 = new Map<string, Promise<SafeUrlResult>>();
+	it("setCheckedHostsForPage isolates dedup per page (concurrent renders)", async () => {
 		const checks: string[] = [];
 		const safetyCheck = async (input: string | URL): Promise<SafeUrlResult> => {
 			checks.push(input.toString());
 			return safeResult(input.toString());
 		};
-		const guard = createBrowserRouteGuard(safetyCheck, map1);
-		const page = fakePage();
+		const guard = createBrowserRouteGuard(safetyCheck);
+		const pageA = fakePage();
+		const pageB = fakePage();
+		guard.setCheckedHostsForPage(pageA, new Map());
+		guard.setCheckedHostsForPage(pageB, new Map());
 
-		// Render 1 — populate map1
-		await guard.handler(fakeRoute("http://example.com/a", page));
-		expect(checks).toEqual(["http://example.com/a"]);
-
-		// Reset to map2; same hostname triggers a fresh check
-		guard.resetCheckedHosts(map2);
-		await guard.handler(fakeRoute("http://example.com/b", page));
+		// Same hostname across two pages — each page gets its own safety check
+		await guard.handler(fakeRoute("http://example.com/a", pageA));
+		await guard.handler(fakeRoute("http://example.com/b", pageB));
 		expect(checks).toEqual(["http://example.com/a", "http://example.com/b"]);
+
+		// Same hostname on the same page — deduped
+		await guard.handler(fakeRoute("http://example.com/c", pageA));
+		expect(checks).toEqual(["http://example.com/a", "http://example.com/b"]);
+	});
+
+	it("aborts requests on pages with no bound checked-hosts map", async () => {
+		const guard = createBrowserRouteGuard(alwaysSafe);
+		const page = fakePage();
+		const aborted: Array<string | undefined> = [];
+		const route = {
+			...fakeRoute("http://example.com/x", page),
+			abort: async (code?: string) => {
+				aborted.push(code);
+			},
+			continue: async () => {
+				throw new Error("should not continue without a bound map");
+			},
+		};
+		await guard.handler(route);
+		expect(aborted).toEqual(["blockedbyclient"]);
 	});
 });
 
