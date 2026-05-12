@@ -12,14 +12,33 @@ export function runMigrations(db: DatabaseSync): void {
 		user_version: number;
 	};
 	if (current.user_version < 1) {
-		db.exec(SCHEMA_V1);
+		runTransactionalMigration(db, () => db.exec(SCHEMA_V1), 1);
 	}
 	if (current.user_version < 2) {
-		migrateElementFingerprints(wrapDb(db));
-		db.exec("PRAGMA user_version = 2");
+		runTransactionalMigration(db, () => migrateElementFingerprints(wrapDb(db)), 2);
 	}
 	if (current.user_version < 3) {
-		migrateHttpSessions(wrapDb(db));
-		db.exec("PRAGMA user_version = 3");
+		runTransactionalMigration(db, () => migrateHttpSessions(wrapDb(db)), 3);
+	}
+}
+
+function runTransactionalMigration(
+	db: DatabaseSync,
+	migrate: () => void,
+	targetVersion: number,
+): void {
+	db.exec("BEGIN IMMEDIATE");
+	try {
+		migrate();
+		// oxlint-disable-next-line security/detect-sql-injection -- targetVersion is a hardcoded internal migration number, not user input; PRAGMA does not support parameter binding
+		db.exec(`PRAGMA user_version = ${targetVersion}`);
+		db.exec("COMMIT");
+	} catch (error) {
+		try {
+			db.exec("ROLLBACK");
+		} catch {
+			/* ignore rollback failures */
+		}
+		throw error;
 	}
 }

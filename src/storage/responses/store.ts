@@ -35,8 +35,14 @@ export async function storeResponse(
 ): Promise<ResponseStorageMetadata> {
 	const responseId = options.responseId ?? createResponseId();
 	const storedAt = new Date().toISOString();
-	// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
-	const valueJson = JSON.stringify(value) ?? "null";
+	let valueJson: string;
+	try {
+		// oxlint-disable-next-line typescript/no-unnecessary-condition -- JSON.stringify(undefined) returns undefined
+		valueJson = JSON.stringify(value) ?? "null";
+	} catch {
+		// NOTE: this masks real adapter bugs silently; surface to telemetry when Pi provides an error sink
+		valueJson = JSON.stringify({ error: "unserializable_result" });
+	}
 	const contentType = options.contentType ?? "application/json";
 	const blob = await writeBlob(valueJson, contentType, options);
 	const metadata: ResponseStorageMetadata = {
