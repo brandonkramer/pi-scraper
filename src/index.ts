@@ -26,15 +26,22 @@ export default async function registerPiScraperExtension(pi: PiScraperRegistrar)
 
 function wireCleanupHooks(): void {
 	let cleanedUp = false;
-	const cleanup = (): void => {
+	const cleanup = async (): Promise<void> => {
 		if (cleanedUp) return;
 		cleanedUp = true;
-		closeStorageDbs();
-		closeAllBrowserSessions().catch(() => {
+		await closeStorageDbs();
+		await closeAllBrowserSessions().catch(() => {
 			/* ignore */
 		});
 	};
-	process.once("SIGTERM", cleanup);
-	process.once("SIGINT", cleanup);
-	process.once("beforeExit", cleanup);
+	const runCleanupAndExit = (code: number) => {
+		void cleanup().finally(() => process.exit(code));
+	};
+	// SIGTERM / SIGINT: clean up then explicitly exit so Node doesn't hang
+	process.once("SIGTERM", () => runCleanupAndExit(143));
+	process.once("SIGINT", () => runCleanupAndExit(130));
+	// beforeExit: process is already draining; fire-and-forget cleanup
+	process.once("beforeExit", () => {
+		void cleanup();
+	});
 }

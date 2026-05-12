@@ -1,6 +1,4 @@
-/**
- * @fileoverview tools progress module.
- */
+/** @file Tools progress module. */
 import type {
 	PiToolShell,
 	ProgressChecklistItem,
@@ -47,13 +45,15 @@ export async function emitProgress<TData = unknown>(
 	onUpdate: ToolUpdate | undefined,
 	options: ProgressOptions<TData>,
 ): Promise<void> {
-	await onUpdate?.(progressShell(options));
+	try {
+		await onUpdate?.(progressShell(options));
+	} catch {
+		/* progress is best-effort; swallow host-handler rejections */
+	}
 }
 
 function progressText(options: ProgressOptions): string {
-	const count = options.total
-		? ` ${options.current ?? 0}/${options.total}`
-		: "";
+	const count = options.total ? ` ${options.current ?? 0}/${options.total}` : "";
 	const url = options.url ? ` · ${options.url}` : "";
 	return `${options.state}${count}${url}${options.message ? ` · ${options.message}` : ""}`;
 }

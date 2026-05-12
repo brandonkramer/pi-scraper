@@ -29,6 +29,7 @@ export async function openStorageDb(options: ResolveStorageOptions = {}): Promis
 	if (!promise) {
 		promise = openDbEntry(dbPath, options);
 		handles.set(dbPath, promise);
+		promise.catch(() => handles.delete(dbPath));
 	}
 	const entry = await promise;
 	return wrapEntry(entry);
@@ -45,15 +46,19 @@ async function openDbEntry(dbPath: string, options: ResolveStorageOptions): Prom
 	return entry;
 }
 
-export function closeStorageDbs(): void {
+export async function closeStorageDbs(): Promise<void> {
+	const closers: Promise<void>[] = [];
 	for (const promise of handles.values()) {
-		promise
-			.then((entry) => entry.db.close())
-			.catch(() => {
-				/* ignore close errors */
-			});
+		closers.push(
+			promise
+				.then((entry) => entry.db.close())
+				.catch(() => {
+					/* ignore close errors */
+				}),
+		);
 	}
 	handles.clear();
+	await Promise.all(closers);
 }
 
 export function wrapDb(db: DatabaseSync): StorageDb {

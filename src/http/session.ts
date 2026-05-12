@@ -53,6 +53,7 @@ export async function getOrCreateSession(
 	if (!promise) {
 		promise = loadOrCreateSession(id, options);
 		memorySessions.set(id, promise);
+		promise.catch(() => memorySessions.delete(id));
 	}
 	return await promise;
 }
