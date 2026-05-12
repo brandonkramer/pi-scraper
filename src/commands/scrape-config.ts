@@ -1,5 +1,5 @@
 /**
- * @file Entry point for the /web-config slash command. Dispatches to sub-actions: status,
+ * @file Entry point for the /scrape-config slash command. Dispatches to sub-actions: status,
  *   model-provider, scrape-mode, cache, robots. No-args opens an interactive picker when
  *   ctx.ui.select is available.
  */
@@ -7,13 +7,14 @@ import { type Static, Type } from "@earendil-works/pi-ai";
 
 import { toolResult } from "../tools/infra/result.ts";
 import { defineWebCommand, type CommandContext } from "./define.ts";
-import { runWebConfigCache } from "./web-config-cache.ts";
-import { runWebConfigModelProvider } from "./web-config-model-provider.ts";
-import { runWebConfigRobots } from "./web-config-robots.ts";
-import { runWebConfigScrapeMode } from "./web-config-scrape-mode.ts";
-import { runWebConfigStatus } from "./web-config-status.ts";
+import { runScrapeConfigCache } from "./scrape-config-cache.ts";
+import { runScrapeConfigModelProvider } from "./scrape-config-model-provider.ts";
+import { runScrapeConfigReload } from "./scrape-config-reload.ts";
+import { runScrapeConfigRobots } from "./scrape-config-robots.ts";
+import { runScrapeConfigScrapeMode } from "./scrape-config-scrape-mode.ts";
+import { runScrapeConfigStatus } from "./scrape-config-status.ts";
 
-export const webConfigSchema = Type.Object({
+export const scrapeConfigSchema = Type.Object({
 	action: Type.Optional(
 		Type.Union([
 			Type.Literal("status"),
@@ -21,6 +22,7 @@ export const webConfigSchema = Type.Object({
 			Type.Literal("scrape-mode"),
 			Type.Literal("cache"),
 			Type.Literal("robots"),
+			Type.Literal("reload"),
 		]),
 	),
 	provider: Type.Optional(Type.String()),
@@ -31,9 +33,16 @@ export const webConfigSchema = Type.Object({
 	force: Type.Optional(Type.Boolean()),
 });
 
-export type Params = Static<typeof webConfigSchema>;
+export type Params = Static<typeof scrapeConfigSchema>;
 
-const ACTION_LABELS = ["Status", "Model provider", "Scrape mode", "Cache", "Robots"] as const;
+const ACTION_LABELS = [
+	"Status",
+	"Model provider",
+	"Scrape mode",
+	"Cache",
+	"Robots",
+	"Reload",
+] as const;
 
 const LABEL_TO_ACTION: Record<string, string> = {
 	Status: "status",
@@ -41,12 +50,13 @@ const LABEL_TO_ACTION: Record<string, string> = {
 	"Scrape mode": "scrape-mode",
 	Cache: "cache",
 	Robots: "robots",
+	Reload: "reload",
 };
 
-export async function runWebConfigCommand(params: Params, ctx?: CommandContext) {
+export async function runScrapeConfigCommand(params: Params, ctx?: CommandContext) {
 	if (!params.action) {
 		if (ctx?.ui?.select) {
-			const picked = await ctx.ui.select("Web config", [...ACTION_LABELS], {
+			const picked = await ctx.ui.select("Scrape config", [...ACTION_LABELS], {
 				signal: ctx.signal,
 			});
 			if (!picked) {
@@ -60,33 +70,35 @@ export async function runWebConfigCommand(params: Params, ctx?: CommandContext) 
 				action: LABEL_TO_ACTION[picked] as Params["action"],
 			};
 		} else {
-			return await runWebConfigStatus(params, ctx);
+			return await runScrapeConfigStatus(params, ctx);
 		}
 	}
 	const action = params.action;
 	if (!action) {
-		return await runWebConfigStatus(params, ctx);
+		return await runScrapeConfigStatus(params, ctx);
 	}
 	switch (action) {
 		case "status":
-			return await runWebConfigStatus(params, ctx);
+			return await runScrapeConfigStatus(params, ctx);
 		case "model-provider":
-			return await runWebConfigModelProvider(params, ctx);
+			return await runScrapeConfigModelProvider(params, ctx);
 		case "scrape-mode":
-			return await runWebConfigScrapeMode(params, ctx);
+			return await runScrapeConfigScrapeMode(params, ctx);
 		case "cache":
-			return await runWebConfigCache(params, ctx);
+			return await runScrapeConfigCache(params, ctx);
 		case "robots":
-			return await runWebConfigRobots(params, ctx);
+			return await runScrapeConfigRobots(params, ctx);
+		case "reload":
+			return await runScrapeConfigReload();
 		default:
 			return toolResult({
-				text: "Unknown action. Use status, model-provider, scrape-mode, cache, or robots.",
+				text: "Unknown action. Use status, model-provider, scrape-mode, cache, robots, or reload.",
 				data: { error: "unknown_action" },
 			});
 	}
 }
 
-export function parseWebConfigCommandArgs(args: string): Params {
+export function parseScrapeConfigCommandArgs(args: string): Params {
 	const trimmed = args.trim();
 	if (!trimmed) return {};
 	if (trimmed.startsWith("{")) return JSON.parse(trimmed) as Params;
@@ -124,18 +136,20 @@ export function parseWebConfigCommandArgs(args: string): Params {
 			}
 			return { action, value: value as Params["value"] };
 		}
+		case "reload":
+			return { action };
 	}
 }
 
 function isKnownAction(value: string): value is NonNullable<Params["action"]> {
-	return ["status", "model-provider", "scrape-mode", "cache", "robots"].includes(value);
+	return ["status", "model-provider", "scrape-mode", "cache", "robots", "reload"].includes(value);
 }
 
-export const webConfigCommand = defineWebCommand({
-	name: "web-config",
+export const scrapeConfigCommand = defineWebCommand({
+	name: "scrape-config",
 	description:
 		"Inspect effective web config (including live adapter resolution), set model-provider/scrape-mode/robots defaults, or manage the response cache.",
-	parameters: webConfigSchema,
-	parseArgs: parseWebConfigCommandArgs,
-	execute: (params, ctx) => runWebConfigCommand(params, ctx),
+	parameters: scrapeConfigSchema,
+	parseArgs: parseScrapeConfigCommandArgs,
+	execute: (params, ctx) => runScrapeConfigCommand(params, ctx),
 });

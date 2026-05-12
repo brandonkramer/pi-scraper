@@ -1,13 +1,13 @@
 /**
- * @file Status sub-action for /web-config. Shows effective config, live adapter-resolution chain,
- *   and cache stats.
+ * @file Status sub-action for /scrape-config. Shows effective config, live adapter-resolution
+ *   chain, and cache stats.
  */
 import { loadEffectiveConfig, type EffectiveWebConfig } from "../config/settings.ts";
 import { modelRegistry } from "../tools/infra/model-registry.ts";
 import { piHostAdapterAvailable } from "../tools/infra/register.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
-import type { Params } from "./web-config.ts";
+import type { Params } from "./scrape-config.ts";
 
 export interface WebConfigStatusReport {
 	effectiveConfig: EffectiveWebConfig;
@@ -22,7 +22,7 @@ export interface WebConfigStatusReport {
 	activeResolution: string;
 }
 
-export async function runWebConfigStatus(_params: Params, ctx?: CommandContext) {
+export async function runScrapeConfigStatus(_params: Params, ctx?: CommandContext) {
 	const config = await loadEffectiveConfig();
 	const report = await assembleStatusReport(config, ctx);
 	return toolResult({
@@ -46,11 +46,11 @@ async function assembleStatusReport(
 	const precedence: Array<{ layer: string; value: string }> = [
 		{
 			layer: "per-call provider param",
-			value: "(unobservable from /web-config)",
+			value: "(unobservable from /scrape-config)",
 		},
 		{
 			layer: "Pi flag --web-model-provider",
-			value: "(unobservable from /web-config)",
+			value: "(unobservable from /scrape-config)",
 		},
 		{
 			layer: "env PI_WEB_MODEL_PROVIDER",
@@ -93,7 +93,7 @@ function formatModelProvider(value: unknown): string {
 function formatStatusText(report: WebConfigStatusReport): string {
 	const cfg = report.effectiveConfig;
 	const lines = [
-		"Web config status",
+		"Scrape config status",
 		"",
 		"Effective config:",
 		`- scrapeMode: ${cfg.scrapeMode}`,

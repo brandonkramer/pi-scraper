@@ -1,13 +1,13 @@
-/** @file Cache sub-action for /web-config. */
+/** @file Cache sub-action for /scrape-config. */
 import { readdir, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 
 import { resolvePiStoragePaths } from "../storage/paths.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
-import type { Params } from "./web-config.ts";
+import type { Params } from "./scrape-config.ts";
 
-export async function runWebConfigCache(params: Params, ctx?: CommandContext) {
+export async function runScrapeConfigCache(params: Params, ctx?: CommandContext) {
 	const op = params.op ?? "stats";
 	if (op === "stats") {
 		return await showCacheStats();

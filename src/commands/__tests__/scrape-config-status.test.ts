@@ -3,17 +3,17 @@ import { describe, expect, it } from "vitest";
 
 import type { ModelResponse } from "../../extract/adhoc/model.ts";
 import { modelRegistry } from "../../tools/infra/model-registry.ts";
-import { runWebConfigStatus } from "../web-config-status.ts";
+import { runScrapeConfigStatus } from "../scrape-config-status.ts";
 
-type WebConfigStatusResult = Awaited<ReturnType<typeof runWebConfigStatus>>;
+type WebConfigStatusResult = Awaited<ReturnType<typeof runScrapeConfigStatus>>;
 
 function firstContentText(result: WebConfigStatusResult): string {
 	return result.content[0]?.text ?? "";
 }
 
-describe("runWebConfigStatus", () => {
+describe("runScrapeConfigStatus", () => {
 	it("report contains effective config", async () => {
-		const result = await runWebConfigStatus({ action: "status" }, {});
+		const result = await runScrapeConfigStatus({ action: "status" }, {});
 		const text = firstContentText(result);
 		expect(text).toContain("Effective config:");
 		expect(text).toContain("scrapeMode:");
@@ -31,7 +31,7 @@ describe("runWebConfigStatus", () => {
 				},
 			},
 		});
-		const result = await runWebConfigStatus({ action: "status" }, {});
+		const result = await runScrapeConfigStatus({ action: "status" }, {});
 		const text = firstContentText(result);
 		expect(text).toContain("test-adapter");
 		expect(text).toContain("priority 50");
@@ -40,13 +40,13 @@ describe("runWebConfigStatus", () => {
 
 	it("report shows empty registry", async () => {
 		modelRegistry.clear();
-		const result = await runWebConfigStatus({ action: "status" }, {});
+		const result = await runScrapeConfigStatus({ action: "status" }, {});
 		const text = firstContentText(result);
 		expect(text).toContain("Registered adapters: 0");
 	});
 
 	it("structured data contains report shape", async () => {
-		const result = await runWebConfigStatus({ action: "status" }, {});
+		const result = await runScrapeConfigStatus({ action: "status" }, {});
 		const details = result.details as {
 			data?: {
 				effectiveConfig?: unknown;

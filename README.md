@@ -318,7 +318,7 @@ When an adapter returns `usage`, `web_summarize` (and `web_extract action="adhoc
 
 ## Configuration command
 
-Use `/web-config` to inspect effective settings and persist defaults interactively or via direct arguments.
+Use `/scrape-config` to inspect effective settings and persist defaults interactively or via direct arguments.
 
 | Sub-action                    | What it does                                                    |
 | ----------------------------- | --------------------------------------------------------------- |
@@ -329,8 +329,9 @@ Use `/web-config` to inspect effective settings and persist defaults interactive
 | `cache stats`                 | Inspect response cache size and entry counts                    |
 | `cache clear`                 | Clear response cache (confirm prompt)                           |
 | `robots on/off`               | Toggle `respectRobots` default                                  |
+| `reload`                      | Reload config from disk, clearing the in-memory cache           |
 
-The effective config is cached in memory for the session. After hand-editing `~/.pi/scraper/config/web.json`, run `/web-reload-config` (or restart the session) to pick up changes.
+The effective config is cached in memory for the session. After hand-editing `~/.pi/scraper/config/web.json`, run `/scrape-config reload` (or restart the session) to pick up changes.
 
 ## Development and release checks
 

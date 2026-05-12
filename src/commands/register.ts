@@ -1,9 +1,8 @@
 /** @file Commands register module. */
 import type { PiCommandRegistrar, WebCommand } from "./define.ts";
-import { webConfigCommand } from "./web-config.ts";
-import { webReloadConfigCommand } from "./web-reload-config.ts";
+import { scrapeConfigCommand } from "./scrape-config.ts";
 
-export const webCommands: readonly WebCommand[] = [webConfigCommand, webReloadConfigCommand];
+export const webCommands: readonly WebCommand[] = [scrapeConfigCommand];
 
 export function registerWebCommands(pi: PiCommandRegistrar): void {
 	for (const command of webCommands) {

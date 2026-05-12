@@ -9,7 +9,7 @@ import { loadEffectiveConfig } from "../../config/settings.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import type { RegisteredCommandOptions } from "../define.ts";
 import { registerWebCommands, webCommands } from "../register.ts";
-import { setDefaultMode } from "../web-config-scrape-mode.ts";
+import { setDefaultMode } from "../scrape-config-scrape-mode.ts";
 
 let rootDir: string;
 
@@ -30,9 +30,9 @@ describe("web command registration", () => {
 		registerWebCommands({
 			registerCommand: (name, options) => registered.push({ name, options }),
 		});
-		expect(registered.map((command) => command.name)).toEqual(["web-config", "web-reload-config"]);
+		expect(registered.map((command) => command.name)).toEqual(["scrape-config"]);
 		expect(typeof registered[0]?.options.handler).toBe("function");
-		expect(webCommands.every((command) => command.name.startsWith("web-"))).toBe(true);
+		expect(webCommands.every((command) => command.name.startsWith("scrape-"))).toBe(true);
 	});
 
 	it("persists scrape mode defaults", async () => {

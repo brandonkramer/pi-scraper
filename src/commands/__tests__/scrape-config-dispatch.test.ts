@@ -1,26 +1,26 @@
 /** @file Web-config-dispatch **tests** module. */
 import { describe, expect, it } from "vitest";
 
-import { parseWebConfigCommandArgs, runWebConfigCommand } from "../web-config.ts";
+import { parseScrapeConfigCommandArgs, runScrapeConfigCommand } from "../scrape-config.ts";
 
-describe("parseWebConfigCommandArgs", () => {
+describe("parseScrapeConfigCommandArgs", () => {
 	it("returns empty for no args (picker path)", () => {
-		expect(parseWebConfigCommandArgs("")).toEqual({});
+		expect(parseScrapeConfigCommandArgs("")).toEqual({});
 	});
 
 	it("parses status action", () => {
-		expect(parseWebConfigCommandArgs("status")).toEqual({ action: "status" });
+		expect(parseScrapeConfigCommandArgs("status")).toEqual({ action: "status" });
 	});
 
 	it("parses model-provider with value", () => {
-		expect(parseWebConfigCommandArgs("model-provider gemini-acp")).toEqual({
+		expect(parseScrapeConfigCommandArgs("model-provider gemini-acp")).toEqual({
 			action: "model-provider",
 			provider: "gemini-acp",
 		});
 	});
 
 	it("parses scrape-mode with mode and format", () => {
-		expect(parseWebConfigCommandArgs("scrape-mode fast markdown")).toEqual({
+		expect(parseScrapeConfigCommandArgs("scrape-mode fast markdown")).toEqual({
 			action: "scrape-mode",
 			mode: "fast",
 			format: "markdown",
@@ -28,7 +28,7 @@ describe("parseWebConfigCommandArgs", () => {
 	});
 
 	it("parses cache stats", () => {
-		expect(parseWebConfigCommandArgs("cache stats")).toEqual({
+		expect(parseScrapeConfigCommandArgs("cache stats")).toEqual({
 			action: "cache",
 			op: "stats",
 			force: false,
@@ -36,7 +36,7 @@ describe("parseWebConfigCommandArgs", () => {
 	});
 
 	it("parses cache clear", () => {
-		expect(parseWebConfigCommandArgs("cache clear")).toEqual({
+		expect(parseScrapeConfigCommandArgs("cache clear")).toEqual({
 			action: "cache",
 			op: "clear",
 			force: false,
@@ -44,7 +44,7 @@ describe("parseWebConfigCommandArgs", () => {
 	});
 
 	it("parses cache clear --force", () => {
-		expect(parseWebConfigCommandArgs("cache clear --force")).toEqual({
+		expect(parseScrapeConfigCommandArgs("cache clear --force")).toEqual({
 			action: "cache",
 			op: "clear",
 			force: true,
@@ -52,25 +52,29 @@ describe("parseWebConfigCommandArgs", () => {
 	});
 
 	it("parses robots on", () => {
-		expect(parseWebConfigCommandArgs("robots on")).toEqual({
+		expect(parseScrapeConfigCommandArgs("robots on")).toEqual({
 			action: "robots",
 			value: "on",
 		});
 	});
 
 	it("parses robots off", () => {
-		expect(parseWebConfigCommandArgs("robots off")).toEqual({
+		expect(parseScrapeConfigCommandArgs("robots off")).toEqual({
 			action: "robots",
 			value: "off",
 		});
 	});
 
+	it("parses reload action", () => {
+		expect(parseScrapeConfigCommandArgs("reload")).toEqual({ action: "reload" });
+	});
+
 	it("throws on unknown action", () => {
-		expect(() => parseWebConfigCommandArgs("unknown")).toThrow(/.*/u);
+		expect(() => parseScrapeConfigCommandArgs("unknown")).toThrow(/.*/u);
 	});
 });
 
-describe("runWebConfigCommand dispatch", () => {
+describe("runScrapeConfigCommand dispatch", () => {
 	it("no-args + picker calls select and dispatches", async () => {
 		let selectCalled = false;
 		const ctx = {
@@ -85,14 +89,14 @@ describe("runWebConfigCommand dispatch", () => {
 				},
 			},
 		};
-		const result = await runWebConfigCommand({}, ctx);
+		const result = await runScrapeConfigCommand({}, ctx);
 		expect(selectCalled).toBe(true);
-		expect(result.content[0]?.text).toContain("Web config status");
+		expect(result.content[0]?.text).toContain("Scrape config status");
 	});
 
 	it("no-args without picker falls back to status", async () => {
-		const result = await runWebConfigCommand({}, {});
-		expect(result.content[0]?.text).toContain("Web config status");
+		const result = await runScrapeConfigCommand({}, {});
+		expect(result.content[0]?.text).toContain("Scrape config status");
 	});
 
 	it("cancels when picker returns undefined", async () => {
@@ -104,7 +108,13 @@ describe("runWebConfigCommand dispatch", () => {
 				select: async (): Promise<string | undefined> => undefined,
 			},
 		};
-		const result = await runWebConfigCommand({}, ctx);
+		const result = await runScrapeConfigCommand({}, ctx);
 		expect(result.content[0]?.text).toBe("Cancelled.");
+	});
+
+	it("dispatches reload action", async () => {
+		const result = await runScrapeConfigCommand({ action: "reload" }, {});
+		expect(result.content[0]?.text).toContain("Config reloaded");
+		expect(result.content[0]?.text).toMatch(/mode=\w+/u);
 	});
 });

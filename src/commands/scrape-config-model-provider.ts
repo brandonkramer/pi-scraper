@@ -1,11 +1,11 @@
-/** @file Model-provider sub-action for /web-config. */
+/** @file Model-provider sub-action for /scrape-config. */
 import { updateConfig, type ConfigOptions } from "../config/settings.ts";
 import { modelRegistry } from "../tools/infra/model-registry.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
-import type { Params } from "./web-config.ts";
+import type { Params } from "./scrape-config.ts";
 
-export async function runWebConfigModelProvider(
+export async function runScrapeConfigModelProvider(
 	params: Params,
 	ctx?: CommandContext,
 	configOptions: ConfigOptions = {},
@@ -27,7 +27,7 @@ export async function runWebConfigModelProvider(
 			provider = picked === "Auto" ? "auto" : picked === "Off" ? "off" : picked;
 		} else {
 			return toolResult({
-				text: "Interactive picker unavailable; use /web-config model-provider <value> directly.",
+				text: "Interactive picker unavailable; use /scrape-config model-provider <value> directly.",
 				data: { error: "no_picker" },
 			});
 		}

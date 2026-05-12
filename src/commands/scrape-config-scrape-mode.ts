@@ -1,5 +1,5 @@
 /**
- * @file Scrape-mode sub-action for /web-config. Handles interactive picker and persists the
+ * @file Scrape-mode sub-action for /scrape-config. Handles interactive picker and persists the
  *   selected mode and format.
  */
 import { type Static, StringEnum, Type } from "@earendil-works/pi-ai";
@@ -8,7 +8,7 @@ import { type ConfigOptions, type WebConfig, updateConfig } from "../config/sett
 import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
-import type { Params } from "./web-config.ts";
+import type { Params } from "./scrape-config.ts";
 
 export const webSetModeSchema = Type.Object({
 	mode: Type.Optional(StringEnum(SCRAPE_MODES, { description: "Default scrape mode." })),
@@ -36,7 +36,7 @@ export async function setDefaultMode(params: SetModeParams, options: ConfigOptio
 	});
 }
 
-export async function runWebConfigScrapeMode(params: Params, ctx?: CommandContext) {
+export async function runScrapeConfigScrapeMode(params: Params, ctx?: CommandContext) {
 	let mode = params.mode as (typeof SCRAPE_MODES)[number] | undefined;
 	let format = params.format as (typeof OUTPUT_FORMATS)[number] | undefined;
 
@@ -68,7 +68,7 @@ export async function runWebConfigScrapeMode(params: Params, ctx?: CommandContex
 			}
 		} else {
 			return toolResult({
-				text: "Interactive picker unavailable; use /web-config scrape-mode <mode> [format] directly.",
+				text: "Interactive picker unavailable; use /scrape-config scrape-mode <mode> [format] directly.",
 				data: { error: "no_picker" },
 			});
 		}

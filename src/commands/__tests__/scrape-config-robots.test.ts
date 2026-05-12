@@ -5,7 +5,7 @@ import path from "node:path";
 /** @file Web-config-robots **tests** module. */
 import { describe, expect, it } from "vitest";
 
-import { runWebConfigRobots } from "../web-config-robots.ts";
+import { runScrapeConfigRobots } from "../scrape-config-robots.ts";
 
 async function withTempDir<T>(fn: (rootDir: string) => Promise<T>): Promise<T> {
 	const rootDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-cmd-"));
@@ -16,10 +16,14 @@ async function withTempDir<T>(fn: (rootDir: string) => Promise<T>): Promise<T> {
 	}
 }
 
-describe("runWebConfigRobots", () => {
+describe("runScrapeConfigRobots", () => {
 	it("enabling requires no confirmation", async () => {
 		await withTempDir(async (rootDir) => {
-			const result = await runWebConfigRobots({ action: "robots", value: "on" }, {}, { rootDir });
+			const result = await runScrapeConfigRobots(
+				{ action: "robots", value: "on" },
+				{},
+				{ rootDir },
+			);
 			expect(result.content[0]?.text).toContain("enabled");
 		});
 	});
@@ -36,21 +40,27 @@ describe("runWebConfigRobots", () => {
 					},
 				},
 			};
-			const result = await runWebConfigRobots({ action: "robots", value: "off" }, ctx, { rootDir });
+			const result = await runScrapeConfigRobots({ action: "robots", value: "off" }, ctx, {
+				rootDir,
+			});
 			expect(result.content[0]?.text).toContain("unchanged");
 		});
 	});
 
 	it("disabling without picker requires --force", async () => {
 		await withTempDir(async (rootDir) => {
-			const result = await runWebConfigRobots({ action: "robots", value: "off" }, {}, { rootDir });
+			const result = await runScrapeConfigRobots(
+				{ action: "robots", value: "off" },
+				{},
+				{ rootDir },
+			);
 			expect(result.content[0]?.text).toContain("--force");
 		});
 	});
 
 	it("disabling with --force bypasses confirm", async () => {
 		await withTempDir(async (rootDir) => {
-			const result = await runWebConfigRobots(
+			const result = await runScrapeConfigRobots(
 				{ action: "robots", value: "off", force: true },
 				{},
 				{ rootDir },

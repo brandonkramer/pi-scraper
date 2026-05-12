@@ -1,11 +1,11 @@
 /** @file Web-config-scrape-mode **tests** module. */
 import { describe, expect, it } from "vitest";
 
-import { runWebConfigScrapeMode } from "../web-config-scrape-mode.ts";
+import { runScrapeConfigScrapeMode } from "../scrape-config-scrape-mode.ts";
 
-describe("runWebConfigScrapeMode", () => {
+describe("runScrapeConfigScrapeMode", () => {
 	it("direct args set mode and format", async () => {
-		const result = await runWebConfigScrapeMode(
+		const result = await runScrapeConfigScrapeMode(
 			{ action: "scrape-mode", mode: "auto", format: "markdown" },
 			{},
 		);
@@ -24,13 +24,13 @@ describe("runWebConfigScrapeMode", () => {
 				},
 			},
 		};
-		const result = await runWebConfigScrapeMode({ action: "scrape-mode" }, ctx);
+		const result = await runScrapeConfigScrapeMode({ action: "scrape-mode" }, ctx);
 		expect(result.content[0]?.text).toContain("fast");
 		expect(result.content[0]?.text).toContain("markdown");
 	});
 
 	it("no picker returns error hint", async () => {
-		const result = await runWebConfigScrapeMode({ action: "scrape-mode" }, {});
+		const result = await runScrapeConfigScrapeMode({ action: "scrape-mode" }, {});
 		expect(result.content[0]?.text).toContain("Interactive picker unavailable");
 	});
 });

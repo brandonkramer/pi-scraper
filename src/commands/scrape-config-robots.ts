@@ -1,16 +1,10 @@
-/**
- * @fileoverview Robots sub-action for /web-config.
- */
-import {
-	loadEffectiveConfig,
-	updateConfig,
-	type ConfigOptions,
-} from "../config/settings.ts";
+/** @file Robots sub-action for /scrape-config. */
+import { loadEffectiveConfig, updateConfig, type ConfigOptions } from "../config/settings.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
-import type { Params } from "./web-config.ts";
+import type { Params } from "./scrape-config.ts";
 
-export async function runWebConfigRobots(
+export async function runScrapeConfigRobots(
 	params: Params,
 	ctx?: CommandContext,
 	configOptions: ConfigOptions = {},
