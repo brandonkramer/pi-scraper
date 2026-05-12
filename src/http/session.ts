@@ -23,6 +23,7 @@ interface SerializedCookie {
 	name: string;
 	value: string;
 	domain?: string;
+	hostOnly?: boolean;
 	path?: string;
 	expires?: string;
 	httpOnly?: boolean;
@@ -122,7 +123,7 @@ export function listSessions(): string[] {
 }
 
 /** Parse a raw Set-Cookie header into a serialized cookie. */
-export function parseSetCookie(setCookie: string, _host?: string): SerializedCookie {
+export function parseSetCookie(setCookie: string, host: string): SerializedCookie {
 	const parts = setCookie.split(";").map((p) => p.trim());
 	const [nameValue] = parts;
 	const eq = nameValue.indexOf("=");
@@ -133,26 +134,57 @@ export function parseSetCookie(setCookie: string, _host?: string): SerializedCoo
 	for (const part of parts.slice(1)) {
 		const [key, val] = part.split("=").map((s) => s.trim());
 		const lower = key.toLowerCase();
-		if (lower === "domain") cookie.domain = val;
+		if (lower === "domain") cookie.domain = val.toLowerCase().replace(/^\./u, "");
 		if (lower === "path") cookie.path = val;
 		if (lower === "expires") cookie.expires = val;
 		if (lower === "httponly") cookie.httpOnly = true;
 		if (lower === "secure") cookie.secure = true;
 		if (lower === "samesite") cookie.sameSite = val;
 	}
+	if (cookie.domain) {
+		cookie.hostOnly = false;
+	} else {
+		cookie.domain = host.toLowerCase();
+		cookie.hostOnly = true;
+	}
+	cookie.path ??= "/";
 	return cookie;
 }
 
-/** Build a Cookie header string from stored cookies matching the target host and path. */
-export function buildCookieHeader(session: FetchSession, host: string, path: string): string {
+/** Build a Cookie header string from stored cookies matching the target host, path, and scheme. */
+export function buildCookieHeader(
+	session: FetchSession,
+	host: string,
+	path: string,
+	scheme: "http" | "https",
+): string {
 	const now = new Date();
+	const normalizedHost = host.toLowerCase();
 	const matching = session.cookies.filter((c) => {
 		if (c.expires) {
 			const expiry = new Date(c.expires);
 			if (expiry <= now) return false;
 		}
-		if (c.domain && !host.endsWith(c.domain)) return false;
-		if (c.path && !path.startsWith(c.path)) return false;
+		// Domain match (RFC 6265 §5.1.3)
+		if (c.domain) {
+			const cookieDomain = c.domain.toLowerCase();
+			if (c.hostOnly) {
+				if (normalizedHost !== cookieDomain) return false;
+			} else if (normalizedHost !== cookieDomain && !normalizedHost.endsWith("." + cookieDomain)) {
+				return false;
+			}
+		}
+		// Path match (RFC 6265 §5.1.4)
+		if (c.path) {
+			const cp = c.path;
+			const exact = path === cp;
+			const prefix = path.startsWith(cp);
+			const boundary =
+				cp.endsWith("/") || (prefix && path.length > cp.length && path[cp.length] === "/");
+			if (!exact && !boundary) return false;
+		}
+		// Secure (RFC 6265 §5.4 step 2)
+		if (c.secure && scheme !== "https") return false;
 		return true;
 	});
 	if (matching.length === 0) return "";
@@ -164,11 +196,12 @@ export function mergeSessionHeaders(
 	session: FetchSession | undefined,
 	host: string,
 	path: string,
+	scheme: "http" | "https",
 	headers: Record<string, string> | undefined,
 ): Record<string, string> {
 	if (!session) return headers ?? {};
 	const merged = { ...session.defaultHeaders, ...headers };
-	const cookieHeader = buildCookieHeader(session, host, path);
+	const cookieHeader = buildCookieHeader(session, host, path, scheme);
 	if (cookieHeader) {
 		merged["cookie"] = cookieHeader;
 	}
@@ -183,9 +216,15 @@ export function updateSessionCookies(
 ): void {
 	for (const header of setCookieHeaders) {
 		const cookie = parseSetCookie(header, host);
-		// Remove old cookie with same name/domain/path
+		// Remove old cookie with same name/domain/hostOnly/path
 		session.cookies = session.cookies.filter(
-			(c) => !(c.name === cookie.name && c.domain === cookie.domain && c.path === cookie.path),
+			(c) =>
+				!(
+					c.name === cookie.name &&
+					c.domain === cookie.domain &&
+					c.hostOnly === cookie.hostOnly &&
+					c.path === cookie.path
+				),
 		);
 		session.cookies.push(cookie);
 	}
@@ -230,6 +269,17 @@ export async function persistSession(
 }
 
 /** Load session metadata from SQLite into memory if not already present. */
+function normalizeLoadedCookies(cookies: SerializedCookie[]): SerializedCookie[] {
+	return cookies.filter((c) => {
+		if (c.hostOnly === undefined) {
+			// legacy host-only with no recoverable host — drop
+			if (!c.domain) return false;
+			c.hostOnly = false;
+		}
+		return true;
+	});
+}
+
 export async function loadPersistedSession(
 	id: string,
 	options: ResolveStorageOptions = {},
@@ -253,7 +303,7 @@ export async function loadPersistedSession(
 		id: row.id,
 		createdAt: row.created_at,
 		lastUsedAt: row.last_used_at,
-		cookies: JSON.parse(row.cookies_json) as SerializedCookie[],
+		cookies: normalizeLoadedCookies(JSON.parse(row.cookies_json) as SerializedCookie[]),
 	};
 	if (row.default_headers_json) {
 		try {

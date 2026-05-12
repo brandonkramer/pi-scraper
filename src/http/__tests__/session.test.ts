@@ -1,14 +1,19 @@
-/**
- * @fileoverview http __tests__ session.test module.
- */
+/** @file Http **tests** session.test module. */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import {
+	buildCookieHeader,
 	deleteSessionAndStorage,
 	getOrCreateSession,
+	mergeSessionHeaders,
+	parseSetCookie,
 	saveSessionToStorage,
+	updateSessionCookies,
+	type FetchSession,
 } from "../session.ts";
 
 let homeDir: string;
@@ -62,5 +67,236 @@ describe("session persistence", () => {
 
 		const afterDelete = await getOrCreateSession("test-3");
 		expect(afterDelete.cookies).toEqual([]);
+	});
+
+	it("preserves domain scope across SQLite roundtrip", async () => {
+		const first = await getOrCreateSession("roundtrip");
+		updateSessionCookies(first, ["foo=bar; Domain=example.com"], "example.com");
+		await saveSessionToStorage("roundtrip");
+
+		const { deleteSession } = await import("../session.ts");
+		deleteSession("roundtrip");
+
+		const reloaded = await getOrCreateSession("roundtrip");
+		expect(buildCookieHeader(reloaded, "sub.example.com", "/", "https")).toBe("foo=bar");
+	});
+});
+
+describe("parseSetCookie", () => {
+	it("sets hostOnly when no Domain attribute is present", () => {
+		const cookie = parseSetCookie("foo=bar", "acme.com");
+		expect(cookie.name).toBe("foo");
+		expect(cookie.value).toBe("bar");
+		expect(cookie.domain).toBe("acme.com");
+		expect(cookie.hostOnly).toBe(true);
+		expect(cookie.path).toBe("/");
+	});
+
+	it("strips leading dot and lowercases explicit Domain", () => {
+		const cookie = parseSetCookie("foo=bar; Domain=.Example.COM", "example.com");
+		expect(cookie.domain).toBe("example.com");
+		expect(cookie.hostOnly).toBe(false);
+		expect(cookie.path).toBe("/");
+	});
+
+	it("preserves Secure, HttpOnly, SameSite", () => {
+		const cookie = parseSetCookie("foo=bar; Secure; HttpOnly; SameSite=Strict", "acme.com");
+		expect(cookie.secure).toBe(true);
+		expect(cookie.httpOnly).toBe(true);
+		expect(cookie.sameSite).toBe("Strict");
+	});
+});
+
+function sessionWith(...cookies: FetchSession["cookies"]): FetchSession {
+	return {
+		id: "s",
+		createdAt: "",
+		lastUsedAt: "",
+		cookies,
+	};
+}
+
+describe("buildCookieHeader", () => {
+	it("sends host-only cookie to same host", () => {
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "acme.com",
+			hostOnly: true,
+			path: "/",
+		});
+		expect(buildCookieHeader(session, "acme.com", "/", "https")).toBe("foo=bar");
+	});
+
+	it("does NOT send host-only cookie to different host", () => {
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "acme.com",
+			hostOnly: true,
+			path: "/",
+		});
+		expect(buildCookieHeader(session, "evil.com", "/", "https")).toBe("");
+	});
+
+	it("does NOT send host-only cookie to subdomain", () => {
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "acme.com",
+			hostOnly: true,
+			path: "/",
+		});
+		expect(buildCookieHeader(session, "sub.acme.com", "/", "https")).toBe("");
+	});
+
+	it("sends domain-scoped cookie to exact host", () => {
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "example.com",
+			path: "/",
+		});
+		expect(buildCookieHeader(session, "example.com", "/", "https")).toBe("foo=bar");
+	});
+
+	it("sends domain-scoped cookie to subdomain", () => {
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "example.com",
+			path: "/",
+		});
+		expect(buildCookieHeader(session, "sub.example.com", "/", "https")).toBe("foo=bar");
+	});
+
+	it("does NOT send domain-scoped cookie to suffix-match host", () => {
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "example.com",
+			path: "/",
+		});
+		expect(buildCookieHeader(session, "badexample.com", "/", "https")).toBe("");
+		expect(buildCookieHeader(session, "notexample.com", "/", "https")).toBe("");
+	});
+
+	it("sends Secure cookie over https", () => {
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "acme.com",
+			secure: true,
+			path: "/",
+		});
+		expect(buildCookieHeader(session, "acme.com", "/", "https")).toBe("foo=bar");
+	});
+
+	it("does NOT send Secure cookie over http", () => {
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "acme.com",
+			secure: true,
+			path: "/",
+		});
+		expect(buildCookieHeader(session, "acme.com", "/", "http")).toBe("");
+	});
+
+	it("sends path-scoped cookie to matching path", () => {
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "acme.com",
+			path: "/api",
+		});
+		expect(buildCookieHeader(session, "acme.com", "/api/v1", "https")).toBe("foo=bar");
+	});
+
+	it("does NOT send path-scoped cookie to boundary-violating path", () => {
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "acme.com",
+			path: "/api",
+		});
+		expect(buildCookieHeader(session, "acme.com", "/apidocs", "https")).toBe("");
+		expect(buildCookieHeader(session, "acme.com", "/api-private", "https")).toBe("");
+	});
+
+	it("sends path-scoped cookie when path ends with slash", () => {
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "acme.com",
+			path: "/api/",
+		});
+		expect(buildCookieHeader(session, "acme.com", "/api/v1", "https")).toBe("foo=bar");
+	});
+
+	it("excludes expired cookies", () => {
+		const past = new Date(Date.now() - 86_400_000).toUTCString();
+		const session = sessionWith({
+			name: "foo",
+			value: "bar",
+			domain: "acme.com",
+			path: "/",
+			expires: past,
+		});
+		expect(buildCookieHeader(session, "acme.com", "/", "https")).toBe("");
+	});
+});
+
+describe("updateSessionCookies", () => {
+	it("deduplicates by name+domain+hostOnly+path", () => {
+		const session: FetchSession = {
+			id: "s",
+			createdAt: "",
+			lastUsedAt: "",
+			cookies: [],
+		};
+		updateSessionCookies(session, ["foo=old; Domain=acme.com; Path=/"], "acme.com");
+		expect(session.cookies).toHaveLength(1);
+		expect(session.cookies[0]?.value).toBe("old");
+
+		updateSessionCookies(session, ["foo=new; Domain=acme.com; Path=/"], "acme.com");
+		expect(session.cookies).toHaveLength(1);
+		expect(session.cookies[0]?.value).toBe("new");
+	});
+
+	it("keeps distinct hostOnly and domain-scoped cookies separate", () => {
+		const session: FetchSession = {
+			id: "s",
+			createdAt: "",
+			lastUsedAt: "",
+			cookies: [],
+		};
+		// Host-only (no Domain attribute)
+		updateSessionCookies(session, ["foo=host"], "acme.com");
+		// Domain-scoped
+		updateSessionCookies(session, ["foo=domain; Domain=acme.com"], "acme.com");
+		expect(session.cookies).toHaveLength(2);
+	});
+});
+
+describe("mergeSessionHeaders", () => {
+	it("returns plain headers when no session", () => {
+		const result = mergeSessionHeaders(undefined, "acme.com", "/", "https", { "x-test": "yes" });
+		expect(result["x-test"]).toBe("yes");
+		expect(result["cookie"]).toBeUndefined();
+	});
+
+	it("merges session cookies with request headers", () => {
+		const session: FetchSession = {
+			id: "s",
+			createdAt: "",
+			lastUsedAt: "",
+			cookies: [{ name: "sid", value: "abc", domain: "acme.com", hostOnly: true, path: "/" }],
+			defaultHeaders: { accept: "text/html" },
+		};
+		const result = mergeSessionHeaders(session, "acme.com", "/", "https", { "x-test": "yes" });
+		expect(result["accept"]).toBe("text/html");
+		expect(result["x-test"]).toBe("yes");
+		expect(result["cookie"]).toBe("sid=abc");
 	});
 });

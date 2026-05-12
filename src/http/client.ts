@@ -222,6 +222,7 @@ export class HttpClient {
 			session,
 			urlObj.hostname,
 			urlObj.pathname,
+			urlObj.protocol === "https:" ? "https" : "http",
 			options.headers,
 		);
 		if (cookieHeader) {
