@@ -1,10 +1,12 @@
 /** @file Commands register module. */
-import type { PiCommandRegistrar, WebCommand } from "./define.ts";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
+import type { WebCommand } from "./define.ts";
 import { scrapeConfigCommand } from "./scrape-config.ts";
 
 export const webCommands: readonly WebCommand[] = [scrapeConfigCommand];
 
-export function registerWebCommands(pi: PiCommandRegistrar): void {
+export function registerWebCommands(pi: ExtensionAPI): void {
 	for (const command of webCommands) {
 		pi.registerCommand(command.name, {
 			description: command.description,
@@ -12,7 +14,7 @@ export function registerWebCommands(pi: PiCommandRegistrar): void {
 				const params = command.parseArgs ? command.parseArgs(args) : parseJsonObjectArgs(args);
 				const result = await command.execute(params as never, ctx);
 				const message = result.content[0]?.text;
-				if (message) ctx.ui?.notify(message, "info");
+				if (message) ctx.ui.notify(message, "info");
 			},
 		});
 	}

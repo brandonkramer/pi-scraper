@@ -25,6 +25,7 @@ export async function runScrapeConfigRobots(
 		// Disabling robots requires confirmation
 		if (ctx?.ui?.confirm) {
 			const confirmed = await ctx.ui.confirm(
+				"Disable robots compliance",
 				"Disable robots.txt compliance? This may violate site policies.",
 				{ signal: ctx.signal },
 			);

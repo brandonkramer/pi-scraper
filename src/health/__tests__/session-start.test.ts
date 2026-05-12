@@ -6,7 +6,7 @@ import { registerSessionStartHealthChecks, runSessionStartHealthChecks } from ".
 describe("session-start health checks", () => {
 	it("registers a non-blocking session_start listener", async () => {
 		const warnings: string[] = [];
-		let handler: (() => void | Promise<void>) | undefined;
+		let handler: ((event: unknown, ctx: unknown) => void | Promise<void>) | undefined;
 		registerSessionStartHealthChecks(
 			{
 				on: (_event, cb) => {
@@ -17,7 +17,7 @@ describe("session-start health checks", () => {
 			{ checkPlaywright: async () => false },
 		);
 
-		const result = handler?.();
+		const result = handler?.(undefined, undefined);
 		expect(result).toBeUndefined();
 		await new Promise((resolve) => {
 			setTimeout(resolve, 0);

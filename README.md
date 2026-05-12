@@ -222,7 +222,7 @@ Includes the compact `web-scraping` Pi skill for tool routing.
 
 ## Model adapters
 
-`web_summarize` and `web_extract action="adhoc"` need an LLM transport. Any Pi extension can supply one via `pi.events` — no imports between sides. With one registered, the tools route through it; with none, they return `MODEL_ADAPTER_MISSING` and the LLM falls back to `web_scrape` + summarize-in-reply.
+`web_summarize` and `web_extract action="adhoc"` need an LLM transport. When Pi has a model configured (OpenAI, Anthropic, Google, etc.), the tools use it automatically via the host context — no extra extension needed. Any Pi extension can also supply one via `pi.events` for cross-extension provider lending. With no adapter available, the tools return `MODEL_ADAPTER_MISSING` and the LLM falls back to `web_scrape` + summarize-in-reply.
 
 ### Capabilities
 
@@ -239,6 +239,8 @@ Highest layer wins:
 
 | Layer       | Mechanism                                                           | Use                      |
 | ----------- | ------------------------------------------------------------------- | ------------------------ |
+| Programmatic | `options.modelAdapter` (test / injected)                             | Direct override          |
+| Pi host     | `ctx.model` — Pi's currently selected model                         | Automatic when available |
 | Per-call    | `provider` param on the tool call                                   | LLM routes a single call |
 | Pi flag     | `--web-model-provider=auto\|<id>\|off`                              | Per Pi session           |
 | Env var     | `PI_WEB_MODEL_PROVIDER`                                             | Shell / scripts          |

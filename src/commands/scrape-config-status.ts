@@ -3,8 +3,8 @@
  *   chain, and cache stats.
  */
 import { loadEffectiveConfig, type EffectiveWebConfig } from "../config/settings.ts";
+import { resolveModelAdapterFromContext } from "../tools/infra/model-adapter.ts";
 import { modelRegistry } from "../tools/infra/model-registry.ts";
-import { piHostAdapterAvailable } from "../tools/infra/register.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
 import type { Params } from "./scrape-config.ts";
@@ -33,9 +33,9 @@ export async function runScrapeConfigStatus(_params: Params, ctx?: CommandContex
 
 async function assembleStatusReport(
 	config: EffectiveWebConfig,
-	_ctx?: CommandContext,
+	ctx?: CommandContext,
 ): Promise<WebConfigStatusReport> {
-	const piHost = detectPiHostModel();
+	const piHost = detectPiHostModel(ctx);
 	const adapters = modelRegistry.list().map((e) => ({
 		id: e.id,
 		label: e.label,
@@ -78,8 +78,9 @@ async function assembleStatusReport(
 	};
 }
 
-function detectPiHostModel(): { detected: boolean; label: string } {
-	return piHostAdapterAvailable()
+function detectPiHostModel(ctx?: CommandContext): { detected: boolean; label: string } {
+	const adapter = ctx ? resolveModelAdapterFromContext(ctx) : undefined;
+	return adapter
 		? { detected: true, label: "detected via Pi host context" }
 		: { detected: false, label: "not detected" };
 }

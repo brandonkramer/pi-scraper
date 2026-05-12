@@ -8,7 +8,11 @@ import { summarizePage } from "../summarize/page.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
-import { resolveAdapterFromRegistry, resolveProviderPreference } from "./infra/model-adapter.ts";
+import {
+	resolveAdapterFromRegistry,
+	resolveModelAdapterFromContext,
+	resolveProviderPreference,
+} from "./infra/model-adapter.ts";
 import {
 	modelRegistry,
 	requestAdapterDiscovery,
@@ -60,7 +64,10 @@ export function createWebSummarizeTool(
 				configProvider: config.modelProvider,
 				capability: "summarize",
 			});
-			let adapter = options.modelAdapter ?? resolveAdapterFromRegistry(preference, "summarize");
+			let adapter =
+				options.modelAdapter ??
+				resolveModelAdapterFromContext(context) ??
+				resolveAdapterFromRegistry(preference, "summarize");
 			if (!adapter && !lazyDiscoverRequested.has("summarize")) {
 				requestAdapterDiscovery(undefined, { capabilities: ["summarize"] });
 				lazyDiscoverRequested.add("summarize");

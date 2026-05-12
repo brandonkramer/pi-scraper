@@ -15,6 +15,7 @@ export async function runScrapeConfigCache(params: Params, ctx?: CommandContext)
 	// clear
 	if (ctx?.ui?.confirm) {
 		const confirmed = await ctx.ui.confirm(
+			"Clear cache",
 			"Delete all cached scrape responses? This cannot be undone.",
 			{ signal: ctx.signal },
 		);

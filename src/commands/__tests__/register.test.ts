@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { loadEffectiveConfig } from "../../config/settings.ts";
@@ -28,8 +29,9 @@ describe("web command registration", () => {
 			options: RegisteredCommandOptions;
 		}> = [];
 		registerWebCommands({
-			registerCommand: (name, options) => registered.push({ name, options }),
-		});
+			registerCommand: (name: string, options: RegisteredCommandOptions) =>
+				registered.push({ name, options }),
+		} as unknown as ExtensionAPI);
 		expect(registered.map((command) => command.name)).toEqual(["scrape-config"]);
 		expect(typeof registered[0]?.options.handler).toBe("function");
 		expect(webCommands.every((command) => command.name.startsWith("scrape-"))).toBe(true);

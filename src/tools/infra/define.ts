@@ -1,18 +1,19 @@
-/**
- * @fileoverview Shared Pi tool adapter contracts for web tools.
- */
+/** @file Shared Pi tool adapter contracts for web tools. */
 import type { Static, TSchema } from "@earendil-works/pi-ai";
-import type { PiToolShell } from "../../types.ts";
+import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+
 import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
+import type { PiToolShell } from "../../types.ts";
 
 export type ToolUpdate = (result: PiToolShell) => void | Promise<void>;
 
+/** Subset of ExtensionContext used by web tools, plus getFlag for CLI flag access. */
 export interface ToolExecutionContext {
-	hasUI?: boolean;
-	model?: unknown;
-	/** Reserved for future Pi host injection of a model-adapter registry. Currently unused; pi-scraper consumes its own singleton. */
-	modelRegistry?: unknown;
-	ui?: unknown;
+	hasUI?: ExtensionContext["hasUI"];
+	model?: ExtensionContext["model"];
+	modelRegistry?: ExtensionContext["modelRegistry"];
+	ui?: ExtensionContext["ui"];
+	signal?: ExtensionContext["signal"];
 	getFlag?: (name: string) => string | undefined;
 }
 

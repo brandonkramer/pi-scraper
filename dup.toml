@@ -103,6 +103,15 @@ pairs = [
   "src/http/session.ts:buildCookieHeader||src/http/session.ts:getOrCreateSession",
   "src/http/session.ts:getOrCreateSession||src/storage/blobs.ts:writeBlob",
   "src/http/session.ts:getOrCreateSession||src/tools/web-extract-adhoc.ts:runAdHocExtraction",
+
+  # TUI envelope text builder — false positive in async try/catch cluster
+  "src/commands/scrape-config-model-provider.ts:runScrapeConfigModelProvider||src/tui/envelope.ts:expandedEnvelopeText",
+  "src/commands/scrape-config-scrape-mode.ts:runScrapeConfigScrapeMode||src/tui/envelope.ts:expandedEnvelopeText",
+  "src/commands/scrape-config.ts:runScrapeConfigCommand||src/tui/envelope.ts:expandedEnvelopeText",
+  "src/extract/vertical/extractors/reddit/post.ts:fetchFirstAllowedRedditEndpoint||src/tui/envelope.ts:expandedEnvelopeText",
+  "src/http/session.ts:buildCookieHeader||src/tui/envelope.ts:expandedEnvelopeText",
+  "src/storage/blobs.ts:writeBlob||src/tui/envelope.ts:expandedEnvelopeText",
+  "src/tools/web-extract-adhoc.ts:runAdHocExtraction||src/tui/envelope.ts:expandedEnvelopeText",
 ]
 
 clusters = [

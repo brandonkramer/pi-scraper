@@ -50,6 +50,7 @@
 		"prepublishOnly": "npm run typecheck"
 	},
 	"dependencies": {
+		"@earendil-works/pi-coding-agent": "^0.74.0",
 		"@earendil-works/pi-tui": "^0.74.0",
 		"@mozilla/readability": "^0.6.0",
 		"css-select": "^6.0.0",

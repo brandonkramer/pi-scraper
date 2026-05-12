@@ -5,15 +5,15 @@ import { modelRegistry, type ModelCapability, type ResolvePreference } from "./m
 type Runner = (payload: unknown, signal?: AbortSignal) => Promise<unknown> | unknown;
 
 /**
- * Resolves the optional model adapter available to tool handlers.
+ * Resolves the optional model adapter from the Pi host context.
  *
  * @remarks
  *   Pi has evolved its model APIs over time, so this boundary intentionally uses narrow duck
- *   typing. When a host exposes a selected-model runner, the tools can call it; otherwise
- *   model-backed `web_scrape`, `web_extract`, and `web_summarize` paths return the stable
- *   `MODEL_ADAPTER_MISSING` error instead of throwing.
+ *   typing. When a host exposes a selected-model runner on the handler context, the tools can call
+ *   it; otherwise model-backed `web_scrape`, `web_extract`, and `web_summarize` paths fall through
+ *   to the event-bus registry or return the stable `MODEL_ADAPTER_MISSING` error.
  */
-export function resolveToolModelAdapter(source: unknown): ModelAdapter | undefined {
+export function resolveModelAdapterFromContext(source: unknown): ModelAdapter | undefined {
 	if (isUnknownRecord(source)) {
 		const configured = source.modelAdapter;
 		if (isModelAdapter(configured)) return configured;
@@ -27,6 +27,9 @@ export function resolveToolModelAdapter(source: unknown): ModelAdapter | undefin
 		},
 	};
 }
+
+/** @deprecated Use {@link resolveModelAdapterFromContext} instead. */
+export const resolveToolModelAdapter = resolveModelAdapterFromContext;
 
 function findRunner(source: unknown): Runner | undefined {
 	if (!isUnknownRecord(source)) return;

@@ -1,5 +1,6 @@
-/** @file Shared Pi command adapter contracts for web commands. */
 import type { Static, TSchema } from "@earendil-works/pi-ai";
+/** @file Shared Pi command adapter contracts for web commands. */
+import type { ExtensionUIDialogOptions } from "@earendil-works/pi-coding-agent";
 
 import type { PiToolShell } from "../types.ts";
 
@@ -8,6 +9,7 @@ export type CommandExecute<TParams> = (
 	ctx?: CommandContext,
 ) => Promise<PiToolShell> | PiToolShell;
 
+/** Subset of ExtensionCommandContext used by web commands. */
 export interface CommandContext {
 	signal?: AbortSignal;
 	hasUI?: boolean;
@@ -16,10 +18,14 @@ export interface CommandContext {
 		select?(
 			title: string,
 			choices: readonly string[],
-			options?: { signal?: AbortSignal },
+			options?: ExtensionUIDialogOptions,
 		): Promise<string | undefined>;
-		confirm?(message: string, options?: { signal?: AbortSignal }): Promise<boolean>;
-		input?(prompt: string, options?: { signal?: AbortSignal }): Promise<string | undefined>;
+		confirm?(title: string, message: string, options?: ExtensionUIDialogOptions): Promise<boolean>;
+		input?(
+			title: string,
+			placeholder?: string,
+			options?: ExtensionUIDialogOptions,
+		): Promise<string | undefined>;
 	};
 }
 

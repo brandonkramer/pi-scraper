@@ -7,7 +7,7 @@ export interface HealthWarning {
 }
 
 export interface PiHealthRegistrar {
-	on(event: "session_start", handler: () => void | Promise<void>): void;
+	on(event: "session_start", handler: (event: unknown, ctx: unknown) => void | Promise<void>): void;
 	warn?: (message: string) => void;
 	notify?: (message: string | { type?: string; message: string }) => void;
 }

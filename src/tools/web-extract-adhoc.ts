@@ -2,7 +2,11 @@
 import { loadEffectiveConfig } from "../config/settings.ts";
 import { extractAdHoc, MissingExtractInputError } from "../extract/adhoc/index.ts";
 import type { ToolExecutionContext } from "./infra/define.ts";
-import { resolveAdapterFromRegistry, resolveProviderPreference } from "./infra/model-adapter.ts";
+import {
+	resolveAdapterFromRegistry,
+	resolveModelAdapterFromContext,
+	resolveProviderPreference,
+} from "./infra/model-adapter.ts";
 import { modelRegistry } from "./infra/model-registry.ts";
 import {
 	missingModelResult,
@@ -28,7 +32,10 @@ export async function runAdHocExtraction(
 		configProvider: config.modelProvider,
 		capability: "extract",
 	});
-	const adapter = options.modelAdapter ?? resolveAdapterFromRegistry(preference, "extract");
+	const adapter =
+		options.modelAdapter ??
+		resolveModelAdapterFromContext(context) ??
+		resolveAdapterFromRegistry(preference, "extract");
 	if (!adapter) {
 		if (preference === "off") {
 			return missingModelResult(

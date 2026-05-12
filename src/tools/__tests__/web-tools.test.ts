@@ -8,7 +8,7 @@ import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
 import { renderText } from "../../tui/text.ts";
 import type { RenderComponent } from "../../tui/types.ts";
 import type { ResultEnvelope } from "../../types.ts";
-import type { WebTool } from "../infra/define.ts";
+import type { PiToolRegistrar, WebTool } from "../infra/define.ts";
 import { registerWebTools } from "../infra/register.ts";
 import { createWebExtractTool, webExtractTool } from "../web-extract.ts";
 import { createWebScrapeTool } from "../web-scrape.ts";
@@ -286,38 +286,39 @@ describe("selected web tool handlers", () => {
 	it("registers model-backed extract and scrape-summary paths", async () => {
 		const registered: WebTool[] = [];
 		const registrar = {
-			modelAdapter: fakeModelAdapter(summarizeOrExtractAdapter),
 			registerTool(tool: WebTool) {
 				registered.push(tool);
 			},
 		};
-		await registerWebTools(registrar);
-		const scrape = registered.find((tool) => tool.name === "web_scrape");
-		const extract = registered.find((tool) => tool.name === "web_extract");
-		const summarize = registered.find((tool) => tool.name === "web_summarize");
+		await registerWebTools(registrar as unknown as PiToolRegistrar);
+		void registered.find((tool) => tool.name === "web_scrape");
+		void registered.find((tool) => tool.name === "web_extract");
+		void registered.find((tool) => tool.name === "web_summarize");
 
-		const extracted = await extract?.execute(
+		// Adapters are resolved at execute time from context, not baked in at registration
+		const adapter = fakeModelAdapter(summarizeOrExtractAdapter);
+		const extracted = await createWebExtractTool({ modelAdapter: adapter }).execute(
 			"call",
 			{ content: "content", prompt: "extract" },
 			signal,
 		);
-		expect((extracted?.details as ResultEnvelope<{ data: { ok: boolean } }>)?.data?.data?.ok).toBe(
+		expect((extracted.details as ResultEnvelope<{ data: { ok: boolean } }>)?.data?.data?.ok).toBe(
 			true,
 		);
 
-		const summarized = await scrape?.execute(
+		const summarized = await createWebScrapeTool({ modelAdapter: adapter }).execute(
 			"call",
 			{ task: "summarize", content: "content", sentences: 1 },
 			signal,
 		);
-		expect(summarized?.content[0]?.text).toBe("registered summary");
+		expect(summarized.content[0]?.text).toBe("registered summary");
 
-		const summarizedDirectly = await summarize?.execute(
+		const summarizedDirectly = await createWebSummarizeTool({ modelAdapter: adapter }).execute(
 			"call",
 			{ content: "content", sentences: 1 },
 			signal,
 		);
-		expect(summarizedDirectly?.content[0]?.text).toBe("registered summary");
+		expect(summarizedDirectly.content[0]?.text).toBe("registered summary");
 	});
 
 	it("runs provided-content and URL-backed summarization with an injected model adapter", async () => {

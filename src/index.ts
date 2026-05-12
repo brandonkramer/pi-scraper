@@ -1,6 +1,7 @@
 /** @file Index module. */
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
 import { closeAllBrowserSessions } from "./browser/session-pool.ts";
-import type { PiCommandRegistrar } from "./commands/define.ts";
 import { registerWebCommands } from "./commands/register.ts";
 import {
 	registerSessionStartHealthChecks,
@@ -10,17 +11,15 @@ import { closeStorageDbs } from "./storage/db/open.ts";
 import type { PiToolRegistrar } from "./tools/infra/define.ts";
 import { registerWebTools } from "./tools/infra/register.ts";
 
-type PiScraperRegistrar = PiToolRegistrar & PiCommandRegistrar & PiHealthRegistrar;
-
-export default async function registerPiScraperExtension(pi: PiScraperRegistrar): Promise<void> {
-	pi.registerFlag?.("web-model-provider", {
+export default async function registerPiScraperExtension(pi: ExtensionAPI): Promise<void> {
+	pi.registerFlag("web-model-provider", {
 		description:
 			"Override the model-adapter provider for web_summarize and web_extract action=adhoc (auto|off|<id>).",
 		type: "string",
 	});
-	await registerWebTools(pi);
+	await registerWebTools(pi as unknown as PiToolRegistrar);
 	registerWebCommands(pi);
-	registerSessionStartHealthChecks(pi);
+	registerSessionStartHealthChecks(pi as unknown as PiHealthRegistrar);
 	wireCleanupHooks();
 }
 
