@@ -1,13 +1,13 @@
-/**
- * @fileoverview commands register module.
- */
+/** @file Commands register module. */
 import type { PiCommandRegistrar, WebCommand } from "./define.ts";
-import { webSetModeCommand } from "./web-set-mode.ts";
 import { webConfigCommand } from "./web-config.ts";
+import { webReloadConfigCommand } from "./web-reload-config.ts";
+import { webSetModeCommand } from "./web-set-mode.ts";
 
 export const webCommands: readonly WebCommand[] = [
 	webSetModeCommand,
 	webConfigCommand,
+	webReloadConfigCommand,
 ];
 
 export function registerWebCommands(pi: PiCommandRegistrar): void {
@@ -15,9 +15,7 @@ export function registerWebCommands(pi: PiCommandRegistrar): void {
 		pi.registerCommand(command.name, {
 			description: command.description,
 			async handler(args, ctx) {
-				const params = command.parseArgs
-					? command.parseArgs(args)
-					: parseJsonObjectArgs(args);
+				const params = command.parseArgs ? command.parseArgs(args) : parseJsonObjectArgs(args);
 				const result = await command.execute(params as never, ctx);
 				const message = result.content[0]?.text;
 				if (message) ctx.ui?.notify(message, "info");

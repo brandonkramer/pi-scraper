@@ -48,10 +48,32 @@ export async function loadStoredConfig(options: ConfigOptions = {}): Promise<Web
 	}
 }
 
+const configCache = new Map<string, Promise<EffectiveWebConfig>>();
+
 export async function loadEffectiveConfig(
 	options: ConfigOptions = {},
 ): Promise<EffectiveWebConfig> {
-	return mergeConfig(await loadStoredConfig(options));
+	const filePath = configFilePath(options);
+	let entry = configCache.get(filePath);
+	if (!entry) {
+		entry = (async () => mergeConfig(await loadStoredConfig(options)))();
+		configCache.set(filePath, entry);
+		entry.catch(() => configCache.delete(filePath));
+	}
+	return await entry;
+}
+
+/** Clear the effective-config cache for all paths. */
+export function clearEffectiveConfigCache(): void {
+	configCache.clear();
+}
+
+/** Re-read and cache the effective config for a given path. */
+export async function reloadEffectiveConfig(
+	options: ConfigOptions = {},
+): Promise<EffectiveWebConfig> {
+	configCache.delete(configFilePath(options));
+	return await loadEffectiveConfig(options);
 }
 
 export async function saveConfig(
@@ -64,6 +86,7 @@ export async function saveConfig(
 	await writeFile(filePath, `${JSON.stringify(normalized, null, 2)}\n`, {
 		mode: 0o600,
 	});
+	configCache.delete(filePath);
 	return mergeConfig(normalized);
 }
 

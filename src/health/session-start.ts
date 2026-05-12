@@ -1,6 +1,6 @@
-/**
- * @fileoverview health session-start module.
- */
+/** @file Health session-start module. */
+import { clearEffectiveConfigCache } from "../config/settings.ts";
+
 export interface HealthWarning {
 	code: string;
 	message: string;
@@ -22,6 +22,7 @@ export function registerSessionStartHealthChecks(
 	deps: HealthCheckDeps = {},
 ): void {
 	pi.on("session_start", () => {
+		clearEffectiveConfigCache();
 		void runSessionStartHealthChecks({
 			...deps,
 			onWarning: (warning) => {
@@ -31,10 +32,7 @@ export function registerSessionStartHealthChecks(
 		}).catch((error) =>
 			emitWarning(pi, {
 				code: "WEB_HEALTH_CHECK_FAILED",
-				message:
-					error instanceof Error
-						? error.message
-						: "pi-scraper health check failed",
+				message: error instanceof Error ? error.message : "pi-scraper health check failed",
 			}),
 		);
 	});

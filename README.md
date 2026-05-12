@@ -332,6 +332,8 @@ Use `/web-config` to inspect effective settings and persist defaults interactive
 
 `/web-set-mode` remains as an alias for `scrape-mode`.
 
+The effective config is cached in memory for the session. After hand-editing `~/.pi/scraper/config/web.json`, run `/web-reload-config` (or restart the session) to pick up changes.
+
 ## Development and release checks
 
 Install dependencies from a checkout:
