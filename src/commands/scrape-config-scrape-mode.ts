@@ -10,7 +10,7 @@ import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
 import type { Params } from "./scrape-config.ts";
 
-export const webSetModeSchema = Type.Object({
+export const scrapeModeSchema = Type.Object({
 	mode: Type.Optional(StringEnum(SCRAPE_MODES, { description: "Default scrape mode." })),
 	format: Type.Optional(
 		StringEnum(OUTPUT_FORMATS, {
@@ -20,9 +20,9 @@ export const webSetModeSchema = Type.Object({
 	scrapeDefaults: Type.Optional(Type.Unknown({ description: "Advanced scrape defaults." })),
 });
 
-type SetModeParams = Static<typeof webSetModeSchema>;
+type ScrapeModeParams = Static<typeof scrapeModeSchema>;
 
-export async function setDefaultMode(params: SetModeParams, options: ConfigOptions = {}) {
+export async function persistScrapeDefaults(params: ScrapeModeParams, options: ConfigOptions = {}) {
 	const patch: WebConfig = {
 		scrapeMode: params.mode,
 		outputFormat: params.format,
@@ -30,7 +30,7 @@ export async function setDefaultMode(params: SetModeParams, options: ConfigOptio
 	};
 	const config = await updateConfig(patch, options);
 	return toolResult({
-		text: `Web defaults saved: ${config.scrapeMode} (${config.outputFormat}), ${Object.keys(config.scrapeDefaults).length} advanced option(s).`,
+		text: `Scrape defaults saved: ${config.scrapeMode} (${config.outputFormat}), ${Object.keys(config.scrapeDefaults).length} advanced option(s).`,
 		data: config,
 		format: "json",
 	});
@@ -74,5 +74,5 @@ export async function runScrapeConfigScrapeMode(params: Params, ctx?: CommandCon
 		}
 	}
 
-	return await setDefaultMode({ mode, format });
+	return await persistScrapeDefaults({ mode, format });
 }

@@ -9,7 +9,7 @@ import { loadEffectiveConfig } from "../../config/settings.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import type { RegisteredCommandOptions } from "../define.ts";
 import { registerWebCommands, webCommands } from "../register.ts";
-import { setDefaultMode } from "../scrape-config-scrape-mode.ts";
+import { persistScrapeDefaults } from "../scrape-config-scrape-mode.ts";
 
 let rootDir: string;
 
@@ -36,14 +36,17 @@ describe("web command registration", () => {
 	});
 
 	it("persists scrape mode defaults", async () => {
-		const modeResult = await setDefaultMode({ mode: "fast" }, { rootDir });
+		const modeResult = await persistScrapeDefaults({ mode: "fast" }, { rootDir });
 		const config = await loadEffectiveConfig({ rootDir });
 		expect((modeResult.details as ResultEnvelope).data).toBeTruthy();
 		expect(config.scrapeMode).toBe("fast");
 	});
 
 	it("persists advanced scrape defaults", async () => {
-		await setDefaultMode({ scrapeDefaults: { timeoutSeconds: 7, refresh: true } }, { rootDir });
+		await persistScrapeDefaults(
+			{ scrapeDefaults: { timeoutSeconds: 7, refresh: true } },
+			{ rootDir },
+		);
 		const config = await loadEffectiveConfig({ rootDir });
 		expect(config.scrapeDefaults).toMatchObject({
 			timeoutSeconds: 7,
