@@ -30,7 +30,7 @@ interface SerializedCookie {
 	sameSite?: string;
 }
 
-const memorySessions = new Map<string, FetchSession>();
+const memorySessions = new Map<string, Promise<FetchSession>>();
 
 interface SessionPoolOptions {
 	maxPoolSize?: number;
@@ -49,9 +49,19 @@ export async function getOrCreateSession(
 	id: string,
 	options: ResolveStorageOptions = {},
 ): Promise<FetchSession> {
-	cleanupIdleSessions();
-	let session = memorySessions.get(id);
-	session ??= await loadPersistedSession(id, options);
+	let promise = memorySessions.get(id);
+	if (!promise) {
+		promise = loadOrCreateSession(id, options);
+		memorySessions.set(id, promise);
+	}
+	return await promise;
+}
+
+async function loadOrCreateSession(
+	id: string,
+	options: ResolveStorageOptions,
+): Promise<FetchSession> {
+	let session = await loadPersistedSession(id, options);
 	if (!session) {
 		session = {
 			id,
@@ -61,34 +71,17 @@ export async function getOrCreateSession(
 		};
 		const maxSize = sessionPoolOptions.maxPoolSize ?? 100;
 		if (memorySessions.size >= maxSize) {
-			evictLRUSession();
+			evictOldestSession();
 		}
-		memorySessions.set(id, session);
-	} else {
-		session.lastUsedAt = new Date().toISOString();
 	}
+	session.lastUsedAt = new Date().toISOString();
 	return session;
 }
 
-function cleanupIdleSessions(): void {
-	const maxIdle = sessionPoolOptions.maxIdleMs ?? 24 * 60 * 60 * 1_000;
-	const cutoffMs = Date.now() - maxIdle;
-	for (const [sid, sess] of memorySessions) {
-		if (new Date(sess.lastUsedAt).getTime() < cutoffMs) {
-			memorySessions.delete(sid);
-		}
-	}
-}
-
-function evictLRUSession(): void {
-	let oldest: FetchSession | undefined;
-	for (const sess of memorySessions.values()) {
-		if (!oldest || sess.lastUsedAt < oldest.lastUsedAt) {
-			oldest = sess;
-		}
-	}
-	if (oldest) {
-		memorySessions.delete(oldest.id);
+function evictOldestSession(): void {
+	const firstKey = memorySessions.keys().next().value;
+	if (firstKey) {
+		memorySessions.delete(firstKey);
 	}
 }
 
@@ -97,8 +90,9 @@ export async function saveSessionToStorage(
 	id: string,
 	options: ResolveStorageOptions = {},
 ): Promise<void> {
-	const session = memorySessions.get(id);
-	if (!session) return;
+	const promise = memorySessions.get(id);
+	if (!promise) return;
+	const session = await promise;
 	await persistSession(session, options);
 }
 
@@ -239,7 +233,6 @@ export async function loadPersistedSession(
 	id: string,
 	options: ResolveStorageOptions = {},
 ): Promise<FetchSession | undefined> {
-	if (memorySessions.has(id)) return memorySessions.get(id);
 	const db = await openStorageDb(options);
 	const row = db.prepare(`SELECT * FROM http_sessions WHERE id = ?`).get(id) as
 		| {
@@ -272,7 +265,6 @@ export async function loadPersistedSession(
 	if (row.default_os_profile) session.defaultOsProfile = row.default_os_profile;
 	if (row.default_proxy) session.defaultProxy = row.default_proxy;
 	if (row.default_mode) session.defaultMode = row.default_mode;
-	memorySessions.set(id, session);
 	return session;
 }
 

@@ -12,7 +12,7 @@ interface DbEntry {
 	statements: Map<string, StatementSync>;
 }
 
-const handles = new Map<string, DbEntry>();
+const handles = new Map<string, Promise<DbEntry>>();
 
 export interface StorageDb {
 	db: DatabaseSync;
@@ -23,23 +23,36 @@ export interface StorageDb {
 export async function openStorageDb(options: ResolveStorageOptions = {}): Promise<StorageDb> {
 	const paths = resolvePiStoragePaths(options);
 	await ensureDir(paths.root);
+	// oxlint-disable-next-line security/detect-non-literal-fs-filename -- dbPath is built from validated Pi storage root + static filename
 	const dbPath = path.join(paths.root, "index.db");
-	let entry = handles.get(dbPath);
-	if (!entry) {
-		const db = new DatabaseSync(dbPath);
-		db.exec("PRAGMA journal_mode = WAL");
-		db.exec("PRAGMA synchronous = NORMAL");
-		db.exec("PRAGMA foreign_keys = ON");
-		runMigrations(db);
-		entry = { db, statements: new Map() };
-		handles.set(dbPath, entry);
-		await migrateLegacyFiles(wrapEntry(entry), options);
+	let promise = handles.get(dbPath);
+	if (!promise) {
+		promise = openDbEntry(dbPath, options);
+		handles.set(dbPath, promise);
 	}
+	const entry = await promise;
 	return wrapEntry(entry);
 }
 
+async function openDbEntry(dbPath: string, options: ResolveStorageOptions): Promise<DbEntry> {
+	const db = new DatabaseSync(dbPath);
+	db.exec("PRAGMA journal_mode = WAL");
+	db.exec("PRAGMA synchronous = NORMAL");
+	db.exec("PRAGMA foreign_keys = ON");
+	runMigrations(db);
+	const entry: DbEntry = { db, statements: new Map() };
+	await migrateLegacyFiles(wrapEntry(entry), options);
+	return entry;
+}
+
 export function closeStorageDbs(): void {
-	for (const entry of handles.values()) entry.db.close();
+	for (const promise of handles.values()) {
+		promise
+			.then((entry) => entry.db.close())
+			.catch(() => {
+				/* ignore close errors */
+			});
+	}
 	handles.clear();
 }
 

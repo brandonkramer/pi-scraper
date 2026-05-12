@@ -30,20 +30,24 @@ execFileSync(
 		"false",
 		"--target",
 		"ES2022",
+		"--lib",
+		"ES2023,DOM",
 		"--module",
 		"NodeNext",
 		"--moduleResolution",
 		"NodeNext",
 		"--skipLibCheck",
+		"--allowImportingTsExtensions",
+		"--rewriteRelativeImportExtensions",
 		"--types",
 		"node",
 		"src/env.d.ts",
-		"src/tools/register.ts",
+		"src/tools/infra/register.ts",
 	],
 	{ cwd: rootDir, stdio: "pipe" },
 );
 
-const mod = await import(pathToFileURL(path.join(outDir, "tools/register.js")));
+const mod = await import(pathToFileURL(path.join(outDir, "tools/infra/register.js")));
 const tools = mod.webTools;
 const approxTokens = (chars) => Math.ceil(chars / 4);
 
