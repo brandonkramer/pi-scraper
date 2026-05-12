@@ -186,6 +186,49 @@ describe("createBrowserRouteGuard", () => {
 		const errorB = guard.consumeError(page, URL);
 		expect(errorB?.structured.finalUrl).toBe("http://127.0.0.1/b");
 	});
+
+	it("aborts requests when frame() throws (unattached request)", async () => {
+		const guard = createBrowserRouteGuard(alwaysSafe);
+		const aborted: Array<string | undefined> = [];
+		const route = {
+			abort: async (code?: string) => {
+				aborted.push(code);
+			},
+			continue: async () => {
+				throw new Error("should not continue");
+			},
+			request: () => ({
+				url: () => "https://example.com/sw-request",
+				frame: () => {
+					throw new Error("frame unavailable for service worker request");
+				},
+			}),
+		};
+
+		await guard.handler(route as unknown as Parameters<typeof guard.handler>[0]);
+		expect(aborted).toEqual(["blockedbyclient"]);
+	});
+
+	it("resetCheckedHosts replaces the Map so per-render dedup is isolated", async () => {
+		const map1 = new Map<string, Promise<SafeUrlResult>>();
+		const map2 = new Map<string, Promise<SafeUrlResult>>();
+		const checks: string[] = [];
+		const safetyCheck = async (input: string | URL): Promise<SafeUrlResult> => {
+			checks.push(input.toString());
+			return safeResult(input.toString());
+		};
+		const guard = createBrowserRouteGuard(safetyCheck, map1);
+		const page = fakePage();
+
+		// Render 1 — populate map1
+		await guard.handler(fakeRoute("http://example.com/a", page));
+		expect(checks).toEqual(["http://example.com/a"]);
+
+		// Reset to map2; same hostname triggers a fresh check
+		guard.resetCheckedHosts(map2);
+		await guard.handler(fakeRoute("http://example.com/b", page));
+		expect(checks).toEqual(["http://example.com/a", "http://example.com/b"]);
+	});
 });
 
 describe("assertSafeBrowserUrl", () => {

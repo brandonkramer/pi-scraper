@@ -25,6 +25,8 @@ export interface BrowserSafetyState {
 export interface BrowserRouteGuard {
 	handler: (route: Route) => Promise<void>;
 	consumeError(page: Page, url: string): BrowserRenderError | undefined;
+	/** Replace the checked-hosts map. Must only be called before the render's goto starts. */
+	resetCheckedHosts(checkedHosts: Map<string, Promise<SafeUrlResult>>): void;
 }
 
 interface BlockedEntry {
@@ -43,7 +45,16 @@ export function createBrowserRouteGuard(
 	};
 
 	async function handler(route: Route): Promise<void> {
-		const page = route.request().frame().page();
+		let page: Page;
+		try {
+			page = route.request().frame().page();
+		} catch {
+			// Unattached request (service worker or detached frame). Block conservatively.
+			await route.abort("blockedbyclient").catch(() => {
+				/* no-op */
+			});
+			return;
+		}
 		const requestUrl = route.request().url();
 		const routePolicy = browserRoutePolicy(requestUrl);
 		if (routePolicy.action === "allow") {
@@ -84,7 +95,11 @@ export function createBrowserRouteGuard(
 		return blockedRequestError(entry.cause, url, entry.finalUrl);
 	}
 
-	return { handler, consumeError };
+	function resetCheckedHosts(newMap: Map<string, Promise<SafeUrlResult>>): void {
+		browserSafety.checkedHosts = newMap;
+	}
+
+	return { handler, consumeError, resetCheckedHosts };
 }
 
 export async function assertSafeBrowserUrl(

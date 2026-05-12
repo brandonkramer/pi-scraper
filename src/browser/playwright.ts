@@ -129,6 +129,7 @@ async function renderWithLoader(
 			page = s.page as unknown as Page;
 			browser = s.session.browser as unknown as Browser;
 			guard = s.session.guard;
+			guard.resetCheckedHosts(browserSafety.checkedHosts);
 			session = s.session;
 		} else {
 			browser = (await playwright.chromium.launch({

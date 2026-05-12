@@ -64,6 +64,7 @@ export async function acquireBrowserSession(
 	const browser = await options.launchBrowser();
 	const context = await browser.newContext({
 		extraHTTPHeaders: options.headers,
+		serviceWorkers: "block",
 		proxy: options.proxy ? { server: options.proxy } : undefined,
 	});
 	const guard = createBrowserRouteGuard(options.safetyCheck, options.checkedHosts);

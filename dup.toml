@@ -85,6 +85,16 @@ pairs = [
   "src/crawl/state.ts:saveCrawlState||src/storage/blobs.ts:writeBlob",
   "src/crawl/state.ts:saveCrawlState||src/tools/web-extract-adhoc.ts:runAdHocExtraction",
 
+  # createBrowserRouteGuard added to the async try/catch cluster after resetCheckedHosts
+  "src/browser/route-guard.ts:createBrowserRouteGuard||src/commands/scrape-config-status.ts:assembleStatusReport",
+  "src/browser/route-guard.ts:createBrowserRouteGuard||src/crawl/state.ts:saveCrawlState",
+  "src/browser/route-guard.ts:createBrowserRouteGuard||src/commands/scrape-config.ts:runScrapeConfigCommand",
+  "src/browser/route-guard.ts:createBrowserRouteGuard||src/extract/vertical/extractors/reddit/post.ts:fetchFirstAllowedRedditEndpoint",
+  "src/browser/route-guard.ts:createBrowserRouteGuard||src/http/session.ts:buildCookieHeader",
+  "src/browser/route-guard.ts:createBrowserRouteGuard||src/storage/blobs.ts:writeBlob",
+  "src/browser/route-guard.ts:createBrowserRouteGuard||src/tools/web-extract-adhoc.ts:runAdHocExtraction",
+  "src/browser/route-guard.ts:createBrowserRouteGuard||src/http/session.ts:getOrCreateSession",
+
   # getOrCreateSession added to the async try/catch cluster after LRU eviction logic
   "src/commands/scrape-config-model-provider.ts:runScrapeConfigModelProvider||src/http/session.ts:getOrCreateSession",
   "src/commands/scrape-config-scrape-mode.ts:runScrapeConfigScrapeMode||src/http/session.ts:getOrCreateSession",
