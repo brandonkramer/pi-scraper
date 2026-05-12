@@ -21,7 +21,7 @@ import {
 	adapterIncompatibleError,
 	toolErrorResult,
 } from "./infra/result.ts";
-import { scrapeModeOptionSchema, urlProperty } from "./infra/schemas.ts";
+import { modelProviderOptionSchema, scrapeModeOptionSchema, urlProperty } from "./infra/schemas.ts";
 import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
 
 export const webSummarizeSchema = Type.Object({
@@ -29,14 +29,7 @@ export const webSummarizeSchema = Type.Object({
 	content: Type.Optional(Type.String()),
 	sentences: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
 	bullets: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
-	provider: Type.Optional(
-		Type.String({
-			description:
-				"Model adapter id, 'auto' (default), or 'off'. Known values: auto, off, plus any registered adapter id.",
-			minLength: 1,
-			maxLength: 100,
-		}),
-	),
+	...modelProviderOptionSchema,
 	...scrapeModeOptionSchema,
 });
 

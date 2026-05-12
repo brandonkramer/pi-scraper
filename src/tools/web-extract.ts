@@ -6,7 +6,7 @@ import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
-import { urlProperty } from "./infra/schemas.ts";
+import { modelProviderOptionSchema, urlProperty } from "./infra/schemas.ts";
 import { runAdHocExtraction } from "./web-extract-adhoc.ts";
 import { hasPatternRequest, runPatternInspection } from "./web-extract-pattern.ts";
 import { runSelectorExtractionTool } from "./web-extract-selector.ts";
@@ -21,14 +21,7 @@ export const webExtractSchema = Type.Object({
 	content: Type.Optional(Type.Any()),
 	prompt: Type.Optional(Type.Any()),
 	schema: Type.Optional(Type.Any()),
-	provider: Type.Optional(
-		Type.String({
-			description:
-				"Model adapter id, 'auto' (default), or 'off' (applies to action='adhoc' only). Known values: auto, off, plus any registered adapter id.",
-			minLength: 1,
-			maxLength: 100,
-		}),
-	),
+	...modelProviderOptionSchema,
 	sourceFormat: Type.Optional(Type.Any()),
 	include: Type.Optional(Type.Array(Type.Any())),
 	extractSchema: Type.Optional(Type.Any()),
