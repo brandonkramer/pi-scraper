@@ -122,8 +122,17 @@ export function listSessions(): string[] {
 	return [...memorySessions.keys()];
 }
 
-/** Parse a raw Set-Cookie header into a serialized cookie. */
-export function parseSetCookie(setCookie: string, host: string): SerializedCookie {
+function hostDomainMatches(host: string, cookieDomain: string): boolean {
+	const h = host.toLowerCase();
+	const d = cookieDomain.toLowerCase();
+	return h === d || h.endsWith("." + d);
+}
+
+/**
+ * Parse a raw Set-Cookie header into a serialized cookie. Rejects cross-origin Domain attributes
+ * per RFC 6265 §5.3 step 6.
+ */
+export function parseSetCookie(setCookie: string, host: string): SerializedCookie | undefined {
 	const parts = setCookie.split(";").map((p) => p.trim());
 	const [nameValue] = parts;
 	const eq = nameValue.indexOf("=");
@@ -142,6 +151,7 @@ export function parseSetCookie(setCookie: string, host: string): SerializedCooki
 		if (lower === "samesite") cookie.sameSite = val;
 	}
 	if (cookie.domain) {
+		if (!hostDomainMatches(host, cookie.domain)) return undefined;
 		cookie.hostOnly = false;
 	} else {
 		cookie.domain = host.toLowerCase();
@@ -167,10 +177,9 @@ export function buildCookieHeader(
 		}
 		// Domain match (RFC 6265 §5.1.3)
 		if (c.domain) {
-			const cookieDomain = c.domain.toLowerCase();
 			if (c.hostOnly) {
-				if (normalizedHost !== cookieDomain) return false;
-			} else if (normalizedHost !== cookieDomain && !normalizedHost.endsWith("." + cookieDomain)) {
+				if (normalizedHost !== c.domain.toLowerCase()) return false;
+			} else if (!hostDomainMatches(normalizedHost, c.domain)) {
 				return false;
 			}
 		}
@@ -216,6 +225,8 @@ export function updateSessionCookies(
 ): void {
 	for (const header of setCookieHeaders) {
 		const cookie = parseSetCookie(header, host);
+		// Rejected by origin validation
+		if (!cookie) continue;
 		// Remove old cookie with same name/domain/hostOnly/path
 		session.cookies = session.cookies.filter(
 			(c) =>

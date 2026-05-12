@@ -84,7 +84,7 @@ describe("session persistence", () => {
 
 describe("parseSetCookie", () => {
 	it("sets hostOnly when no Domain attribute is present", () => {
-		const cookie = parseSetCookie("foo=bar", "acme.com");
+		const cookie = parseSetCookie("foo=bar", "acme.com")!;
 		expect(cookie.name).toBe("foo");
 		expect(cookie.value).toBe("bar");
 		expect(cookie.domain).toBe("acme.com");
@@ -93,17 +93,40 @@ describe("parseSetCookie", () => {
 	});
 
 	it("strips leading dot and lowercases explicit Domain", () => {
-		const cookie = parseSetCookie("foo=bar; Domain=.Example.COM", "example.com");
+		const cookie = parseSetCookie("foo=bar; Domain=.Example.COM", "example.com")!;
 		expect(cookie.domain).toBe("example.com");
 		expect(cookie.hostOnly).toBe(false);
 		expect(cookie.path).toBe("/");
 	});
 
 	it("preserves Secure, HttpOnly, SameSite", () => {
-		const cookie = parseSetCookie("foo=bar; Secure; HttpOnly; SameSite=Strict", "acme.com");
+		const cookie = parseSetCookie("foo=bar; Secure; HttpOnly; SameSite=Strict", "acme.com")!;
 		expect(cookie.secure).toBe(true);
 		expect(cookie.httpOnly).toBe(true);
 		expect(cookie.sameSite).toBe("Strict");
+	});
+
+	it("rejects cross-origin Domain attribute", () => {
+		expect(parseSetCookie("sid=x; Domain=victim.com", "attacker.com")).toBeUndefined();
+	});
+
+	it("accepts exact host Domain match", () => {
+		const cookie = parseSetCookie("sid=x; Domain=example.com", "example.com")!;
+		expect(cookie.domain).toBe("example.com");
+		expect(cookie.hostOnly).toBe(false);
+	});
+
+	it("accepts subdomain response for parent Domain", () => {
+		const cookie = parseSetCookie("sid=x; Domain=example.com", "sub.example.com")!;
+		expect(cookie.domain).toBe("example.com");
+	});
+
+	it("rejects suffix-match Domain (badexample.com vs example.com)", () => {
+		expect(parseSetCookie("sid=x; Domain=example.com", "badexample.com")).toBeUndefined();
+	});
+
+	it("rejects unrelated Domain", () => {
+		expect(parseSetCookie("sid=x; Domain=other.com", "example.com")).toBeUndefined();
 	});
 });
 
@@ -276,6 +299,17 @@ describe("updateSessionCookies", () => {
 		// Domain-scoped
 		updateSessionCookies(session, ["foo=domain; Domain=acme.com"], "acme.com");
 		expect(session.cookies).toHaveLength(2);
+	});
+
+	it("rejects cross-origin Domain attribute during update", () => {
+		const session: FetchSession = {
+			id: "s",
+			createdAt: "",
+			lastUsedAt: "",
+			cookies: [],
+		};
+		updateSessionCookies(session, ["sid=x; Domain=victim.com"], "attacker.com");
+		expect(session.cookies).toHaveLength(0);
 	});
 });
 
