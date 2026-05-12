@@ -28,9 +28,6 @@ export function resolveModelAdapterFromContext(source: unknown): ModelAdapter | 
 	};
 }
 
-/** @deprecated Use {@link resolveModelAdapterFromContext} instead. */
-export const resolveToolModelAdapter = resolveModelAdapterFromContext;
-
 function findRunner(source: unknown): Runner | undefined {
 	if (!isUnknownRecord(source)) return;
 	for (const key of ["runModel", "generate", "chat", "complete"] as const) {

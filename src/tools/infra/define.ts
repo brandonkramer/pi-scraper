@@ -60,14 +60,19 @@ export interface WebTool<TParameters extends TSchema = TSchema> {
 	) => RenderComponent;
 }
 
-export interface PiToolEvents {
-	on(event: string, handler: (payload: unknown) => void): void;
-	emit(event: string, payload: unknown): void;
-}
-
+/**
+ * Lightweight registrar interface for tests and internal use.
+ *
+ * @remarks
+ *   The production entrypoint (`registerPiScraperExtension`) receives the full {@link ExtensionAPI}
+ *   and passes it through to the functions below without cast.
+ */
 export interface PiToolRegistrar {
 	registerTool(tool: WebTool): void;
-	events?: PiToolEvents;
+	events?: {
+		on(event: string, handler: (payload: unknown) => void): void;
+		emit(event: string, payload: unknown): void;
+	};
 }
 
 export function defineWebTool<TParameters extends TSchema>(

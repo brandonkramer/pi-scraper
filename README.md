@@ -237,15 +237,15 @@ Includes the compact `web-scraping` Pi skill for tool routing.
 
 Highest layer wins:
 
-| Layer       | Mechanism                                                           | Use                      |
-| ----------- | ------------------------------------------------------------------- | ------------------------ |
-| Programmatic | `options.modelAdapter` (test / injected)                             | Direct override          |
-| Pi host     | `ctx.model` — Pi's currently selected model                         | Automatic when available |
-| Per-call    | `provider` param on the tool call                                   | LLM routes a single call |
-| Pi flag     | `--web-model-provider=auto\|<id>\|off`                              | Per Pi session           |
-| Env var     | `PI_WEB_MODEL_PROVIDER`                                             | Shell / scripts          |
-| Config file | `modelProvider` (string or `{ summarize, extract, analyze, chat }`) | Persistent default       |
-| Default     | `"auto"`                                                            | Out-of-box               |
+| Layer        | Mechanism                                                           | Use                      |
+| ------------ | ------------------------------------------------------------------- | ------------------------ |
+| Programmatic | `options.modelAdapter` (test / injected)                            | Direct override          |
+| Pi host      | `ctx.model` — Pi's currently selected model                         | Automatic when available |
+| Per-call     | `provider` param on the tool call                                   | LLM routes a single call |
+| Pi flag      | `--web-model-provider=auto\|<id>\|off`                              | Per Pi session           |
+| Env var      | `PI_WEB_MODEL_PROVIDER`                                             | Shell / scripts          |
+| Config file  | `modelProvider` (string or `{ summarize, extract, analyze, chat }`) | Persistent default       |
+| Default      | `"auto"`                                                            | Out-of-box               |
 
 `"auto"` picks the highest-priority adapter that supports the requested capability. `"off"` returns `MODEL_ADAPTER_MISSING` and (at config level) hides the model-backed tools from Pi's tool list.
 

@@ -1,7 +1,6 @@
-/**
- * @fileoverview tools __tests__ register.test module.
- */
+/** @file Tools **tests** register.test module. */
 import { describe, expect, it } from "vitest";
+
 import type { WebTool } from "../infra/define.ts";
 import { registerWebTools, webTools } from "../infra/register.ts";
 
@@ -24,7 +23,7 @@ describe("web tool registration", () => {
 
 	it("registers each tool through the loop", async () => {
 		const registered: WebTool[] = [];
-		await registerWebTools({ registerTool: (tool) => registered.push(tool) });
+		await registerWebTools({ registerTool: (tool: WebTool) => registered.push(tool) });
 		expect(registered.map((tool) => tool.name)).toEqual(expectedNames);
 	});
 

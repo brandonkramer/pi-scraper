@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ModelResponse } from "../../extract/adhoc/model.ts";
 import { modelRegistry } from "../../tools/infra/model-registry.ts";
+import type { CommandContext } from "../define.ts";
 import { runScrapeConfigStatus } from "../scrape-config-status.ts";
 
 type WebConfigStatusResult = Awaited<ReturnType<typeof runScrapeConfigStatus>>;
@@ -57,5 +58,27 @@ describe("runScrapeConfigStatus", () => {
 		expect(details.data?.effectiveConfig).toBeDefined();
 		expect(details.data?.registeredAdapters).toBeDefined();
 		expect(details.data?.resolutionPrecedence).toBeDefined();
+	});
+
+	it("detects Pi host model when ctx.model is present", async () => {
+		const result = await runScrapeConfigStatus({ action: "status" }, {
+			model: {
+				async run(): Promise<{ data: string }> {
+					return { data: "" };
+				},
+			},
+		} as unknown as CommandContext);
+		const details = result.details as {
+			data?: { piHostModel?: { detected: boolean } };
+		};
+		expect(details.data?.piHostModel?.detected).toBe(true);
+	});
+
+	it("reports no Pi host model when ctx.model is absent", async () => {
+		const result = await runScrapeConfigStatus({ action: "status" }, {});
+		const details = result.details as {
+			data?: { piHostModel?: { detected: boolean } };
+		};
+		expect(details.data?.piHostModel?.detected).toBe(false);
 	});
 });

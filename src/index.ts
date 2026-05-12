@@ -8,7 +8,6 @@ import {
 	type PiHealthRegistrar,
 } from "./health/session-start.ts";
 import { closeStorageDbs } from "./storage/db/open.ts";
-import type { PiToolRegistrar } from "./tools/infra/define.ts";
 import { registerWebTools } from "./tools/infra/register.ts";
 
 export default async function registerPiScraperExtension(pi: ExtensionAPI): Promise<void> {
@@ -17,9 +16,9 @@ export default async function registerPiScraperExtension(pi: ExtensionAPI): Prom
 			"Override the model-adapter provider for web_summarize and web_extract action=adhoc (auto|off|<id>).",
 		type: "string",
 	});
-	await registerWebTools(pi as unknown as PiToolRegistrar);
+	await registerWebTools(pi);
 	registerWebCommands(pi);
-	registerSessionStartHealthChecks(pi as unknown as PiHealthRegistrar);
+	registerSessionStartHealthChecks(pi as PiHealthRegistrar);
 	wireCleanupHooks();
 }
 
