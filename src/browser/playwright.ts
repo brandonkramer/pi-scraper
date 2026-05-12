@@ -201,6 +201,11 @@ async function renderWithLoader(
 		};
 	} finally {
 		if (abortListener) signal?.removeEventListener("abort", abortListener);
+		if (page && session) {
+			await page.close().catch(() => {
+				/* no-op */
+			});
+		}
 		if (session) {
 			releaseBrowserSession(session.id);
 			if (options.clearSession) {

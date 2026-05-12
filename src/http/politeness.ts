@@ -116,12 +116,15 @@ export class PolitenessController {
 		task: () => Promise<T>,
 	): Promise<T> {
 		const globalRelease = await this.globalSemaphore.acquire(signal);
-		const hostRelease = await this.hostSemaphore(host).acquire(signal);
 		try {
-			await this.waitTurn(host, crawlDelayMs, signal);
-			return await task();
+			const hostRelease = await this.hostSemaphore(host).acquire(signal);
+			try {
+				await this.waitTurn(host, crawlDelayMs, signal);
+				return await task();
+			} finally {
+				hostRelease();
+			}
 		} finally {
-			hostRelease();
 			globalRelease();
 		}
 	}

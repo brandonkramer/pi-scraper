@@ -205,6 +205,20 @@ describe("createPlaywrightRenderer", () => {
 		expect(seen.aborted).toEqual([{ url: fileUrl, errorCode: "blockedbyclient" }]);
 	});
 
+	it("closes the page on session path to prevent leaks", async () => {
+		const seen: Record<string, unknown> = {};
+		const renderer = createPlaywrightRenderer({
+			loader: async () => fakePlaywright(seen),
+		});
+
+		await renderer.fetchRendered(URL, { sessionId: "test-session" });
+		expect(seen.pageClosed).toBe(true);
+
+		// Cleanup
+		const { destroyBrowserSession } = await import("../session-pool.ts");
+		await destroyBrowserSession("test-session");
+	});
+
 	it("dedupes hostname safety checks within a render", async () => {
 		const seen: Record<string, unknown> = {};
 		const checks = new Map<string, number>();
@@ -266,6 +280,9 @@ function fakePlaywright(
 								seen.routeGlob = glob;
 								routeHandler = handler;
 							},
+							close: async () => {
+								/* no-op */
+							},
 							newPage: async () => {
 								const page: any = {
 									goto: async (requestUrl: string, gotoOptions: Record<string, unknown>) => {
@@ -280,7 +297,7 @@ function fakePlaywright(
 									context: () => browserContext,
 									url: () => options.finalUrl ?? `${URL}#rendered`,
 									close: async () => {
-										/* no-op */
+										seen.pageClosed = true;
 									},
 								};
 								return page;
