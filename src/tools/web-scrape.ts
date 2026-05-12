@@ -227,7 +227,7 @@ function shapeScrapeResult(result: ScrapeResult, responseId: string) {
 		summary,
 		answerContext: result.error
 			? `The scrape failed during ${result.error.phase}: ${result.error.message}`
-			: `Scrape result for ${url}: status ${result.status ?? "unknown"}, mode ${result.mode ?? "auto"}, format ${result.format ?? "markdown"}, ${source}. responseId ${responseId} is a local trace handle if inline preview is insufficient.`,
+			: `Page content below. responseId ${responseId} for stored access.`,
 		...storedTraceContext({
 			responseId,
 			source: {
