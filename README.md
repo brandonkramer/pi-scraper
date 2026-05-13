@@ -35,7 +35,7 @@ Browser mode lazy-loads Playwright. Chromium is not bundled; install only if nee
 npx playwright install chromium
 ```
 
-Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` when browsers are managed externally. `mode: "fingerprint"` requires an optional no-redirect fingerprint backend; without one it returns structured `FINGERPRINT_BACKEND_MISSING` metadata.
+Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` when browsers are managed externally. `mode: "fingerprint"` uses bundled [`impit`](https://github.com/apify/impit) for Chrome-class TLS fingerprints; no extra install. Native binary is ~8 MB (one prebuild per platform). Set `browserProfile: "chrome"` (default) or `"firefox"`.
 
 ## Public tools
 
@@ -151,7 +151,7 @@ Examples:
 | Mode          | JavaScript support | Playwright required | Typical latency | Extraction quality               | Best use case                                                                                                                                                                                |
 | ------------- | ------------------ | ------------------- | --------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `fast`        | No                 | No                  | Lowest          | Good for static pages            | Static HTML, docs, product pages, quick link/text extraction.                                                                                                                                |
-| `fingerprint` | No                 | No                  | Low-medium      | Same parser as static path       | Sites that block plain HTTP clients but do not require JavaScript. Requires a configured optional no-redirect fingerprint backend; proxy is rejected until equivalent SSRF guarantees exist. |
+| `fingerprint` | No                 | No                  | Low-medium      | Same parser as static path       | Sites that block plain HTTP clients but do not require JavaScript. Bundled Chrome/Firefox TLS fingerprint via impit; per-hop SSRF validation owned by pi-scraper. Proxy support deferred (impit's HTTP/3 and proxy are mutually exclusive). |
 | `readable`    | No                 | No                  | Medium          | Higher for articles/main content | Articles, blogs, noisy pages where Readability improves main content.                                                                                                                        |
 | `browser`     | Yes                | Yes, optional/lazy  | Highest         | Best for rendered DOM            | JavaScript-rendered pages when static/data-island recovery is insufficient.                                                                                                                  |
 | `auto`        | Only if justified  | Only if escalated   | Adaptive        | Adaptive                         | Default. Starts local/static, reuses fetched HTML, tries recovery/readable/fingerprint before browser only when block/rendering signals justify it.                                          |
