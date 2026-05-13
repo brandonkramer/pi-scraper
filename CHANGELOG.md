@@ -6,6 +6,11 @@ All notable changes to `pi-scraper` are summarized from the git history and rele
 
 ### Added
 
+- **Bundled `impit` for `mode: "fingerprint"` zero-config.** Chrome/Firefox TLS fingerprint profiles ship out-of-the-box; auto-registered at module load with `registerFingerprintBackendFactory` swap hook for tests.
+- **Streamed fingerprint response body with `maxBytes` bound during consumption.** impit returns `ReadableStream<Uint8Array>`; pi-scraper's `materializeFetchStreamResponse` enforces the limit mid-download. Buffer fallback preserved for custom backends.
+- **DNS rebinding TOCTOU mitigation for fingerprint mode.** `SafeFingerprintAdapter` does a second DNS resolve immediately before connect and compares IP sets; throws `DNS_REBINDING_DETECTED` if they diverge. `fingerprintTrustLevel: "untrusted"` blocks fingerprint fetches against arbitrary URLs.
+- Added `diagnostics.fingerprintRebindingMitigation` on every successful fingerprint fetch (strategy, preflight/connect addresses).
+- Added injected `resolver` DI to `UrlSafetyOptions` for deterministic rebinding simulation tests.
 - Adopted canonical Pi `ExtensionAPI` and resolved the host model from `ctx` at execute time for `web_summarize` and `web_extract action="adhoc"`.
 - Added a cross-extension model-adapter event protocol (`pi:model-adapter/*`) with a registry, lazy capability-filtered discover, and a `DiscoverPayload` helper.
 - Added optional `ModelUsage` propagation from adapter responses through envelopes, with a compact usage footer in expanded views.

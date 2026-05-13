@@ -148,13 +148,13 @@ Examples:
 
 ## Scrape modes
 
-| Mode          | JavaScript support | Playwright required | Typical latency | Extraction quality               | Best use case                                                                                                                                                                                |
-| ------------- | ------------------ | ------------------- | --------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fast`        | No                 | No                  | Lowest          | Good for static pages            | Static HTML, docs, product pages, quick link/text extraction.                                                                                                                                |
+| Mode          | JavaScript support | Playwright required | Typical latency | Extraction quality               | Best use case                                                                                                                                                                                                                               |
+| ------------- | ------------------ | ------------------- | --------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fast`        | No                 | No                  | Lowest          | Good for static pages            | Static HTML, docs, product pages, quick link/text extraction.                                                                                                                                                                               |
 | `fingerprint` | No                 | No                  | Low-medium      | Same parser as static path       | Sites that block plain HTTP clients but do not require JavaScript. Bundled Chrome/Firefox TLS fingerprint via impit; per-hop SSRF validation owned by pi-scraper. Proxy support deferred (impit's HTTP/3 and proxy are mutually exclusive). |
-| `readable`    | No                 | No                  | Medium          | Higher for articles/main content | Articles, blogs, noisy pages where Readability improves main content.                                                                                                                        |
-| `browser`     | Yes                | Yes, optional/lazy  | Highest         | Best for rendered DOM            | JavaScript-rendered pages when static/data-island recovery is insufficient.                                                                                                                  |
-| `auto`        | Only if justified  | Only if escalated   | Adaptive        | Adaptive                         | Default. Starts local/static, reuses fetched HTML, tries recovery/readable/fingerprint before browser only when block/rendering signals justify it.                                          |
+| `readable`    | No                 | No                  | Medium          | Higher for articles/main content | Articles, blogs, noisy pages where Readability improves main content.                                                                                                                                                                       |
+| `browser`     | Yes                | Yes, optional/lazy  | Highest         | Best for rendered DOM            | JavaScript-rendered pages when static/data-island recovery is insufficient.                                                                                                                                                                 |
+| `auto`        | Only if justified  | Only if escalated   | Adaptive        | Adaptive                         | Default. Starts local/static, reuses fetched HTML, tries recovery/readable/fingerprint before browser only when block/rendering signals justify it.                                                                                         |
 
 ### Known limitations
 
@@ -259,15 +259,15 @@ The effective config is cached in memory for the session. After hand-editing `~/
 
 Highest layer wins:
 
-| Layer        | Mechanism                                                           | Use                      |
-| ------------ | ------------------------------------------------------------------- | ------------------------ |
-| Programmatic | `options.modelAdapter` (test / injected)                            | Direct override          |
-| Pi host      | `ctx.model` — Pi's currently selected model                         | Automatic when available |
-| Per-call     | `provider` param on the tool call                                   | LLM routes a single call |
-| Pi flag      | `--web-model-provider=auto\|<id>\|off`                              | Per Pi session           |
-| Env var      | `PI_WEB_MODEL_PROVIDER`                                             | Shell / scripts          |
-| Config file  | `modelProvider` (string or `{ summarize, extract }`)                | Persistent default       |
-| Default      | `"auto"`                                                            | Out-of-box               |
+| Layer        | Mechanism                                            | Use                      |
+| ------------ | ---------------------------------------------------- | ------------------------ |
+| Programmatic | `options.modelAdapter` (test / injected)             | Direct override          |
+| Pi host      | `ctx.model` — Pi's currently selected model          | Automatic when available |
+| Per-call     | `provider` param on the tool call                    | LLM routes a single call |
+| Pi flag      | `--web-model-provider=auto\|<id>\|off`               | Per Pi session           |
+| Env var      | `PI_WEB_MODEL_PROVIDER`                              | Shell / scripts          |
+| Config file  | `modelProvider` (string or `{ summarize, extract }`) | Persistent default       |
+| Default      | `"auto"`                                             | Out-of-box               |
 
 `"auto"` picks the highest-priority adapter that supports the requested capability. `"off"` returns `MODEL_ADAPTER_MISSING` and (at config level) hides the model-backed tools from Pi's tool list.
 
