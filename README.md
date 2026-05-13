@@ -156,11 +156,11 @@ Examples:
 | `browser`     | Yes                | Yes, optional/lazy  | Highest         | Best for rendered DOM            | JavaScript-rendered pages when static/data-island recovery is insufficient.                                                                                                                                                                 |
 | `auto`        | Only if justified  | Only if escalated   | Adaptive        | Adaptive                         | Default. Starts local/static, reuses fetched HTML, tries recovery/readable/fingerprint before browser only when block/rendering signals justify it.                                                                                         |
 
-### Known limitations
+### `fingerprint` mode notes
 
-- `fingerprint` mode: response body streams through `maxBytes`-bounded collection.
-- `fingerprint` mode: DNS rebinding mitigation requires `resolveDns: true` (default). A second DNS resolve immediately before connect detects TOCTOU rebinding. Set `fingerprintTrustLevel: "untrusted"` to block fingerprint fetches against arbitrary URLs.
-- `fingerprint` mode: proxy support is deferred because impit's HTTP/3 and proxy are mutually exclusive.
+- **Body size enforcement is incremental, not pre-check.** Response body streams chunk-by-chunk through a `maxBytes`-bounded collector. A server lying about `Content-Length` cannot bypass the limit — actual bytes are counted and the upstream stream is cancelled mid-flight if exceeded. The trade-off: at least one chunk is read before a too-large response can be rejected.
+- **DNS rebinding has a residual TOCTOU window.** impit does not expose the connected peer IP, so post-handshake validation is not possible without an upstream change ([apify/impit issue tracker](https://github.com/apify/impit/issues)). We mitigate via a double DNS resolve: pi-scraper resolves at preflight, resolves again immediately before handing off to impit, and rejects with `DNS_REBINDING_DETECTED` if the address sets differ. The residual window is the sub-millisecond gap between the second resolve and impit's actual `connect(2)`. Requires `resolveDns: true` (the default). For arbitrary user-submitted URLs where even a narrow window is unacceptable, set `fingerprintTrustLevel: "untrusted"` to refuse fingerprint mode entirely, or use `mode: "browser"` for Chromium-managed DNS pinning.
+- **Proxy support deferred.** impit's `ImpitOptions` makes `proxyUrl` and HTTP/3 mutually exclusive, and HTTP/3 ALPN advertisement is part of the Chrome fingerprint we're impersonating. Until a per-call `disableHttp3` escape hatch lands (or impit upstream supports both simultaneously), use `mode: "fast"` with the standard HTTP client for proxied scrapes.
 
 ## Vertical extraction
 
