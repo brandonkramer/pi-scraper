@@ -6,6 +6,7 @@ import type {
 	VerticalExtractionResult,
 	VerticalExtractor,
 	VerticalExtractorContext,
+	VerticalExtractorProgress,
 } from "../vertical/capabilities.ts";
 import { arxivExtractor } from "../vertical/extractors/arxiv.ts";
 import { cratesIoExtractor } from "../vertical/extractors/crates-io.ts";
@@ -62,6 +63,7 @@ export interface VerticalRegistryDeps {
 		CommonRequestOptions,
 		"cacheTtlSeconds" | "maxAgeSeconds" | "refresh" | "respectRobots"
 	>;
+	onProgress?(options: VerticalExtractorProgress): void | Promise<void>;
 }
 
 export function listExtractorCapabilities(): ExtractorCapability[] {
@@ -102,7 +104,13 @@ export async function runVerticalExtractor<T = unknown>(
 		const data = await extractor.extract(
 			url,
 			match,
-			deps.context ?? httpContext(deps.httpClient, deps.requestOptions, sources),
+			deps.context ??
+				httpContext(
+					deps.httpClient,
+					deps.requestOptions,
+					sources,
+					deps.onProgress ? (options) => deps.onProgress!(options) : undefined,
+				),
 			signal,
 		);
 		return {
@@ -153,6 +161,7 @@ function httpContext(
 		"cacheTtlSeconds" | "maxAgeSeconds" | "refresh" | "respectRobots"
 	> = {},
 	sources: SourceReference[] = [],
+	onProgress?: (options: VerticalExtractorProgress) => void | Promise<void>,
 ): VerticalExtractorContext {
 	return {
 		fetchJson: async <T>(url: string, signal?: AbortSignal) => {
@@ -192,6 +201,15 @@ function httpContext(
 				contentType: response.contentType,
 			};
 		},
+		emitProgress: onProgress
+			? async (options) => {
+					try {
+						await onProgress(options);
+					} catch {
+						/* progress is best-effort */
+					}
+				}
+			: undefined,
 	};
 }
 

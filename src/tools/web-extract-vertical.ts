@@ -54,6 +54,14 @@ export async function runDeterministicExtractor(
 				refresh: config.scrapeDefaults.refresh,
 				respectRobots: params.respectRobots,
 			},
+			onProgress: onUpdate
+				? (options) =>
+						emitProgress(onUpdate, {
+							state: options.state as "waiting" | "loading" | "processing" | "done" | "error",
+							message: options.message,
+							url: options.url,
+						})
+				: undefined,
 		},
 		signal,
 	);

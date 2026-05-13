@@ -184,6 +184,7 @@ export const redditExtractor: VerticalExtractor<RedditPostResult> = {
 			reddit,
 			(url, sig) => context.fetchPage!(url, sig),
 			signal,
+			context.emitProgress ? (options) => context.emitProgress!(options) : undefined,
 		);
 	},
 };

@@ -99,18 +99,39 @@ export const redditListingExtractor: VerticalExtractor<RedditListingResult> = {
 		const endpoints = listingEndpoints(listing);
 		const failures: Array<{ endpoint: string; error: ReturnType<typeof normalizeRedditError> }> =
 			[];
-		for (const endpoint of endpoints) {
+		for (let index = 0; index < endpoints.length; index++) {
+			const endpoint = endpoints[index];
+			await context.emitProgress?.({
+				state: "loading",
+				message: `fetching ${endpoint} (${index + 1}/${endpoints.length})`,
+				url: endpoint,
+			});
 			try {
 				const page = await context.fetchPage(endpoint, signal);
 				assertUsableRedditListingResponse(page.status, page.text);
+				await context.emitProgress?.({
+					state: "processing",
+					message: "parsing listing JSON",
+					url: endpoint,
+				});
 				return parseListingResponse(page.text, listing, endpoint, page.finalUrl);
 			} catch (error) {
 				const normalized = normalizeRedditError(error);
 				failures.push({ endpoint, error: normalized });
 				if (!shouldTryNextEndpoint(normalized)) throw withAttemptContext(normalized, failures);
+				await context.emitProgress?.({
+					state: "waiting",
+					message: `${normalized.message} — trying next endpoint`,
+					url: endpoint,
+				});
 			}
 		}
 		if (failures.every((f) => f.error.message.includes("robots"))) {
+			await context.emitProgress?.({
+				state: "error",
+				message: "all endpoints blocked by robots.txt",
+				url: endpoints[0],
+			});
 			return blockedListingResult(listing, endpoints, failures[0]?.error.message);
 		}
 		throw withAttemptContext(

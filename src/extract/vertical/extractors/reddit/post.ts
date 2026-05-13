@@ -23,24 +23,46 @@ export async function fetchFirstAllowedRedditEndpoint(
 	match: RedditPostMatch,
 	fetchPage: NonNullable<VerticalExtractorContext["fetchPage"]>,
 	signal?: AbortSignal,
+	emitProgress?: VerticalExtractorContext["emitProgress"],
 ): Promise<RedditPostResult> {
 	const endpoints = redditEndpoints(match);
 	const failures: Array<{
 		endpoint: string;
 		error: ReturnType<typeof normalizeRedditError>;
 	}> = [];
-	for (const endpoint of endpoints) {
+	for (let index = 0; index < endpoints.length; index++) {
+		const endpoint = endpoints[index];
+		await emitProgress?.({
+			state: "loading",
+			message: `fetching ${endpoint} (${index + 1}/${endpoints.length})`,
+			url: endpoint,
+		});
 		try {
 			const page = await fetchPage(endpoint, signal);
 			assertUsableRedditResponse(page.status, page.text);
+			await emitProgress?.({
+				state: "processing",
+				message: "parsing post JSON",
+				url: endpoint,
+			});
 			return parseRedditResponse(page.text, match, endpoint, page.finalUrl);
 		} catch (error) {
 			const normalized = normalizeRedditError(error);
 			failures.push({ endpoint, error: normalized });
 			if (!shouldTryNextEndpoint(normalized)) throw withAttemptContext(normalized, failures);
+			await emitProgress?.({
+				state: "waiting",
+				message: `${normalized.message} — trying next endpoint`,
+				url: endpoint,
+			});
 		}
 	}
 	if (failures.every((failure) => errorCode(failure.error) === "REDDIT_ROBOTS_DENIED")) {
+		await emitProgress?.({
+			state: "error",
+			message: "all endpoints blocked by robots.txt",
+			url: endpoints[0],
+		});
 		return blockedMetadataResult(match, endpoints, failures[0]?.error.message);
 	}
 	throw withAttemptContext(

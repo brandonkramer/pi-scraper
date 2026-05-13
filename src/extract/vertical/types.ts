@@ -1,6 +1,4 @@
-/**
- * @fileoverview Vertical extraction types.
- */
+/** @file Vertical extraction types. */
 import type { ExtractorCapability, SourceReference } from "../../types.ts";
 
 export interface VerticalExtractorPage {
@@ -10,10 +8,17 @@ export interface VerticalExtractorPage {
 	contentType?: string;
 }
 
+export interface VerticalExtractorProgress {
+	state: string;
+	message?: string;
+	url?: string;
+}
+
 export interface VerticalExtractorContext {
 	fetchJson<T = unknown>(url: string, signal?: AbortSignal): Promise<T>;
 	fetchText?(url: string, signal?: AbortSignal): Promise<string>;
 	fetchPage?(url: string, signal?: AbortSignal): Promise<VerticalExtractorPage>;
+	emitProgress?(options: VerticalExtractorProgress): void | Promise<void>;
 }
 
 export interface VerticalExtractionResult<T = unknown> {
