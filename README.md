@@ -4,8 +4,6 @@ Crawl, map, and structured extraction for Pi — scraper-first, Pi-native, and l
 
 `pi-scraper` reads known URLs and small sites. Use it to scrape, summarize one page, crawl, map URLs, diff snapshots, retrieve stored results, or extract deterministic/structured data.
 
-Use companion search/research extensions such as [`pi-gemini-acp`](https://github.com/brandonkramer/pi-gemini-acp) for broad source discovery or multi-source synthesis.
-
 ## Install
 
 ```bash
@@ -223,6 +221,23 @@ Persistent paths:
 
 Includes the compact `web-scraping` Pi skill for tool routing.
 
+## Configuration command
+
+Use `/scrape-config` to inspect effective settings and persist defaults interactively or via direct arguments.
+
+| Sub-action                    | What it does                                                    |
+| ----------------------------- | --------------------------------------------------------------- |
+| (no args)                     | Interactive picker (falls back to `status` when UI unavailable) |
+| `status`                      | Effective config + live adapter-resolution preview              |
+| `model-provider <value>`      | Set `modelProvider` (`auto` / `off` / `<adapter-id>`)           |
+| `scrape-mode <mode> [format]` | Set `scrapeMode` + `outputFormat`                               |
+| `cache stats`                 | Inspect response cache size and entry counts                    |
+| `cache clear`                 | Clear response cache (confirm prompt)                           |
+| `robots on/off`               | Toggle `respectRobots` default                                  |
+| `reload`                      | Reload config from disk, clearing the in-memory cache           |
+
+The effective config is cached in memory for the session. After hand-editing `~/.pi/scraper/config/web.json`, run `/scrape-config reload` (or restart the session) to pick up changes.
+
 ## Model adapters
 
 `web_summarize` and `web_extract action="adhoc"` need an LLM transport. When Pi has a model configured (OpenAI, Anthropic, Google, etc.), the tools use it automatically via the host context — no extra extension needed. Any Pi extension can also supply one via `pi.events` for cross-extension provider lending. With no adapter available, the tools return `MODEL_ADAPTER_MISSING` and the LLM falls back to `web_scrape` + summarize-in-reply.
@@ -320,23 +335,6 @@ pi.events?.emit?.("pi:model-adapter/unregister", { id: entry.id }); // on unload
 `web_summarize` issues a filtered discover (`{ capabilities: ["summarize"] }`) on its first invocation when no `summarize`-capable adapter is registered, then caches per capability so subsequent invocations don't re-emit. `web_extract action="adhoc"` will adopt the same pattern.
 
 When an adapter returns `usage`, `web_summarize` (and `web_extract action="adhoc"`) render a compact footer in the expanded view, for example: `gemini-acp · gemini-2.0-flash · 234 in · 187 out · $0.0023`. Adapters supply only the fields they have; pi-scraper hides absent fields automatically. Cost is in USD and is the adapter's responsibility to compute — pi-scraper ships no pricing table.
-
-## Configuration command
-
-Use `/scrape-config` to inspect effective settings and persist defaults interactively or via direct arguments.
-
-| Sub-action                    | What it does                                                    |
-| ----------------------------- | --------------------------------------------------------------- |
-| (no args)                     | Interactive picker (falls back to `status` when UI unavailable) |
-| `status`                      | Effective config + live adapter-resolution preview              |
-| `model-provider <value>`      | Set `modelProvider` (`auto` / `off` / `<adapter-id>`)           |
-| `scrape-mode <mode> [format]` | Set `scrapeMode` + `outputFormat`                               |
-| `cache stats`                 | Inspect response cache size and entry counts                    |
-| `cache clear`                 | Clear response cache (confirm prompt)                           |
-| `robots on/off`               | Toggle `respectRobots` default                                  |
-| `reload`                      | Reload config from disk, clearing the in-memory cache           |
-
-The effective config is cached in memory for the session. After hand-editing `~/.pi/scraper/config/web.json`, run `/scrape-config reload` (or restart the session) to pick up changes.
 
 ## Development and release checks
 

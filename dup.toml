@@ -112,6 +112,9 @@ pairs = [
   "src/http/session.ts:buildCookieHeader||src/tui/envelope.ts:expandedEnvelopeText",
   "src/storage/blobs.ts:writeBlob||src/tui/envelope.ts:expandedEnvelopeText",
   "src/tools/web-extract-adhoc.ts:runAdHocExtraction||src/tui/envelope.ts:expandedEnvelopeText",
+
+  # Reddit listing/post response validators — same pattern, different endpoints
+  "src/extract/vertical/extractors/reddit/listing.ts:assertUsableRedditListingResponse||src/extract/vertical/extractors/reddit/post.ts:assertUsableRedditResponse",
 ]
 
 clusters = [

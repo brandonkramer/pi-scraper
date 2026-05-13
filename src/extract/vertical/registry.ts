@@ -29,6 +29,7 @@ import { ossInsightRepoAnalyticsExtractor } from "../vertical/extractors/ossinsi
 import { ossInsightTrendingReposExtractor } from "../vertical/extractors/ossinsight-trending-repos.ts";
 import { pypiPackageExtractor } from "../vertical/extractors/pypi.ts";
 import { redditExtractor } from "../vertical/extractors/reddit/index.ts";
+import { redditListingExtractor } from "../vertical/extractors/reddit/listing.ts";
 
 export const verticalExtractors = [
 	githubRepoExtractor,
@@ -43,6 +44,7 @@ export const verticalExtractors = [
 	huggingFaceDatasetExtractor,
 	hackerNewsItemExtractor,
 	redditExtractor,
+	redditListingExtractor,
 	arxivExtractor,
 	deepWikiExtractor,
 	docsiteExtractor,
