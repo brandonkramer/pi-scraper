@@ -2,6 +2,41 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [0.4.0] - 2026-05-13
+
+### Added
+
+- Adopted canonical Pi `ExtensionAPI` and resolved the host model from `ctx` at execute time for `web_summarize` and `web_extract action="adhoc"`.
+- Added a cross-extension model-adapter event protocol (`pi:model-adapter/*`) with a registry, lazy capability-filtered discover, and a `DiscoverPayload` helper.
+- Added optional `ModelUsage` propagation from adapter responses through envelopes, with a compact usage footer in expanded views.
+- Added `/scrape-config` (renamed from `/web-config`), unifying `scrape-mode`, cache, and `reload` sub-actions with isolated config paths and tests.
+- Rendered Markdown in `web_scrape`, `web_summarize`, `web_extract`, `web_get_result`, and crawl status envelopes via a shared Markdown component and theme helper.
+- Added a dynamic excerpt cap with a 1000-char budget for batch/crawl expanded previews.
+
+### Changed
+
+- Removed `/web-set-mode` and `/web-reload-config`; their behavior is folded into `/scrape-config scrape-mode` and `/scrape-config reload`.
+- Cached `loadEffectiveConfig` with explicit invalidation; shared a single undici Agent and RobotsCache; capped the in-memory sessions pool.
+- Shared HTTP redirect-following, response materialization, error conversion, robots/politeness policy, and result-shaping primitives across static and fingerprint transports.
+- Compressed session descriptions, deduped the provider schema, and dropped redundant min/max length constraints in tool inputs.
+- Reorganized `src/tools`, `src/tui`, `src/storage`, `src/extract`, and related areas into action-based and per-responsibility folders. No public tool names changed.
+- Resolved 474 oxlint errors and 292 oxlint warnings to 0 and reworked ast-grep rules for the new layout.
+
+### Fixed
+
+- Validated `Set-Cookie Domain` against the response host, scoped cookies to origin, enforced `Secure`, and applied RFC 6265 `Path` handling.
+- Validated SSRF at connect and redirect time in the browser path: installed the subresource route guard at context creation, enforced SSRF for `sessionId`, blocked service workers, and added per-page DNS dedup with per-render DNS revalidation.
+- Closed the Playwright page on session release to prevent leaks and released the global politeness permit when a host acquire aborts.
+- Made storage migrations transactional, added a safe `JSON.stringify` fallback, redacted query strings in error URLs, made `closeStorageDbs` async, and wired process-exit cleanup hooks.
+- Used Promise-keyed Maps to avoid session/db race-driven leaks and evict on rejection.
+- Restored `options`/`scrapeDeps` pass-through in per-action extract handlers; fixed env precedence, schema hints, and `INCOMPATIBLE` reachability in tool selection.
+- Removed the 500-char total cap from batch/crawl expanded previews.
+- Updated bench build flags and paths for the restructured `src/` tree.
+
+### Removed
+
+- Deleted deprecated `extract`/`parse`/storage barrels and the dispatch surface; callers now import from canonical paths.
+
 ## [0.3.0] - 2026-05-08
 
 ### Added
