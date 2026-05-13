@@ -1,8 +1,7 @@
-/**
- * @fileoverview http fingerprint module.
- */
+/** @file Http fingerprint module. */
 import type { HttpClientOptions } from "../client.ts";
 import { SafeFingerprintAdapter } from "./adapter.ts";
+import { impitBackendFactory } from "./impit-backend.ts";
 import {
 	assertSupportedFingerprintOptions,
 	MissingFingerprintBackendError,
@@ -35,9 +34,7 @@ export {
 const adapterPool = new Map<string, FingerprintFetchAdapter>();
 let registeredBackendFactory: FingerprintBackendFactory | undefined;
 
-export function registerFingerprintBackendFactory(
-	factory: FingerprintBackendFactory,
-): () => void {
+export function registerFingerprintBackendFactory(factory: FingerprintBackendFactory): () => void {
 	registeredBackendFactory = factory;
 	adapterPool.clear();
 	return () => {
@@ -52,10 +49,11 @@ export function registerFingerprintBackendFactory(
  * Resolves the optional fingerprint fetch adapter.
  *
  * @remarks
- * pi-scraper does not bundle a TLS/HTTP impersonation backend because candidate
- * packages must expose no-follow-redirect semantics and must not hide DNS or
- * proxy behavior from the shared SSRF policy. Installers may register a backend
- * factory explicitly; absence is reported as a structured unsupported result.
+ *   Pi-scraper bundles `impit` (Apache-2.0, Apify-maintained) as the default TLS/HTTP
+ *   fingerprinting backend. The contract requires no-follow-redirect semantics so pi-scraper owns
+ *   the redirect chain; `impit` is configured per-hop in `impit-backend.ts`. Tests and power users
+ *   can swap backends via `registerFingerprintBackendFactory()` — the return value is an unregister
+ *   handle. Absence of any backend is reported as a structured unsupported result.
  */
 export function getFingerprintFetchAdapter(
 	profile: FingerprintProfile = {},
@@ -71,11 +69,7 @@ export function getFingerprintFetchAdapter(
 	const existing = adapterPool.get(key);
 	if (existing) return existing;
 
-	const adapter = createFingerprintFetchAdapter(
-		factory,
-		profile,
-		clientOptions,
-	);
+	const adapter = createFingerprintFetchAdapter(factory, profile, clientOptions);
 	adapterPool.set(key, adapter);
 	return adapter;
 }
@@ -89,10 +83,12 @@ export function createFingerprintFetchAdapter(
 	return new SafeFingerprintAdapter(factory, profile, clientOptions);
 }
 
-function adapterPoolKey(
-	profile: FingerprintProfile,
-	options: HttpClientOptions,
-): string {
+// Auto-register the bundled impit backend. Pi-scraper users get
+// mode: "fingerprint" out of the box. Tests can swap via
+// registerFingerprintBackendFactory() — the unregister return value works.
+registerFingerprintBackendFactory(impitBackendFactory);
+
+function adapterPoolKey(profile: FingerprintProfile, options: HttpClientOptions): string {
 	return JSON.stringify({
 		browserProfile: profile.browserProfile ?? "chrome",
 		osProfile: profile.osProfile ?? "default",

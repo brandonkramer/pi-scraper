@@ -58,6 +58,7 @@
 		"domhandler": "^5.0.3",
 		"domutils": "^3.2.2",
 		"htmlparser2": "^12.0.0",
+		"impit": "^0.14.0",
 		"linkedom": "^0.18.12",
 		"robots-parser": "^3.0.1",
 		"turndown": "^7.2.4",
@@ -81,7 +82,6 @@
 		"typescript": "latest",
 		"vitest": "^4.1.5"
 	},
-	"peerDependencies": {},
 	"optionalDependencies": {
 		"pdfjs-dist": "^5.7.284",
 		"playwright": "^1.59.1"

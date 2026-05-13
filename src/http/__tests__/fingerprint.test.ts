@@ -77,7 +77,11 @@ describe("fingerprint fetch adapter", () => {
 		);
 	});
 
-	it("reports a structured missing-backend error when no backend is configured", () => {
+	it("reports a structured missing-backend error when no backend is configured", async () => {
+		const dummy = registerFingerprintBackendFactory(() => {
+			throw new Error("should not be called");
+		});
+		dummy(); // Remove the auto-registered impit backend
 		expect(() => getFingerprintFetchAdapter()).toThrow(
 			expect.objectContaining({
 				structured: expect.objectContaining({
@@ -86,6 +90,17 @@ describe("fingerprint fetch adapter", () => {
 				}),
 			}),
 		);
+		// Re-register impit so downstream tests see the bundled backend
+		const { impitBackendFactory } = await import("../fingerprint/impit-backend.ts");
+		registerFingerprintBackendFactory(impitBackendFactory);
+	});
+
+	it("has the bundled impit backend registered by default", () => {
+		// Auto-registration at module init means getFingerprintFetchAdapter
+		// no longer throws MissingFingerprintBackendError.
+		expect(() =>
+			getFingerprintFetchAdapter({ browserProfile: "chrome" }, { resolveDns: false }),
+		).not.toThrow();
 	});
 
 	it("uses a registered backend factory for configured fingerprint mode", async () => {
