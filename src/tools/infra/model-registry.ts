@@ -6,7 +6,7 @@
 import type { ModelAdapter } from "../../extract/adhoc/model.ts";
 import { isUnknownRecord } from "../../types.ts";
 
-export type ModelCapability = "summarize" | "extract" | "analyze" | "chat";
+export type ModelCapability = "summarize" | "extract";
 
 export interface RegisteredAdapter {
 	id: string;
@@ -142,8 +142,7 @@ export function validateAdapterPayload(payload: unknown): RegisteredAdapter | nu
 		return null;
 	}
 	const capabilities = payload.capabilities.filter(
-		(c): c is ModelCapability =>
-			typeof c === "string" && ["summarize", "extract", "analyze", "chat"].includes(c),
+		(c): c is ModelCapability => typeof c === "string" && ["summarize", "extract"].includes(c),
 	);
 	return {
 		id: payload.id,

@@ -137,7 +137,7 @@ describe("web_summarize lazy filtered discover", () => {
 	it("provider with non-matching capability does not re-register under filtered discover", async () => {
 		const { pi, handlers } = mockPiWithFilteredDiscover();
 
-		const providerEntry = fakeRegisteredAdapter("chatbot", ["chat" as string]);
+		const providerEntry = fakeRegisteredAdapter("extractor-only", ["extract"]);
 		registerFilteredProvider(handlers, providerEntry);
 
 		initModelAdapterProtocol(pi);

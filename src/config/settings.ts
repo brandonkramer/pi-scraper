@@ -8,9 +8,7 @@ import type { CommonScrapeOptions, OutputFormat, ScrapeMode } from "../types.ts"
 
 type PersistedScrapeDefaults = Partial<Omit<CommonScrapeOptions, "mode" | "format">>;
 
-export type ModelProviderConfig =
-	| string
-	| { summarize?: string; extract?: string; analyze?: string; chat?: string };
+export type ModelProviderConfig = string | { summarize?: string; extract?: string };
 
 export interface WebConfig {
 	scrapeMode?: ScrapeMode;

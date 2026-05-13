@@ -244,12 +244,10 @@ The effective config is cached in memory for the session. After hand-editing `~/
 
 ### Capabilities
 
-| Capability  | What it does                                                                            | Used by                      |
-| ----------- | --------------------------------------------------------------------------------------- | ---------------------------- |
-| `summarize` | Page-scoped natural-language summary of scraped content.                                | `web_summarize`              |
-| `extract`   | Schema- or prompt-driven structured extraction (JSON shape) from scraped content.       | `web_extract action="adhoc"` |
-| `analyze`   | Reserved — reasoning/classification over scraped content (sentiment, intent, labeling). | (future tools)               |
-| `chat`      | Reserved — multi-turn dialogue grounded in scraped content.                             | (future tools)               |
+| Capability  | What it does                                                                      | Used by                      |
+| ----------- | --------------------------------------------------------------------------------- | ---------------------------- |
+| `summarize` | Page-scoped natural-language summary of scraped content.                          | `web_summarize`              |
+| `extract`   | Schema- or prompt-driven structured extraction (JSON shape) from scraped content. | `web_extract action="adhoc"` |
 
 ### Configuration
 
@@ -262,7 +260,7 @@ Highest layer wins:
 | Per-call     | `provider` param on the tool call                                   | LLM routes a single call |
 | Pi flag      | `--web-model-provider=auto\|<id>\|off`                              | Per Pi session           |
 | Env var      | `PI_WEB_MODEL_PROVIDER`                                             | Shell / scripts          |
-| Config file  | `modelProvider` (string or `{ summarize, extract, analyze, chat }`) | Persistent default       |
+| Config file  | `modelProvider` (string or `{ summarize, extract }`)                | Persistent default       |
 | Default      | `"auto"`                                                            | Out-of-box               |
 
 `"auto"` picks the highest-priority adapter that supports the requested capability. `"off"` returns `MODEL_ADAPTER_MISSING` and (at config level) hides the model-backed tools from Pi's tool list.
@@ -287,7 +285,7 @@ Adapters **SHOULD** honor the discover filter (capability overlap, `priority >= 
 const entry = {
   id: "my-adapter",
   label: "My Adapter",
-  capabilities: ["summarize"] as const, // summarize | extract | analyze | chat
+  capabilities: ["summarize"] as const, // summarize | extract
   priority: 50, // higher wins in "auto"
   adapter: {
     async run(req, signal) {

@@ -60,7 +60,7 @@ describe("ModelRegistry", () => {
 	});
 
 	it("returns undefined for auto when no adapter matches capability", () => {
-		registry.register({ ...fakeAdapter("a"), capabilities: ["chat"] });
+		registry.register({ ...fakeAdapter("a"), capabilities: ["extract"] });
 		expect(registry.resolve("auto", "summarize")).toBeUndefined();
 	});
 
