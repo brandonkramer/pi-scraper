@@ -90,9 +90,12 @@
 		"pdfjs-dist": "^5.7.284",
 		"playwright": "^1.59.1"
 	},
+	"overrides": {
+		"fast-xml-builder": "^1.1.7"
+	},
 	"engines": {
 		"node": ">=22.19.0",
-		"pi": ">=0.65.0"
+		"pi": ">=0.74.0"
 	},
 	"pi": {
 		"extensions": [

@@ -28,7 +28,7 @@ Add `cacheTtlSeconds` when you want opt-in fetch-cache reuse; omit it for fresh 
 ## Requirements
 
 - Node.js `>=22.19.0`
-- Pi `>=0.65.0`
+- Pi `>=0.74.0`
 - Optional Chromium binaries for `mode: "browser"`
 
 Browser mode lazy-loads Playwright. Chromium is not bundled; install only if needed:
@@ -186,6 +186,7 @@ Vertical extractors return typed JSON for known sites, preferring public APIs/fe
 - `action: "list"` — inspect runtime extractor declarations.
 - `action: "vertical"` — known-site typed JSON, including `docstrings`.
 - `action: "pattern"` — deterministic length, markers, contains, regex, excerpts, start/end `sections`, symbol `include`, and `extractSchema` presets.
+- `action: "selector"` — CSS/XPath/text selector extraction with optional adaptive fingerprint relocation (see [Selector extraction](#selector-extraction)).
 - `extract: "api-surface"` — local hierarchical module/function tree.
 - `action: "adhoc"` — custom schema/prompt extraction; model-backed.
 
@@ -210,6 +211,8 @@ Persistent paths:
 ## Safety and anti-bot scope
 
 - SSRF/private-network protection is applied before fetches and at the HTTP connect/redirect layer.
+- HTTP cookies are scoped to the response origin: `Set-Cookie` `Domain` attributes are validated against the response host (RFC 6265 §5.1.3 / §5.3 step 6) and the `Path` attribute follows RFC 6265 default-path semantics (§5.1.4 / §5.2.4 — last valid `Path` wins, invalid values fall back to the request-URI directory).
+- In `mode: "browser"`, service workers are blocked, every subresource URL is re-validated through the same SSRF guard, and DNS dedup is per-page so concurrent renders sharing a session cannot bleed safety decisions.
 - `respectRobots` defaults to `true`.
 - Response body sizes are bounded before allocation and while streaming.
 - Browser rendering is optional and lazy-loaded.
