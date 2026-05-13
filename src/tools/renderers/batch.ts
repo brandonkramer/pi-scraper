@@ -8,6 +8,8 @@ import {
 	isBatchProgressView,
 } from "../../batch/progress-state.ts";
 import type { BatchItemResult } from "../../batch/run.ts";
+import type { LineMatch } from "../../scrape/line-filter.ts";
+import { formatLineMatchPreview } from "../../scrape/line-preview.ts";
 import { renderBatchProgressCard, renderBatchResultCard } from "../../tui/batch.ts";
 import {
 	activityCountSegment,
@@ -52,6 +54,7 @@ export interface BatchItem {
 			markdown?: string;
 			text?: string;
 			route?: string;
+			matches?: LineMatch[];
 		};
 	};
 	error?: { code?: string; phase?: string; message?: string };
@@ -86,18 +89,24 @@ function toBatchListItem(item: BatchItem, excerptCap = 180): ResourceListItem {
 	}
 	const result = item.result;
 	const url = item.url ?? result?.url ?? "unknown URL";
+	const matchPreview = formatLineMatchPreview(result?.data?.matches, {
+		maxChars: excerptCap,
+		maxMatches: 3,
+	});
 	return {
 		ok: true,
 		url,
 		finalUrl: result?.finalUrl,
 		title: result?.data?.title,
-		excerpt: pickExcerpt(
-			result?.data?.description,
-			result?.data?.markdown,
-			result?.data?.text,
-			result?.data?.route,
-			excerptCap,
-		),
+		excerpt:
+			matchPreview ??
+			pickExcerpt(
+				result?.data?.description,
+				result?.data?.markdown,
+				result?.data?.text,
+				result?.data?.route,
+				excerptCap,
+			),
 		fields: {
 			status: result?.status,
 			mode: result?.mode,

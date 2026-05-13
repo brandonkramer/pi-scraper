@@ -1,10 +1,10 @@
-/**
- * @fileoverview Tool-level regression coverage for web_batch context.
- */
+/** @file Tool-level regression coverage for web_batch context. */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { BatchScrapeResult } from "../../batch/run.ts";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { closeStorageDbs } from "../../storage/db/open.ts";
@@ -16,9 +16,7 @@ import { webGetResultTool } from "../web-get-result.ts";
 
 vi.mock("../../batch/run.ts", () => ({
 	runBatchScrape: vi.fn(async (): Promise<BatchScrapeResult> => {
-		const { createJobManifest, writeJobManifest } = await import(
-			"../../storage/jobs/manifest.ts"
-		);
+		const { createJobManifest, writeJobManifest } = await import("../../storage/jobs/manifest.ts");
 		const { storeResponse } = await import("../../storage/responses/store.ts");
 		const jobId = "batch-context";
 		await writeJobManifest(
@@ -106,6 +104,40 @@ describe("web_batch context", () => {
 
 		const manifest = await getJobManifest("batch-context");
 		expect(manifest.manifest.responseIds).toContain(packageResponseId);
+	});
+
+	it("stores labeled-text match previews with line numbers", async () => {
+		const result = await webBatchTool.execute(
+			"call",
+			{
+				urls: ["https://docs.example.com/guide"],
+				compile: { mode: "labeled-text" },
+				linesMatching: ["fetchMetrics"],
+				contextLines: 0,
+			},
+			signal,
+		);
+		const diagnostics = (result.details as ResultEnvelope).diagnostics as {
+			contextPackage?: { responseId: string };
+		};
+		const packageResponseId = diagnostics.contextPackage!.responseId;
+		const stored = await readResponse<{
+			tree: Array<{ excerpt?: string }>;
+			items: Array<{ matches?: Array<{ line: number; text: string }> }>;
+		}>(packageResponseId);
+
+		expect(result.content[0]?.text).toContain("Matching line snippets by item:");
+		expect(result.content[0]?.text).toContain(
+			"> 1: Guide Install the package and call fetchMetrics().",
+		);
+		expect(stored.value.tree[0]?.excerpt).toContain("Matching line snippets");
+		expect(stored.value.tree[0]?.excerpt).toContain(
+			"> 1: Guide Install the package and call fetchMetrics().",
+		);
+		expect(stored.value.items[0]?.matches?.[0]).toMatchObject({
+			line: 1,
+			text: "Guide Install the package and call fetchMetrics().",
+		});
 	});
 });
 
