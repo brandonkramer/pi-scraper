@@ -2,6 +2,12 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [0.5.1] - 2026-05-13
+
+### Changed
+
+- Updated bundled skill (`skills/web-scraping/SKILL.md`) with explicit `mode` enum (`fast|fingerprint|browser|auto`), fingerprint trigger heuristics (403/CF challenge/empty-shell), and `format=raw` + `linesMatching` examples.
+
 ## [0.5.0] - 2026-05-13
 
 ### Added
