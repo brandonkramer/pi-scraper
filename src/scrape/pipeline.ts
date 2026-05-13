@@ -9,11 +9,7 @@ import { loadDom } from "../parse/dom/adapter.ts";
 import type { ReadableExtraction, extractReadable } from "../parse/page/readable.ts";
 import type { CommonScrapeOptions, OutputFormat, ResultEnvelope, ScrapeMode } from "../types.ts";
 import { normalizeGitHubBlobUrl } from "../url/github-raw.ts";
-import {
-	pickAlternateForFormat,
-	shouldFollowAlternate,
-	type AlternateOutputFormat,
-} from "./alternate-match.ts";
+import { pickAlternateForFormat, shouldFollowAlternate } from "./alternate-match.ts";
 import type { LineMatch } from "./line-filter.ts";
 import { metaRefreshEnabled, shouldFollowMetaRefresh } from "./meta-refresh.ts";
 import type { BrowserRenderer } from "./modes/browser.ts";
@@ -144,7 +140,7 @@ async function alternateFallback(
 	const currentUrl = result.finalUrl ?? result.url;
 	if (!currentUrl || result.data.route !== "html") return;
 	const alternates = alternateLinks(result, currentUrl);
-	const candidate = pickAlternateForFormat(alternates, format as AlternateOutputFormat);
+	const candidate = pickAlternateForFormat(alternates, format);
 	if (!candidate || !shouldFollowAlternate(candidate, result, options)) return;
 	const alternate = await scrapeUrl(
 		candidate.url,
