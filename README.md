@@ -158,7 +158,8 @@ Examples:
 
 ### Known limitations
 
-- `fingerprint` mode: response body streams through `maxBytes`-bounded collection. A second DNS resolve immediately before connect detects rebinding attacks (TOCTOU mitigation); do not rely on it as a sole defense for attacker-controlled URLs.
+- `fingerprint` mode: response body streams through `maxBytes`-bounded collection.
+- `fingerprint` mode: DNS rebinding mitigation requires `resolveDns: true` (default). A second DNS resolve immediately before connect detects TOCTOU rebinding. Set `fingerprintTrustLevel: "untrusted"` to block fingerprint fetches against arbitrary URLs.
 - `fingerprint` mode: proxy support is deferred because impit's HTTP/3 and proxy are mutually exclusive.
 
 ## Vertical extraction

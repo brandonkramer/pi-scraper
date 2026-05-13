@@ -89,4 +89,32 @@ describe("materializeBackendResponse streaming", () => {
 		expect(result.text).toBe("");
 		expect(result.downloadedBytes).toBe(0);
 	});
+
+	it("cancels the upstream ReadableStream when maxBytes is exceeded", async () => {
+		let cancelled = false;
+		const stream = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				controller.enqueue(new Uint8Array(200));
+			},
+			cancel() {
+				cancelled = true;
+			},
+		});
+
+		await expect(
+			materializeBackendResponse(
+				"https://example.com/",
+				{
+					status: 200,
+					body: stream,
+				},
+				{ method: "GET" },
+				100,
+			),
+		).rejects.toMatchObject({
+			message: expect.stringContaining("exceeded maxBytes"),
+		});
+
+		expect(cancelled).toBe(true);
+	});
 });

@@ -306,8 +306,33 @@ describe("fingerprint fetch adapter", () => {
 				strategy: "double-resolve",
 				preflightAddresses: ["1.2.3.4"],
 				connectAddresses: ["1.2.3.4"],
-				rebindingSuspected: false,
 			},
 		});
+	});
+
+	it("wraps backend timeout into structured FingerprintFetchError", async () => {
+		const agent = mockAgent();
+		allowRobots(agent, "https://timeout.example");
+		const backend: FingerprintRequestBackend = {
+			fetchOnce: vi.fn(async () => {
+				throw new Error("Request timeout");
+			}),
+		};
+		const adapter = createFingerprintFetchAdapter(
+			() => backend,
+			{},
+			{
+				dispatcher: agent,
+				resolveDns: false,
+			},
+		);
+
+		await expect(adapter.fetch("https://timeout.example/")).rejects.toMatchObject({
+			structured: {
+				code: "FINGERPRINT_FETCH_FAILED",
+				phase: "fingerprint",
+			},
+		});
+		expect(backend.fetchOnce).toHaveBeenCalledTimes(1);
 	});
 });

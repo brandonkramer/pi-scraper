@@ -115,7 +115,6 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 					strategy: "double-resolve",
 					preflightAddresses: safe.checkedAddresses,
 					connectAddresses: secondSafe?.checkedAddresses ?? [],
-					rebindingSuspected: false,
 				},
 			};
 			return result;
