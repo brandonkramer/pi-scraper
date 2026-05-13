@@ -1,10 +1,7 @@
-/**
- * @fileoverview defaults module.
- */
+/** @file Defaults module. */
 import type { OutputFormat, ScrapeMode } from "./types.ts";
 
-export const DEFAULT_USER_AGENT =
-	"pi-scraper/0.1 (+https://www.npmjs.com/package/pi-scraper)";
+export const DEFAULT_USER_AGENT = "pi-scraper/0.1 (+https://www.npmjs.com/package/pi-scraper)";
 
 export const SCRAPE_MODES = [
 	"fast",
@@ -20,6 +17,7 @@ export const OUTPUT_FORMATS = [
 	"llm",
 	"html",
 	"json",
+	"raw",
 ] as const satisfies readonly OutputFormat[];
 
 export const DEFAULT_SCRAPE_MODE: ScrapeMode = "auto";

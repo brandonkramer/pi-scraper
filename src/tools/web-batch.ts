@@ -10,6 +10,7 @@ import {
 import { runBatchScrape } from "../batch/run.ts";
 import { loadEffectiveConfig } from "../config/settings.ts";
 import { DEFAULT_CONCURRENCY } from "../defaults.ts";
+import { filterLines } from "../scrape/line-filter.ts";
 import { aggregateFreshness, freshnessFromCache } from "../storage/cache/freshness.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import { retrieveResultAction, storedResultGuidance } from "./infra/agentic-context.ts";
@@ -25,6 +26,9 @@ export const webBatchSchema = Type.Object({
 	concurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 32 })),
 	perHostConcurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 16 })),
 	...scrapeOutputOptionSchema,
+	linesMatching: Type.Optional(Type.Array(Type.String())),
+	contextLines: Type.Optional(Type.Number()),
+	caseSensitive: Type.Optional(Type.Boolean()),
 	compile: Type.Optional(Type.Any()),
 });
 
@@ -68,6 +72,15 @@ export const webBatchTool = defineWebTool({
 			{},
 			signal,
 		);
+		const needles = params.linesMatching;
+		if (needles && needles.length > 0) {
+			for (const item of result.items) {
+				if (!item.ok) continue;
+				const text = item.result.data.rawText ?? item.result.data.text ?? "";
+				const matches = filterLines(text, needles, params.contextLines, params.caseSensitive);
+				item.result = { ...item.result, data: { ...item.result.data, matches } };
+			}
+		}
 		const succeeded = result.items.filter((item) => item.ok).length;
 		const failed = result.items.length - succeeded;
 		const cacheHits = result.items.filter((item) => item.ok && item.result.cache?.cached).length;
