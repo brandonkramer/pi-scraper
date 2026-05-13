@@ -168,6 +168,15 @@ export interface ResultEnvelope<TData = unknown> {
 	qualitySignals?: AgenticQualitySignals;
 	nextActions?: AgenticNextAction[];
 	assistantGuidance?: string;
+	/** Fetch path note for callers; currently set when scrape follows a same-origin alternate URL. */
+	fetchedVia?: {
+		kind: "alternate";
+		url: string;
+		finalUrl?: string;
+		type?: string;
+		originalUrl?: string;
+		originalFinalUrl?: string;
+	};
 	diagnostics?: Record<string, unknown>;
 	error?: StructuredError;
 }
@@ -255,6 +264,15 @@ export interface CommonScrapeOptions extends CommonRequestOptions {
 	linesMatching?: string[];
 	contextLines?: number;
 	caseSensitive?: boolean;
+
+	/** Disable or enable one-hop same-origin alternate format fallback. */
+	followAlternates?: boolean;
+	/** Internal recursion marker that identifies the original URL for an alternate fetch. */
+	alternateFor?: string;
+	/** Prefer a same-origin matching alternate even when the primary HTML is not thin. */
+	preferAlternates?: boolean;
+	/** Minimum meaningful primary text length before alternate fallback is considered unnecessary. */
+	alternateThinContentChars?: number;
 }
 
 export interface ExtractorCapability {

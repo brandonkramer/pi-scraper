@@ -9,6 +9,7 @@ import {
 	type RoutedContentKind,
 	routeContentType,
 } from "../../parse/content/route.ts";
+import { discoverAlternateLinks } from "../../parse/discovery/alternates.ts";
 import { parseMarkdown, parseMdx, parseRst } from "../../parse/markup/doc.ts";
 import { parseDocstrings } from "../../parse/markup/docstrings.ts";
 import { extractFastPage } from "../../parse/page/fast.ts";
@@ -194,7 +195,10 @@ function htmlResult(
 		} as FetchUrlResult,
 		extraction,
 	);
-	const metadata = extraction.metadata as unknown as Record<string, unknown>;
+	const metadata = {
+		...(extraction.metadata as unknown as Record<string, unknown>),
+		alternates: discoverAlternateLinks(html, finalUrl),
+	};
 	return {
 		...base,
 		data: {
