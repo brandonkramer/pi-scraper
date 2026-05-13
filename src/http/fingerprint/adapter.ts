@@ -10,7 +10,7 @@ import { fetchWithRequestPolicy } from "../request-policy.ts";
 import { materializeFetchBufferResponse, materializeFetchStreamResponse } from "../response.ts";
 import { loadRobotsText, RobotsCache } from "../robots.ts";
 import { withTimeout } from "../timeout.ts";
-import { assertSafeFetchUrl, type SafeUrlResult } from "../url-safety.ts";
+import { assertSafeFetchUrl, UrlSafetyError, type SafeUrlResult } from "../url-safety.ts";
 import {
 	assertSupportedFingerprintOptions,
 	type FingerprintBackendFactory,
@@ -81,6 +81,7 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		const { signal, cleanup } = withTimeout(parentSignal, timeoutMs);
 		try {
 			const backend = await this.backendFor(safe.url.host);
+			await revalidateDns(safe, this.clientOptions);
 			const response = await backend.fetchOnce(
 				safe.normalizedUrl,
 				{
@@ -156,6 +157,22 @@ async function materializeBackendResponse(
 		maxBytes,
 		options,
 	});
+}
+
+async function revalidateDns(safe: SafeUrlResult, options: HttpClientOptions): Promise<void> {
+	if (safe.checkedAddresses.length === 0) return;
+	const second = await assertSafeFetchUrl(safe.normalizedUrl, options);
+	if (second.checkedAddresses.length === 0) return;
+
+	const firstSet = new Set(safe.checkedAddresses);
+	const secondSet = new Set(second.checkedAddresses);
+	if (firstSet.size !== secondSet.size || ![...firstSet].every((ip) => secondSet.has(ip))) {
+		throw new UrlSafetyError(
+			"DNS_REBINDING_DETECTED",
+			`DNS resolved to different IPs between preflight (${[...firstSet].join(", ")}) and connect-time (${[...secondSet].join(", ")}) check. Potential DNS rebinding attack.`,
+			safe.normalizedUrl,
+		);
+	}
 }
 
 function fingerprintFetchError(error: unknown, url: string, options: FingerprintFetchOptions) {

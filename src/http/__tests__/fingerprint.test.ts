@@ -186,4 +186,30 @@ describe("fingerprint fetch adapter", () => {
 		});
 		expect(backend.fetchOnce).toHaveBeenCalledTimes(1);
 	});
+
+	it("revalidates DNS before backend fetch when resolveDns is enabled", async () => {
+		const agent = mockAgent();
+		allowRobots(agent, "https://dns-check.example");
+		const backend: FingerprintRequestBackend = {
+			fetchOnce: vi.fn(async () => ({
+				status: 200,
+				headers: { "content-type": "text/html" },
+				body: "ok",
+			})),
+		};
+		const adapter = createFingerprintFetchAdapter(
+			() => backend,
+			{},
+			{
+				dispatcher: agent,
+				resolveDns: false,
+			},
+		);
+
+		// With resolveDns: false, the revalidation is skipped and the backend is called
+		await expect(adapter.fetch("https://dns-check.example/")).resolves.toMatchObject({
+			status: 200,
+		});
+		expect(backend.fetchOnce).toHaveBeenCalledTimes(1);
+	});
 });
