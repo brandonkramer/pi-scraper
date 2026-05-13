@@ -1,5 +1,5 @@
 /** @file Pi tool adapter for stored result, job, and snapshot lookup. */
-import { type Static, Type } from "@earendil-works/pi-ai";
+import { type Static, Type } from "typebox";
 
 import { listSnapshots } from "../diff/snapshots.ts";
 import { getJobManifest } from "../storage/jobs/manifest.ts";

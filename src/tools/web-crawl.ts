@@ -1,5 +1,5 @@
 /** @file Pi tool adapter for crawling, crawl state, and context. */
-import { type Static, Type } from "@earendil-works/pi-ai";
+import { type Static, Type } from "typebox";
 
 import { renderSimpleCall } from "../tui/call.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";

@@ -3,7 +3,7 @@
  *   model-provider, scrape-mode, cache, robots, reload. No-args opens an interactive picker when
  *   ctx.ui.select is available.
  */
-import { type Static, Type } from "@earendil-works/pi-ai";
+import { type Static, Type } from "typebox";
 
 import { toolResult } from "../tools/infra/result.ts";
 import { defineWebCommand, type CommandContext } from "./define.ts";
