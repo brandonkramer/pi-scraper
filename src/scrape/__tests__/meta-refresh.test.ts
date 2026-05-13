@@ -115,6 +115,31 @@ describe("meta-refresh redirect", () => {
 		});
 	});
 
+	it("falls back to original when meta-refresh target is robots-disallowed", async () => {
+		const harness = depsFor((url) => {
+			if (url === TARGET)
+				throw Object.assign(new Error("Blocked by robots.txt"), {
+					structured: { code: "ROBOTS_BLOCKED", phase: "robots", retryable: false },
+				});
+			return htmlResponse(thinHtml(`<meta http-equiv="refresh" content="0; url=/target">`));
+		});
+
+		const result = await scrapeUrl(URL, { mode: "fast", format: "markdown" }, harness.deps);
+
+		expect(harness.calls()).toEqual([URL, TARGET]);
+		expect(result.error).toBeUndefined();
+		expect(result.data.route).toBe("html");
+		expect(result.diagnostics?.metaRefreshFallback).toMatchObject({
+			url: TARGET,
+			error: expect.objectContaining({
+				code: "SCRAPE_FAILED",
+				cause: expect.objectContaining({
+					structured: expect.objectContaining({ code: "ROBOTS_BLOCKED" }),
+				}),
+			}),
+		});
+	});
+
 	it("ignores meta-refresh when followMetaRefresh is false", async () => {
 		const harness = depsFor({
 			[URL]: htmlResponse(thinHtml(`<meta http-equiv="refresh" content="0; url=/target">`)),

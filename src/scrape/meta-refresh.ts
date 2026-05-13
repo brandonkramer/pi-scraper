@@ -37,8 +37,7 @@ export function shouldFollowMetaRefresh(
 	result: MetaRefreshResultLike,
 	options: MetaRefreshOptions = {},
 ): boolean {
-	if (options.metaRefreshHopCount && options.metaRefreshHopCount >= MAX_META_REFRESH_HOPS)
-		return false;
+	if ((options.metaRefreshHopCount ?? 0) >= MAX_META_REFRESH_HOPS) return false;
 	if (metaRefresh.delaySeconds > DEFAULT_DELAY_CAP_SECONDS) return false;
 	const currentUrl = result.finalUrl ?? result.url;
 	if (!currentUrl) return false;

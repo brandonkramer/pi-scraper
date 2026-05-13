@@ -2,7 +2,7 @@
 import type { AlternateLink } from "../parse/discovery/alternates.ts";
 import type { CommonScrapeOptions, OutputFormat } from "../types.ts";
 
-export type AlternateOutputFormat = OutputFormat | "llm-text";
+export type AlternateOutputFormat = OutputFormat;
 
 export const FORMAT_TO_MIME = {
 	markdown: ["text/markdown", "text/x-markdown", "text/plain;variant=markdown"],
@@ -10,7 +10,6 @@ export const FORMAT_TO_MIME = {
 	text: ["text/plain"],
 	html: ["text/html", "application/xhtml+xml"],
 	llm: ["text/markdown", "text/plain"],
-	"llm-text": ["text/markdown", "text/plain"],
 	raw: [],
 } as const satisfies Record<AlternateOutputFormat, readonly string[]>;
 
