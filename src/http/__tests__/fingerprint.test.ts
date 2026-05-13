@@ -212,4 +212,102 @@ describe("fingerprint fetch adapter", () => {
 		});
 		expect(backend.fetchOnce).toHaveBeenCalledTimes(1);
 	});
+
+	it("detects DNS rebinding when injected resolver returns different IPs", async () => {
+		let callCount = 0;
+		const backend: FingerprintRequestBackend = {
+			fetchOnce: vi.fn(async () => ({
+				status: 200,
+				headers: { "content-type": "text/html" },
+				body: "rebound",
+			})),
+		};
+		const adapter = createFingerprintFetchAdapter(
+			() => backend,
+			{},
+			{
+				resolveDns: true,
+				allowPrivateNetwork: false,
+				resolver: async () => {
+					callCount++;
+					if (callCount === 1) {
+						return {
+							url: new URL("https://rebinding.example/"),
+							normalizedUrl: "https://rebinding.example/",
+							checkedAddresses: ["93.184.216.34"],
+						};
+					}
+					return {
+						url: new URL("https://rebinding.example/"),
+						normalizedUrl: "https://rebinding.example/",
+						checkedAddresses: ["127.0.0.1"],
+					};
+				},
+			},
+		);
+
+		await expect(adapter.fetch("https://rebinding.example/")).rejects.toMatchObject({
+			structured: {
+				code: "DNS_REBINDING_DETECTED",
+				phase: "url_safety",
+			},
+		});
+		expect(backend.fetchOnce).not.toHaveBeenCalled();
+	});
+
+	it("blocks fingerprint fetch when fingerprintTrustLevel is untrusted", async () => {
+		const backend: FingerprintRequestBackend = { fetchOnce: vi.fn() };
+		const adapter = createFingerprintFetchAdapter(
+			() => backend,
+			{},
+			{
+				resolveDns: false,
+				fingerprintTrustLevel: "untrusted",
+			},
+		);
+
+		await expect(adapter.fetch("https://example.com/")).rejects.toMatchObject({
+			structured: {
+				code: "FINGERPRINT_UNTRUSTED_URL",
+				phase: "url_safety",
+			},
+		});
+		expect(backend.fetchOnce).not.toHaveBeenCalled();
+	});
+
+	it("surfaces fingerprint rebinding mitigation diagnostic on successful fetch", async () => {
+		const agent = mockAgent();
+		allowRobots(agent, "https://diag.example");
+		const backend: FingerprintRequestBackend = {
+			fetchOnce: vi.fn(async () => ({
+				status: 200,
+				headers: { "content-type": "text/html" },
+				body: "ok",
+			})),
+		};
+		const adapter = createFingerprintFetchAdapter(
+			() => backend,
+			{},
+			{
+				dispatcher: agent,
+				resolveDns: true,
+				allowPrivateNetwork: false,
+				resolver: async () => ({
+					url: new URL("https://diag.example/"),
+					normalizedUrl: "https://diag.example/",
+					checkedAddresses: ["1.2.3.4"],
+				}),
+			},
+		);
+
+		const result = await adapter.fetch("https://diag.example/");
+		expect(result.diagnostics).toMatchObject({
+			fingerprintRebindingMitigation: {
+				strategy: "double-resolve",
+				preflightAddresses: ["1.2.3.4"],
+				connectAddresses: ["1.2.3.4"],
+				rebindingSuspected: false,
+			},
+		});
+	});
 });

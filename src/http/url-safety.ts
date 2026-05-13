@@ -8,6 +8,13 @@ import { normalizeUrl, type NormalizeUrlOptions } from "../url/normalize.ts";
 export interface UrlSafetyOptions extends NormalizeUrlOptions {
 	allowPrivateNetwork?: boolean;
 	resolveDns?: boolean;
+	/** Optional injected resolver for tests. If provided, bypasses the real DNS lookup. */
+	resolver?: (input: string | URL, options: UrlSafetyOptions) => Promise<SafeUrlResult>;
+	/**
+	 * Trust level for fingerprint mode URLs. `"untrusted"` blocks fingerprint fetches against
+	 * arbitrary URLs where DNS rebinding cannot be fully mitigated.
+	 */
+	fingerprintTrustLevel?: "trusted" | "untrusted";
 }
 
 export interface SafeUrlResult {
@@ -46,6 +53,9 @@ export async function assertSafeFetchUrl(
 	input: string | URL,
 	options: UrlSafetyOptions = {},
 ): Promise<SafeUrlResult> {
+	if (options.resolver) {
+		return await options.resolver(input, options);
+	}
 	const result = assertSafeUrl(input, options);
 	if (options.resolveDns === false || options.allowPrivateNetwork === true) {
 		return result;

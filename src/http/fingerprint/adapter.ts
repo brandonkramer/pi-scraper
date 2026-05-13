@@ -49,6 +49,13 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		signal?: AbortSignal,
 	): Promise<FetchUrlResult> {
 		assertSupportedFingerprintOptions({ ...this.profile, ...options });
+		if (this.clientOptions.fingerprintTrustLevel === "untrusted") {
+			throw new UrlSafetyError(
+				"FINGERPRINT_UNTRUSTED_URL",
+				"mode: fingerprint cannot fully prevent DNS rebinding for untrusted URLs. Use mode: 'browser' or set fingerprintTrustLevel: 'trusted'.",
+				url.toString(),
+			);
+		}
 		const initialSafe = await assertSafeFetchUrl(url, this.clientOptions);
 		try {
 			return await followRedirects({
@@ -81,7 +88,7 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		const { signal, cleanup } = withTimeout(parentSignal, timeoutMs);
 		try {
 			const backend = await this.backendFor(safe.url.host);
-			await revalidateDns(safe, this.clientOptions);
+			const secondSafe = await revalidateDns(safe, this.clientOptions);
 			const response = await backend.fetchOnce(
 				safe.normalizedUrl,
 				{
@@ -97,7 +104,21 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 				},
 				signal,
 			);
-			return await materializeBackendResponse(safe.normalizedUrl, response, options, maxBytes);
+			const result = await materializeBackendResponse(
+				safe.normalizedUrl,
+				response,
+				options,
+				maxBytes,
+			);
+			result.diagnostics = {
+				fingerprintRebindingMitigation: {
+					strategy: "double-resolve",
+					preflightAddresses: safe.checkedAddresses,
+					connectAddresses: secondSafe?.checkedAddresses ?? [],
+					rebindingSuspected: false,
+				},
+			};
+			return result;
 		} finally {
 			cleanup();
 		}
@@ -126,7 +147,7 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 	}
 }
 
-async function materializeBackendResponse(
+export async function materializeBackendResponse(
 	url: string,
 	response: FingerprintBackendResponse,
 	options: FingerprintFetchOptions,
@@ -159,10 +180,13 @@ async function materializeBackendResponse(
 	});
 }
 
-async function revalidateDns(safe: SafeUrlResult, options: HttpClientOptions): Promise<void> {
-	if (safe.checkedAddresses.length === 0) return;
+async function revalidateDns(
+	safe: SafeUrlResult,
+	options: HttpClientOptions,
+): Promise<SafeUrlResult | undefined> {
+	if (safe.checkedAddresses.length === 0) return undefined;
 	const second = await assertSafeFetchUrl(safe.normalizedUrl, options);
-	if (second.checkedAddresses.length === 0) return;
+	if (second.checkedAddresses.length === 0) return second;
 
 	const firstSet = new Set(safe.checkedAddresses);
 	const secondSet = new Set(second.checkedAddresses);
@@ -173,6 +197,7 @@ async function revalidateDns(safe: SafeUrlResult, options: HttpClientOptions): P
 			safe.normalizedUrl,
 		);
 	}
+	return second;
 }
 
 function fingerprintFetchError(error: unknown, url: string, options: FingerprintFetchOptions) {
