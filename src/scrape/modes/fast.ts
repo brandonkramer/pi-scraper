@@ -10,6 +10,8 @@ import {
 	routeContentType,
 } from "../../parse/content/route.ts";
 import { discoverAlternateLinks } from "../../parse/discovery/alternates.ts";
+import { discoverMetaRefresh } from "../../parse/discovery/meta-refresh.ts";
+import { loadDom } from "../../parse/dom/adapter.ts";
 import { parseMarkdown, parseMdx, parseRst } from "../../parse/markup/doc.ts";
 import { parseDocstrings } from "../../parse/markup/docstrings.ts";
 import { extractFastPage } from "../../parse/page/fast.ts";
@@ -198,6 +200,7 @@ function htmlResult(
 	const metadata = {
 		...(extraction.metadata as unknown as Record<string, unknown>),
 		alternates: discoverAlternateLinks(html, finalUrl),
+		metaRefresh: discoverMetaRefresh(loadDom(html), finalUrl),
 	};
 	return {
 		...base,

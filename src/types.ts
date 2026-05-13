@@ -168,15 +168,28 @@ export interface ResultEnvelope<TData = unknown> {
 	qualitySignals?: AgenticQualitySignals;
 	nextActions?: AgenticNextAction[];
 	assistantGuidance?: string;
-	/** Fetch path note for callers; currently set when scrape follows a same-origin alternate URL. */
-	fetchedVia?: {
-		kind: "alternate";
-		url: string;
-		finalUrl?: string;
-		type?: string;
-		originalUrl?: string;
-		originalFinalUrl?: string;
-	};
+	/**
+	 * Fetch path note for callers; currently set when scrape follows a same-origin alternate URL or a
+	 * meta-refresh redirect.
+	 */
+	fetchedVia?:
+		| {
+				kind: "alternate";
+				url: string;
+				finalUrl?: string;
+				type?: string;
+				originalUrl?: string;
+				originalFinalUrl?: string;
+		  }
+		| {
+				kind: "meta-refresh";
+				url: string;
+				finalUrl?: string;
+				originalUrl?: string;
+				originalFinalUrl?: string;
+				/** Chain of URLs traversed via meta-refresh redirects. */
+				chain?: string[];
+		  };
 	diagnostics?: Record<string, unknown>;
 	error?: StructuredError;
 }
@@ -273,6 +286,19 @@ export interface CommonScrapeOptions extends CommonRequestOptions {
 	preferAlternates?: boolean;
 	/** Minimum meaningful primary text length before alternate fallback is considered unnecessary. */
 	alternateThinContentChars?: number;
+
+	/** Disable or enable `<meta http-equiv="refresh">` redirect following. Default ON. */
+	followMetaRefresh?: boolean;
+	/** Internal hop-count marker for meta-refresh chains. */
+	metaRefreshHopCount?: number;
+	/** Internal marker that identifies the original URL for a meta-refresh fetch. */
+	metaRefreshFor?: string;
+	/** Chain of URLs traversed so far in a meta-refresh redirect sequence. */
+	metaRefreshChain?: string[];
+	/** Prefer following meta-refresh even when primary HTML is not thin. */
+	preferMetaRefresh?: boolean;
+	/** Minimum meaningful primary text length before meta-refresh fallback is considered unnecessary. */
+	metaRefreshThinContentChars?: number;
 }
 
 export interface ExtractorCapability {

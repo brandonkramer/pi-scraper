@@ -123,6 +123,9 @@ pairs = [
 
   # Reddit listing/post response validators — same pattern, different endpoints
   "src/extract/vertical/extractors/reddit/listing.ts:assertUsableRedditListingResponse||src/extract/vertical/extractors/reddit/post.ts:assertUsableRedditResponse",
+
+  # Parallel follow heuristics — alternate and meta-refresh share thin-content guard shape by design
+  "src/scrape/alternate-match.ts:shouldFollowAlternate||src/scrape/meta-refresh.ts:shouldFollowMetaRefresh",
 ]
 
 clusters = [
