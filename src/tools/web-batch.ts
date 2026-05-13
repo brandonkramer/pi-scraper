@@ -11,6 +11,7 @@ import { runBatchScrape } from "../batch/run.ts";
 import { loadEffectiveConfig } from "../config/settings.ts";
 import { DEFAULT_CONCURRENCY } from "../defaults.ts";
 import { filterLines } from "../scrape/line-filter.ts";
+import { formatLabeledLineMatchPreview } from "../scrape/line-preview.ts";
 import { aggregateFreshness, freshnessFromCache } from "../storage/cache/freshness.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import { retrieveResultAction, storedResultGuidance } from "./infra/agentic-context.ts";
@@ -89,10 +90,20 @@ export const webBatchTool = defineWebTool({
 				item.ok ? (item.result.freshness ?? freshnessFromCache(item.result.cache)) : undefined,
 			),
 		);
+		const matchPreview = formatLabeledLineMatchPreview(
+			result.items
+				.filter((item) => item.ok)
+				.map((item) => ({
+					label: labelFromUrl(item.result.finalUrl ?? item.result.url ?? item.url),
+					matches: item.result.data.matches,
+				})),
+			{ maxChars: 4_000, maxMatches: 5 },
+		);
 		const contextPackage = await compileBatchContext(params, result.items, result.jobId);
-		const text = contextPackage
-			? `${result.summary} Context: ${contextPackage.value.package.urlCount} page(s), responseId: ${contextPackage.responseId}.`
-			: result.summary;
+		const contextText = contextPackage
+			? ` Context: ${contextPackage.value.package.urlCount} page(s), responseId: ${contextPackage.responseId}.`
+			: "";
+		const text = `${result.summary}${contextText}${matchPreview ? `\n${matchPreview}` : ""}`;
 		const { notice: sessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
 		const completedProgress = cloneBatchProgress(batchProgress);
 		return toolResult({
@@ -116,7 +127,7 @@ export const webBatchTool = defineWebTool({
 			mode: params.mode ?? "auto",
 			format: params.format ?? "markdown",
 			summary: `${succeeded} succeeded, ${failed} failed, ${cacheHits} cache hit(s) across ${result.items.length} URL(s).`,
-			answerContext: `Batch scrape completed with ${succeeded} succeeded and ${failed} failed out of ${result.items.length}. ${cacheHits} successful item(s) came from cache. Use responseId for full per-URL details or jobId ${result.jobId} for the structured job manifest.`,
+			answerContext: `Batch scrape completed with ${succeeded} succeeded and ${failed} failed out of ${result.items.length}. ${cacheHits} successful item(s) came from cache.${matchPreview ? `\n${matchPreview}` : ""} Use responseId for full per-URL details or jobId ${result.jobId} for the structured job manifest.`,
 			qualitySignals: {
 				confidence: failed || freshness?.stale ? "medium" : "high",
 				freshness: freshness?.stale ? "stale_possible" : "current",
@@ -141,3 +152,12 @@ export const webBatchTool = defineWebTool({
 		renderSimpleCall("web_batch", [`${args.urls.length} urls`, `(${args.mode ?? "auto"})`], theme),
 	renderResult: (result, { expanded }, theme) => renderWebBatchResult(result, expanded, theme),
 });
+
+function labelFromUrl(url: string): string {
+	try {
+		const parsed = new URL(url);
+		return parsed.pathname.split("/").findLast((segment) => segment.length > 0) ?? parsed.hostname;
+	} catch {
+		return url;
+	}
+}

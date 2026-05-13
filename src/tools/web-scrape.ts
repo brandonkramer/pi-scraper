@@ -5,6 +5,7 @@ import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import { getOrCreateSession } from "../http/session.ts";
 import { describeScrapeResult, formatAge } from "../scrape/describe.ts";
 import { filterLines } from "../scrape/line-filter.ts";
+import { formatLineMatchPreview } from "../scrape/line-preview.ts";
 import { resolveScrapeOptions } from "../scrape/options.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.ts";
 import { renderSimpleCall } from "../tui/call.ts";
@@ -170,16 +171,19 @@ async function readScrape(
 	});
 	const { storeResponse } = await import("../storage/responses/store.ts");
 	const stored = await storeResponse(result);
-	const shaped = shapeScrapeResult(result, stored.responseId);
+	const matchPreview = !result.error
+		? formatLineMatchPreview(result.data.matches, { maxChars: 4_000 })
+		: undefined;
+	const shaped = shapeScrapeResult(result, stored.responseId, matchPreview);
 	const { notice: sessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
-	const matchSummary =
-		!result.error && result.data.matches && result.data.matches.length > 0
-			? `${result.data.matches.length} match(es) across ${new Set(result.data.matches.map((m) => m.needle)).size} needle(s)`
-			: undefined;
+	const description = describeScrapeResult(result);
+	const scrapeText = matchPreview
+		? `${description.split("\n", 1)[0]}\n${matchPreview}`
+		: description;
 	return toolResult({
 		text: result.error
 			? `Scrape failed: ${result.error.message}`
-			: `${describeScrapeResult(result)}${matchSummary ? `\n${matchSummary}` : ""}\nresponseId: ${stored.responseId}${sessionSuffix}`,
+			: `${scrapeText}\nresponseId: ${stored.responseId}${sessionSuffix}`,
 		data: result.data,
 		url: result.url,
 		finalUrl: result.finalUrl,
@@ -229,7 +233,7 @@ async function summarizeScrape(params: Params, options: WebScrapeToolOptions, si
 	}
 }
 
-function shapeScrapeResult(result: ScrapeResult, responseId: string) {
+function shapeScrapeResult(result: ScrapeResult, responseId: string, matchPreview?: string) {
 	const url = result.finalUrl ?? result.url ?? "about:blank";
 	const source = result.cache?.cached
 		? `from cache fetched ${formatAge(result.cache.ageSeconds)} with staleness ${result.cache.staleness ?? "fresh"}`
@@ -241,17 +245,20 @@ function shapeScrapeResult(result: ScrapeResult, responseId: string) {
 		summary,
 		answerContext: result.error
 			? `The scrape failed during ${result.error.phase}: ${result.error.message}`
-			: `Page content below. responseId ${responseId} for stored access.`,
+			: `${matchPreview ?? "Page content below."}\nresponseId ${responseId} for stored access.`,
 		...storedTraceContext({
 			responseId,
 			source: {
 				id: "page",
 				title: result.data.title,
 				uri: url,
-				excerpt: (result.data.markdown ?? result.data.text ?? result.data.title ?? "").slice(
-					0,
-					240,
-				),
+				excerpt: (
+					matchPreview ??
+					result.data.markdown ??
+					result.data.text ??
+					result.data.title ??
+					""
+				).slice(0, 240),
 				relevance: "Primary scraped page content.",
 				retrievedAt: result.cache?.fetchedAt ?? new Date().toISOString(),
 				sourceType: "docs",

@@ -1,6 +1,7 @@
 /** @file Batch context compilation workflow. */
 import type { CompiledContext } from "../extract/context.ts";
 import type { LineMatch } from "../scrape/line-filter.ts";
+import { formatLineMatchPreview } from "../scrape/line-preview.ts";
 import { storeCompiledContext } from "../storage/context/build.ts";
 import { updateJobManifest } from "../storage/jobs/manifest.ts";
 import { storeResponse } from "../storage/responses/store.ts";
@@ -88,7 +89,8 @@ function compileLabeledText(
 		tree: entries.map((e) => ({
 			url: e.finalUrl ?? e.originalUrl,
 			title: e.label,
-			excerpt: e.text.slice(0, 120),
+			excerpt:
+				formatLineMatchPreview(e.matches, { maxChars: 300, maxMatches: 2 }) ?? e.text.slice(0, 120),
 		})),
 		items: entries,
 	};
