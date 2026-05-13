@@ -1,15 +1,16 @@
-/**
- * @fileoverview http fingerprint-adapter module.
- */
-import {
-	DEFAULT_MAX_BYTES,
-	DEFAULT_TIMEOUT_SECONDS,
-	DEFAULT_USER_AGENT,
-} from "../../defaults.ts";
+/** @file Http fingerprint-adapter module. */
+import { DEFAULT_MAX_BYTES, DEFAULT_TIMEOUT_SECONDS, DEFAULT_USER_AGENT } from "../../defaults.ts";
 import type { FetchUrlResult, HttpClientOptions } from "../client.ts";
 import { HttpClient } from "../client.ts";
 import { normalizeHeaders } from "../download.ts";
 import { httpClientErrorFromUnknown } from "../errors.ts";
+import { PolitenessController } from "../politeness.ts";
+import { followRedirects } from "../redirects.ts";
+import { fetchWithRequestPolicy } from "../request-policy.ts";
+import { materializeFetchBufferResponse, materializeFetchStreamResponse } from "../response.ts";
+import { loadRobotsText, RobotsCache } from "../robots.ts";
+import { withTimeout } from "../timeout.ts";
+import { assertSafeFetchUrl, type SafeUrlResult } from "../url-safety.ts";
 import {
 	assertSupportedFingerprintOptions,
 	type FingerprintBackendFactory,
@@ -19,19 +20,9 @@ import {
 	type FingerprintProfile,
 	type FingerprintRequestBackend,
 } from "./types.ts";
-import { PolitenessController } from "../politeness.ts";
-import { followRedirects } from "../redirects.ts";
-import { fetchWithRequestPolicy } from "../request-policy.ts";
-import { loadRobotsText, RobotsCache } from "../robots.ts";
-import { materializeFetchBufferResponse } from "../response.ts";
-import { withTimeout } from "../timeout.ts";
-import { assertSafeFetchUrl, type SafeUrlResult } from "../url-safety.ts";
 
 export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
-	private readonly backends = new Map<
-		string,
-		Promise<FingerprintRequestBackend>
-	>();
+	private readonly backends = new Map<string, Promise<FingerprintRequestBackend>>();
 	private readonly policyClient: HttpClient;
 	private readonly politeness: PolitenessController;
 	private readonly robots: RobotsCache;
@@ -48,8 +39,7 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		});
 		this.robots = new RobotsCache({
 			userAgent: clientOptions.userAgent ?? DEFAULT_USER_AGENT,
-			fetchText: (url, signal) =>
-				loadRobotsText(this.policyClient, url, signal),
+			fetchText: (url, signal) => loadRobotsText(this.policyClient, url, signal),
 		});
 	}
 
@@ -63,8 +53,7 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		try {
 			return await followRedirects({
 				initialSafe,
-				maxRedirects:
-					options.maxRedirects ?? this.clientOptions.maxRedirects ?? 5,
+				maxRedirects: options.maxRedirects ?? this.clientOptions.maxRedirects ?? 5,
 				fetchRequest: (safe) =>
 					fetchWithRequestPolicy({
 						safe,
@@ -75,8 +64,7 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 						signal,
 						fetch: () => this.fetchOnce(safe, options, signal),
 					}),
-				resolveSafeUrl: (nextUrl) =>
-					assertSafeFetchUrl(nextUrl, this.clientOptions),
+				resolveSafeUrl: (nextUrl) => assertSafeFetchUrl(nextUrl, this.clientOptions),
 			});
 		} catch (error) {
 			throw fingerprintFetchError(error, initialSafe.normalizedUrl, options);
@@ -88,8 +76,7 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		options: FingerprintFetchOptions,
 		parentSignal: AbortSignal | undefined,
 	): Promise<FetchUrlResult> {
-		const timeoutMs =
-			(options.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1_000;
+		const timeoutMs = (options.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1_000;
 		const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
 		const { signal, cleanup } = withTimeout(parentSignal, timeoutMs);
 		try {
@@ -104,18 +91,12 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 					),
 					timeoutMs,
 					maxBytes,
-					browserProfile:
-						options.browserProfile ?? this.profile.browserProfile ?? "chrome",
+					browserProfile: options.browserProfile ?? this.profile.browserProfile ?? "chrome",
 					osProfile: options.osProfile ?? this.profile.osProfile ?? "default",
 				},
 				signal,
 			);
-			return await materializeBackendResponse(
-				safe.normalizedUrl,
-				response,
-				options,
-				maxBytes,
-			);
+			return await materializeBackendResponse(safe.normalizedUrl, response, options, maxBytes);
 		} finally {
 			cleanup();
 		}
@@ -151,9 +132,21 @@ async function materializeBackendResponse(
 	maxBytes: number,
 ): Promise<FetchUrlResult> {
 	const headers = normalizeHeaders(response.headers ?? {});
-	const body = Buffer.isBuffer(response.body)
-		? response.body
-		: Buffer.from(response.body ?? "");
+	if (response.body && typeof response.body === "object" && "getReader" in response.body) {
+		return await materializeFetchStreamResponse({
+			url,
+			status: response.status,
+			statusText: response.statusText,
+			headers,
+			body: response.body as unknown as AsyncIterable<Uint8Array>,
+			maxBytes,
+			options,
+			discardBody: async () => {
+				await (response.body as ReadableStream<Uint8Array>).cancel();
+			},
+		});
+	}
+	const body = Buffer.isBuffer(response.body) ? response.body : Buffer.from(response.body ?? "");
 	return await materializeFetchBufferResponse({
 		url,
 		status: response.status,
@@ -165,11 +158,7 @@ async function materializeBackendResponse(
 	});
 }
 
-function fingerprintFetchError(
-	error: unknown,
-	url: string,
-	options: FingerprintFetchOptions,
-) {
+function fingerprintFetchError(error: unknown, url: string, options: FingerprintFetchOptions) {
 	return httpClientErrorFromUnknown(error, url, options, {
 		code: "FINGERPRINT_FETCH_FAILED",
 		phase: "fingerprint",

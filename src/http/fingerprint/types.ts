@@ -37,7 +37,7 @@ export interface FingerprintBackendResponse {
 	status: number;
 	statusText?: string;
 	headers?: Record<string, string | string[] | undefined>;
-	body?: Buffer | Uint8Array | string;
+	body?: ReadableStream<Uint8Array> | Buffer | Uint8Array | string;
 }
 
 export interface FingerprintRequestBackend {
