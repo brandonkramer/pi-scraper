@@ -1,6 +1,6 @@
 /** @file Impit backend for mode: "fingerprint". */
 
-import { Impit, type Browser, type ImpitResponse } from "impit";
+import { Impit, type Browser } from "impit";
 
 import {
 	UnsupportedFingerprintOptionError,
@@ -59,12 +59,11 @@ export const impitBackendFactory: FingerprintBackendFactory = async (key) => {
 				redirect: "manual",
 				signal,
 			});
-			const body = await consumeBody(response);
 			return {
 				status: response.status,
 				statusText: response.statusText,
 				headers: headersFromImpit(response.headers),
-				body,
+				body: response.body,
 			};
 		},
 	};
@@ -86,14 +85,4 @@ function headersFromImpit(headers: Headers): Record<string, string> {
 		out[k] = v;
 	}
 	return out;
-}
-
-async function consumeBody(response: ImpitResponse): Promise<Buffer> {
-	// Prefer .bytes() (Uint8Array) when available; fall back to arrayBuffer().
-	if (typeof (response as unknown as { bytes?: () => Promise<Uint8Array> }).bytes === "function") {
-		const bytes = await (response as unknown as { bytes: () => Promise<Uint8Array> }).bytes();
-		return Buffer.from(bytes);
-	}
-	const ab = await response.arrayBuffer();
-	return Buffer.from(ab);
 }
