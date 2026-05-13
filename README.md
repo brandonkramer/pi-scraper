@@ -158,8 +158,8 @@ Examples:
 
 ### Known limitations
 
-- `fingerprint` mode: the response body is materialized in memory before `maxBytes` bounds it (impit returns a buffer, not a stream). A malicious server could send a very large payload before the limit fires. Timeouts and OS limits provide secondary bounds.
-- `fingerprint` mode: DNS rebinding between preflight and connect is not yet mitigated. `assertSafeFetchUrl` resolves and validates DNS before the request, but impit re-resolves at connect time. Do not use `mode: "fingerprint"` against attacker-controlled URLs until this is fixed.
+- `fingerprint` mode: response body streams through `maxBytes`-bounded collection. A second DNS resolve immediately before connect detects rebinding attacks (TOCTOU mitigation); do not rely on it as a sole defense for attacker-controlled URLs.
+- `fingerprint` mode: proxy support is deferred because impit's HTTP/3 and proxy are mutually exclusive.
 
 ## Vertical extraction
 
