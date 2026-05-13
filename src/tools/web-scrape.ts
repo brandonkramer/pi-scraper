@@ -4,6 +4,7 @@ import { Type, type Static } from "@earendil-works/pi-ai";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import { getOrCreateSession } from "../http/session.ts";
 import { describeScrapeResult, formatAge } from "../scrape/describe.ts";
+import { filterLines } from "../scrape/line-filter.ts";
 import { resolveScrapeOptions } from "../scrape/options.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.ts";
 import { renderSimpleCall } from "../tui/call.ts";
@@ -39,6 +40,9 @@ export const webScrapeSchema = Type.Object({
 	proxy: Type.Optional(Type.Any()),
 	respectRobots: Type.Optional(Type.Any()),
 	refresh: Type.Optional(Type.Any()),
+	linesMatching: Type.Optional(Type.Array(Type.String())),
+	contextLines: Type.Optional(Type.Number()),
+	caseSensitive: Type.Optional(Type.Boolean()),
 
 	...sessionOptionSchema,
 	stealth: Type.Optional(Type.Any()),
@@ -137,7 +141,13 @@ async function readScrape(
 		],
 	});
 	const { scrapeUrl } = await import("../scrape/pipeline.ts");
-	const result = await scrapeUrl(params.url, scrapeOptions, {}, signal);
+	let result = await scrapeUrl(params.url, scrapeOptions, {}, signal);
+	const needles = params.linesMatching;
+	if (needles && needles.length > 0 && !result.error) {
+		const text = result.data.rawText ?? result.data.text ?? "";
+		const matches = filterLines(text, needles, params.contextLines, params.caseSensitive);
+		result = { ...result, data: { ...result.data, matches } };
+	}
 	await emitProgress(onUpdate, {
 		state: result.error ? "error" : "done",
 		url: result.finalUrl ?? params.url,
@@ -162,10 +172,14 @@ async function readScrape(
 	const stored = await storeResponse(result);
 	const shaped = shapeScrapeResult(result, stored.responseId);
 	const { notice: sessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
+	const matchSummary =
+		!result.error && result.data.matches && result.data.matches.length > 0
+			? `${result.data.matches.length} match(es) across ${new Set(result.data.matches.map((m) => m.needle)).size} needle(s)`
+			: undefined;
 	return toolResult({
 		text: result.error
 			? `Scrape failed: ${result.error.message}`
-			: `${describeScrapeResult(result)}\nresponseId: ${stored.responseId}${sessionSuffix}`,
+			: `${describeScrapeResult(result)}${matchSummary ? `\n${matchSummary}` : ""}\nresponseId: ${stored.responseId}${sessionSuffix}`,
 		data: result.data,
 		url: result.url,
 		finalUrl: result.finalUrl,

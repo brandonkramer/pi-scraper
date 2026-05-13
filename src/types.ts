@@ -1,16 +1,9 @@
-/**
- * @fileoverview types module.
- */
+/** @file Types module. */
 import type { ModelUsage } from "./extract/adhoc/model.ts";
 
-export type ScrapeMode =
-	| "fast"
-	| "fingerprint"
-	| "readable"
-	| "browser"
-	| "auto";
+export type ScrapeMode = "fast" | "fingerprint" | "readable" | "browser" | "auto";
 
-export type OutputFormat = "markdown" | "text" | "llm" | "html" | "json";
+export type OutputFormat = "markdown" | "text" | "llm" | "html" | "json" | "raw";
 
 export type ProgressState =
 	| "queued"
@@ -27,8 +20,8 @@ export type ToolRequirement = "local" | "browser" | "cloud" | "llm";
  * Object record used when narrowing unknown JSON-like values.
  *
  * @remarks
- * This is intentionally broad: callers that need array or prototype exclusion
- * should add those checks locally after narrowing to object shape.
+ *   This is intentionally broad: callers that need array or prototype exclusion should add those
+ *   checks locally after narrowing to object shape.
  */
 export type UnknownRecord = Record<string, unknown>;
 
@@ -36,8 +29,8 @@ export type UnknownRecord = Record<string, unknown>;
  * Narrows unknown values to non-null object records.
  *
  * @remarks
- * Shared by storage and tool adapter boundaries that receive loosely typed host
- * or persisted data.
+ *   Shared by storage and tool adapter boundaries that receive loosely typed host or persisted
+ *   data.
  */
 export function isUnknownRecord(value: unknown): value is UnknownRecord {
 	return typeof value === "object" && value !== null;
@@ -143,14 +136,7 @@ export interface AgenticQualitySignals {
 
 /** Follow-up capability hint for assistants; not a required user-facing question. */
 export interface AgenticNextAction {
-	action:
-		| "retrieve"
-		| "refresh"
-		| "rerun"
-		| "narrow"
-		| "compare"
-		| "inspect"
-		| "export";
+	action: "retrieve" | "refresh" | "rerun" | "narrow" | "compare" | "inspect" | "export";
 	tool?: `web_${string}`;
 	params?: Record<string, unknown>;
 	description: string;
@@ -216,9 +202,9 @@ export interface ProgressDetails<TData = unknown> {
 export function isProgress(value: unknown): value is ProgressDetails {
 	return Boolean(
 		value &&
-			typeof value === "object" &&
-			"_progress" in value &&
-			(value as ProgressDetails)._progress,
+		typeof value === "object" &&
+		"_progress" in value &&
+		(value as ProgressDetails)._progress,
 	);
 }
 
@@ -264,6 +250,11 @@ export interface CommonScrapeOptions extends CommonRequestOptions {
 	blockWebRTC?: boolean;
 	locale?: string;
 	timezone?: string;
+
+	// Raw inspection / line filtering (Task 48)
+	linesMatching?: string[];
+	contextLines?: number;
+	caseSensitive?: boolean;
 }
 
 export interface ExtractorCapability {

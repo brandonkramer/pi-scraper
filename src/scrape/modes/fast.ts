@@ -1,4 +1,6 @@
 /** @file Scrape modes fast module. */
+import { createHash } from "node:crypto";
+
 import type { FetchUrlResult, HttpClient } from "../../http/client.ts";
 import { createHttpClient } from "../../http/client.ts";
 import {
@@ -89,8 +91,8 @@ export async function responseScrape(
 			signal,
 		);
 	if (!route.shouldParseHtml)
-		return passthroughResult(base, route.kind, response.text ?? "", format, mode);
-	return htmlResult(base, response.text ?? "", response.finalUrl, mode, options);
+		return passthroughResult(base, route.kind, response.text ?? "", format, mode, response);
+	return htmlResult(base, response.text ?? "", response.finalUrl, mode, options, response, format);
 }
 
 function passthroughResult(
@@ -99,7 +101,23 @@ function passthroughResult(
 	text: string,
 	format: OutputFormat,
 	mode: ScrapeMode,
+	response?: FetchUrlResult,
 ): ScrapeResult {
+	if (format === "raw") {
+		return {
+			...base,
+			data: {
+				route,
+				extractionPath: [mode],
+				text,
+				rawText: text,
+				sha256: response?.body
+					? createHash("sha256").update(response.body).digest("hex")
+					: undefined,
+				charset: extractCharset(response?.contentType),
+			},
+		};
+	}
 	const parsed = parsePassthroughContent(route, text, base.finalUrl ?? base.url);
 	const normalized = normalizeWhitespace(parsed.text);
 	const json = route === "json" ? safeParseJson(text) : parsed.json;
@@ -161,6 +179,8 @@ function htmlResult(
 	finalUrl: string,
 	mode: ScrapeMode,
 	options: CommonScrapeOptions,
+	response?: FetchUrlResult,
+	format?: OutputFormat,
 ): ScrapeResult {
 	const extraction = extractFastPage(html, finalUrl, options);
 	const text = combineRecoveredText(extraction);
@@ -183,11 +203,14 @@ function htmlResult(
 			title: extraction.title,
 			description: extraction.description,
 			text,
-			html: extraction.html,
+			html: format === "raw" ? html : extraction.html,
+			rawText: format === "raw" ? html : undefined,
 			metadata,
 			links: extraction.links,
 			signals,
 			blocked: signals.blockedLikely,
+			sha256: response?.body ? createHash("sha256").update(response.body).digest("hex") : undefined,
+			charset: extractCharset(response?.contentType),
 		},
 	};
 }
@@ -198,4 +221,12 @@ function safeParseJson(text: string): unknown {
 	} catch {
 		/* ignore */
 	}
+}
+
+function extractCharset(contentType: string | undefined): string | undefined {
+	return contentType
+		?.match(/charset=([^;]+)/iu)?.[1]
+		?.trim()
+		.toLowerCase()
+		.replaceAll("_", "-");
 }

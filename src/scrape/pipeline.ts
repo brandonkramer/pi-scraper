@@ -5,6 +5,8 @@ import type { FingerprintFetchAdapter } from "../http/fingerprint/index.ts";
 import type { RoutedContentKind } from "../parse/content/route.ts";
 import type { ReadableExtraction, extractReadable } from "../parse/page/readable.ts";
 import type { CommonScrapeOptions, OutputFormat, ResultEnvelope, ScrapeMode } from "../types.ts";
+import { normalizeGitHubBlobUrl } from "../url/github-raw.ts";
+import type { LineMatch } from "./line-filter.ts";
 import type { BrowserRenderer } from "./modes/browser.ts";
 import { httpScrape } from "./modes/fast.ts";
 import { scrapeErrorResult, scrapeStructuredError } from "./modes/mode-helpers.ts";
@@ -27,6 +29,14 @@ export interface ScrapeData {
 	blocked?: boolean;
 	file?: unknown;
 	pdf?: unknown;
+	/** Exact full text for raw format retrieval; never truncated. */
+	rawText?: string;
+	/** Hex sha256 of the fetched body when format=raw. */
+	sha256?: string;
+	/** Detected charset from the Content-Type header. */
+	charset?: string;
+	/** Line-filter matches when linesMatching was provided. */
+	matches?: LineMatch[];
 }
 
 export type ScrapeResult = ResultEnvelope<ScrapeData>;
@@ -47,16 +57,21 @@ export async function scrapeUrl(
 	const startedAt = new Date();
 	const mode = options.mode ?? DEFAULT_SCRAPE_MODE;
 	const format = options.format ?? DEFAULT_OUTPUT_FORMAT;
+	const githubRaw = typeof input === "string" ? normalizeGitHubBlobUrl(input) : undefined;
+	const fetchInput = githubRaw ? githubRaw.rawUrl : input;
 	try {
-		const result = await scrapeByMode(input, mode, format, options, deps, signal);
-		return finishResult(materializeFormat(result, format, options), startedAt);
+		const result = await scrapeByMode(fetchInput, mode, format, options, deps, signal);
+		const merged = githubRaw
+			? { ...result, url: githubRaw.originalUrl, finalUrl: result.finalUrl ?? githubRaw.rawUrl }
+			: result;
+		return finishResult(materializeFormat(merged, format, options), startedAt);
 	} catch (error) {
 		return finishResult(
 			scrapeErrorResult(
-				input.toString(),
+				githubRaw ? githubRaw.originalUrl : input.toString(),
 				mode,
 				format,
-				scrapeStructuredError(error, input.toString()),
+				scrapeStructuredError(error, githubRaw ? githubRaw.originalUrl : input.toString()),
 			),
 			startedAt,
 		);

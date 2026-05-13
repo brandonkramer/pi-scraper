@@ -1,15 +1,9 @@
-/**
- * @fileoverview scrape render module.
- */
+/** @file Scrape render module. */
 import { DEFAULT_MAX_CHARS } from "../defaults.ts";
 import { toLlmText } from "../serialize/json.ts";
 import { htmlToMarkdown } from "../serialize/markdown.ts";
 import { normalizeWhitespace } from "../serialize/text.ts";
-import type {
-	CommonScrapeOptions,
-	OutputFormat,
-	TimingInfo,
-} from "../types.ts";
+import type { CommonScrapeOptions, OutputFormat, TimingInfo } from "../types.ts";
 import type { ScrapeData, ScrapeResult } from "./pipeline.ts";
 
 export function materializeFormat(
@@ -17,6 +11,12 @@ export function materializeFormat(
 	format: OutputFormat,
 	options: CommonScrapeOptions,
 ): ScrapeResult {
+	if (format === "raw") {
+		if (result.data.route === "html") {
+			return { ...result, data: { ...result.data, text: result.data.html ?? "" } };
+		}
+		return result;
+	}
 	if (result.data.route !== "html") return result;
 	const html = result.data.html ?? "";
 	const text = result.data.text ?? "";
@@ -48,18 +48,15 @@ export function renderFormat(
 		metadata?: Record<string, unknown>;
 	},
 ): Partial<ScrapeData> {
+	if (format === "raw") return { text: input.html ?? input.text ?? "" };
 	if (format === "html") return { html: input.html };
-	if (format === "json")
-		return { json: input.json ?? input.metadata ?? { text: input.text } };
+	if (format === "json") return { json: input.json ?? input.metadata ?? { text: input.text } };
 	if (format === "llm") return { text: toLlmText(input) };
 	if (format === "text") return { text: normalizeWhitespace(input.text ?? "") };
 	return { markdown: input.markdown ?? input.text ?? "", text: input.text };
 }
 
-export function finishResult(
-	result: ScrapeResult,
-	startedAt: Date,
-): ScrapeResult {
+export function finishResult(result: ScrapeResult, startedAt: Date): ScrapeResult {
 	const endedAt = new Date();
 	const timing: TimingInfo = {
 		...result.timing,

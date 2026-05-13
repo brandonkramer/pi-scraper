@@ -113,6 +113,14 @@ pairs = [
   "src/storage/blobs.ts:writeBlob||src/tui/envelope.ts:expandedEnvelopeText",
   "src/tools/web-extract-adhoc.ts:runAdHocExtraction||src/tui/envelope.ts:expandedEnvelopeText",
 
+  # Labeled text compiler — false positive in data-shaping cluster
+  "src/batch/compile.ts:compileLabeledText||src/commands/scrape-config-model-provider.ts:runScrapeConfigModelProvider",
+  "src/batch/compile.ts:compileLabeledText||src/commands/scrape-config-scrape-mode.ts:runScrapeConfigScrapeMode",
+  "src/batch/compile.ts:compileLabeledText||src/commands/scrape-config.ts:runScrapeConfigCommand",
+  "src/batch/compile.ts:compileLabeledText||src/http/session.ts:buildCookieHeader",
+  "src/batch/compile.ts:compileLabeledText||src/storage/blobs.ts:writeBlob",
+  "src/batch/compile.ts:compileLabeledText||src/tools/web-extract-adhoc.ts:runAdHocExtraction",
+
   # Reddit listing/post response validators — same pattern, different endpoints
   "src/extract/vertical/extractors/reddit/listing.ts:assertUsableRedditListingResponse||src/extract/vertical/extractors/reddit/post.ts:assertUsableRedditResponse",
 ]

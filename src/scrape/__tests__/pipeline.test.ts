@@ -245,6 +245,47 @@ describe("scrapeUrl", () => {
 		expect(result.error?.code).toBe("BROWSER_UNAVAILABLE");
 		expect(result.mode).toBe("browser");
 	});
+
+	it("preserves exact HTML text with format=raw", async () => {
+		const html = "<html><body>  Hello  </body></html>";
+		const result = await scrapeUrl(URL, { mode: "fast", format: "raw" }, deps(htmlResponse(html)));
+		expect(result.format).toBe("raw");
+		expect(result.data.text).toBe(html);
+		expect(result.data.html).toBe(html);
+		expect(result.data.rawText).toBe(html);
+	});
+
+	it("preserves exact passthrough text with format=raw", async () => {
+		const raw = "line1\n\nline3\t\ttabbed";
+		const result = await scrapeUrl(
+			"https://example.com/file.txt",
+			{ mode: "fast", format: "raw" },
+			deps(textResponse("https://example.com/file.txt", "text/plain", raw)),
+		);
+		expect(result.format).toBe("raw");
+		expect(result.data.text).toBe(raw);
+		expect(result.data.rawText).toBe(raw);
+	});
+
+	it("normalizes GitHub blob URLs to raw and preserves original", async () => {
+		const original = "https://github.com/org/repo/blob/main/src/index.ts";
+		const rawUrl = "https://raw.githubusercontent.com/org/repo/main/src/index.ts";
+		const body = Buffer.from("export const x = 1;");
+		const result = await scrapeUrl(
+			original,
+			{ mode: "fast", format: "raw" },
+			deps({
+				...baseResponse(rawUrl, "text/plain"),
+				text: body.toString("utf8"),
+				body,
+				downloadedBytes: body.byteLength,
+			}),
+		);
+		expect(result.url).toBe(original);
+		expect(result.finalUrl).toBe(rawUrl);
+		expect(result.data.rawText).toBe("export const x = 1;");
+		expect(result.data.sha256).toHaveLength(64);
+	});
 });
 
 function deps(
