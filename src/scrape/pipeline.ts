@@ -3,9 +3,15 @@ import { DEFAULT_OUTPUT_FORMAT, DEFAULT_SCRAPE_MODE } from "../defaults.ts";
 import type { HttpClient } from "../http/client.ts";
 import type { FingerprintFetchAdapter } from "../http/fingerprint/index.ts";
 import type { RoutedContentKind } from "../parse/content/route.ts";
+import { type AlternateLink, discoverAlternateLinks } from "../parse/discovery/alternates.ts";
 import type { ReadableExtraction, extractReadable } from "../parse/page/readable.ts";
 import type { CommonScrapeOptions, OutputFormat, ResultEnvelope, ScrapeMode } from "../types.ts";
 import { normalizeGitHubBlobUrl } from "../url/github-raw.ts";
+import {
+	pickAlternateForFormat,
+	shouldFollowAlternate,
+	type AlternateOutputFormat,
+} from "./alternate-match.ts";
 import type { LineMatch } from "./line-filter.ts";
 import type { BrowserRenderer } from "./modes/browser.ts";
 import { httpScrape } from "./modes/fast.ts";
@@ -96,6 +102,8 @@ async function scrapeByMode(
 	}
 
 	const fast = await httpScrape(input, format, options, deps, signal);
+	const alternate = await alternateFallback(fast, format, options, deps, signal);
+	if (alternate) return alternate;
 	if (mode === "fast" || fast.data.route !== "html") return fast;
 	if (mode === "readable") return await readableMode(fast, deps);
 
@@ -118,6 +126,91 @@ async function scrapeByMode(
 		return readable;
 	}
 	return await browserFallback(input, format, options, deps, readable, signal);
+}
+
+async function alternateFallback(
+	result: ScrapeResult,
+	format: OutputFormat,
+	options: CommonScrapeOptions,
+	deps: ScrapePipelineDeps,
+	signal?: AbortSignal,
+): Promise<ScrapeResult | undefined> {
+	if (!alternateFallbackEnabled(format, options)) return;
+	const currentUrl = result.finalUrl ?? result.url;
+	if (!currentUrl || result.data.route !== "html") return;
+	const alternates = alternateLinks(result, currentUrl);
+	const candidate = pickAlternateForFormat(alternates, format as AlternateOutputFormat);
+	if (!candidate || !shouldFollowAlternate(candidate, result, options)) return;
+	const alternate = await scrapeUrl(
+		candidate.url,
+		{ ...options, alternateFor: currentUrl },
+		deps,
+		signal,
+	);
+	if (alternate.error) {
+		return {
+			...result,
+			diagnostics: {
+				...result.diagnostics,
+				alternateFallback: {
+					url: candidate.url,
+					type: candidate.type,
+					error: alternate.error,
+				},
+			},
+		};
+	}
+	return mergeAlternateResult(result, alternate, candidate);
+}
+
+function alternateFallbackEnabled(format: OutputFormat, options: CommonScrapeOptions): boolean {
+	if (options.followAlternates !== undefined) return options.followAlternates;
+	return format === "markdown" || format === "json" || format === "text" || format === "llm";
+}
+
+function alternateLinks(result: ScrapeResult, currentUrl: string): AlternateLink[] {
+	const discovered = discoverAlternateLinks(result.data.html ?? "", currentUrl);
+	if (discovered.length > 0) return discovered;
+	return metadataAlternateLinks(result.data.metadata?.alternates);
+}
+
+function metadataAlternateLinks(value: unknown): AlternateLink[] {
+	if (!Array.isArray(value)) return [];
+	return value.filter((item) => isAlternateLink(item));
+}
+
+function isAlternateLink(value: unknown): value is AlternateLink {
+	return Boolean(
+		value &&
+		typeof value === "object" &&
+		"url" in value &&
+		typeof value.url === "string" &&
+		"rel" in value &&
+		typeof value.rel === "string" &&
+		"isAgentReadable" in value &&
+		typeof value.isAgentReadable === "boolean",
+	);
+}
+
+function mergeAlternateResult(
+	original: ScrapeResult,
+	alternate: ScrapeResult,
+	candidate: AlternateLink,
+): ScrapeResult {
+	return {
+		...alternate,
+		url: original.url,
+		finalUrl: original.finalUrl,
+		fetchedVia: {
+			kind: "alternate",
+			url: candidate.url,
+			finalUrl: alternate.finalUrl,
+			type: candidate.type,
+			originalUrl: original.url,
+			originalFinalUrl: original.finalUrl,
+		},
+		diagnostics: { ...alternate.diagnostics, fetchedVia: "alternate" },
+	};
 }
 
 async function readableMode(result: ScrapeResult, deps: ScrapePipelineDeps): Promise<ScrapeResult> {
