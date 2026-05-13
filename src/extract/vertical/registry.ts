@@ -58,7 +58,10 @@ export const verticalExtractors = [
 export interface VerticalRegistryDeps {
 	context?: VerticalExtractorContext;
 	httpClient?: Pick<HttpClient, "fetchUrl">;
-	requestOptions?: Pick<CommonRequestOptions, "cacheTtlSeconds" | "maxAgeSeconds" | "refresh">;
+	requestOptions?: Pick<
+		CommonRequestOptions,
+		"cacheTtlSeconds" | "maxAgeSeconds" | "refresh" | "respectRobots"
+	>;
 }
 
 export function listExtractorCapabilities(): ExtractorCapability[] {
@@ -145,7 +148,10 @@ function extractionStructuredError(
 
 function httpContext(
 	client: Pick<HttpClient, "fetchUrl"> = createHttpClient(),
-	requestOptions: Pick<CommonRequestOptions, "cacheTtlSeconds" | "maxAgeSeconds" | "refresh"> = {},
+	requestOptions: Pick<
+		CommonRequestOptions,
+		"cacheTtlSeconds" | "maxAgeSeconds" | "refresh" | "respectRobots"
+	> = {},
 	sources: SourceReference[] = [],
 ): VerticalExtractorContext {
 	return {
@@ -176,7 +182,7 @@ function httpContext(
 			recordVerticalSource(sources, url, "page");
 			const response = await client.fetchUrl(
 				url,
-				{ forceText: true, respectRobots: true, ...requestOptions },
+				{ forceText: true, respectRobots: requestOptions.respectRobots ?? true, ...requestOptions },
 				signal,
 			);
 			return {

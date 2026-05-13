@@ -28,7 +28,6 @@ const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
 
 const scrapeOnlyFields = [
 	"proxy",
-	"respectRobots",
 	"maxChars",
 	"onlyMainContent",
 	"timeoutSeconds",

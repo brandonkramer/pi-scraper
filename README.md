@@ -244,12 +244,12 @@ The effective config is cached in memory for the session. After hand-editing `~/
 
 ### Capabilities
 
-| Capability  | Used by                      |
-| ----------- | ---------------------------- |
-| `summarize` | `web_summarize`              |
-| `extract`   | `web_extract action="adhoc"` |
-| `analyze`   | (reserved for future tools)  |
-| `chat`      | (reserved for future tools)  |
+| Capability  | What it does                                                                            | Used by                      |
+| ----------- | --------------------------------------------------------------------------------------- | ---------------------------- |
+| `summarize` | Page-scoped natural-language summary of scraped content.                                | `web_summarize`              |
+| `extract`   | Schema- or prompt-driven structured extraction (JSON shape) from scraped content.       | `web_extract action="adhoc"` |
+| `analyze`   | Reserved — reasoning/classification over scraped content (sentiment, intent, labeling). | (future tools)               |
+| `chat`      | Reserved — multi-turn dialogue grounded in scraped content.                             | (future tools)               |
 
 ### Configuration
 

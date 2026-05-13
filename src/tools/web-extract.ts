@@ -87,6 +87,7 @@ export const webExtractSchema = Type.Object({
 	autoSave: Type.Optional(Type.Any()),
 	threshold: Type.Optional(Type.Any()),
 	limit: Type.Optional(Type.Any()),
+	respectRobots: Type.Optional(Type.Any()),
 });
 
 export type Params = Static<typeof webExtractSchema>;

@@ -52,6 +52,7 @@ export async function runDeterministicExtractor(
 				cacheTtlSeconds: config.scrapeDefaults.cacheTtlSeconds,
 				maxAgeSeconds: config.scrapeDefaults.maxAgeSeconds,
 				refresh: config.scrapeDefaults.refresh,
+				respectRobots: params.respectRobots,
 			},
 		},
 		signal,
