@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import { BrowserRenderError, type BrowserRenderer } from "../../browser/playwright.ts";
 import type { FetchUrlResult } from "../../http/client.ts";
 import type { FingerprintFetchAdapter } from "../../http/fingerprint/index.ts";
+import { registerFingerprintBackendFactory } from "../../http/fingerprint/index.ts";
 import { type ScrapePipelineDeps, scrapeUrl } from "../pipeline.ts";
 
 const URL = "https://example.com/page";
@@ -111,13 +112,18 @@ describe("scrapeUrl", () => {
 	});
 
 	it("returns structured missing-backend errors for explicit fingerprint mode", async () => {
+		const dummy = registerFingerprintBackendFactory(() => {
+			throw new Error("should not be called");
+		});
+		dummy();
 		const result = await scrapeUrl(URL, { mode: "fingerprint" });
-
 		expect(result.mode).toBe("fingerprint");
 		expect(result.error).toMatchObject({
 			code: "FINGERPRINT_BACKEND_MISSING",
 			phase: "fingerprint",
 		});
+		const { impitBackendFactory } = await import("../../http/fingerprint/impit-backend.ts");
+		registerFingerprintBackendFactory(impitBackendFactory);
 	});
 
 	it("routes PDFs through the PDF extraction boundary", async () => {
