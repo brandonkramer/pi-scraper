@@ -1,5 +1,5 @@
 /** @file Pi tool adapter for independent multi-URL scraping. */
-import { Type, type Static } from "@earendil-works/pi-ai";
+import { Type, type Static } from "typebox";
 
 import { compileBatchContext } from "../batch/compile.ts";
 import {

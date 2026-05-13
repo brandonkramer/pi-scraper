@@ -1,6 +1,6 @@
-import type { Static, TSchema } from "@earendil-works/pi-ai";
 /** @file Shared Pi command adapter contracts for web commands. */
 import type { ExtensionUIDialogOptions } from "@earendil-works/pi-coding-agent";
+import type { Static, TSchema } from "typebox";
 
 import type { PiToolShell } from "../types.ts";
 

@@ -1,7 +1,7 @@
 /** @file Pi tool adapter for URL snapshot diffing. */
 import { randomUUID } from "node:crypto";
 
-import { type Static, Type } from "@earendil-works/pi-ai";
+import { type Static, Type } from "typebox";
 
 import { loadEffectiveConfig } from "../config/settings.ts";
 import {

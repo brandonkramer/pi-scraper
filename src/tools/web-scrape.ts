@@ -1,5 +1,5 @@
 /** @file Pi tool adapter for single-URL scraping and page summaries. */
-import { Type, type Static } from "@earendil-works/pi-ai";
+import { Type, type Static } from "typebox";
 
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import { getOrCreateSession } from "../http/session.ts";

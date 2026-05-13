@@ -1,16 +1,15 @@
-/**
- * @fileoverview Pi tool adapter for robots, sitemap, and llms.txt URL maps.
- */
-import { Type, type Static } from "@earendil-works/pi-ai";
+/** @file Pi tool adapter for robots, sitemap, and llms.txt URL maps. */
+import { Type, type Static } from "typebox";
+
 import { loadEffectiveConfig } from "../config/settings.ts";
 import { discoverSiteUrls } from "../map/discover.ts";
 import { storeResponse } from "../storage/responses/store.ts";
+import { renderSimpleCall } from "../tui/call.ts";
 import { defineWebTool } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
-import { renderSimpleCall } from "../tui/call.ts";
 import { toolResult } from "./infra/result.ts";
-import { renderWebMapResult } from "./renderers/map.ts";
 import { urlProperty } from "./infra/schemas.ts";
+import { renderWebMapResult } from "./renderers/map.ts";
 
 export const webMapSchema = Type.Object({
 	url: urlProperty(),
@@ -59,6 +58,5 @@ export const webMapTool = defineWebTool({
 		});
 	},
 	renderCall: (args, theme) => renderSimpleCall("web_map", [args.url], theme),
-	renderResult: (result, { expanded }, theme) =>
-		renderWebMapResult(result, expanded, theme),
+	renderResult: (result, { expanded }, theme) => renderWebMapResult(result, expanded, theme),
 });

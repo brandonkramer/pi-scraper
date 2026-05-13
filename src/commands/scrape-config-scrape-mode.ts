@@ -2,11 +2,12 @@
  * @file Scrape-mode sub-action for /scrape-config. Handles interactive picker and persists the
  *   selected mode and format.
  */
-import { type Static, StringEnum, Type } from "@earendil-works/pi-ai";
+import { type Static, Type } from "typebox";
 
 import { type ConfigOptions, type WebConfig, updateConfig } from "../config/settings.ts";
 import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.ts";
 import { toolResult } from "../tools/infra/result.ts";
+import { StringEnum } from "../types.ts";
 import type { CommandContext } from "./define.ts";
 import type { Params } from "./scrape-config.ts";
 

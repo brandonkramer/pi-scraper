@@ -1,5 +1,5 @@
 /** @file Pi tool adapter for model-backed page summaries. */
-import { type Static, Type } from "@earendil-works/pi-ai";
+import { type Static, Type } from "typebox";
 
 import { loadEffectiveConfig } from "../config/settings.ts";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";

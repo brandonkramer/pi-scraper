@@ -1,3 +1,5 @@
+import { Type } from "typebox";
+
 /** @file Types module. */
 import type { ModelUsage } from "./extract/adhoc/model.ts";
 
@@ -309,4 +311,23 @@ export interface ExtractorCapability {
 	requiresCloud: boolean;
 	schema: unknown;
 	requirements?: ToolRequirement[];
+}
+
+/**
+ * Creates a string enum schema compatible with JSON Schema `enum` pattern.
+ *
+ * @remarks
+ *   Inlined from the previous `@earendil-works/pi-ai` re-export so pi-scraper can drop the full
+ *   pi-ai dependency tree while keeping the same schema shape.
+ */
+export function StringEnum<T extends string>(
+	values: readonly T[],
+	options?: { description?: string; default?: string },
+) {
+	return Type.Unsafe<T>({
+		type: "string",
+		enum: values,
+		...(options?.description && { description: options.description }),
+		...(options?.default && { default: options.default }),
+	});
 }
