@@ -5,8 +5,10 @@ import { Impit, type Browser } from "impit";
 import {
 	UnsupportedFingerprintOptionError,
 	type FingerprintBackendFactory,
+	type FingerprintBackendKey,
 	type FingerprintBackendRequestOptions,
 	type FingerprintBackendResponse,
+	type FingerprintRequestBackend,
 } from "./types.ts";
 
 const BROWSER_PROFILE_MAP: Record<string, Browser | undefined> = {
@@ -37,9 +39,44 @@ const BROWSER_PROFILE_MAP: Record<string, Browser | undefined> = {
  *   revalidation. No cookie jar — session cookies flow through request headers managed by
  *   `src/http/session.ts`.
  */
-export const impitBackendFactory: FingerprintBackendFactory = async (key) => {
+export type ImpitConstructor = new (options?: {
+	browser?: Browser;
+	followRedirects?: boolean;
+	maxRedirects?: number;
+}) => {
+	fetch: (
+		resource: string | URL | Request,
+		init?: {
+			method?: string;
+			headers?: Record<string, string>;
+			redirect?: string;
+			signal?: AbortSignal;
+		},
+	) => Promise<{
+		status: number;
+		statusText: string;
+		headers: Headers;
+		body: ReadableStream<Uint8Array>;
+		url: string;
+	}>;
+};
+
+/**
+ * Impit-based fingerprint backend factory.
+ *
+ * @remarks
+ *   Configured per-hop with `followRedirects: false` so pi-scraper owns the redirect chain and SSRF
+ *   revalidation. No cookie jar — session cookies flow through request headers managed by
+ *   `src/http/session.ts`. An optional `createImpit` parameter allows dependency injection for
+ *   tests.
+ */
+export async function createImpitBackend(
+	key: FingerprintBackendKey,
+	createImpit?: ImpitConstructor,
+): Promise<FingerprintRequestBackend> {
 	const browserName = resolveBrowserProfile(key.browserProfile);
-	const impit = new Impit({
+	const ImpitCtor = (createImpit ?? Impit) as ImpitConstructor;
+	const impit = new ImpitCtor({
 		browser: browserName,
 		followRedirects: false,
 		maxRedirects: 0,
@@ -67,7 +104,9 @@ export const impitBackendFactory: FingerprintBackendFactory = async (key) => {
 			};
 		},
 	};
-};
+}
+
+export const impitBackendFactory: FingerprintBackendFactory = (key) => createImpitBackend(key);
 
 function resolveBrowserProfile(profile: string): Browser {
 	const mapped = BROWSER_PROFILE_MAP[profile];
