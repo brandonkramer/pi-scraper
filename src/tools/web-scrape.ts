@@ -42,6 +42,7 @@ export const webScrapeSchema = Type.Object({
 	respectRobots: Type.Optional(Type.Any()),
 	refresh: Type.Optional(Type.Any()),
 	followAlternates: Type.Optional(Type.Boolean()),
+	followMetaRefresh: Type.Optional(Type.Boolean()),
 	linesMatching: Type.Optional(Type.Array(Type.String())),
 	contextLines: Type.Optional(Type.Number()),
 	caseSensitive: Type.Optional(Type.Boolean()),

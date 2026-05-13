@@ -4,6 +4,8 @@ import type { HttpClient } from "../http/client.ts";
 import type { FingerprintFetchAdapter } from "../http/fingerprint/index.ts";
 import type { RoutedContentKind } from "../parse/content/route.ts";
 import { type AlternateLink, discoverAlternateLinks } from "../parse/discovery/alternates.ts";
+import { discoverMetaRefresh, type MetaRefresh } from "../parse/discovery/meta-refresh.ts";
+import { loadDom } from "../parse/dom/adapter.ts";
 import type { ReadableExtraction, extractReadable } from "../parse/page/readable.ts";
 import type { CommonScrapeOptions, OutputFormat, ResultEnvelope, ScrapeMode } from "../types.ts";
 import { normalizeGitHubBlobUrl } from "../url/github-raw.ts";
@@ -13,6 +15,7 @@ import {
 	type AlternateOutputFormat,
 } from "./alternate-match.ts";
 import type { LineMatch } from "./line-filter.ts";
+import { metaRefreshEnabled, shouldFollowMetaRefresh } from "./meta-refresh.ts";
 import type { BrowserRenderer } from "./modes/browser.ts";
 import { httpScrape } from "./modes/fast.ts";
 import { scrapeErrorResult, scrapeStructuredError } from "./modes/mode-helpers.ts";
@@ -104,6 +107,8 @@ async function scrapeByMode(
 	const fast = await httpScrape(input, format, options, deps, signal);
 	const alternate = await alternateFallback(fast, format, options, deps, signal);
 	if (alternate) return alternate;
+	const metaRefresh = await metaRefreshFallback(fast, format, options, deps, signal);
+	if (metaRefresh) return metaRefresh;
 	if (mode === "fast" || fast.data.route !== "html") return fast;
 	if (mode === "readable") return await readableMode(fast, deps);
 
@@ -161,6 +166,83 @@ async function alternateFallback(
 		};
 	}
 	return mergeAlternateResult(result, alternate, candidate);
+}
+
+async function metaRefreshFallback(
+	result: ScrapeResult,
+	_format: OutputFormat,
+	options: CommonScrapeOptions,
+	deps: ScrapePipelineDeps,
+	signal?: AbortSignal,
+): Promise<ScrapeResult | undefined> {
+	if (!metaRefreshEnabled(_format, options)) return;
+	const currentUrl = result.finalUrl ?? result.url;
+	if (!currentUrl || result.data.route !== "html") return;
+	const meta = metaRefreshFromResult(result, currentUrl);
+	if (!meta || !shouldFollowMetaRefresh(meta, result, options)) return;
+
+	const hopCount = (options.metaRefreshHopCount ?? 0) + 1;
+	const chainSoFar = options.metaRefreshChain ?? [];
+	const followed = await scrapeUrl(
+		meta.url,
+		{ ...options, metaRefreshHopCount: hopCount, metaRefreshChain: [...chainSoFar, currentUrl] },
+		deps,
+		signal,
+	);
+	if (followed.error) {
+		return {
+			...result,
+			diagnostics: {
+				...result.diagnostics,
+				metaRefreshFallback: {
+					url: meta.url,
+					delaySeconds: meta.delaySeconds,
+					error: followed.error,
+				},
+			},
+		};
+	}
+	return mergeMetaRefreshResult(result, followed, meta, hopCount, chainSoFar);
+}
+
+function metaRefreshFromResult(result: ScrapeResult, baseUrl: string): MetaRefresh | undefined {
+	const fromMeta = result.data.metadata?.metaRefresh;
+	if (fromMeta && typeof fromMeta === "object" && "url" in fromMeta) {
+		return fromMeta as MetaRefresh;
+	}
+	// Fallback: parse from stripped HTML (unlikely to find head tags)
+	return discoverMetaRefresh(loadDom(result.data.html ?? ""), baseUrl);
+}
+
+function mergeMetaRefreshResult(
+	original: ScrapeResult,
+	followed: ScrapeResult,
+	meta: MetaRefresh,
+	hopCount: number,
+	chainSoFar: string[],
+): ScrapeResult {
+	const originalUrlStr = original.finalUrl ?? original.url ?? "";
+	const innerChain =
+		followed.fetchedVia?.kind === "meta-refresh" ? followed.fetchedVia.chain : undefined;
+	const chain = innerChain ?? [...chainSoFar, originalUrlStr];
+	return {
+		...followed,
+		url: original.url,
+		finalUrl: original.finalUrl,
+		fetchedVia: {
+			kind: "meta-refresh",
+			url: meta.url,
+			finalUrl: followed.finalUrl,
+			originalUrl: original.url,
+			originalFinalUrl: original.finalUrl,
+			chain,
+		},
+		diagnostics: {
+			...followed.diagnostics,
+			metaRefreshHops: followed.diagnostics?.metaRefreshHops ?? hopCount,
+			metaRefreshDelaySeconds: meta.delaySeconds,
+		},
+	};
 }
 
 function alternateFallbackEnabled(format: OutputFormat, options: CommonScrapeOptions): boolean {
