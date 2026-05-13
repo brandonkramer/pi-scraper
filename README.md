@@ -156,6 +156,11 @@ Examples:
 | `browser`     | Yes                | Yes, optional/lazy  | Highest         | Best for rendered DOM            | JavaScript-rendered pages when static/data-island recovery is insufficient.                                                                                                                  |
 | `auto`        | Only if justified  | Only if escalated   | Adaptive        | Adaptive                         | Default. Starts local/static, reuses fetched HTML, tries recovery/readable/fingerprint before browser only when block/rendering signals justify it.                                          |
 
+### Known limitations
+
+- `fingerprint` mode: the response body is materialized in memory before `maxBytes` bounds it (impit returns a buffer, not a stream). A malicious server could send a very large payload before the limit fires. Timeouts and OS limits provide secondary bounds.
+- `fingerprint` mode: DNS rebinding between preflight and connect is not yet mitigated. `assertSafeFetchUrl` resolves and validates DNS before the request, but impit re-resolves at connect time. Do not use `mode: "fingerprint"` against attacker-controlled URLs until this is fixed.
+
 ## Vertical extraction
 
 Vertical extractors return typed JSON for known sites, preferring public APIs/feeds over browser or LLM extraction.
