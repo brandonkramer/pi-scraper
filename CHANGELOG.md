@@ -2,7 +2,7 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
-## [0.4.0] - 2026-05-13
+## [0.5.0] - 2026-05-13
 
 ### Added
 
@@ -11,6 +11,29 @@ All notable changes to `pi-scraper` are summarized from the git history and rele
 - **DNS rebinding TOCTOU mitigation for fingerprint mode.** `SafeFingerprintAdapter` does a second DNS resolve immediately before connect and compares IP sets; throws `DNS_REBINDING_DETECTED` if they diverge. `fingerprintTrustLevel: "untrusted"` blocks fingerprint fetches against arbitrary URLs.
 - Added `diagnostics.fingerprintRebindingMitigation` on every successful fingerprint fetch (strategy, preflight/connect addresses).
 - Added injected `resolver` DI to `UrlSafetyOptions` for deterministic rebinding simulation tests.
+- `meta-refresh` redirect support with hop cap (3) and SSRF guards.
+- Alternate-link content-format fallback (e.g. `<link rel="alternate" type="application/...">`) when primary fetch yields no usable content.
+- Raw inspection fetch mode (`web_scrape` `format: "raw"`) with inline line-match preview snippets and GitHub blob→raw normalization.
+- `reddit-listing` vertical extractor for subreddit front pages.
+- `respectRobots` parameter on `web_extract` vertical extraction.
+- Progress UX wired through the vertical extraction stack.
+
+### Changed
+
+- Narrowed `ModelCapability` to `summarize | extract`.
+- Dropped `@earendil-works/pi-ai` dependency; import `typebox` directly and inline `StringEnum`.
+- Pinned `@mistralai/mistralai` to `2.2.1`.
+- Bumped Pi engine requirement to `>=0.74.0` (`@earendil-works/pi-coding-agent`, `pi-tui` `^0.74.0`).
+
+### Fixed
+
+- Removed unnecessary `AlternateOutputFormat` cast after type simplification.
+- Review fixes: abort stream cancel test, timeout wrap test, dropped `rebindingSuspected`, README note.
+
+## [0.4.0] - 2026-05-13
+
+### Added
+
 - Adopted canonical Pi `ExtensionAPI` and resolved the host model from `ctx` at execute time for `web_summarize` and `web_extract action="adhoc"`.
 - Added a cross-extension model-adapter event protocol (`pi:model-adapter/*`) with a registry, lazy capability-filtered discover, and a `DiscoverPayload` helper.
 - Added optional `ModelUsage` propagation from adapter responses through envelopes, with a compact usage footer in expanded views.
