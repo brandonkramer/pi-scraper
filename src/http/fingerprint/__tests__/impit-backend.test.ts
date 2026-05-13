@@ -1,11 +1,7 @@
 /** @file Impit backend unit tests. */
 import { describe, expect, it } from "vitest";
 
-import {
-	createImpitBackend,
-	impitBackendFactory,
-	type ImpitConstructor,
-} from "../impit-backend.ts";
+import { makeImpitBackend, impitBackendFactory, type ImpitConstructor } from "../impit-backend.ts";
 import { UnsupportedFingerprintOptionError } from "../types.ts";
 
 function makeMockImpit(response: {
@@ -44,7 +40,7 @@ describe("impit backend factory", () => {
 			body: streamFromString("<html>hello</html>"),
 			url: "https://example.com/",
 		});
-		const backend = await createImpitBackend(
+		const backend = await makeImpitBackend(
 			{ browserProfile: "chrome", osProfile: "default", host: "example.com" },
 			mock,
 		);
@@ -73,7 +69,7 @@ describe("impit backend factory", () => {
 			body: streamFromString("hello"),
 			url: "https://example.com/",
 		});
-		const backend = await createImpitBackend(
+		const backend = await makeImpitBackend(
 			{ browserProfile: "chrome", osProfile: "default", host: "example.com" },
 			mock,
 		);
@@ -99,7 +95,7 @@ describe("impit backend factory", () => {
 			body: streamFromString(""),
 			url: "https://example.com/",
 		});
-		const backend = await createImpitBackend(
+		const backend = await makeImpitBackend(
 			{ browserProfile: "chrome", osProfile: "default", host: "example.com" },
 			mock,
 		);
@@ -117,6 +113,90 @@ describe("impit backend factory", () => {
 		expect(result.headers?.location).toBe("https://example.com/redirected");
 	});
 
+	it("propagates followRedirects: false and maxRedirects: 0 to Impit constructor", async () => {
+		const ctorCalls: unknown[] = [];
+		const MockImpit = class {
+			// oxlint-disable-next-line no-useless-constructor, no-empty-function -- mock class shape for DI
+			constructor(options: unknown) {
+				ctorCalls.push(options);
+			}
+			async fetch(): Promise<never> {
+				throw new Error("not reached");
+			}
+		} as unknown as ImpitConstructor;
+
+		await makeImpitBackend(
+			{ browserProfile: "chrome", osProfile: "default", host: "example.com" },
+			MockImpit,
+		);
+
+		expect(ctorCalls).toHaveLength(1);
+		expect(ctorCalls[0]).toMatchObject({
+			followRedirects: false,
+			maxRedirects: 0,
+		});
+	});
+
+	it("sets redirect: manual on every fetch request", async () => {
+		const fetchCalls: unknown[] = [];
+		const MockImpit = class {
+			// oxlint-disable-next-line no-useless-constructor, no-empty-function -- mock class shape for DI
+			constructor() {}
+			async fetch(_url: string, init: unknown): Promise<never> {
+				fetchCalls.push(init);
+				throw new Error("not reached");
+			}
+		} as unknown as ImpitConstructor;
+
+		const backend = await makeImpitBackend(
+			{ browserProfile: "chrome", osProfile: "default", host: "example.com" },
+			MockImpit,
+		);
+
+		try {
+			await backend.fetchOnce("https://example.com/", {
+				method: "GET",
+				headers: {},
+				timeoutMs: 5000,
+				maxBytes: 1024,
+				browserProfile: "chrome",
+				osProfile: "default",
+			});
+		} catch {
+			// expected
+		}
+
+		expect(fetchCalls).toHaveLength(1);
+		expect(fetchCalls[0]).toMatchObject({ redirect: "manual" });
+	});
+
+	it("tolerates empty headers and missing fields", async () => {
+		const mock = makeMockImpit({
+			status: 200,
+			statusText: "OK",
+			headers: new Headers(),
+			body: streamFromString(""),
+			url: "https://example.com/",
+		});
+		const backend = await makeImpitBackend(
+			{ browserProfile: "chrome", osProfile: "default", host: "example.com" },
+			mock,
+		);
+
+		const result = await backend.fetchOnce("https://example.com/", {
+			method: "GET",
+			headers: {},
+			timeoutMs: 5000,
+			maxBytes: 1024,
+			browserProfile: "chrome",
+			osProfile: "default",
+		});
+
+		expect(result.status).toBe(200);
+		expect(result.headers).toEqual({});
+		expect(result.body).toBeDefined();
+	});
+
 	it("timeout wraps to FingerprintFetchError with code TIMEOUT", async () => {
 		const MockImpit = class {
 			// oxlint-disable-next-line no-useless-constructor, no-empty-function -- mock class shape for DI
@@ -128,7 +208,7 @@ describe("impit backend factory", () => {
 			}
 		} as unknown as ImpitConstructor;
 
-		const backend = await createImpitBackend(
+		const backend = await makeImpitBackend(
 			{ browserProfile: "chrome", osProfile: "default", host: "example.com" },
 			MockImpit,
 		);

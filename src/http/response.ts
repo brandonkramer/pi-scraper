@@ -30,6 +30,7 @@ export interface FetchUrlResult {
 	file?: BinaryDownloadMetadata;
 	downloadedBytes: number;
 	cache?: CacheMetadata;
+	diagnostics?: Record<string, unknown>;
 }
 
 export interface FetchResponseMaterializeOptions {

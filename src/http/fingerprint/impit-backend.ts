@@ -70,7 +70,7 @@ export type ImpitConstructor = new (options?: {
  *   `src/http/session.ts`. An optional `createImpit` parameter allows dependency injection for
  *   tests.
  */
-export async function createImpitBackend(
+export async function makeImpitBackend(
 	key: FingerprintBackendKey,
 	createImpit?: ImpitConstructor,
 ): Promise<FingerprintRequestBackend> {
@@ -106,7 +106,7 @@ export async function createImpitBackend(
 	};
 }
 
-export const impitBackendFactory: FingerprintBackendFactory = (key) => createImpitBackend(key);
+export const impitBackendFactory: FingerprintBackendFactory = (key) => makeImpitBackend(key);
 
 function resolveBrowserProfile(profile: string): Browser {
 	const mapped = BROWSER_PROFILE_MAP[profile];
