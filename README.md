@@ -168,7 +168,7 @@ Vertical extractors return typed JSON for known sites, preferring public APIs/fe
 
 | Extractor             | Input patterns                                    | Primary strategy                | Browser/cloud/LLM requirement                                                            |
 | --------------------- | ------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------- |
-| `github_repo`         | GitHub repository URLs                            | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access.                       |
+| `github_repo`         | GitHub repository URLs                            | GitHub public REST API (metadata + README + file tree) | No browser; no LLM; no cloud provider beyond public GitHub access.                       |
 | `github_issue`        | GitHub issue URLs                                 | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access.                       |
 | `github_pr`           | GitHub pull request URLs                          | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access.                       |
 | `github_release`      | GitHub release tag URLs                           | GitHub public REST API          | No browser; no LLM; no cloud provider beyond public GitHub access.                       |
