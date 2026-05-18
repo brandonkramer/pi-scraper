@@ -42,8 +42,6 @@
 		"smoke:browser": "vitest run src/browser/__tests__/browser-smoke.test.ts --reporter=verbose",
 		"audit:strict": "npm audit --omit=dev --audit-level=high",
 		"lint:workflows": "github-actionlint .github/workflows/*.yml",
-		"similarity:install": "bash scripts/similarity.sh",
-		"dup-check": "bash scripts/check-dup.sh",
 		"bench": "node bench/bench.mjs eval/corpus.json",
 		"bench:suite": "node bench/suites/run.mjs",
 		"check": "npm run typecheck && npm test",
