@@ -2,6 +2,23 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [0.6.0] - 2026-05-18
+
+### Added
+
+- `github-repo` vertical extractor now surfaces README content and a depth-2 repository file tree.
+- Session cookie support for `mode: "fingerprint"` — session cookies wired through the impit backend and `SafeFingerprintAdapter`.
+
+### Changed
+
+- Expanded bundled skill with per-mode, per-tool, and per-vertical reference docs under `skills/web-scraping/references/`.
+- Limited vitest to 3 workers.
+- Removed legacy `dup-check`, `similarity`, and `residue-check` scripts (and `.bin`) in favor of `ratch`.
+
+### Fixed
+
+- Fixed dead `session.md` link in the `fast.md` skill reference; now points to `fingerprint.md#session-cookies`.
+
 ## [0.5.1] - 2026-05-13
 
 ### Changed
