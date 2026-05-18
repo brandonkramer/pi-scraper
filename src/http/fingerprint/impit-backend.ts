@@ -118,10 +118,24 @@ function resolveBrowserProfile(profile: string): Browser {
 	return mapped;
 }
 
-function headersFromImpit(headers: Headers): Record<string, string> {
-	const out: Record<string, string> = {};
-	for (const [k, v] of headers) {
-		out[k] = v;
+function headersFromImpit(headers: Headers): Record<string, string | string[]> {
+	const out: Record<string, string | string[]> = {};
+	const allCookies: string[] = [];
+	let hasGetSetCookie = false;
+	if (typeof (headers as Headers & { getSetCookie?: () => string[] }).getSetCookie === "function") {
+		const cookies = (headers as Headers & { getSetCookie: () => string[] }).getSetCookie();
+		if (cookies.length > 0) {
+			allCookies.push(...cookies);
+			hasGetSetCookie = true;
+		}
 	}
+	for (const [k, v] of headers) {
+		if (k.toLowerCase() === "set-cookie") {
+			if (!hasGetSetCookie) allCookies.push(v);
+		} else {
+			out[k] = v;
+		}
+	}
+	if (allCookies.length > 0) out["set-cookie"] = allCookies;
 	return out;
 }

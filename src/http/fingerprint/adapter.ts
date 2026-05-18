@@ -9,6 +9,12 @@ import { followRedirects } from "../redirects.ts";
 import { fetchWithRequestPolicy } from "../request-policy.ts";
 import { materializeFetchBufferResponse, materializeFetchStreamResponse } from "../response.ts";
 import { loadRobotsText, RobotsCache } from "../robots.ts";
+import {
+	getOrCreateSession,
+	mergeSessionHeaders,
+	updateSessionCookies,
+	type FetchSession,
+} from "../session.ts";
 import { withTimeout } from "../timeout.ts";
 import { assertSafeFetchUrl, UrlSafetyError, type SafeUrlResult } from "../url-safety.ts";
 import {
@@ -89,14 +95,30 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		try {
 			const backend = await this.backendFor(safe.url.host);
 			const secondSafe = await revalidateDns(safe, this.clientOptions);
+
+			// Load session and merge cookies into outgoing headers
+			const session = options.sessionId
+				? await getOrCreateSession(options.sessionId, this.clientOptions.storage)
+				: undefined;
+			const baseHeaders = browserHeaders(
+				this.clientOptions.userAgent ?? DEFAULT_USER_AGENT,
+				options.headers,
+			);
+			const mergedHeaders = session
+				? mergeSessionHeaders(
+						session,
+						safe.url.hostname,
+						safe.url.pathname,
+						safe.url.protocol === "https:" ? "https" : "http",
+						baseHeaders,
+					)
+				: baseHeaders;
+
 			const response = await backend.fetchOnce(
 				safe.normalizedUrl,
 				{
 					method: options.method === "HEAD" ? "HEAD" : "GET",
-					headers: browserHeaders(
-						this.clientOptions.userAgent ?? DEFAULT_USER_AGENT,
-						options.headers,
-					),
+					headers: mergedHeaders,
 					timeoutMs,
 					maxBytes,
 					browserProfile: options.browserProfile ?? this.profile.browserProfile ?? "chrome",
@@ -110,6 +132,12 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 				options,
 				maxBytes,
 			);
+
+			// Persist Set-Cookie back to session
+			if (session && response.headers) {
+				setCookiesFromResponse(session, response.headers, safe.url);
+			}
+
 			result.diagnostics = {
 				fingerprintRebindingMitigation: {
 					strategy: "double-resolve",
@@ -218,4 +246,16 @@ function browserHeaders(
 		"upgrade-insecure-requests": "1",
 		...headers,
 	};
+}
+
+/** @internal exported for testing only */
+export function setCookiesFromResponse(
+	session: FetchSession,
+	headers: Record<string, string | string[] | undefined>,
+	url: URL,
+): void {
+	const raw = headers["set-cookie"];
+	if (!raw) return;
+	const cookies = Array.isArray(raw) ? raw : [raw];
+	updateSessionCookies(session, cookies, url.hostname, url.pathname);
 }
