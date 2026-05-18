@@ -10,4 +10,4 @@ web_scrape url="https://example.com"
 
 **When:** Default. Use unless the site blocks with 403/Cloudflare or requires JS rendering.
 
-**Session cookies:** Supported via `sessionId`/`saveSession`/`clearSession`. See [session reference](../session.md).
+**Session cookies:** Supported via `sessionId`/`saveSession`/`clearSession`. Cookies are shared across `fast` and `fingerprint` modes — set in one, read in the other. See [fingerprint mode](fingerprint.md#session-cookies) for details and examples.
