@@ -14,17 +14,17 @@ export const scrapeModeOptionSchema = {
 export const sessionOptionSchema = {
 	sessionId: Type.Optional(
 		Type.String({
-			description: "Use when prior state matters: cookies, login, multi-step flows.",
+			description: "Session for cookies/login/consent.",
 		}),
 	),
 	saveSession: Type.Optional(
 		Type.Boolean({
-			description: "Persist sessionId across Pi reloads.",
+			description: "Persist session.",
 		}),
 	),
 	clearSession: Type.Optional(
 		Type.Boolean({
-			description: "Delete sessionId state.",
+			description: "Clear session.",
 		}),
 	),
 } as const;
@@ -32,7 +32,7 @@ export const sessionOptionSchema = {
 export const modelProviderOptionSchema = {
 	provider: Type.Optional(
 		Type.String({
-			description: "Model adapter, 'auto', or 'off'.",
+			description: "Model or 'auto'/'off'.",
 		}),
 	),
 } as const;

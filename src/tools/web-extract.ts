@@ -87,7 +87,7 @@ export const webExtractSchema = Type.Object({
 			}),
 		),
 	),
-	jsonPaths: Type.Optional(Type.Array(Type.String())),
+	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
 	mode: Type.Optional(Type.Any()),
 	extract: Type.Optional(Type.Any()),
 	// Selector extraction (Task 27)

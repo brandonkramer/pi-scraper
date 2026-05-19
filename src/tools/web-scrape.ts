@@ -52,16 +52,16 @@ export const webScrapeSchema = Type.Object({
 	refresh: Type.Optional(Type.Any()),
 	followAlternates: Type.Optional(Type.Boolean()),
 	followMetaRefresh: Type.Optional(Type.Boolean()),
-	snapshotName: Type.Optional(Type.String({ description: "Named snapshot baseline." })),
-	snapshotTag: Type.Optional(Type.String({ description: "Snapshot version tag." })),
+	snapshotName: Type.Optional(Type.String({ description: "Snapshot name." })),
+	snapshotTag: Type.Optional(Type.String({ description: "Version tag." })),
 	diff: Type.Optional(
 		Type.Union([
-			Type.Boolean({ description: "Compare against latest baseline." }),
+			Type.Boolean({ description: "Latest baseline." }),
 			Type.Object({
-				snapshotName: Type.Optional(Type.String()),
-				snapshotTag: Type.Optional(Type.String()),
-				compareTag: Type.Optional(Type.String()),
-				maxSnapshotAgeSeconds: Type.Optional(Type.Number()),
+				snapshotName: Type.Optional(Type.Unsafe<string>({})),
+				snapshotTag: Type.Optional(Type.Unsafe<string>({})),
+				compareTag: Type.Optional(Type.Unsafe<string>({})),
+				maxSnapshotAgeSeconds: Type.Optional(Type.Unsafe<number>({})),
 			}),
 		]),
 	),
@@ -89,7 +89,7 @@ export function createWebScrapeTool(
 	return defineWebTool({
 		name: "web_scrape",
 		label: "Scrape",
-		description: "Read one URL (optional snapshotName/diff)",
+		description: "Read URL (snapshotName/diff)",
 		parameters: webScrapeSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
 			const task = inferScrapeTask(params);
