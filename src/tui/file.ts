@@ -3,6 +3,7 @@
  *   envelope carries a non-text payload.
  */
 import type { ResultEnvelope } from "../types.ts";
+import { formatBytes } from "./format.ts";
 import { renderText } from "./text.ts";
 import { muted } from "./theme.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
@@ -26,10 +27,19 @@ export function renderFileResultCard(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const data = envelope.data;
+	const fileInfo = (data?.file ?? {}) as {
+		path?: string;
+		downloadedBytes?: number;
+		contentType?: string;
+	};
+	const fileSize =
+		stringValue(data?.fileSize) ?? formatBytes(fileInfo.downloadedBytes) ?? "unknown";
+	const filePath = stringValue(data?.filePath) ?? fileInfo.path ?? "unknown";
+	const mimeType = stringValue(data?.mimeType) ?? fileInfo.contentType;
 	const lines = [
-		muted(`File size: ${stringValue(data?.fileSize) ?? "unknown"}`, theme),
-		...(data?.mimeType ? [muted(`Mime type: ${stringValue(data.mimeType) ?? ""}`, theme)] : []),
-		muted(`File path: ${stringValue(data?.filePath) ?? "unknown"}`, theme),
+		muted(`File size: ${fileSize}`, theme),
+		...(mimeType ? [muted(`Mime type: ${mimeType}`, theme)] : []),
+		muted(`File path: ${filePath}`, theme),
 	];
 	return renderText(lines.join("\n"), { padToWidth: true });
 }

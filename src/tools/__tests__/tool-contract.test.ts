@@ -32,7 +32,6 @@ const scrapeOnlyFields = [
 
 const configOnlyFields = [
 	"headers",
-	"maxBytes",
 	"browserProfile",
 	"osProfile",
 	"removeImages",

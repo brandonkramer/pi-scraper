@@ -23,7 +23,7 @@ export const OUTPUT_FORMATS = [
 export const DEFAULT_SCRAPE_MODE: ScrapeMode = "auto";
 export const DEFAULT_OUTPUT_FORMAT: OutputFormat = "markdown";
 export const DEFAULT_TIMEOUT_SECONDS = 20;
-export const DEFAULT_MAX_BYTES = 10 * 1024 * 1024;
+export const DEFAULT_MAX_BYTES = 30 * 1024 * 1024;
 export const DEFAULT_MAX_CHARS = 50_000;
 export const DEFAULT_RESPECT_ROBOTS = true;
 

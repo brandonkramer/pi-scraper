@@ -1,8 +1,9 @@
+import { loadEffectiveConfig, type EffectiveWebConfig } from "../config.ts";
 /**
  * @file Status sub-action for /scrape-config. Shows effective config, live adapter-resolution
  *   chain, and cache stats.
  */
-import { loadEffectiveConfig, type EffectiveWebConfig } from "../config.ts";
+import { DEFAULT_MAX_BYTES } from "../defaults.ts";
 import { resolveModelAdapterFromContext } from "../tools/infra/model-adapter.ts";
 import { modelRegistry } from "../tools/infra/model-registry.ts";
 import { toolResult } from "../tools/infra/result.ts";
@@ -100,6 +101,7 @@ function formatStatusText(report: WebConfigStatusReport): string {
 		`- scrapeMode: ${cfg.scrapeMode}`,
 		`- outputFormat: ${cfg.outputFormat}`,
 		`- respectRobots: ${cfg.scrapeDefaults.respectRobots ?? true}`,
+		`- maxBytes: ${cfg.scrapeDefaults.maxBytes ?? DEFAULT_MAX_BYTES}`,
 		`- modelProvider: ${formatModelProvider(cfg.modelProvider)}`,
 		"",
 		"Model adapter resolution (summarize capability):",

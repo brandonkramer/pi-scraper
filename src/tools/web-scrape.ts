@@ -47,6 +47,7 @@ export const webScrapeSchema = Type.Object({
 	exclude: Type.Optional(Type.Array(Type.Any())),
 	onlyMainContent: Type.Optional(Type.Any()),
 	timeoutSeconds: Type.Optional(Type.Any()),
+	maxBytes: Type.Optional(Type.Integer({ description: "Max bytes to fetch (default 31457280)." })),
 	maxChars: Type.Optional(Type.Any()),
 	proxy: Type.Optional(Type.Any()),
 	respectRobots: Type.Optional(Type.Any()),

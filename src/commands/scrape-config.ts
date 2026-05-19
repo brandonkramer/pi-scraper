@@ -28,6 +28,9 @@ export const scrapeConfigSchema = Type.Object({
 	provider: Type.Optional(Type.String()),
 	mode: Type.Optional(Type.String()),
 	format: Type.Optional(Type.String()),
+	maxBytes: Type.Optional(
+		Type.Integer({ description: "Max bytes to fetch (e.g. 31457280 for 30 MB)." }),
+	),
 	op: Type.Optional(Type.Union([Type.Literal("stats"), Type.Literal("clear")])),
 	value: Type.Optional(Type.Union([Type.Literal("on"), Type.Literal("off")])),
 	force: Type.Optional(Type.Boolean()),
@@ -118,8 +121,14 @@ export function parseScrapeConfigCommandArgs(args: string): Params {
 			return { action, provider };
 		}
 		case "scrape-mode": {
-			const [mode, format] = rest;
-			return { action, mode, format };
+			const [mode, format, maxBytesStr] = rest;
+			const maxBytes = maxBytesStr ? Number.parseInt(maxBytesStr, 10) : undefined;
+			return {
+				action,
+				mode,
+				format,
+				maxBytes: maxBytes && Number.isFinite(maxBytes) ? maxBytes : undefined,
+			};
 		}
 		case "cache": {
 			const force = rest.includes("--force");
