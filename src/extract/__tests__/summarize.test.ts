@@ -1,7 +1,7 @@
 /** @file Summarize **tests** page.test module. */
 import { describe, expect, it } from "vitest";
 
-import type { ModelAdapter, ModelResponse } from "../extract/adhoc/model.ts";
+import type { ModelAdapter, ModelResponse } from "../adhoc/model.ts";
 import { summarizePage } from "../summarize.ts";
 
 const model: ModelAdapter = {

@@ -306,7 +306,7 @@ async function summarizeScrape(params: Params, options: WebScrapeToolOptions, si
 	}
 	try {
 		const { loadEffectiveConfig } = await import("../config.ts");
-		const { summarizePage } = await import("../summarize.ts");
+		const { summarizePage } = await import("../extract/summarize.ts");
 		const config = await loadEffectiveConfig();
 		const result = await summarizePage(
 			{

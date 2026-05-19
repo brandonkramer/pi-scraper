@@ -1,7 +1,7 @@
+import { type ScrapePipelineDeps, type ScrapeResult, scrapeUrl } from "../scrape/pipeline.ts";
+import type { CommonScrapeOptions } from "../types.ts";
 /** @file Summarize page module. */
-import type { ModelAdapter, ModelUsage } from "./extract/adhoc/model.ts";
-import { type ScrapePipelineDeps, type ScrapeResult, scrapeUrl } from "./scrape/pipeline.ts";
-import type { CommonScrapeOptions } from "./types.ts";
+import type { ModelAdapter, ModelUsage } from "./adhoc/model.ts";
 
 export interface PageSummaryOptions extends CommonScrapeOptions {
 	url?: string;

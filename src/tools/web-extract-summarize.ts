@@ -1,6 +1,6 @@
 /** @file Web_extract action="summarize" handler — model-backed page summarization. */
 import { loadEffectiveConfig } from "../config.ts";
-import { summarizePage } from "../summarize.ts";
+import { summarizePage } from "../extract/summarize.ts";
 import type { ToolExecutionContext } from "./infra/define.ts";
 import {
 	resolveAdapterFromRegistry,
