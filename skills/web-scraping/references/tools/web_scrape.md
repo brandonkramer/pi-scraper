@@ -24,6 +24,8 @@ Read a single URL or content.
 | `sessionId` | string | Stateful flows (cookies, login, consent) |
 | `saveSession` | boolean | Persist session |
 | `clearSession` | boolean | Reset session state |
+| `snapshotName` | string | Save result as named snapshot baseline |
+| `snapshotTag` | string | Tag for this snapshot version |
 | `stealth` | boolean | Anti-detection patches (browser mode) |
 | `autoWait` | boolean | Wait for network idle (browser mode) |
 
@@ -32,6 +34,10 @@ Read a single URL or content.
 ```
 # Basic
 web_scrape url="https://example.com"
+
+# Save snapshot baseline for later diff
+web_scrape url="https://example.com" snapshotName="homepage"
+# Later: web_diff url="https://example.com" snapshotName="homepage"
 
 # Fingerprint for bot-protected
 web_scrape url="https://bot-protected.example" mode=fingerprint format=markdown

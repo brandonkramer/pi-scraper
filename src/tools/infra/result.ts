@@ -1,6 +1,7 @@
-/**
- * @fileoverview tools result module.
- */
+import type { ModelUsage } from "../../extract/adhoc/model.ts";
+import { structuredErrorFromUnknown } from "../../http/errors.ts";
+import { freshnessFromCache, guidanceWithFreshness } from "../../storage/cache/freshness.ts";
+/** @file Tools result module. */
 import type {
 	OutputFormat,
 	PiToolShell,
@@ -8,12 +9,6 @@ import type {
 	StructuredError,
 	TimingInfo,
 } from "../../types.ts";
-import type { ModelUsage } from "../../extract/adhoc/model.ts";
-import { structuredErrorFromUnknown } from "../../http/errors.ts";
-import {
-	freshnessFromCache,
-	guidanceWithFreshness,
-} from "../../storage/cache/freshness.ts";
 
 export interface ResultShellOptions<TData> {
 	text: string;
@@ -39,6 +34,7 @@ export interface ResultShellOptions<TData> {
 	qualitySignals?: ResultEnvelope<TData>["qualitySignals"];
 	nextActions?: ResultEnvelope<TData>["nextActions"];
 	assistantGuidance?: string;
+	snapshotSaved?: { name: string; tag?: string; path: string };
 	diagnostics?: Record<string, unknown>;
 	error?: StructuredError;
 	timing?: Partial<TimingInfo>;
@@ -73,10 +69,8 @@ export function toolResult<TData>(
 			sourceNotes: options.sourceNotes,
 			qualitySignals: options.qualitySignals,
 			nextActions: options.nextActions,
-			assistantGuidance: guidanceWithFreshness(
-				options.assistantGuidance,
-				freshness,
-			),
+			assistantGuidance: guidanceWithFreshness(options.assistantGuidance, freshness),
+			snapshotSaved: options.snapshotSaved,
 			diagnostics: options.diagnostics,
 			error: options.error,
 		},
@@ -143,10 +137,7 @@ export function toolErrorResult(
 	return errorResult(structuredToolError(error, fallbackCode, phase, url));
 }
 
-export function missingModelError(
-	task: "extract" | "summarize",
-	url?: string,
-): StructuredError {
+export function missingModelError(task: "extract" | "summarize", url?: string): StructuredError {
 	return {
 		code: "MODEL_ADAPTER_MISSING",
 		phase: task,

@@ -1,6 +1,7 @@
 /** @file Pi tool adapter for single-URL scraping and page summaries. */
 import { Type, type Static } from "typebox";
 
+import { saveSnapshot, updateSnapshotReference } from "../diff/snapshots.ts";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import { getOrCreateSession } from "../http/session.ts";
 import { describeScrapeResult, formatAge } from "../scrape/describe.ts";
@@ -43,6 +44,12 @@ export const webScrapeSchema = Type.Object({
 	refresh: Type.Optional(Type.Any()),
 	followAlternates: Type.Optional(Type.Boolean()),
 	followMetaRefresh: Type.Optional(Type.Boolean()),
+	snapshotName: Type.Optional(
+		Type.String({ description: "Save the scrape result as a named snapshot baseline." }),
+	),
+	snapshotTag: Type.Optional(
+		Type.String({ description: "Tag this snapshot version (used with snapshotName)." }),
+	),
 	linesMatching: Type.Optional(Type.Array(Type.String())),
 	contextLines: Type.Optional(Type.Number()),
 	caseSensitive: Type.Optional(Type.Boolean()),
@@ -66,7 +73,7 @@ export function createWebScrapeTool(
 	return defineWebTool({
 		name: "web_scrape",
 		label: "Scrape",
-		description: "Read URL",
+		description: "Read URL (optional snapshotName writes a baseline; use web_diff for comparison)",
 		parameters: webScrapeSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
 			const task = inferScrapeTask(params);
@@ -173,6 +180,24 @@ async function readScrape(
 	});
 	const { storeResponse } = await import("../storage/responses/store.ts");
 	const stored = await storeResponse(result);
+
+	let snapshotSaved: { name: string; tag?: string; path: string } | undefined;
+
+	if (params.snapshotName && !result.error && result.url) {
+		try {
+			const snapOptions = { snapshotName: params.snapshotName, snapshotTag: params.snapshotTag };
+			const saved = await saveSnapshot(result, snapOptions);
+			snapshotSaved = {
+				name: params.snapshotName,
+				tag: params.snapshotTag,
+				path: saved.path,
+			};
+			await updateSnapshotReference(result.url, stored, snapOptions);
+		} catch {
+			// Soft failure — snapshot write failed but scrape succeeded; return with warning
+		}
+	}
+
 	const matchPreview = !result.error
 		? formatLineMatchPreview(result.data.matches, { maxChars: 4_000 })
 		: undefined;
@@ -182,10 +207,14 @@ async function readScrape(
 	const scrapeText = matchPreview
 		? `${description.split("\n", 1)[0]}\n${matchPreview}`
 		: description;
+	const snapshotSuffix = snapshotSaved
+		? `\nsnapshot saved as "${snapshotSaved.name}"${snapshotSaved.tag ? ` (tag: ${snapshotSaved.tag})` : ""}`
+		: "";
+
 	return toolResult({
 		text: result.error
 			? `Scrape failed: ${result.error.message}`
-			: `${scrapeText}\nresponseId: ${stored.responseId}${sessionSuffix}`,
+			: `${scrapeText}\nresponseId: ${stored.responseId}${sessionSuffix}${snapshotSuffix}`,
 		data: result.data,
 		url: result.url,
 		finalUrl: result.finalUrl,
@@ -199,6 +228,7 @@ async function readScrape(
 		cache: result.cache,
 		responseId: stored.responseId,
 		fullOutputPath: stored.fullOutputPath,
+		snapshotSaved,
 		error: result.error,
 		diagnostics: sessionNotice ? { sessionNotice } : undefined,
 		...shaped,

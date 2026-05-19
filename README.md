@@ -72,7 +72,7 @@ Capability labels:
 | Concurrency      | `concurrency`, `perHostConcurrency`; HTTP politeness reacts to 429 and `Retry-After`                                                                |
 | Context packages | `compile: true` on `web_crawl`/`web_batch` stores a bounded package artifact                                                                        |
 | API surface      | `extract: "api-surface"` builds a local module/function tree when possible                                                                          |
-| Diff             | `snapshotName`, `snapshotTag`, `compareTag`, `maxSnapshotAgeSeconds`                                                                                |
+| Diff             | `snapshotName`, `snapshotTag` (write via `web_scrape` or `web_diff`); `compareTag`, `maxSnapshotAgeSeconds` (compare via `web_diff`)                 |
 | Extract          | `action`, `extractor`, `prompt`, `schema`, `sourceFormat`, `markers`, `contains`, `excerpts`, `regexes`, `sections`, `include`, `extractSchema`     |
 | Retrieve         | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag`                                                                                 |
 
@@ -104,6 +104,14 @@ Examples:
 web_scrape({ url: "https://example.com/login", sessionId: "example", saveSession: true })
 web_scrape({ url: "https://example.com/dashboard", sessionId: "example" })
 web_batch({ urls: ["https://example.com/page1", "https://example.com/page2"], sessionId: "example" })
+```
+
+**Snapshot example** — pin a baseline, compare later:
+
+```text
+web_scrape({ url: "https://example.com", snapshotName: "homepage" })   // pin baseline
+# ... later ...
+web_diff({ url: "https://example.com", snapshotName: "homepage" })     // compare
 ```
 
 ```json
