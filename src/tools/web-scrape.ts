@@ -52,15 +52,11 @@ export const webScrapeSchema = Type.Object({
 	refresh: Type.Optional(Type.Any()),
 	followAlternates: Type.Optional(Type.Boolean()),
 	followMetaRefresh: Type.Optional(Type.Boolean()),
-	snapshotName: Type.Optional(
-		Type.String({ description: "Save the scrape result as a named snapshot baseline." }),
-	),
-	snapshotTag: Type.Optional(
-		Type.String({ description: "Tag this snapshot version (used with snapshotName)." }),
-	),
+	snapshotName: Type.Optional(Type.String({ description: "Named snapshot baseline." })),
+	snapshotTag: Type.Optional(Type.String({ description: "Snapshot version tag." })),
 	diff: Type.Optional(
 		Type.Union([
-			Type.Boolean({ description: "Compare current scrape against latest baseline for this URL." }),
+			Type.Boolean({ description: "Compare against latest baseline." }),
 			Type.Object({
 				snapshotName: Type.Optional(Type.String()),
 				snapshotTag: Type.Optional(Type.String()),
@@ -93,8 +89,7 @@ export function createWebScrapeTool(
 	return defineWebTool({
 		name: "web_scrape",
 		label: "Scrape",
-		description:
-			"Read one URL (optional snapshotName writes baseline, diff compares against baseline)",
+		description: "Read one URL (optional snapshotName/diff)",
 		parameters: webScrapeSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
 			const task = inferScrapeTask(params);

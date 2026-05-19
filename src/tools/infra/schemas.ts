@@ -32,7 +32,7 @@ export const sessionOptionSchema = {
 export const modelProviderOptionSchema = {
 	provider: Type.Optional(
 		Type.String({
-			description: "Model adapter id, 'auto' (default), or 'off'.",
+			description: "Model adapter, 'auto', or 'off'.",
 		}),
 	),
 } as const;
