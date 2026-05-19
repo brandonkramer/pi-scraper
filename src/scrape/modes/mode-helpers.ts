@@ -1,6 +1,4 @@
-/**
- * @fileoverview scrape modes shared module.
- */
+/** @file Scrape modes shared module. */
 import type { FetchUrlOptions } from "../../http/client.ts";
 import { structuredErrorFromUnknown } from "../../http/errors.ts";
 import type {
@@ -27,6 +25,7 @@ export function fetchOptions(options: CommonScrapeOptions): FetchUrlOptions {
 		retryJitterMs: options.retryJitterMs,
 		sessionId: options.sessionId,
 		cookies: options.cookies,
+		downloadBinary: Boolean(options.saveToFile),
 	};
 }
 
@@ -74,10 +73,7 @@ export function scrapeErrorResult(
 	};
 }
 
-export function scrapeStructuredError(
-	error: unknown,
-	url: string,
-): StructuredError {
+export function scrapeStructuredError(error: unknown, url: string): StructuredError {
 	return {
 		url,
 		...structuredErrorFromUnknown(error, {

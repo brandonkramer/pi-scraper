@@ -10,6 +10,7 @@ export interface PiStoragePaths {
 	crawl: string;
 	snapshots: string;
 	jobs: string;
+	downloads: string;
 }
 
 export interface ResolveStorageOptions {
@@ -31,6 +32,7 @@ export function resolvePiStoragePaths(options: ResolveStorageOptions = {}): PiSt
 		crawl: path.join(root, "crawl"),
 		snapshots: path.join(root, "snapshots"),
 		jobs: path.join(root, "jobs"),
+		downloads: path.join(root, "downloads"),
 	};
 }
 

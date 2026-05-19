@@ -36,6 +36,7 @@ export interface ResultShellOptions<TData> {
 	assistantGuidance?: string;
 	kind?: "scrape" | "diff";
 	snapshotSaved?: { name: string; tag?: string; path: string };
+	savedFilePath?: string;
 	diagnostics?: Record<string, unknown>;
 	error?: StructuredError;
 	timing?: Partial<TimingInfo>;

@@ -1,6 +1,7 @@
 /** @file Tools register module. */
 import type { ExtensionAPI, ToolDefinition } from "@earendil-works/pi-coding-agent";
 
+import { cleanupOldDownloads } from "../../http/download-storage.ts";
 import { webBatchTool } from "../web-batch.ts";
 import { webCrawlTool } from "../web-crawl.ts";
 import { webExtractTool } from "../web-extract.ts";
@@ -26,4 +27,6 @@ export async function registerWebTools(pi: ExtensionAPI | PiToolRegistrar): Prom
 		// at runtime but not structurally assignable due to renderCall/theme differences.
 		(pi as ExtensionAPI).registerTool(tool as unknown as ToolDefinition);
 	}
+	// Fire-and-forget TTL cleanup for old downloads
+	cleanupOldDownloads().catch(() => null);
 }

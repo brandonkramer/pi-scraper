@@ -301,6 +301,9 @@ export interface CommonScrapeOptions extends CommonRequestOptions {
 	metaRefreshChain?: string[];
 	/** Prefer following meta-refresh even when primary HTML is not thin. */
 	preferMetaRefresh?: boolean;
+
+	/** Download to content-addressed disk storage instead of returning inline. */
+	saveToFile?: boolean | { dir?: string; filename?: string; maxBytes?: number };
 	/** Minimum meaningful primary text length before meta-refresh fallback is considered unnecessary. */
 	metaRefreshThinContentChars?: number;
 }

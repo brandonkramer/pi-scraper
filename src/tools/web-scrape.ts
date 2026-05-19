@@ -8,6 +8,7 @@ import {
 	updateSnapshotReference,
 } from "../diff/snapshots.ts";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
+import { saveBodyToDownloads } from "../http/download-storage.ts";
 import { getOrCreateSession } from "../http/session.ts";
 import { describeScrapeResult, formatAge } from "../scrape/describe.ts";
 import { filterLines } from "../scrape/line-filter.ts";
@@ -52,6 +53,11 @@ export const webScrapeSchema = Type.Object({
 	refresh: Type.Optional(Type.Any()),
 	followAlternates: Type.Optional(Type.Unsafe<boolean>({})),
 	followMetaRefresh: Type.Optional(Type.Unsafe<boolean>({})),
+	saveToFile: Type.Optional(
+		Type.Unsafe<boolean | { dir?: string; filename?: string; maxBytes?: number }>({
+			description: "true or {dir,filename,maxBytes} — download to content-addressed disk storage",
+		}),
+	),
 	snapshotName: Type.Optional(Type.String({ description: "Name." })),
 	snapshotTag: Type.Optional(Type.String({ description: "Tag." })),
 	diff: Type.Optional(
@@ -221,6 +227,37 @@ async function readScrape(
 		}
 	}
 
+	// saveToFile: move from temp to content-addressed storage
+	let savedFilePath: string | undefined;
+	if (params.saveToFile && !result.error && result.data.file) {
+		try {
+			const { createReadStream } = await import("node:fs");
+			const { unlink } = await import("node:fs/promises");
+			const fileInfo = result.data.file as { path: string; contentType?: string };
+			const saveOpts = typeof params.saveToFile === "object" ? params.saveToFile : {};
+			const stream = createReadStream(fileInfo.path);
+			const sourceUrl = result.url ?? result.finalUrl ?? "https://unknown";
+			const dl = await saveBodyToDownloads(
+				stream,
+				fileInfo.contentType,
+				sourceUrl,
+				result.data.file as Record<string, string>,
+				saveOpts,
+			);
+			savedFilePath = dl.filePath;
+			await unlink(fileInfo.path).catch(() => null);
+			result = {
+				...result,
+				data: {
+					...result.data,
+					file: { ...result.data.file, path: dl.filePath, sha256: dl.sha256 },
+				},
+			};
+		} catch {
+			// Soft failure
+		}
+	}
+
 	const matchPreview = !result.error
 		? formatLineMatchPreview(result.data.matches, { maxChars: 4_000 })
 		: undefined;
@@ -237,7 +274,7 @@ async function readScrape(
 	return toolResult({
 		text: result.error
 			? `Scrape failed: ${result.error.message}`
-			: `${scrapeText}\nresponseId: ${stored.responseId}${sessionSuffix}${snapshotSuffix}`,
+			: `${scrapeText}\nresponseId: ${stored.responseId}${sessionSuffix}${snapshotSuffix}${savedFilePath ? `\nsaved to: ${savedFilePath}` : ""}`,
 		data: result.data,
 		url: result.url,
 		finalUrl: result.finalUrl,
@@ -252,6 +289,7 @@ async function readScrape(
 		responseId: stored.responseId,
 		fullOutputPath: stored.fullOutputPath,
 		snapshotSaved,
+		savedFilePath,
 		error: result.error,
 		diagnostics: sessionNotice ? { sessionNotice } : undefined,
 		...shaped,
