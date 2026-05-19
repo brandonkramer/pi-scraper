@@ -2,6 +2,28 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [0.7.0] - 2026-05-19
+
+### Added
+
+- `web_scrape` can write tagged snapshots inline via the `snapshotName` parameter.
+- First-class binary download storage — `web_scrape` `saveToFile` writes fetched bytes to
+  content-addressed local storage.
+- Configurable `maxBytes` on `web_scrape` and `/scrape-config`; default raised to 30MB.
+
+### Changed
+
+- Folded `web_diff` into `web_scrape`'s `diff` parameter — diffing is now a `web_scrape` capability.
+- Folded `web_summarize` into `web_extract action="summarize"` — page summaries route through
+  `web_extract`.
+- Trimmed tool contract token overhead via compact param descriptions and stripped type hints.
+- Moved `summarize.ts` into `src/extract/`; collapsed single-file folders into sibling files.
+
+### Removed
+
+- `web_diff` and `web_summarize` as standalone tools (replaced by `web_scrape diff` and
+  `web_extract action="summarize"`).
+
 ## [0.6.0] - 2026-05-18
 
 ### Added

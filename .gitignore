@@ -16,6 +16,9 @@ bench/results/**
 .env.local
 .env.*.local
 
+# test artifacts
+.test-tmp/
+
 # coverage
 coverage/
 .nyc_output/

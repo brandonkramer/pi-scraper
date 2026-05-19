@@ -209,7 +209,7 @@ Reddit returns structured blocked/rate-limit errors rather than bypassing robots
 
 Large outputs are stored locally and returned with compact summaries plus `responseId` / `fullOutputPath`. Inline previews follow Pi defaults: 50KB or 2000 lines.
 
-Storage uses a local SQLite metadata index plus content-addressed blobs. Cache reuse is opt-in with `cacheTtlSeconds`; default behavior is fresh network fetches. Use `refresh: true` for time-sensitive facts, `web_crawl action: "list"|"status"` for prior crawl freshness, and `web_diff maxSnapshotAgeSeconds` for stale baselines.
+Storage uses a local SQLite metadata index plus content-addressed blobs. Cache reuse is opt-in with `cacheTtlSeconds`; default behavior is fresh network fetches. Use `refresh: true` for time-sensitive facts, `web_crawl action: "list"|"status"` for prior crawl freshness, and `web_scrape diff` with `maxSnapshotAgeSeconds` for stale baselines.
 
 Persistent paths:
 
