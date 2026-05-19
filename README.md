@@ -65,13 +65,14 @@ Capability labels:
 | Area             | Parameters                                                                                                                                          |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Input            | `url`, `urls`, `content`                                                                                                                            |
-| Scrape output    | `mode`, `format`, `onlyMainContent`, `maxChars`, `timeoutSeconds`                                                                                   |
+| Scrape output    | `mode`, `format`, `onlyMainContent`, `maxChars`, `maxBytes`, `timeoutSeconds`                                                                                   |
 | Freshness/safety | `respectRobots` defaults true; use `refresh: true` for time-sensitive facts                                                                         |
 | Session          | `sessionId` only for stateful flows (cookies/login/consent/locale/cart); `saveSession: true` persists across reloads; `clearSession: true` deletes. |
 | Crawl            | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `crawlId`, `resume`, `seed`, `status`, `limit`                                                      |
 | Concurrency      | `concurrency`, `perHostConcurrency`; HTTP politeness reacts to 429 and `Retry-After`                                                                |
 | Context packages | `compile: true` on `web_crawl`/`web_batch` stores a bounded package artifact                                                                        |
 | API surface      | `extract: "api-surface"` builds a local module/function tree when possible                                                                          |
+| Save to disk     | `saveToFile: true` or `{ dir, filename, maxBytes }` — persist fetched bytes to content-addressed local storage  |
 | Diff             | `snapshotName`, `snapshotTag` (write via `web_scrape`); `diff: true | {...}` (compare via `web_scrape`); `compareTag`, `maxSnapshotAgeSeconds` |
 | Extract          | `action`, `extractor`, `prompt`, `schema`, `sourceFormat`, `markers`, `contains`, `excerpts`, `regexes`, `sections`, `include`, `extractSchema`     |
 | Retrieve         | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag`                                                                                 |
@@ -209,6 +210,26 @@ Reddit returns structured blocked/rate-limit errors rather than bypassing robots
 
 Large outputs are stored locally and returned with compact summaries plus `responseId` / `fullOutputPath`. Inline previews follow Pi defaults: 50KB or 2000 lines.
 
+### Binary downloads
+
+Add `saveToFile: true` to `web_scrape` to persist binary payloads (PDFs, images, archives) to content-addressed disk storage at `~/.pi/scraper/downloads/<aa>/<filename>`. The extracted text is returned inline while the raw bytes are saved.
+
+```json
+{ "url": "https://arxiv.org/pdf/1706.03762", "saveToFile": true }
+```
+
+Customize the save location with `saveToFile: { dir: "~/papers", filename: "attention.pdf", maxBytes: 52428800 }`. The file card in the expanded result shows the mime type, file size, and saved path.
+
+### Max bytes
+
+Each fetch is bounded by a `maxBytes` limit. Default: **30 MB**. Override per-call:
+
+```json
+{ "url": "https://example.com/large.pdf", "maxBytes": 52428800, "saveToFile": true }
+```
+
+Or set a persistent default via `/scrape-config scrape-mode maxBytes=52428800` (or pick from presets in the interactive selector).
+
 Storage uses a local SQLite metadata index plus content-addressed blobs. Cache reuse is opt-in with `cacheTtlSeconds`; default behavior is fresh network fetches. Use `refresh: true` for time-sensitive facts, `web_crawl action: "list"|"status"` for prior crawl freshness, and `web_scrape diff` with `maxSnapshotAgeSeconds` for stale baselines.
 
 Persistent paths:
@@ -245,7 +266,7 @@ Use `/scrape-config` to inspect effective settings and persist defaults interact
 | (no args)                     | Interactive picker (falls back to `status` when UI unavailable) |
 | `status`                      | Effective config + live adapter-resolution preview              |
 | `model-provider <value>`      | Set `modelProvider` (`auto` / `off` / `<adapter-id>`)           |
-| `scrape-mode <mode> [format]` | Set `scrapeMode` + `outputFormat`                               |
+| `scrape-mode <mode> [format] [maxBytes]` | Set `scrapeMode`, `outputFormat`, and `maxBytes` (interactive picker presets: 10/30/50/100/200 MB) |
 | `cache stats`                 | Inspect response cache size and entry counts                    |
 | `cache clear`                 | Clear response cache (confirm prompt)                           |
 | `robots on/off`               | Toggle `respectRobots` default                                  |
