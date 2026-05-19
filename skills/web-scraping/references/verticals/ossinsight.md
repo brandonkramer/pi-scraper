@@ -30,17 +30,10 @@ Rankings within a collection. Supports URL query parameters: `?metric=` and `?pe
 **Metrics:** `stars` (default), `pull-requests`, `issues`
 **Periods:** `past_24_hours`, `past_28_days` (default), `past_month`
 
-### Examples
+### Example
 
 ```
-# Default ranking (stars, past 28 days)
 web_extract action=ossinsight_collection_ranking url="https://ossinsight.io/collections/artificial-intelligence"
-
-# Pull requests this month
-web_extract action=ossinsight_collection_ranking url="https://ossinsight.io/collections/artificial-intelligence?metric=pull-requests&period=past_month"
-
-# Issues, last 24 hours
-web_extract action=ossinsight_collection_ranking url="https://ossinsight.io/collections/data-science?metric=issues&period=past_24_hours"
 ```
 
 **Returns:** collection{id, name, slug}, metric, period, rows[{repo_name, stars?, forks?, pull_requests?, issues?, total_score?}]
@@ -53,17 +46,10 @@ web_extract action=ossinsight_collection_ranking url="https://ossinsight.io/coll
 
 Periods: `past_24_hours` (default), `past_week`, `past_month`
 
-### Examples
+### Example
 
 ```
-# All languages, past 24 hours
 web_extract action=ossinsight_trending_repos url="https://ossinsight.io/trending"
-
-# TypeScript, past week
-web_extract action=ossinsight_trending_repos url="https://ossinsight.io/trending/typescript?period=past_week"
-
-# Rust, past month
-web_extract action=ossinsight_trending_repos url="https://ossinsight.io/trending/rust?period=past_month"
 ```
 
 **Returns:** period, language, rows[{repo_name, stars?, forks?, pull_requests?, pushes?, total_score?, primary_language?, description?}]
@@ -76,12 +62,10 @@ web_extract action=ossinsight_trending_repos url="https://ossinsight.io/trending
 
 Stargazer history for a specific repo (monthly).
 
-### Examples
+### Example
 
 ```
 web_extract action=ossinsight_repo_analytics url="https://ossinsight.io/analyze/facebook/react"
-web_extract action=ossinsight_repo_analytics url="https://ossinsight.io/analyze/vercel/next.js"
-web_extract action=ossinsight_repo_analytics url="https://ossinsight.io/analyze/torvalds/linux"
 ```
 
 **Returns:** owner, repo, stargazers[{event_month, stars?, total?}]

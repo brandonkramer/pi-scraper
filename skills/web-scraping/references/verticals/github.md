@@ -6,32 +6,25 @@
 
 Full repo intelligence — metadata + base64-decoded README + depth-2 file tree. Hits the GitHub API (3 parallel calls) — avoids robots.txt and heavy HTML scraping.
 
-### Examples
+### Example
 
 ```
-# Full repo info (metadata + README + file tree)
 web_extract action=github_repo url="https://github.com/can1357/oh-my-pi"
-
-# Large popular repo
-web_extract action=github_repo url="https://github.com/facebook/react"
-
-# Private/org repo
-web_extract action=github_repo url="https://github.com/vercel/next.js"
 ```
 
 **Returns:**
 - `fullName`, `owner`, `name`, `description`, `url`
 - `stars`, `forks`, `openIssues`, `defaultBranch`, `license`
-- `readme` — base64-decoded README content (Markdown, capped at 10k chars)
+- `readme` — base64-decoded README (Markdown, capped at 10k chars)
 - `readmeTruncated` — true if README exceeded 10k chars
-- `fileTree` — depth-2 file tree as `[{path, type: "blob"|"tree", size?}]`
+- `fileTree` — depth-2 tree as `[{path, type: "blob"|"tree", size?}]`
 
 ### Rules
 
 - **Do NOT use `web_crawl` on github.com.** robots.txt + heavy HTML returns an empty frontier. Use this vertical instead.
-- Hits the GitHub API directly (3 calls per extraction) — avoids all robots.txt/CAPTCHA/HTML-scraping issues.
+- Hits the GitHub API directly — avoids all robots.txt/CAPTCHA/HTML-scraping issues.
 - Unauthenticated rate limit: 60 req/hr (~20 full extractions). For heavy usage, provide `GITHUB_TOKEN` in your env.
-- README, file tree failures are non-fatal — metadata still returns even if those calls 404/403.
+- README and file tree failures are non-fatal — metadata still returns even if those calls 404/403.
 
 ---
 
@@ -39,14 +32,10 @@ web_extract action=github_repo url="https://github.com/vercel/next.js"
 
 **Matches:** `https://github.com/:owner/:repo/issues/:number`
 
-### Examples
+### Example
 
 ```
-# Single issue
 web_extract action=github_issue url="https://github.com/facebook/react/issues/12345"
-
-# Bug report
-web_extract action=github_issue url="https://github.com/vercel/next.js/issues/54321"
 ```
 
 **Returns:** owner, repo, number, title, state, url, author, labels[], comments, createdAt, updatedAt, closedAt, isPullRequest
@@ -57,17 +46,10 @@ web_extract action=github_issue url="https://github.com/vercel/next.js/issues/54
 
 **Matches:** `https://github.com/:owner/:repo/pull/:number`
 
-### Examples
+### Example
 
 ```
-# Open PR
 web_extract action=github_pr url="https://github.com/facebook/react/pull/25000"
-
-# Merged PR
-web_extract action=github_pr url="https://github.com/vercel/next.js/pull/5000"
-
-# Draft PR
-web_extract action=github_pr url="https://github.com/can1357/oh-my-pi/pull/42"
 ```
 
 **Returns:** owner, repo, number, title, state, url, author, draft, merged, baseRef, baseRepo, headRef, headRepo, additions, deletions, changedFiles, createdAt, updatedAt, closedAt, mergedAt
@@ -78,17 +60,10 @@ web_extract action=github_pr url="https://github.com/can1357/oh-my-pi/pull/42"
 
 **Matches:** `https://github.com/:owner/:repo/releases/tag/:tag`
 
-### Examples
+### Example
 
 ```
-# Specific release
 web_extract action=github_release url="https://github.com/facebook/react/releases/tag/v18.2.0"
-
-# Pre-release
-web_extract action=github_release url="https://github.com/vercel/next.js/releases/tag/v15.0.0-canary.1"
-
-# Release with assets
-web_extract action=github_release url="https://github.com/cli/cli/releases/tag/v2.30.0"
 ```
 
 **Returns:** owner, repo, tag, name, url, draft, prerelease, author, publishedAt, createdAt, body, assets[{name, size, downloads, url}]

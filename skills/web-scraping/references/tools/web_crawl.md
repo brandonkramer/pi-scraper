@@ -31,9 +31,6 @@ Inferred from params or explicit `action=`.
 | `concurrency` | number | Global concurrency limit |
 | `perHostConcurrency` | number | Per-host concurrency limit |
 | `resume` | boolean | Resume a stored crawl |
-| `seed` | string | Seed URL for listing |
-| `status` | string | Status filter for listing |
-| `limit` | number | Limit for listing results |
 | `sessionId` | string | Stateful flows across crawl pages |
 | `saveSession` | boolean | Persist session |
 | `clearSession` | boolean | Reset session |
@@ -49,9 +46,6 @@ web_crawl url="https://example.com" maxPages=10
 # With API surface extraction
 web_crawl url="https://example.com/docs" maxPages=20 extract=api-surface
 
-# With structured context package
-web_crawl url="https://example.com" maxPages=5 compile=true
-
 # Check crawl status
 web_crawl crawlId="abc-123"
 
@@ -64,8 +58,6 @@ web_crawl seed="https://example.com"
 # Bot-protected site
 web_crawl url="https://bot-protected.example" maxPages=10 mode=fingerprint
 
-# Limit to same origin
-web_crawl url="https://example.com" maxPages=10 sameOrigin=true
 ```
 
 ## Rules
