@@ -1,7 +1,7 @@
 /** @file Health **tests** session-start.test module. */
 import { describe, expect, it } from "vitest";
 
-import { registerSessionStartHealthChecks, runSessionStartHealthChecks } from "../session-start.ts";
+import { registerSessionStartHealthChecks, runSessionStartHealthChecks } from "../health.ts";
 
 describe("session-start health checks", () => {
 	it("registers a non-blocking session_start listener", async () => {

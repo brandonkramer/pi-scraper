@@ -1,8 +1,8 @@
 /** @file Summarize **tests** page.test module. */
 import { describe, expect, it } from "vitest";
 
-import type { ModelAdapter, ModelResponse } from "../../extract/adhoc/model.ts";
-import { summarizePage } from "../page.ts";
+import type { ModelAdapter, ModelResponse } from "../extract/adhoc/model.ts";
+import { summarizePage } from "../summarize.ts";
 
 const model: ModelAdapter = {
 	run: async <T>(request: Parameters<ModelAdapter["run"]>[0]): Promise<ModelResponse<T>> => ({

@@ -1,7 +1,7 @@
 /** @file Tools register module. */
 import type { ExtensionAPI, ToolDefinition } from "@earendil-works/pi-coding-agent";
 
-import { loadEffectiveConfig } from "../../config/settings.ts";
+import { loadEffectiveConfig } from "../../config.ts";
 import { webBatchTool } from "../web-batch.ts";
 import { webCrawlTool } from "../web-crawl.ts";
 import { webDiffTool } from "../web-diff.ts";

@@ -1,7 +1,7 @@
 /** @file Pi tool adapter for robots, sitemap, and llms.txt URL maps. */
 import { Type, type Static } from "typebox";
 
-import { loadEffectiveConfig } from "../config/settings.ts";
+import { loadEffectiveConfig } from "../config.ts";
 import { discoverSiteUrls } from "../map/discover.ts";
 import { storeResponse } from "../storage/responses/store.ts";
 import { renderSimpleCall } from "../tui/call.ts";

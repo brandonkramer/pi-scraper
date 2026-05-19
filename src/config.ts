@@ -2,9 +2,9 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { DEFAULT_OUTPUT_FORMAT, DEFAULT_SCRAPE_MODE } from "../defaults.ts";
-import { ensureDir, type ResolveStorageOptions, resolvePiStoragePaths } from "../storage/paths.ts";
-import type { CommonScrapeOptions, OutputFormat, ScrapeMode } from "../types.ts";
+import { DEFAULT_OUTPUT_FORMAT, DEFAULT_SCRAPE_MODE } from "./defaults.ts";
+import { ensureDir, type ResolveStorageOptions, resolvePiStoragePaths } from "./storage/paths.ts";
+import type { CommonScrapeOptions, OutputFormat, ScrapeMode } from "./types.ts";
 
 type PersistedScrapeDefaults = Partial<Omit<CommonScrapeOptions, "mode" | "format">>;
 

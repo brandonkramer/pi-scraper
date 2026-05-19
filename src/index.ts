@@ -3,10 +3,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 import { closeAllBrowserSessions } from "./browser/session-pool.ts";
 import { registerWebCommands } from "./commands/register.ts";
-import {
-	registerSessionStartHealthChecks,
-	type PiHealthRegistrar,
-} from "./health/session-start.ts";
+import { registerSessionStartHealthChecks, type PiHealthRegistrar } from "./health.ts";
 import { closeStorageDbs } from "./storage/db/open.ts";
 import { registerWebTools } from "./tools/infra/register.ts";
 

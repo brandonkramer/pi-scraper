@@ -8,7 +8,7 @@ import {
 	updateIndexedBatchProgress,
 } from "../batch/progress-state.ts";
 import { runBatchScrape } from "../batch/run.ts";
-import { loadEffectiveConfig } from "../config/settings.ts";
+import { loadEffectiveConfig } from "../config.ts";
 import { DEFAULT_CONCURRENCY } from "../defaults.ts";
 import { filterLines } from "../scrape/line-filter.ts";
 import { formatLabeledLineMatchPreview } from "../scrape/line-preview.ts";

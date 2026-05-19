@@ -1,10 +1,8 @@
-/**
- * @fileoverview API-surface extraction runner — domain logic without tool contract.
- */
-import { loadEffectiveConfig } from "../../config/settings.ts";
+/** @file API-surface extraction runner — domain logic without tool contract. */
+import { loadEffectiveConfig } from "../../config.ts";
+import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
 import type { ScrapeMode } from "../../types.ts";
 import type { ApiSurfaceTree } from "./types.ts";
-import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
 
 export interface ApiSurfaceInput {
 	content?: string;

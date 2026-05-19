@@ -8,7 +8,7 @@ import {
 	batchProgressFromCrawlPages,
 	updateUrlBatchProgress,
 } from "../batch/progress-state.ts";
-import { loadEffectiveConfig } from "../config/settings.ts";
+import { loadEffectiveConfig } from "../config.ts";
 import { runCrawl } from "../crawl/runner.ts";
 import { loadCrawlMetadata, updateCrawlMetadata, type CrawlMetadata } from "../crawl/state.ts";
 import type { ScrapeResult } from "../scrape/pipeline.ts";

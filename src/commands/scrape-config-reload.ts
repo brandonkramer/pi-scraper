@@ -1,5 +1,5 @@
 /** @file Reload sub-action for /scrape-config. Clears config cache and re-reads from disk. */
-import { reloadEffectiveConfig } from "../config/settings.ts";
+import { reloadEffectiveConfig } from "../config.ts";
 import { toolResult } from "../tools/infra/result.ts";
 
 export async function runScrapeConfigReload() {

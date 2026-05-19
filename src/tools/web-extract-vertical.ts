@@ -2,7 +2,7 @@
  * @file Web_extract action="vertical" and action="list" handlers — deterministic extractor
  *   capabilities and vertical extraction.
  */
-import { loadEffectiveConfig } from "../config/settings.ts";
+import { loadEffectiveConfig } from "../config.ts";
 import type { VerticalExtractionResult } from "../extract/vertical/capabilities.ts";
 import type { ToolUpdate } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";

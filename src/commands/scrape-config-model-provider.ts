@@ -1,5 +1,5 @@
 /** @file Model-provider sub-action for /scrape-config. */
-import { updateConfig, type ConfigOptions } from "../config/settings.ts";
+import { updateConfig, type ConfigOptions } from "../config.ts";
 import { modelRegistry } from "../tools/infra/model-registry.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";

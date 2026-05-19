@@ -1,5 +1,5 @@
 /** @file Health session-start module. */
-import { clearEffectiveConfigCache } from "../config/settings.ts";
+import { clearEffectiveConfigCache } from "./config.ts";
 
 export interface HealthWarning {
 	code: string;

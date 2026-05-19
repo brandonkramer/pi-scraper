@@ -6,7 +6,7 @@ import path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { loadEffectiveConfig } from "../../config/settings.ts";
+import { loadEffectiveConfig } from "../../config.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import type { RegisteredCommandOptions } from "../define.ts";
 import { registerWebCommands, webCommands } from "../register.ts";

@@ -116,7 +116,7 @@ async function readScrape(
 			"Provide url for web_scrape task=read.",
 		);
 	}
-	const { loadEffectiveConfig } = await import("../config/settings.ts");
+	const { loadEffectiveConfig } = await import("../config.ts");
 	const config = await loadEffectiveConfig();
 	const session = params.sessionId ? await getOrCreateSession(params.sessionId) : undefined;
 	if (session) {
@@ -214,8 +214,8 @@ async function summarizeScrape(params: Params, options: WebScrapeToolOptions, si
 		);
 	}
 	try {
-		const { loadEffectiveConfig } = await import("../config/settings.ts");
-		const { summarizePage } = await import("../summarize/page.ts");
+		const { loadEffectiveConfig } = await import("../config.ts");
+		const { summarizePage } = await import("../summarize.ts");
 		const config = await loadEffectiveConfig();
 		const result = await summarizePage(
 			{

@@ -1,17 +1,17 @@
-/**
- * @fileoverview config __tests__ settings.test module.
- */
+/** @file Config **tests** settings.test module. */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import {
 	configFilePath,
 	loadEffectiveConfig,
 	loadStoredConfig,
 	saveConfig,
 	updateConfig,
-} from "../settings.ts";
+} from "../config.ts";
 
 let rootDir: string;
 
@@ -32,14 +32,8 @@ describe("web config settings", () => {
 	});
 
 	it("persists and merges scrape settings", async () => {
-		await saveConfig(
-			{ scrapeMode: "fast", scrapeDefaults: { timeoutSeconds: 5 } },
-			{ rootDir },
-		);
-		await updateConfig(
-			{ outputFormat: "text", scrapeDefaults: { maxBytes: 4096 } },
-			{ rootDir },
-		);
+		await saveConfig({ scrapeMode: "fast", scrapeDefaults: { timeoutSeconds: 5 } }, { rootDir });
+		await updateConfig({ outputFormat: "text", scrapeDefaults: { maxBytes: 4096 } }, { rootDir });
 		const stored = await loadStoredConfig({ rootDir });
 		const effective = await loadEffectiveConfig({ rootDir });
 		expect(configFilePath({ rootDir })).toContain(path.join(rootDir, "config"));

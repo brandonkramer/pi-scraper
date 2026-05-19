@@ -1,5 +1,5 @@
 /** @file Robots sub-action for /scrape-config. */
-import { loadEffectiveConfig, updateConfig, type ConfigOptions } from "../config/settings.ts";
+import { loadEffectiveConfig, updateConfig, type ConfigOptions } from "../config.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
 import type { Params } from "./scrape-config.ts";

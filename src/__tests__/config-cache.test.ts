@@ -10,7 +10,7 @@ import {
 	loadEffectiveConfig,
 	reloadEffectiveConfig,
 	saveConfig,
-} from "../settings.ts";
+} from "../config.ts";
 
 let rootDir: string;
 

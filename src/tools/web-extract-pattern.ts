@@ -1,5 +1,5 @@
 /** @file Web_extract action="pattern" handler — deterministic pattern inspection. */
-import { loadEffectiveConfig } from "../config/settings.ts";
+import { loadEffectiveConfig } from "../config.ts";
 import {
 	inspectPatterns,
 	PatternInspectError,

@@ -2,7 +2,7 @@
  * @file Status sub-action for /scrape-config. Shows effective config, live adapter-resolution
  *   chain, and cache stats.
  */
-import { loadEffectiveConfig, type EffectiveWebConfig } from "../config/settings.ts";
+import { loadEffectiveConfig, type EffectiveWebConfig } from "../config.ts";
 import { resolveModelAdapterFromContext } from "../tools/infra/model-adapter.ts";
 import { modelRegistry } from "../tools/infra/model-registry.ts";
 import { toolResult } from "../tools/infra/result.ts";

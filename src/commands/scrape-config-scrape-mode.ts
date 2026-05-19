@@ -4,7 +4,7 @@
  */
 import { type Static, Type } from "typebox";
 
-import { type ConfigOptions, type WebConfig, updateConfig } from "../config/settings.ts";
+import { type ConfigOptions, type WebConfig, updateConfig } from "../config.ts";
 import { OUTPUT_FORMATS, SCRAPE_MODES } from "../defaults.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import { StringEnum } from "../types.ts";

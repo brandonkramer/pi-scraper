@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import { type Static, Type } from "typebox";
 
-import { loadEffectiveConfig } from "../config/settings.ts";
+import { loadEffectiveConfig } from "../config.ts";
 import {
 	diffScrapeResult,
 	type SnapshotDiffResult,

@@ -1,10 +1,10 @@
 /** @file Pi tool adapter for model-backed page summaries. */
 import { type Static, Type } from "typebox";
 
-import { loadEffectiveConfig } from "../config/settings.ts";
+import { loadEffectiveConfig } from "../config.ts";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
-import { summarizePage } from "../summarize/page.ts";
+import { summarizePage } from "../summarize.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
