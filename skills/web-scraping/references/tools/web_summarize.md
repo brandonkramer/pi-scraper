@@ -1,11 +1,12 @@
-# `web_summarize`
+# `web_extract action="summarize"`
 
-Summarize a single URL or inline content using a model adapter.
+Summarize a single URL or inline content using a model adapter. This action is the successor to the standalone `web_summarize` tool.
 
 ## Args
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `action` | string | Must be `"summarize"` |
 | `url` | string | Target URL |
 | `content` | string | Inline content (when no URL) |
 | `sentences` | number | Target sentence count (1–20) |
@@ -17,19 +18,19 @@ Summarize a single URL or inline content using a model adapter.
 
 ```
 # Summarize a URL
-web_summarize url="https://example.com/article"
+web_extract action=summarize url="https://example.com/article"
 
 # With bullet points
-web_summarize url="https://example.com/article" bullets=5
+web_extract action=summarize url="https://example.com/article" bullets=5
 
 # With sentence count
-web_summarize url="https://example.com/article" sentences=3
+web_extract action=summarize url="https://example.com/article" sentences=3
 
 # Summarize inline content
-web_summarize content="# Hello World\nThis is a test article." sentences=2
+web_extract action=summarize content="# Hello World" sentences=2
 
 # With a specific model provider
-web_summarize url="https://example.com" provider="gemini"
+web_extract action=summarize url="https://example.com" provider="gemini"
 ```
 
 ## Rules

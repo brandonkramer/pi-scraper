@@ -12,7 +12,6 @@ import type { PiToolRegistrar, WebTool } from "../infra/define.ts";
 import { registerWebTools } from "../infra/register.ts";
 import { createWebExtractTool, webExtractTool } from "../web-extract.ts";
 import { createWebScrapeTool } from "../web-scrape.ts";
-import { createWebSummarizeTool } from "../web-summarize.ts";
 
 function summarizeOrExtractAdapter(request: ModelRequest): string | { ok: boolean } {
 	return request.task === "summarize" ? "registered summary" : { ok: true };
@@ -313,9 +312,9 @@ describe("selected web tool handlers", () => {
 		);
 		expect(summarized.content[0]?.text).toBe("registered summary");
 
-		const summarizedDirectly = await createWebSummarizeTool({ modelAdapter: adapter }).execute(
+		const summarizedDirectly = await createWebExtractTool({ modelAdapter: adapter }).execute(
 			"call",
-			{ content: "content", sentences: 1 },
+			{ action: "summarize", content: "content", sentences: 1 },
 			signal,
 		);
 		expect(summarizedDirectly.content[0]?.text).toBe("registered summary");
@@ -354,14 +353,14 @@ describe("selected web tool handlers", () => {
 	});
 
 	it("runs dedicated provided-content and URL-backed summarization", async () => {
-		const tool = createWebSummarizeTool({
+		const tool = createWebExtractTool({
 			modelAdapter: fakeModelAdapter(fixtureHeadingAdapter),
 			scrapeDeps: fakeScrapeDeps(),
 		});
 
 		const provided = await tool.execute(
 			"call",
-			{ content: "Provided content", sentences: 1 },
+			{ action: "summarize", content: "Provided content", sentences: 1 },
 			signal,
 		);
 		expect(provided.content[0]?.text).toBe("Summary from provided content.");
@@ -369,6 +368,7 @@ describe("selected web tool handlers", () => {
 		const scraped = await tool.execute(
 			"call",
 			{
+				action: "summarize",
 				url: "https://example.com/page",
 				bullets: 2,
 				mode: "fast",

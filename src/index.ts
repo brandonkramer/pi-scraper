@@ -10,7 +10,7 @@ import { registerWebTools } from "./tools/infra/register.ts";
 export default async function registerPiScraperExtension(pi: ExtensionAPI): Promise<void> {
 	pi.registerFlag("web-model-provider", {
 		description:
-			"Override the model-adapter provider for web_summarize and web_extract action=adhoc (auto|off|<id>).",
+			"Override the model-adapter provider for web_extract action=summarize and action=adhoc (auto|off|<id>).",
 		type: "string",
 	});
 	await registerWebTools(pi);

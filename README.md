@@ -42,7 +42,7 @@ Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` when browsers are managed externally. `
 | Tool             | Capability                                      | Use it for                                                                                                                                                 | Contract tokens ≈ | Input overhead ≈ |
 | ---------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------: | ---------------: |
 | `web_scrape`     | Local; model only for `task: "summarize"`       | Read one URL as markdown/text/LLM text/HTML/JSON, including raw Markdown, MDX, RST, and source docstrings.                                                 |               170 |             +140 |
-| `web_summarize`  | Model/LLM; local scrape input                   | Summarize one URL or provided content; page-scoped only, not multi-source research.                                                                        |               116 |             +100 |
+| `web_extract action=summarize` | Model/LLM; local scrape input | Summarize one URL or provided content via `web_extract action=summarize`. Page-scoped only, not multi-source research. | — (folded into web_extract) | — |
 | `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, list prior crawl metadata, or compile crawled docs into API-surface/context packages. |               181 |             +158 |
 | `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.                           |                58 |              +67 |
 | `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results and optional context-package compilation.                                        |               195 |             +166 |
@@ -247,13 +247,13 @@ The effective config is cached in memory for the session. After hand-editing `~/
 
 ## Model adapters
 
-`web_summarize` and `web_extract action="adhoc"` need an LLM transport. When Pi has a model configured (OpenAI, Anthropic, Google, etc.), the tools use it automatically via the host context — no extra extension needed. Any Pi extension can also supply one via `pi.events` for cross-extension provider lending. With no adapter available, the tools return `MODEL_ADAPTER_MISSING` and the LLM falls back to `web_scrape` + summarize-in-reply.
+`web_extract action="summarize"` and `web_extract action="adhoc"` need an LLM transport. When Pi has a model configured (OpenAI, Anthropic, Google, etc.), the tools use it automatically via the host context — no extra extension needed. Any Pi extension can also supply one via `pi.events` for cross-extension provider lending. With no adapter available, the tools return `MODEL_ADAPTER_MISSING` and the LLM falls back to `web_scrape` + summarize-in-reply.
 
 ### Capabilities
 
 | Capability  | What it does                                                                      | Used by                      |
 | ----------- | --------------------------------------------------------------------------------- | ---------------------------- |
-| `summarize` | Page-scoped natural-language summary of scraped content.                          | `web_summarize`              |
+| `summarize` | Page-scoped natural-language summary of scraped content.                          | `web_extract action=summarize` |
 | `extract`   | Schema- or prompt-driven structured extraction (JSON shape) from scraped content. | `web_extract action="adhoc"` |
 
 ### Configuration
@@ -337,9 +337,9 @@ pi.events?.on?.("pi:model-adapter/discover", (payload) => {
 pi.events?.emit?.("pi:model-adapter/unregister", { id: entry.id }); // on unload
 ```
 
-`web_summarize` issues a filtered discover (`{ capabilities: ["summarize"] }`) on its first invocation when no `summarize`-capable adapter is registered, then caches per capability so subsequent invocations don't re-emit. `web_extract action="adhoc"` will adopt the same pattern.
+`web_extract action="summarize"` issues a filtered discover (`{ capabilities: ["summarize"] }`) on its first invocation when no `summarize`-capable adapter is registered, then caches per capability so subsequent invocations don't re-emit. `web_extract action="adhoc"` adopts the same pattern.
 
-When an adapter returns `usage`, `web_summarize` (and `web_extract action="adhoc"`) render a compact footer in the expanded view, for example: `gemini-acp · gemini-2.0-flash · 234 in · 187 out · $0.0023`. Adapters supply only the fields they have; pi-scraper hides absent fields automatically. Cost is in USD and is the adapter's responsibility to compute — pi-scraper ships no pricing table.
+When an adapter returns `usage`, `web_extract action="summarize"` (and `web_extract action="adhoc"`) render a compact footer in the expanded view, for example: `gemini-acp · gemini-2.0-flash · 234 in · 187 out · $0.0023`. Adapters supply only the fields they have; pi-scraper hides absent fields automatically. Cost is in USD and is the adapter's responsibility to compute — pi-scraper ships no pricing table.
 
 ## Development and release checks
 

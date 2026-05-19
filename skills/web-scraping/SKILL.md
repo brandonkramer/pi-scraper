@@ -7,7 +7,7 @@ description: Use for known URLs/content to scrape/read, summarize, map robots/si
 
 1. **URL from a known site?** → use `web_extract` with the matching vertical action (table below). Hits APIs directly — no HTML scraping. (GitHub, npm, Reddit, PyPI, arXiv, etc.)
 2. **Need the raw page content?** → `web_scrape`. Read a single URL. Add `mode=fingerprint` if bot-protected.
-3. **Need structured data from a page?** → `web_extract` with pattern (sections/regex/excerpts), selector (CSS/XPath), or adhoc (LLM).
+3. **Need a summary?** → `web_extract action=summarize`. **Need structured data?** → `web_extract` with pattern (sections/regex/excerpts), selector (CSS/XPath), or adhoc (LLM).
 4. **Need to explore a site?** → `web_crawl` to follow links and read pages. Or `web_map` for URL inventory only.
 5. **Multiple independent URLs?** → `web_batch` for parallel scraping.
 6. **Compare page changes?** → `web_diff` against stored snapshots.
@@ -20,7 +20,7 @@ Each tool has a reference with full args, examples, and rules.
 | Tool | When | Ref |
 |------|------|-----|
 | `web_scrape` | Read a single URL or inline content (check verticals table first for known sites) | [ref](references/tools/web_scrape.md) |
-| `web_summarize` | Summarize via LLM (single source) | [ref](references/tools/web_summarize.md) |
+| `web_extract action=summarize` | Summarize via LLM (single source) | [ref](references/tools/web_summarize.md) |
 | `web_map` | Inventory URLs from robots/sitemaps/llms (no bodies) | [ref](references/tools/web_map.md) |
 | `web_crawl` | Follow links, read pages, build context | [ref](references/tools/web_crawl.md) |
 | `web_batch` | Scrape many independent URLs in parallel | [ref](references/tools/web_batch.md) |

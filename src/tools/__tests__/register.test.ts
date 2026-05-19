@@ -6,7 +6,6 @@ import { registerWebTools, webTools } from "../infra/register.ts";
 
 const expectedNames = [
 	"web_scrape",
-	"web_summarize",
 	"web_crawl",
 	"web_map",
 	"web_batch",

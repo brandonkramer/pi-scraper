@@ -7,7 +7,6 @@ import { describe, expect, it, beforeEach } from "vitest";
 import type { ModelAdapter, ModelRequest, ModelResponse } from "../../extract/adhoc/model.ts";
 import { modelRegistry } from "../infra/model-registry.ts";
 import { createWebExtractTool } from "../web-extract.ts";
-import { createWebSummarizeTool } from "../web-summarize.ts";
 
 const signal = new AbortController().signal;
 
@@ -35,17 +34,17 @@ function fakeAdapter(
 	return adapter;
 }
 
-describe("web_summarize provider routing", () => {
+describe("web_extract action=summarize provider routing", () => {
 	beforeEach(() => {
 		modelRegistry.clear();
 	});
 
 	it("routes to registered adapter with provider=auto", async () => {
 		fakeAdapter("gemini", ["summarize"]);
-		const tool = createWebSummarizeTool();
+		const tool = createWebExtractTool();
 		const result = await tool.execute(
 			"call",
-			{ content: "page text", sentences: 1 },
+			{ action: "summarize", content: "page text", sentences: 1 },
 			signal,
 			undefined,
 			{
@@ -60,10 +59,10 @@ describe("web_summarize provider routing", () => {
 	it("routes to explicit provider id", async () => {
 		fakeAdapter("ollama", ["summarize"]);
 		fakeAdapter("gemini", ["summarize"]);
-		const tool = createWebSummarizeTool();
+		const tool = createWebExtractTool();
 		const result = await tool.execute(
 			"call",
-			{ content: "page text", sentences: 1, provider: "ollama" },
+			{ action: "summarize", content: "page text", sentences: 1, provider: "ollama" },
 			signal,
 			undefined,
 			{
@@ -77,10 +76,10 @@ describe("web_summarize provider routing", () => {
 
 	it("returns MODEL_ADAPTER_MISSING with provider=off", async () => {
 		fakeAdapter("gemini", ["summarize"]);
-		const tool = createWebSummarizeTool();
+		const tool = createWebExtractTool();
 		const result = await tool.execute(
 			"call",
-			{ content: "page text", sentences: 1, provider: "off" },
+			{ action: "summarize", content: "page text", sentences: 1, provider: "off" },
 			signal,
 		);
 		expect((result.details as { error?: { code: string } }).error?.code).toBe(
@@ -89,10 +88,10 @@ describe("web_summarize provider routing", () => {
 	});
 
 	it("returns MODEL_ADAPTER_NOT_FOUND for unknown id", async () => {
-		const tool = createWebSummarizeTool();
+		const tool = createWebExtractTool();
 		const result = await tool.execute(
 			"call",
-			{ content: "page text", sentences: 1, provider: "nonexistent" },
+			{ action: "summarize", content: "page text", sentences: 1, provider: "nonexistent" },
 			signal,
 		);
 		expect((result.details as { error?: { code: string } }).error?.code).toBe(
@@ -102,10 +101,10 @@ describe("web_summarize provider routing", () => {
 
 	it("returns MODEL_ADAPTER_INCOMPATIBLE when id lacks capability", async () => {
 		fakeAdapter("extract-only", ["extract"]);
-		const tool = createWebSummarizeTool();
+		const tool = createWebExtractTool();
 		const result = await tool.execute(
 			"call",
-			{ content: "page text", sentences: 1, provider: "extract-only" },
+			{ action: "summarize", content: "page text", sentences: 1, provider: "extract-only" },
 			signal,
 		);
 		expect((result.details as { error?: { code: string } }).error?.code).toBe(
@@ -115,14 +114,18 @@ describe("web_summarize provider routing", () => {
 
 	it("programmatic adapter beats registry", async () => {
 		fakeAdapter("gemini", ["summarize"]);
-		const tool = createWebSummarizeTool({
+		const tool = createWebExtractTool({
 			modelAdapter: {
 				async run<T>(): Promise<ModelResponse<T>> {
 					return { data: "injected" as T };
 				},
 			},
 		});
-		const result = await tool.execute("call", { content: "page text", sentences: 1 }, signal);
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1 },
+			signal,
+		);
 		expect(result.content[0]?.text).toContain("injected");
 	});
 });

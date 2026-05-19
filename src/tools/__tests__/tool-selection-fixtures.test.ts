@@ -23,7 +23,7 @@ const toolsByName = new Map(webTools.map((tool) => [tool.name, tool]));
 
 const inputCuePatterns: Record<string, RegExp> = {
 	web_scrape: /https?:\/\/|\bURL\b|\bone-url\b|\bmarkdown\b/iu,
-	web_summarize: /https?:\/\/|\bsummarize\b|\bbullets\b|\bone-page\b|\bprovided-content\b/iu,
+
 	web_crawl:
 		/https?:\/\/|\bsite\b|\bseed\b|\bdepth\b|\blinked pages\b|\bcrawlId\b|\bstatus\b|\bresume\b/iu,
 	web_map: /https?:\/\/|\bsite\b|\bseed\b|\brobots\b|\bsitemaps?\b|\bllms\b/iu,

@@ -6,14 +6,23 @@ import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
-import { modelProviderOptionSchema, urlProperty } from "./infra/schemas.ts";
+import { modelProviderOptionSchema, scrapeModeOptionSchema, urlProperty } from "./infra/schemas.ts";
 import { runAdHocExtraction } from "./web-extract-adhoc.ts";
 import { hasPatternRequest, runPatternInspection } from "./web-extract-pattern.ts";
 import { runSelectorExtractionTool } from "./web-extract-selector.ts";
+import { runSummarize } from "./web-extract-summarize.ts";
 import { runApiSurfaceExtraction } from "./web-extract-surface.ts";
 import { listDeterministicExtractors, runDeterministicExtractor } from "./web-extract-vertical.ts";
 
-const extractActions = ["list", "vertical", "adhoc", "pattern", "surface", "selector"] as const;
+const extractActions = [
+	"list",
+	"vertical",
+	"pattern",
+	"surface",
+	"selector",
+	"summarize",
+	"adhoc",
+] as const;
 export const webExtractSchema = Type.Object({
 	action: Type.Optional(Type.Any()),
 	extractor: Type.Optional(Type.Any()),
@@ -21,7 +30,10 @@ export const webExtractSchema = Type.Object({
 	content: Type.Optional(Type.Any()),
 	prompt: Type.Optional(Type.Any()),
 	schema: Type.Optional(Type.Any()),
+	sentences: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
+	bullets: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
 	...modelProviderOptionSchema,
+	...scrapeModeOptionSchema,
 	sourceFormat: Type.Optional(Type.Any()),
 	include: Type.Optional(Type.Array(Type.Any())),
 	extractSchema: Type.Optional(Type.Any()),
@@ -104,7 +116,7 @@ export function createWebExtractTool(
 	return defineWebTool({
 		name: "web_extract",
 		label: "Extract",
-		description: "Vertical regex JSON/schema",
+		description: "Vertical/regex/pattern/JSON/schema/summarize/extraction",
 		parameters: webExtractSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate, context) {
 			const action = inferExtractAction(params);
@@ -116,6 +128,7 @@ export function createWebExtractTool(
 				return await runApiSurfaceExtraction(params, options, signal, onUpdate);
 			if (action === "selector")
 				return await runSelectorExtractionTool(params, options, signal, onUpdate);
+			if (action === "summarize") return await runSummarize(params, options, signal, context);
 			return await runAdHocExtraction(params, options, signal, context);
 		},
 		renderCall: (args, theme) =>
@@ -133,6 +146,7 @@ function inferExtractAction(params: Params): ExtractAction {
 	if (params.extract === "api-surface") return "surface";
 	if (params.extractor) return "vertical";
 	if (hasPatternRequest(params)) return "pattern";
+	if (params.sentences !== undefined || params.bullets !== undefined) return "summarize";
 	return "adhoc";
 }
 
