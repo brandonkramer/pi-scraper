@@ -30,16 +30,16 @@ export const webExtractSchema = Type.Object({
 	content: Type.Optional(Type.Any()),
 	prompt: Type.Optional(Type.Any()),
 	schema: Type.Optional(Type.Any()),
-	sentences: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
-	bullets: Type.Optional(Type.Number({ minimum: 1, maximum: 20 })),
+	sentences: Type.Optional(Type.Number()),
+	bullets: Type.Optional(Type.Number()),
 	...modelProviderOptionSchema,
 	...scrapeModeOptionSchema,
 	sourceFormat: Type.Optional(Type.Any()),
-	include: Type.Optional(Type.Array(Type.Any())),
+	include: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	extractSchema: Type.Optional(Type.Any()),
 	length: Type.Optional(Type.Any()),
-	markers: Type.Optional(Type.Array(Type.Any())),
-	contains: Type.Optional(Type.Array(Type.Any())),
+	markers: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
+	contains: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	excerpts: Type.Optional(
 		Type.Array(
 			Type.Unsafe({

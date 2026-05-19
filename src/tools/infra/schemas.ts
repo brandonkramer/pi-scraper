@@ -14,17 +14,17 @@ export const scrapeModeOptionSchema = {
 export const sessionOptionSchema = {
 	sessionId: Type.Optional(
 		Type.String({
-			description: "Session for cookies/login/consent.",
+			description: "Consent session.",
 		}),
 	),
 	saveSession: Type.Optional(
 		Type.Boolean({
-			description: "Persist session.",
+			description: "Persist.",
 		}),
 	),
 	clearSession: Type.Optional(
 		Type.Boolean({
-			description: "Clear session.",
+			description: "Clear.",
 		}),
 	),
 } as const;

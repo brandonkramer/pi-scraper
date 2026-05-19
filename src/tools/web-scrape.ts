@@ -50,13 +50,13 @@ export const webScrapeSchema = Type.Object({
 	proxy: Type.Optional(Type.Any()),
 	respectRobots: Type.Optional(Type.Any()),
 	refresh: Type.Optional(Type.Any()),
-	followAlternates: Type.Optional(Type.Boolean()),
-	followMetaRefresh: Type.Optional(Type.Boolean()),
-	snapshotName: Type.Optional(Type.String({ description: "Snapshot name." })),
-	snapshotTag: Type.Optional(Type.String({ description: "Version tag." })),
+	followAlternates: Type.Optional(Type.Unsafe<boolean>({})),
+	followMetaRefresh: Type.Optional(Type.Unsafe<boolean>({})),
+	snapshotName: Type.Optional(Type.String({ description: "Name." })),
+	snapshotTag: Type.Optional(Type.String({ description: "Tag." })),
 	diff: Type.Optional(
 		Type.Union([
-			Type.Boolean({ description: "Latest baseline." }),
+			Type.Boolean({ description: "Baseline." }),
 			Type.Object({
 				snapshotName: Type.Optional(Type.Unsafe<string>({})),
 				snapshotTag: Type.Optional(Type.Unsafe<string>({})),
@@ -65,9 +65,9 @@ export const webScrapeSchema = Type.Object({
 			}),
 		]),
 	),
-	linesMatching: Type.Optional(Type.Array(Type.String())),
-	contextLines: Type.Optional(Type.Number()),
-	caseSensitive: Type.Optional(Type.Boolean()),
+	linesMatching: Type.Optional(Type.Array(Type.Unsafe<string>({}))),
+	contextLines: Type.Optional(Type.Unsafe<number>({})),
+	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
 
 	...sessionOptionSchema,
 	stealth: Type.Optional(Type.Any()),

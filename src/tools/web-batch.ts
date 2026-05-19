@@ -18,18 +18,18 @@ import { retrieveResultAction, storedResultGuidance } from "./infra/agentic-cont
 import { defineWebTool } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
 import { toolResult } from "./infra/result.ts";
-import { scrapeOutputOptionSchema, urlProperty } from "./infra/schemas.ts";
+import { scrapeOutputOptionSchema } from "./infra/schemas.ts";
 import { sessionLifecycle } from "./infra/session-lifecycle.ts";
 import { renderWebBatchResult } from "./renderers/batch.ts";
 
 export const webBatchSchema = Type.Object({
-	urls: Type.Array(urlProperty(), { minItems: 1 }),
-	concurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 32 })),
-	perHostConcurrency: Type.Optional(Type.Number({ minimum: 1, maximum: 16 })),
+	urls: Type.Array(Type.Unsafe<string>({}), { minItems: 1 }),
+	concurrency: Type.Optional(Type.Number()),
+	perHostConcurrency: Type.Optional(Type.Number()),
 	...scrapeOutputOptionSchema,
-	linesMatching: Type.Optional(Type.Array(Type.String())),
-	contextLines: Type.Optional(Type.Number()),
-	caseSensitive: Type.Optional(Type.Boolean()),
+	linesMatching: Type.Optional(Type.Array(Type.Unsafe<string>({}))),
+	contextLines: Type.Optional(Type.Unsafe<number>({})),
+	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
 	compile: Type.Optional(Type.Any()),
 });
 
