@@ -4,7 +4,7 @@ import { renderProgressCard } from "../../tui/progress.ts";
 import { renderText } from "../../tui/text.ts";
 import { muted, separator } from "../../tui/theme.ts";
 import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
-/** @file Pi web_diff tool result renderer. */
+/** @file Pi web_scrape/diff tool result renderer. */
 import {
 	isProgress,
 	type PiToolShell,
@@ -32,13 +32,13 @@ export function renderWebDiffResult(
 ): RenderComponent {
 	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
 	if (isProgress(details))
-		return renderProgressCard("web_diff", details, theme, {
+		return renderProgressCard("web_scrape diff", details, theme, {
 			allowIcons: false,
 		});
 	const envelope = details as Partial<ResultEnvelope<DiffData>>;
 	const diff = envelope.data;
 	const title = envelope.error
-		? errorLabel("web_diff", envelope.error, { allowIcons: false })
+		? errorLabel("web_scrape", envelope.error, { allowIcons: false })
 		: [diffTitle(diff, envelope.summary), freshnessLabel(envelope)]
 				.filter(Boolean)
 				.join(separator());

@@ -9,7 +9,6 @@ const expectedNames = [
 	"web_crawl",
 	"web_map",
 	"web_batch",
-	"web_diff",
 	"web_extract",
 	"web_get_result",
 ];

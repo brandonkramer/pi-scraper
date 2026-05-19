@@ -46,7 +46,6 @@ Set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` when browsers are managed externally. `
 | `web_crawl`      | Local; browser optional through scrape pipeline | Run/resume a breadth-first crawl, inspect crawl status by `crawlId`, list prior crawl metadata, or compile crawled docs into API-surface/context packages. |               181 |             +158 |
 | `web_map`        | Local                                           | Discovery-only URL inventory from robots, sitemaps, gzipped sitemaps, `sitemap.xml`, and `llms.txt`; no page-content extraction.                           |                58 |              +67 |
 | `web_batch`      | Local; browser optional through scrape pipeline | Scrape many independent URLs with ordered per-URL success/failure results and optional context-package compilation.                                        |               195 |             +166 |
-| `web_diff`       | Local                                           | Re-scrape, normalize, compare against unnamed, named, or tagged snapshots, and store deterministic diff metadata.                                          |                91 |              +82 |
 | `web_extract`    | Local/model depending on action                 | List/run deterministic extractors, inspect patterns, compile API surfaces, run selector extraction with adaptive repair, or extract via schema/prompt.     |               290 |             +289 |
 | `web_get_result` | Local                                           | Retrieve a stored response by `responseId`, structured job manifest by `jobId`, or snapshot listing by `snapshotUrl`.                                      |                56 |              +74 |
 
@@ -72,7 +71,7 @@ Capability labels:
 | Concurrency      | `concurrency`, `perHostConcurrency`; HTTP politeness reacts to 429 and `Retry-After`                                                                |
 | Context packages | `compile: true` on `web_crawl`/`web_batch` stores a bounded package artifact                                                                        |
 | API surface      | `extract: "api-surface"` builds a local module/function tree when possible                                                                          |
-| Diff             | `snapshotName`, `snapshotTag` (write via `web_scrape` or `web_diff`); `compareTag`, `maxSnapshotAgeSeconds` (compare via `web_diff`)                 |
+| Diff             | `snapshotName`, `snapshotTag` (write via `web_scrape`); `diff: true | {...}` (compare via `web_scrape`); `compareTag`, `maxSnapshotAgeSeconds` |
 | Extract          | `action`, `extractor`, `prompt`, `schema`, `sourceFormat`, `markers`, `contains`, `excerpts`, `regexes`, `sections`, `include`, `extractSchema`     |
 | Retrieve         | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag`                                                                                 |
 
@@ -106,12 +105,12 @@ web_scrape({ url: "https://example.com/dashboard", sessionId: "example" })
 web_batch({ urls: ["https://example.com/page1", "https://example.com/page2"], sessionId: "example" })
 ```
 
-**Snapshot example** — pin a baseline, compare later:
+**Snapshot example** — pin a baseline, compare against it or the latest baseline:
 
 ```text
-web_scrape({ url: "https://example.com", snapshotName: "homepage" })   // pin baseline
-# ... later ...
-web_diff({ url: "https://example.com", snapshotName: "homepage" })     // compare
+web_scrape({ url: "https://example.com", snapshotName: "homepage" })       // pin baseline
+web_scrape({ url: "https://example.com", diff: { snapshotName: "homepage" } })  // compare against named
+web_scrape({ url: "https://example.com", diff: true })                          // compare against latest
 ```
 
 ```json

@@ -34,6 +34,7 @@ export interface ResultShellOptions<TData> {
 	qualitySignals?: ResultEnvelope<TData>["qualitySignals"];
 	nextActions?: ResultEnvelope<TData>["nextActions"];
 	assistantGuidance?: string;
+	kind?: "scrape" | "diff";
 	snapshotSaved?: { name: string; tag?: string; path: string };
 	diagnostics?: Record<string, unknown>;
 	error?: StructuredError;
@@ -70,6 +71,7 @@ export function toolResult<TData>(
 			qualitySignals: options.qualitySignals,
 			nextActions: options.nextActions,
 			assistantGuidance: guidanceWithFreshness(options.assistantGuidance, freshness),
+			kind: options.kind,
 			snapshotSaved: options.snapshotSaved,
 			diagnostics: options.diagnostics,
 			error: options.error,

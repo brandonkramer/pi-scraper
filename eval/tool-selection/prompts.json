@@ -79,19 +79,20 @@
 	{
 		"id": "natural-diff-homepage-snapshot",
 		"prompt": "Compare https://example.com against my homepage snapshot.",
-		"expectedTool": "web_diff",
+		"expectedTool": "web_scrape",
 		"expectedArgs": {
 			"url": "https://example.com",
-			"snapshotName": "homepage"
+			"diff": {
+				"snapshotName": "homepage"
+			}
 		},
-		"rationale": "Comparing a URL against a named homepage snapshot is web_diff.",
+		"rationale": "Comparing a URL against a named homepage snapshot uses web_scrape with diff param.",
 		"tags": [
 			"diff",
 			"compare",
 			"snapshot",
 			"homepage",
-			"url",
-			"contrast:web_scrape"
+			"url"
 		]
 	},
 	{
@@ -164,18 +165,19 @@
 	{
 		"id": "diff-homepage-snapshot",
 		"prompt": "Compare the homepage against the saved homepage snapshot.",
-		"expectedTool": "web_diff",
+		"expectedTool": "web_scrape",
 		"expectedArgs": {
-			"snapshotName": "homepage"
+			"diff": {
+				"snapshotName": "homepage"
+			}
 		},
-		"rationale": "Comparing current content with a named saved snapshot is web_diff.",
+		"rationale": "Comparing current content with a named saved snapshot uses web_scrape with diff param.",
 		"tags": [
 			"diff",
 			"compare",
 			"snapshot",
 			"homepage",
-			"url",
-			"contrast:web_scrape"
+			"url"
 		]
 	},
 	{
@@ -548,7 +550,6 @@
 			"monitor",
 			"future",
 			"no-url",
-			"contrast:web_diff",
 			"contrast:web_crawl"
 		]
 	},

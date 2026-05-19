@@ -9,7 +9,6 @@ const expectedNames = [
 	"web_crawl",
 	"web_map",
 	"web_batch",
-	"web_diff",
 	"web_extract",
 	"web_get_result",
 ] as const;
@@ -19,7 +18,6 @@ const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
 	web_crawl: 290,
 	web_map: 180,
 	web_batch: 230,
-	web_diff: 180,
 	web_extract: 560,
 	web_get_result: 160,
 };
@@ -47,7 +45,6 @@ const discriminatorChecks: Record<string, RegExp[]> = {
 	web_crawl: [/crawl/iu, /status|list/iu, /pages|linked-page/iu],
 	web_map: [/robots\/sitemaps\/llms/iu, /no bodies|no page bodies|does not fetch page content/iu],
 	web_batch: [/per-URL/iu],
-	web_diff: [/compare/iu, /snapshot/iu],
 	web_extract: [/verticals?|extractors?/iu, /patterns|regex/iu, /JSON\/schema/iu],
 	web_get_result: [/retrieve/iu, /stored response|job manifest/iu],
 };

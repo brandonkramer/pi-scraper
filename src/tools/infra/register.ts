@@ -3,7 +3,6 @@ import type { ExtensionAPI, ToolDefinition } from "@earendil-works/pi-coding-age
 
 import { webBatchTool } from "../web-batch.ts";
 import { webCrawlTool } from "../web-crawl.ts";
-import { webDiffTool } from "../web-diff.ts";
 import { webExtractTool } from "../web-extract.ts";
 import { webGetResultTool } from "../web-get-result.ts";
 import { webMapTool } from "../web-map.ts";
@@ -16,7 +15,6 @@ export const webTools: readonly WebTool[] = [
 	webCrawlTool,
 	webMapTool,
 	webBatchTool,
-	webDiffTool,
 	webExtractTool,
 	webGetResultTool,
 ];

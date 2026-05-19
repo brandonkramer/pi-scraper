@@ -79,7 +79,6 @@ function renderComponentText(component: RenderComponent | undefined): string {
 function smokeParams(name: string): unknown {
 	switch (name) {
 		case "web_scrape":
-		case "web_diff":
 			return { url: "http://127.0.0.1/", mode: "fast", timeoutSeconds: 1 };
 		case "web_crawl":
 			return {

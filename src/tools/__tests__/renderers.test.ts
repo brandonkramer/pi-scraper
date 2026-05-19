@@ -8,7 +8,6 @@ import { progressShell } from "../infra/progress.ts";
 import { toolResult } from "../infra/result.ts";
 import { webBatchTool } from "../web-batch.ts";
 import { webCrawlTool } from "../web-crawl.ts";
-import { webDiffTool } from "../web-diff.ts";
 import { webScrapeTool } from "../web-scrape.ts";
 
 const partialContext = {
@@ -280,6 +279,7 @@ describe("web tool renderers", () => {
 			text: "baseline",
 			data: {},
 			responseId: "r1",
+			kind: "diff",
 		});
 		const unchanged = toolResult({
 			text: "unchanged",
@@ -288,6 +288,7 @@ describe("web tool renderers", () => {
 				diff: { changedCount: 0, addedCount: 0, removedCount: 0 },
 			},
 			summary: "No content changes detected.",
+			kind: "diff",
 		});
 		const changed = toolResult({
 			text: "changed",
@@ -295,18 +296,19 @@ describe("web tool renderers", () => {
 				previous: {},
 				diff: { changedCount: 2, addedCount: 1, removedCount: 0 },
 			},
+			kind: "diff",
 		});
 
-		expect(text(webDiffTool.renderResult?.(baseline, { expanded: false }))).toContain(
+		expect(text(webScrapeTool.renderResult?.(baseline, { expanded: false }))).toContain(
 			"saved baseline",
 		);
-		expect(text(webDiffTool.renderResult?.(unchanged, { expanded: false }))).toContain(
+		expect(text(webScrapeTool.renderResult?.(unchanged, { expanded: false }))).toContain(
 			"no content changes",
 		);
-		expect(text(webDiffTool.renderResult?.(changed, { expanded: false }))).toContain(
+		expect(text(webScrapeTool.renderResult?.(changed, { expanded: false }))).toContain(
 			"changed: 2 changed, 1 added, 0 removed",
 		);
-		expect(text(webDiffTool.renderResult?.(changed, { expanded: false }))).not.toContain(
+		expect(text(webScrapeTool.renderResult?.(changed, { expanded: false }))).not.toContain(
 			"⚠ changed",
 		);
 	});

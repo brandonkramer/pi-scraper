@@ -1,16 +1,16 @@
-/**
- * @fileoverview tools __tests__ agentic-response.test module.
- */
+/** @file Tools **tests** agentic-response.test module. */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { createCrawlState, saveCrawlState } from "../../crawl/state.ts";
 import { closeStorageDbs } from "../../storage/db/open.ts";
 import { storeResponse } from "../../storage/responses/store.ts";
 import type { ResultEnvelope } from "../../types.ts";
-import { diffInterpretation } from "../web-diff.ts";
 import { webCrawlTool } from "../web-crawl.ts";
+import { diffInterpretation } from "../web-scrape.ts";
 
 const signal = new AbortController().signal;
 let homeDir: string;

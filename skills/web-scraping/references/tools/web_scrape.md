@@ -26,6 +26,7 @@ Read a single URL or content.
 | `clearSession` | boolean | Reset session state |
 | `snapshotName` | string | Save result as named snapshot baseline |
 | `snapshotTag` | string | Tag for this snapshot version |
+| `diff` | boolean/object | `true` for latest, or `{ snapshotName?, snapshotTag?, compareTag?, maxSnapshotAgeSeconds? }` |
 | `stealth` | boolean | Anti-detection patches (browser mode) |
 | `autoWait` | boolean | Wait for network idle (browser mode) |
 
@@ -37,7 +38,11 @@ web_scrape url="https://example.com"
 
 # Save snapshot baseline for later diff
 web_scrape url="https://example.com" snapshotName="homepage"
-# Later: web_diff url="https://example.com" snapshotName="homepage"
+# Later: compare against it
+web_scrape url="https://example.com" diff={"snapshotName":"homepage"}
+
+# Compare against latest baseline (any name)
+web_scrape url="https://example.com" diff=true
 
 # Fingerprint for bot-protected
 web_scrape url="https://bot-protected.example" mode=fingerprint format=markdown

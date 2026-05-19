@@ -79,7 +79,7 @@ async function getSnapshotList(snapshotUrl: string, snapshotName?: string, snaps
 			format: "json",
 			summary: `Listed ${entries.length} snapshot(s) for ${snapshotUrl}.`,
 			answerContext:
-				"Snapshot listings include local paths plus metadata such as timestamp, mode, snapshotName, and snapshotTag for selecting web_diff compareTag baselines.",
+				"Snapshot listings include local paths plus metadata such as timestamp, mode, snapshotName, and snapshotTag for selecting web_scrape diff compareTag baselines.",
 		});
 	} catch (error) {
 		return errorResult(structuredToolError(error, "SNAPSHOT_LIST_FAILED", "retrieve", snapshotUrl));

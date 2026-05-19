@@ -165,6 +165,7 @@ export interface ResultEnvelope<TData = unknown> {
 	citations?: Citation[];
 	summary?: string;
 	answerContext?: string;
+	kind?: "scrape" | "diff";
 	snapshotSaved?: { name: string; tag?: string; path: string };
 	modelUsage?: ModelUsage;
 	sourceNotes?: AgenticSourceNote[];

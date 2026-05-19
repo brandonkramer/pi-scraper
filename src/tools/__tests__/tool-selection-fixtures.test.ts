@@ -28,7 +28,7 @@ const inputCuePatterns: Record<string, RegExp> = {
 		/https?:\/\/|\bsite\b|\bseed\b|\bdepth\b|\blinked pages\b|\bcrawlId\b|\bstatus\b|\bresume\b/iu,
 	web_map: /https?:\/\/|\bsite\b|\bseed\b|\brobots\b|\bsitemaps?\b|\bllms\b/iu,
 	web_batch: /\bURLs\b|\bper-URL\b|\bindependent\b/iu,
-	web_diff: /https?:\/\/|\bhomepage\b|\bsnapshot\b|\bdiff\b|\bcompare\b/iu,
+
 	web_extract:
 		/https?:\/\/|\bpage\b|\bcontent\b|\bJSON\b|\bschema\b|\bextractors\b|\bnpm\b|\bgithub\b|\bdeepwiki\b|\bregex\b|\bmarkers\b/iu,
 	web_get_result: /\bresponseId\b|\bjobId\b|\bmanifest\b|\bstored result\b/iu,

@@ -1,7 +1,12 @@
-/** @file Pi tool adapter for single-URL scraping and page summaries. */
+/** @file Pi tool adapter for single-URL scraping, snapshot writing, and diffing. */
 import { Type, type Static } from "typebox";
 
-import { saveSnapshot, updateSnapshotReference } from "../diff/snapshots.ts";
+import {
+	diffScrapeResult,
+	saveSnapshot,
+	type SnapshotDiffResult,
+	updateSnapshotReference,
+} from "../diff/snapshots.ts";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import { getOrCreateSession } from "../http/session.ts";
 import { describeScrapeResult, formatAge } from "../scrape/describe.ts";
@@ -9,6 +14,8 @@ import { filterLines } from "../scrape/line-filter.ts";
 import { formatLineMatchPreview } from "../scrape/line-preview.ts";
 import { resolveScrapeOptions } from "../scrape/options.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.ts";
+import { freshnessFromTimestamp } from "../storage/cache/freshness.ts";
+import { storeResponseWithId } from "../storage/responses/store.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import { qualityFromCache, refreshUrlAction, storedTraceContext } from "./infra/agentic-context.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
@@ -22,6 +29,7 @@ import {
 import { sessionOptionSchema, urlProperty } from "./infra/schemas.ts";
 import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
 import { sessionLifecycle } from "./infra/session-lifecycle.ts";
+import { renderWebDiffResult } from "./renderers/diff.ts";
 import { renderWebScrapeResult } from "./renderers/scrape.ts";
 
 const scrapeTasks = ["read", "summarize"] as const;
@@ -50,6 +58,17 @@ export const webScrapeSchema = Type.Object({
 	snapshotTag: Type.Optional(
 		Type.String({ description: "Tag this snapshot version (used with snapshotName)." }),
 	),
+	diff: Type.Optional(
+		Type.Union([
+			Type.Boolean({ description: "Compare current scrape against latest baseline for this URL." }),
+			Type.Object({
+				snapshotName: Type.Optional(Type.String()),
+				snapshotTag: Type.Optional(Type.String()),
+				compareTag: Type.Optional(Type.String()),
+				maxSnapshotAgeSeconds: Type.Optional(Type.Number()),
+			}),
+		]),
+	),
 	linesMatching: Type.Optional(Type.Array(Type.String())),
 	contextLines: Type.Optional(Type.Number()),
 	caseSensitive: Type.Optional(Type.Boolean()),
@@ -60,6 +79,7 @@ export const webScrapeSchema = Type.Object({
 });
 
 type Params = Static<typeof webScrapeSchema>;
+type DiffParams = Exclude<Params["diff"], boolean | undefined>;
 type ScrapeTask = (typeof scrapeTasks)[number];
 
 export interface WebScrapeToolOptions {
@@ -73,16 +93,22 @@ export function createWebScrapeTool(
 	return defineWebTool({
 		name: "web_scrape",
 		label: "Scrape",
-		description: "Read URL (optional snapshotName writes a baseline; use web_diff for comparison)",
+		description:
+			"Read one URL (optional snapshotName writes baseline, diff compares against baseline)",
 		parameters: webScrapeSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
 			const task = inferScrapeTask(params);
 			if (task === "summarize") return await summarizeScrape(params, options, signal);
+			if (params.diff !== undefined) return await diffScrape(params, signal, onUpdate);
 			return await readScrape(params, signal, onUpdate);
 		},
 		renderCall: (args, theme, _context) =>
 			renderSimpleCall("web_scrape", renderScrapeCallParts(args), theme),
-		renderResult: (result, { expanded }, theme) => renderWebScrapeResult(result, expanded, theme),
+		renderResult: (result, { expanded }, theme) => {
+			const details = result.details as Partial<{ kind: string }>;
+			if (details.kind === "diff") return renderWebDiffResult(result, expanded, theme);
+			return renderWebScrapeResult(result, expanded, theme);
+		},
 	});
 }
 
@@ -265,6 +291,98 @@ async function summarizeScrape(params: Params, options: WebScrapeToolOptions, si
 	}
 }
 
+async function diffScrape(
+	params: Params,
+	signal: AbortSignal,
+	onUpdate?: Parameters<WebTool<typeof webScrapeSchema>["execute"]>[3],
+) {
+	if (!params.url) {
+		return inputErrorResult(
+			"SCRAPE_URL_MISSING",
+			"scrape",
+			"web_scrape diff requires url.",
+			"Provide url for web_scrape diff.",
+		);
+	}
+	const { loadEffectiveConfig } = await import("../config.ts");
+	const config = await loadEffectiveConfig();
+	const diffOptions = typeof params.diff === "boolean" ? {} : (params.diff as DiffParams);
+	const scrapeOptions = resolveScrapeOptions(params, config);
+	await emitProgress(onUpdate, {
+		state: "loading",
+		url: params.url,
+		message:
+			"snapshotName" in diffOptions && diffOptions.snapshotName
+				? `diffing snapshot '${diffOptions.snapshotName}'`
+				: "diffing against snapshot",
+	});
+	const { scrapeUrl } = await import("../scrape/pipeline.ts");
+	const scrape = await scrapeUrl(params.url, scrapeOptions, {}, signal);
+	if (scrape.error) {
+		return toolResult({
+			text: `Diff failed: ${scrape.error.message}`,
+			data: {},
+			url: params.url,
+			kind: "diff",
+			error: scrape.error,
+		});
+	}
+	try {
+		const diff = await diffScrapeResult(scrape, {
+			snapshotName: "snapshotName" in diffOptions ? diffOptions.snapshotName : undefined,
+			snapshotTag: "snapshotTag" in diffOptions ? diffOptions.snapshotTag : undefined,
+			compareTag: "compareTag" in diffOptions ? diffOptions.compareTag : undefined,
+		});
+		const { metadata: stored } = await storeResponseWithId(
+			(responseId) => {
+				diff.current.metadata.responseId = responseId;
+				return diff;
+			},
+			{ contentType: "application/json" },
+		);
+		diff.current.metadata.fullOutputPath = stored.fullOutputPath;
+		await updateSnapshotReference(diff.current.url, stored, {
+			snapshotName: "snapshotName" in diffOptions ? diffOptions.snapshotName : undefined,
+			snapshotTag: "snapshotTag" in diffOptions ? diffOptions.snapshotTag : undefined,
+		});
+		const baselineFreshness = baselineFreshnessFor(
+			diff,
+			(diffOptions as { maxSnapshotAgeSeconds?: number }).maxSnapshotAgeSeconds,
+		);
+		const text = renderDiffSummary(diff, stored.responseId);
+		const shaped = shapeDiffResult(diff, stored.responseId, baselineFreshness);
+		return toolResult({
+			text,
+			data: diff,
+			url: params.url,
+			finalUrl: diff.current.finalUrl,
+			kind: "diff",
+			mode: diff.current.metadata.mode,
+			format: "json",
+			responseId: stored.responseId,
+			fullOutputPath: stored.fullOutputPath,
+			contentType: "application/json",
+			freshness: baselineFreshness,
+			...shaped,
+		});
+	} catch (error) {
+		if (typeof error === "object" && error !== null && "structured" in error) {
+			const err = error as {
+				structured: { code: string; phase: string; message: string; retryable: boolean };
+				message: string;
+			};
+			return toolResult({
+				text: `Diff failed: ${err.message}`,
+				data: {},
+				url: params.url,
+				kind: "diff",
+				error: err.structured,
+			});
+		}
+		throw error;
+	}
+}
+
 function shapeScrapeResult(result: ScrapeResult, responseId: string, matchPreview?: string) {
 	const url = result.finalUrl ?? result.url ?? "about:blank";
 	const source = result.cache?.cached
@@ -298,5 +416,117 @@ function shapeScrapeResult(result: ScrapeResult, responseId: string, matchPrevie
 			extraActions: [refreshUrlAction(url)],
 		}),
 		qualitySignals: qualityFromCache(result.cache),
+	};
+}
+
+export function diffInterpretation(diff: SnapshotDiffResult): string {
+	const name = diffLabel(diff);
+	if (!diff.previous) return `No previous${name}; saved a baseline for future comparisons.`;
+	if (diff.summary?.unchangedAfterNormalization)
+		return `No meaningful content changes after normalization for${name}; prior content is effectively equivalent.`;
+	const changed = diff.diff?.changedCount ?? 0;
+	const added = diff.diff?.addedCount ?? 0;
+	const removed = diff.diff?.removedCount ?? 0;
+	const headingChanges =
+		(diff.summary?.addedHeadings.length ?? 0) + (diff.summary?.removedHeadings.length ?? 0);
+	const linkChanges =
+		(diff.summary?.addedLinks.length ?? 0) + (diff.summary?.removedLinks.length ?? 0);
+	if (changed === 0 && added === 0 && removed === 0 && headingChanges === 0 && linkChanges === 0) {
+		return `No content changes detected for${name}; current and previous snapshots match.`;
+	}
+	return `Content changed for${name}: ${changed} changed, ${added} added, ${removed} removed line(s), ${headingChanges} heading change(s), ${linkChanges} link change(s).`;
+}
+
+function baselineFreshnessFor(diff: SnapshotDiffResult, maxSnapshotAgeSeconds: unknown) {
+	if (!diff.previous || maxSnapshotAgeSeconds === undefined) return;
+	return freshnessFromTimestamp(
+		diff.previous.metadata.timestamp,
+		toPositiveNumber(maxSnapshotAgeSeconds),
+	);
+}
+
+function toPositiveNumber(value: unknown): number | undefined {
+	const number = typeof value === "number" ? value : Number(value);
+	return Number.isFinite(number) && number > 0 ? number : undefined;
+}
+
+function renderDiffSummary(diff: SnapshotDiffResult, responseId: string): string {
+	const name = diffLabel(diff);
+	if (!diff.previous) return `No previous${name}; saved baseline. responseId: ${responseId}`;
+	if (diff.summary?.unchangedAfterNormalization)
+		return `Only volatile content changed after normalization for${name}. responseId: ${responseId}`;
+	const textDiff = diff.diff;
+	const parts = [
+		textDiff
+			? `${textDiff.changedCount} changed, ${textDiff.addedCount} added, ${textDiff.removedCount} removed, ${textDiff.unchanged} unchanged`
+			: "No text diff",
+		`${diff.summary?.addedHeadings.length ?? 0} added heading(s)`,
+		`${diff.summary?.removedHeadings.length ?? 0} removed heading(s)`,
+		`${diff.summary?.addedLinks.length ?? 0} added link(s)`,
+		`${diff.summary?.removedLinks.length ?? 0} removed link(s)`,
+		`${diff.summary?.changedMetadata.length ?? 0} metadata change(s)`,
+		`responseId: ${responseId}`,
+	];
+	return parts.join(" · ");
+}
+
+function diffLabel(diff: SnapshotDiffResult): string {
+	return ` ${baselineLabel(diff)}`;
+}
+
+function baselineLabel(diff: SnapshotDiffResult): string {
+	const snapshot = diff.snapshotName ? `snapshot '${diff.snapshotName}'` : "snapshot";
+	const tag = diff.snapshotTag ? ` tag '${diff.snapshotTag}'` : "";
+	const baseline = diff.compareTag ? ` compared to tag '${diff.compareTag}'` : "";
+	return `${snapshot}${tag}${baseline}`;
+}
+
+function shapeDiffResult(
+	diff: SnapshotDiffResult,
+	responseId: string,
+	baselineFreshness?: ReturnType<typeof baselineFreshnessFor>,
+) {
+	const interpretation = diffInterpretation(diff);
+	const sourceUrl = diff.current.finalUrl ?? diff.current.url;
+	const baselineWarning = baselineFreshness?.stale
+		? `Baseline snapshot is ${formatAge(baselineFreshness.ageSeconds)} old; refresh or save a newer snapshot before relying on time-sensitive comparisons.`
+		: undefined;
+	return {
+		summary: interpretation,
+		answerContext: [
+			interpretation,
+			diff.previous
+				? `Compared current content against ${baselineLabel(diff)}.`
+				: "No previous snapshot existed; this run established the baseline.",
+			baselineWarning,
+			`Use responseId ${responseId} to inspect the full diff, hashes, headings, links, metadata changes, and snapshot metadata.`,
+		]
+			.filter(Boolean)
+			.join("\n"),
+		...storedTraceContext({
+			responseId,
+			source: {
+				id: "current",
+				uri: sourceUrl,
+				excerpt: diff.current.content.text.slice(0, 240),
+				relevance: "Current scraped page used for snapshot comparison.",
+				retrievedAt: diff.current.metadata.timestamp,
+				sourceType: "docs",
+			},
+			retrieveDescription: "Inspect the full stored diff result.",
+			guidanceSuffix:
+				"For changed diffs, inspect added/removed sections before answering from an older snapshot.",
+		}),
+		qualitySignals: {
+			confidence: baselineFreshness?.stale ? ("medium" as const) : ("high" as const),
+			freshness: baselineFreshness?.stale ? ("stale_possible" as const) : ("current" as const),
+			coverage: "complete" as const,
+			knownGaps: [
+				!diff.previous
+					? "This was the first snapshot, so no previous content was available for comparison."
+					: undefined,
+				baselineWarning,
+			].filter(Boolean) as string[],
+		},
 	};
 }
