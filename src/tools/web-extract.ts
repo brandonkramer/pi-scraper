@@ -2,6 +2,8 @@
 import { type Static, Type } from "typebox";
 
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
+import type { PatternSectionRequest } from "../extract/pattern/index.ts";
+import type { PatternExcerptRequest, PatternRegexRequest } from "../extract/pattern/types.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
@@ -41,51 +43,23 @@ export const webExtractSchema = Type.Object({
 	markers: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	contains: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	excerpts: Type.Optional(
-		Type.Array(
-			Type.Unsafe({
-				properties: {
-					needle: Type.Optional(Type.Any()),
-					before: Type.Optional(Type.Any()),
-					after: Type.Optional(Type.Any()),
-					caseSensitive: Type.Optional(Type.Any()),
-					maxOccurrences: Type.Optional(Type.Any()),
-				},
-			}),
-		),
+		Type.Unsafe<PatternExcerptRequest[]>({
+			type: "array",
+			description: "{needle,before,after,caseSensitive,maxOccurrences}",
+		}),
 	),
 	regexes: Type.Optional(
-		Type.Array(
-			Type.Unsafe({
-				properties: {
-					name: Type.Optional(Type.Any()),
-					pattern: Type.Optional(Type.Any()),
-					flags: Type.Optional(Type.Any()),
-					capture: Type.Optional(Type.Any()),
-					captureGroup: Type.Optional(Type.Any()),
-					includeContains: Type.Optional(Type.Any()),
-					maxMatches: Type.Optional(Type.Any()),
-					dedupe: Type.Optional(Type.Any()),
-					sort: Type.Optional(Type.Any()),
-					contextBefore: Type.Optional(Type.Any()),
-					contextAfter: Type.Optional(Type.Any()),
-				},
-			}),
-		),
+		Type.Unsafe<PatternRegexRequest[]>({
+			type: "array",
+			description:
+				"{name,pattern,flags,capture,captureGroup,includeContains,maxMatches,dedupe,sort,contextBefore,contextAfter}",
+		}),
 	),
 	sections: Type.Optional(
-		Type.Array(
-			Type.Unsafe({
-				properties: {
-					name: Type.Optional(Type.Any()),
-					start: Type.Optional(Type.Any()),
-					end: Type.Optional(Type.Any()),
-					includeStart: Type.Optional(Type.Any()),
-					includeEnd: Type.Optional(Type.Any()),
-					caseSensitive: Type.Optional(Type.Any()),
-					maxChars: Type.Optional(Type.Any()),
-				},
-			}),
-		),
+		Type.Unsafe<PatternSectionRequest[]>({
+			type: "array",
+			description: "{name,start,end,includeStart,includeEnd,caseSensitive,maxChars}",
+		}),
 	),
 	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
 	mode: Type.Optional(Type.Any()),

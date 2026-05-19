@@ -55,15 +55,17 @@ export const webScrapeSchema = Type.Object({
 	snapshotName: Type.Optional(Type.String({ description: "Name." })),
 	snapshotTag: Type.Optional(Type.String({ description: "Tag." })),
 	diff: Type.Optional(
-		Type.Union([
-			Type.Boolean({ description: "Baseline." }),
-			Type.Object({
-				snapshotName: Type.Optional(Type.Unsafe<string>({})),
-				snapshotTag: Type.Optional(Type.Unsafe<string>({})),
-				compareTag: Type.Optional(Type.Unsafe<string>({})),
-				maxSnapshotAgeSeconds: Type.Optional(Type.Unsafe<number>({})),
-			}),
-		]),
+		Type.Unsafe<
+			| boolean
+			| {
+					snapshotName?: string;
+					snapshotTag?: string;
+					compareTag?: string;
+					maxSnapshotAgeSeconds?: number;
+			  }
+		>({
+			description: "true or {snapshotName,snapshotTag,compareTag,maxSnapshotAgeSeconds}",
+		}),
 	),
 	linesMatching: Type.Optional(Type.Array(Type.Unsafe<string>({}))),
 	contextLines: Type.Optional(Type.Unsafe<number>({})),
