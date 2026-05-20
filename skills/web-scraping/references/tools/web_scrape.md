@@ -27,9 +27,17 @@ Read a single URL or content.
 | `snapshotName` | string | Save result as named snapshot baseline |
 | `snapshotTag` | string | Tag for this snapshot version |
 | `diff` | boolean/object | `true` for latest, or `{ snapshotName?, snapshotTag?, compareTag?, maxSnapshotAgeSeconds? }` |
+| `saveToFile` | boolean/object | `true` or `{dir,filename,maxBytes}` |
 | `stealth` | boolean | Anti-detection patches (browser mode, playwright backend) |
 | `autoWait` | boolean | Wait for network idle (browser mode) |
 | `browserBackend` | enum | `"cloak"` (default) or `"playwright"` |
+| `followAlternates` | boolean | Follow `<link rel="alternate">` content-format fallback |
+| `followMetaRefresh` | boolean | Follow `<meta http-equiv="refresh">` redirects |
+| `headers` | object | Custom request headers |
+| `maxBytes` | number | Max bytes to fetch |
+| `sentences` | number | Truncate to N sentences |
+| `bullets` | number | Format as N bullet points |
+| `task` | string | `read` (default) or `summarize` |
 
 ## Examples
 
@@ -39,6 +47,15 @@ web_scrape url="https://example.com"
 
 # Save snapshot baseline for later diff
 web_scrape url="https://example.com" snapshotName="homepage"
+
+# Download to disk
+web_scrape url="https://example.com/image.jpg" saveToFile=true
+
+# Custom request headers
+web_scrape url="https://api.example.com/data" format=json headers={"Authorization":"Bearer token"}
+
+# Browser diff with persistent session
+web_scrape url="https://example.com/dashboard" mode=browser browserBackend=cloak format=markdown sessionId="my-session" saveSession=true diff=true
 # Later: compare against it
 web_scrape url="https://example.com" diff={"snapshotName":"homepage"}
 

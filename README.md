@@ -48,17 +48,17 @@ Ask naturally; Pi can choose the right web tool automatically:
 
 ## 🛠️ Public Tools
 
-| Tool | Capability | Best For... | Contract ≈ | Input + |
-| :--- | :--- | :--- | :---: | :---: |
-| `web_scrape` | 🏠 Local | Reading a single URL as Markdown, Text, or HTML. | 233 | +244 |
-| `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 158 | +175 |
-| `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 58 | +65 |
-| `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 177 | +176 |
-| `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 246 | +265 |
-| `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 56 | +114 |
+| Tool | Capability | Best For... | Contract ≈ |
+| :--- | :--- | :--- | :---: |
+| `web_scrape` | 🏠 Local | Reading a single URL as Markdown, Text, or HTML. | 308 tokens |
+| `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 158 tokens |
+| `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 58 tokens |
+| `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 195 tokens |
+| `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 337 tokens |
+| `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 56 tokens |
 
 > [!NOTE]
-> **Contract** is the total tokens for the tool declaration. **Input +** is the typical token overhead when Pi calls the tool.
+> **Contract** is the total tokens for the tool declaration.
 
 ---
 

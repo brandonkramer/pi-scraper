@@ -18,18 +18,42 @@ Extract structured data from URLs or content — verticals, patterns, selectors,
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `url` | string | Target URL |
+| `content` | string | Inline content (when no URL) |
 | `action` | string | `vertical`, `pattern`, `selector`, `adhoc`, `list` |
 | `extractor` | string | Vertical name (e.g. `github_repo`) |
 | `prompt` | string | Adhoc extraction prompt |
 | `schema` | object | JSON Schema for adhoc |
 | `selector` | string | CSS/XPath selector |
 | `selectorType` | string | `css` or `xpath` |
-| `sections` | array | Heading ranges |
-| `regexes` | array | Named regex patterns |
-| `excerpts` | array | Needle-based excerpts |
+| `attribute` | string | Extract attribute value from selected elements |
+| `sections` | array | Heading ranges `{name,start,end,includeStart,includeEnd,maxChars}` |
+| `regexes` | array | Named regex patterns `{name,pattern,flags,captureGroup,maxMatches,contextBefore,contextAfter}` |
+| `excerpts` | array | Needle-based excerpts `{needle,before,after,maxOccurrences}` |
 | `jsonPaths` | string[] | JSONPath for JSON sources |
-| `mode` | enum | Scrape mode |
+| `markers` | array | Start/end marker boundaries |
+| `contains` | string[] | Filter results containing specific text |
+| `extract` | string | Extraction preset (`api-surface`, `symbol-ref`, etc.) |
+| `mode` | enum | `fast`, `fingerprint`, `readable`, `browser`, `auto` |
+| `format` | enum | `markdown`, `text`, `llm`, `html`, `json`, `raw` |
+| `provider` | string | Model or `auto`/`off` |
+| `sentences` | number | Truncate to N sentences |
+| `bullets` | number | Format as N bullet points |
 | `respectRobots` | boolean | Default: true |
+| `sessionId` | string | Stateful flows (cookies, login, consent) |
+| `saveSession` | boolean | Persist session |
+| `clearSession` | boolean | Reset session state |
+| `stealth` | boolean | Anti-detection patches (browser mode) |
+| `autoWait` | boolean | Wait for network idle (browser mode) |
+| `browserBackend` | enum | `cloak` (default) or `playwright` |
+| `sourceFormat` | string | Override source content format |
+| `include` | array | CSS selectors for extraction |
+| `extractSchema` | object | JSON Schema for structured extraction |
+| `length` | string | Output length preset |
+| `identifier` | string | Named extraction identifier |
+| `adaptive` | boolean | Adaptive selector relocation |
+| `autoSave` | boolean | Auto-save extracted results |
+| `threshold` | number | Confidence threshold |
+| `limit` | number | Result limit |
 
 ## Examples
 
@@ -45,6 +69,18 @@ web_extract action=selector selector=".product-card" selectorType="css" url="htt
 
 # Adhoc — LLM-backed
 web_extract action=adhoc url="https://example.com" prompt="Extract all pricing tiers" schema={type:"object",properties:{tiers:{type:"array"}}}
+
+# Marker boundaries
+web_extract action=pattern url="https://example.com" markers=[{start:"## Features",end:"## Pricing"}]
+
+# Extract by attribute
+web_extract action=selector url="https://example.com" selector="img" attribute="src"
+
+# Browser-rendered vertical extraction
+web_extract action=vertical extractor=docsite url="https://developer.mozilla.org/en-US/docs/Web/API/URL" mode=browser browserBackend=cloak
+
+# Vector surface extraction
+web_extract action=pattern url="https://example.com" extract=api-surface
 
 # List extractors
 web_extract action=list
