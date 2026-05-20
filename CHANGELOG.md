@@ -4,6 +4,12 @@ All notable changes to `pi-scraper` are summarized from the git history and rele
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-05-21
+
+### Fixed
+
+- Normalized request header keys before HTTP/2 dispatch so mixed-case `User-Agent` headers no longer crash `web_scrape` with `ERR_HTTP2_HEADER_SINGLE_VALUE`.
+
 ## [0.8.1] - 2026-05-20
 
 ### Added
