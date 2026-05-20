@@ -4,6 +4,20 @@ All notable changes to `pi-scraper` are summarized from the git history and rele
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-05-20
+
+### Added
+
+- **CloakBrowser as default browser backend** — `mode=browser` now uses CloakBrowser by default; `browserBackend=playwright` provides explicit opt-out.
+- **Persistent browser sessions** — `sessionId` + `saveSession=true` persists cookies/localStorage across calls and Pi restarts via `~/.pi/browser-sessions/<sessionId>/`.
+- **Vertical browser fallback with visible markers** — `web_extract action=vertical mode=browser` pre-renders through Cloak and shows `browser fallback · cloak` in compact output.
+- **Tool contract token optimization** — trimmed descriptions in `web_scrape` and `web_extract` schemas (~50 tokens saved).
+
+### Changed
+
+- Updated bundled skill docs with router guidance for JS-rendered/authenticated pages.
+- Updated README with CloakBrowser quick-start and persistent session examples.
+
 ## [0.8.0] - 2026-05-20
 
 ### Added
