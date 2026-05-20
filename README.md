@@ -64,16 +64,20 @@ Ask naturally; Pi can choose the right web tool automatically:
 
 ## 📖 Parameter Reference
 
-| Area | Parameters |
-| :--- | :--- |
-| **Input** | `url`, `urls`, `content` |
-| **Scrape** | `mode`, `format`, `onlyMainContent`, `maxChars`, `maxBytes`, `timeoutSeconds` |
-| **Safety** | `respectRobots` (default: true), `refresh: true` (bypass cache) |
-| **Session** | `sessionId`, `saveSession`, `clearSession` |
-| **Crawl** | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `crawlId`, `resume`, `seed`, `status` |
-| **Batch** | `concurrency`, `perHostConcurrency`, `compile: true` |
-| **Extract** | `action`, `extractor`, `prompt`, `schema`, `sourceFormat`, `markers`, `sections`, `selector` |
-| **Retrieve** | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag` |
+| Area | Parameters | Description |
+| :--- | :--- | :--- |
+| **Shared** | `sessionId`, `saveSession`, `clearSession`, `stealth`, `autoWait`, `proxy`, `headers`, `provider` | Sessions, browser controls, and LLM provider selection. |
+| **Scrape** | `url`, `urls`, `content`, `task`, `mode`, `format`, `refresh`, `respectRobots`, `timeoutSeconds` | Targets, tasks (`read`/`summarize`), and fetch behavior. |
+| **Limits** | `maxBytes`, `maxChars`, `onlyMainContent` | Size limits and content cleaning. |
+| **Filtering** | `include`, `exclude`, `linesMatching`, `contextLines`, `caseSensitive` | Glob patterns and line-based content filtering. |
+| **Redirection**| `followAlternates`, `followMetaRefresh` | Controls for non-standard redirects. |
+| **Snapshots** | `snapshotName`, `snapshotTag`, `diff`, `compareTag`, `maxSnapshotAgeSeconds` | Versioning and diffing baselines. |
+| **Crawl** | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `concurrency`, `resume`, `crawlId`, `compile`, `seed`, `seedSitemap`, `status`, `limit`, `extract` | BFS discovery, limits, and state management. |
+| **Extract** | `action`, `extractor`, `prompt`, `schema`, `selector`, `selectorType`, `attribute`, `adaptive`, `bullets`, `sentences`, `identifier`, `autoSave`, `threshold`, `extractSchema` | Vertical, ad-hoc, and selector extraction. |
+| **Patterns** | `markers`, `contains`, `excerpts`, `regexes`, `sections`, `jsonPaths`, `sourceFormat`, `length` | Deterministic inspection: strings, regex, and ranges. |
+| **Map** | `url`, `maxSitemaps` | Site-wide discovery of robots.txt and sitemaps. |
+| **Storage** | `saveToFile` | `true` or `{dir, filename, maxBytes}` for disk storage. |
+| **Retrieval** | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag` | Retrieve stored payloads and job manifests. |
 
 ---
 
@@ -122,13 +126,32 @@ Extract structured data using CSS selectors, XPath, or plain text search.
 
 For well-known sites, `pi-scraper` uses optimized "vertical" extractors that hit APIs directly, bypassing slow HTML scraping.
 
-**Supported Verticals:**
-- **Code Repos:** GitHub (Metadata, README, File Tree), DeepWiki.
-- **Package Registries:** npm, PyPI, crates.io, Docker Hub (Registry JSON, versions, dependencies).
-- **Research & Social:** arXiv (Atom feeds), Hacker News (Firebase API), Reddit (Post content, comments, listings), YouTube (metadata, transcript tracks, transcript text, comment preview).
-- **AI & Data:** Hugging Face (Model metadata, dataset cards).
-- **Docs & Knowledge:** Docusaurus, ReadTheDocs, GitBook, MDN (Sections, metadata), and `docstrings` (Exported symbols from TS/JS/Py/Rs).
-- **Analytics:** OSSInsight (Repo trends, collection rankings, real-time analytics).
+| Vertical | Platforms / Sites | Extracted Data / Possibilities |
+| :--- | :--- | :--- |
+| **GitHub Repo** | GitHub | Metadata, README, File Tree, Languages, Topics. |
+| **GitHub Issue** | GitHub | Issue body, comments, participants, labels, status. |
+| **GitHub PR** | GitHub | Pull request body, diff stats, reviews, comments. |
+| **GitHub Release** | GitHub | Release notes, tag info, assets, author metadata. |
+| **npm Package** | npmjs.com | Manifest JSON, versions, dependencies, README. |
+| **PyPI Package** | pypi.org | Package metadata, versions, author, description. |
+| **crates.io** | crates.io | Rust crate metadata, versions, dependencies. |
+| **Docker Hub** | hub.docker.com | Image metadata, tags, architectures, layers. |
+| **HF Model** | huggingface.co | Model cards, metadata, files, community stats. |
+| **HF Dataset** | huggingface.co | Dataset cards, configuration, metadata, previews. |
+| **Hacker News** | ycombinator.com | Story/Comment trees via Firebase API. |
+| **arXiv** | arxiv.org | Academic paper metadata and Atom feeds. |
+| **DeepWiki** | deepwiki.io | Structured wiki content and metadata. |
+| **Docs Site** | Docusaurus, RTD | Sections, sidebar navigation, and page metadata. |
+| **docstrings** | TS/JS/Py/Rs | Exported symbols, types, and function signatures. |
+| **Youtube Metadata** | youtube.com | Video title, views, channel name, duration, and description. |
+| **Youtube Transcriptions** | youtube.com | **Full transcripts** in plain-text and timed segments. |
+| **Youtube Comments** | youtube.com | Preview of top video comments and engagement stats. |
+| **Reddit Post** | reddit.com | Post content, scoring, flairs, and author metadata. |
+| **Reddit Thread** | reddit.com | **Full nested comment trees** (retains original thread depth). |
+| **Reddit List** | reddit.com | Subreddit listings (hot/new/top) and search results. |
+| **OSS Analytics** | ossinsight.io | Real-time repository metrics, stars, and contribution trends. |
+| **OSS Trending** | ossinsight.io | Daily/weekly trending repositories and collections. |
+| **OSS Rankings** | ossinsight.io | Collection-based rankings and ecosystem comparison data. |
 
 ```text
 // Get structured data for an npm package
@@ -140,7 +163,7 @@ web_extract({ action: "vertical", extractor: "youtube", url: "https://www.youtub
 
 ---
 
-## 💾 Storage & History
+## 💾 Download, Storage & History
 
 Large results are stored automatically. You can retrieve them later using `web_get_result`.
 
