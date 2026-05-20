@@ -12,7 +12,7 @@
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 Install the extension via the Pi CLI:
 
