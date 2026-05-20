@@ -44,3 +44,7 @@ web_extract action=docsite url="https://developer.mozilla.org/en-US/docs/Web/Jav
 - Version detection is platform-specific: ReadTheDocs uses URL path segment, Docusaurus uses `/docs/` or `/api/` prefix
 - Sections are extracted from `article`, `main`, `.theme-doc-markdown`, `.rst-content .document`, or `.markdown-section` with heading-based splitting (max 1200 chars per section)
 - Breadcrumbs come from `nav[aria-label*=breadcrumb]` or `<nav>` elements
+
+## Browser fallback
+
+Default to this vertical's API/direct HTTP path; it is faster and more reliable than browser rendering. Add `mode=browser` only as an explicit fallback when JS-rendered page state, bot mitigation, or a logged-in CloakBrowser session is needed. In browser mode, pi-scraper pre-renders the page with CloakBrowser and passes that rendered page to the extractor's page-fetch path.

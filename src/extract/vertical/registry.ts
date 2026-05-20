@@ -6,6 +6,7 @@ import type {
 	VerticalExtractionResult,
 	VerticalExtractor,
 	VerticalExtractorContext,
+	VerticalExtractorPage,
 	VerticalExtractorProgress,
 } from "../vertical/capabilities.ts";
 import { arxivExtractor } from "../vertical/extractors/arxiv.ts";
@@ -61,6 +62,7 @@ export const verticalExtractors = [
 export interface VerticalRegistryDeps {
 	context?: VerticalExtractorContext;
 	httpClient?: Pick<HttpClient, "fetchUrl">;
+	prerenderedPage?: VerticalExtractorPage;
 	requestOptions?: Pick<
 		CommonRequestOptions,
 		"cacheTtlSeconds" | "maxAgeSeconds" | "refresh" | "respectRobots"
@@ -112,6 +114,7 @@ export async function runVerticalExtractor<T = unknown>(
 					deps.requestOptions,
 					sources,
 					deps.onProgress ? (options) => deps.onProgress!(options) : undefined,
+					deps.prerenderedPage,
 				),
 			signal,
 		);
@@ -164,6 +167,7 @@ function httpContext(
 	> = {},
 	sources: SourceReference[] = [],
 	onProgress?: (options: VerticalExtractorProgress) => void | Promise<void>,
+	prerenderedPage?: VerticalExtractorPage,
 ): VerticalExtractorContext {
 	return {
 		fetchJson: async <T>(url: string, signal?: AbortSignal) => {
@@ -209,6 +213,10 @@ function httpContext(
 			return response.text ?? "";
 		},
 		fetchPage: async (url: string, signal?: AbortSignal) => {
+			if (prerenderedPage && matchesPrerenderedPage(url, prerenderedPage)) {
+				recordVerticalSource(sources, prerenderedPage.finalUrl, "page");
+				return prerenderedPage;
+			}
 			recordVerticalSource(sources, url, "page");
 			const response = await client.fetchUrl(
 				url,
@@ -232,6 +240,19 @@ function httpContext(
 				}
 			: undefined,
 	};
+}
+
+function matchesPrerenderedPage(url: string, page: VerticalExtractorPage): boolean {
+	return sameUrl(url, page.requestedUrl) || sameUrl(url, page.finalUrl);
+}
+
+function sameUrl(left: string, right: string | undefined): boolean {
+	if (!right) return false;
+	try {
+		return new URL(left).toString() === new URL(right).toString();
+	} catch {
+		return left === right;
+	}
 }
 
 function recordVerticalSource(sources: SourceReference[], url: string, provider: string): void {

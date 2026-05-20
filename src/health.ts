@@ -51,7 +51,7 @@ export async function runSessionStartHealthChecks(
 		warn({
 			code: "PLAYWRIGHT_UNAVAILABLE",
 			message:
-				"Optional browser mode is unavailable. Playwright is an optional dependency; if it was omitted, run `npm install playwright` in the extension directory, then `npx playwright install chromium` if browser rendering is needed.",
+				"Playwright backend is unavailable for browser mode use with browserBackend: 'playwright'. CloakBrowser is the default backend and should be available. To use Playwright instead, run `npm install playwright` and `npx playwright install chromium`.",
 		});
 	}
 

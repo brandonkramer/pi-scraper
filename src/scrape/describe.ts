@@ -13,11 +13,15 @@ export function formatAge(ageSeconds: number | undefined): string {
 	return `${Math.floor(ageSeconds / DAY_SECONDS)}d ago`;
 }
 
-export function describeScrapeResult(result: ScrapeResult): string {
+export function describeScrapeResult(
+	result: ScrapeResult,
+	options?: { displayMode?: string },
+): string {
 	const text = result.data.markdown ?? result.data.text ?? result.data.title ?? result.data.route;
 	const source = result.cache?.cached
 		? `cache hit · ${formatAge(result.cache.ageSeconds)} · ${result.cache.staleness ?? "fresh"}`
 		: "fresh fetch";
+	const mode = options?.displayMode ?? result.mode ?? "auto";
 	// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
-	return `${result.status ?? "ok"} · ${result.mode ?? "auto"} · ${result.format ?? "markdown"} · ${source}\n${(text ?? "").slice(0, 1200)}`;
+	return `${result.status ?? "ok"} · ${mode} · ${result.format ?? "markdown"} · ${source}\n${(text ?? "").slice(0, 1200)}`;
 }

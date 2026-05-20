@@ -1,5 +1,9 @@
 import { loadEffectiveConfig } from "../config.ts";
-import type { VerticalExtractionResult } from "../extract/vertical/capabilities.ts";
+import type {
+	VerticalExtractionResult,
+	VerticalExtractorPage,
+} from "../extract/vertical/capabilities.ts";
+import { scrapeUrl, type ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { renderText } from "../tui/text.ts";
 import { failure, muted, success } from "../tui/theme.ts";
 import { renderTreeSections, type TreeSection } from "../tui/tree.ts";
@@ -12,7 +16,16 @@ import type { PiToolShell } from "../types.ts";
 import type { ToolUpdate } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
 import { inputErrorResult, toolResult } from "./infra/result.ts";
-import type { Params } from "./web-extract.ts";
+import type { Params, WebExtractToolOptions } from "./web-extract.ts";
+
+interface VerticalBrowserFallbackMetadata {
+	browserFallback?: {
+		used: boolean;
+		backend: string;
+	};
+}
+
+type VerticalResultWithMetadata = VerticalExtractionResult & VerticalBrowserFallbackMetadata;
 
 export async function listDeterministicExtractors() {
 	const { listExtractorCapabilities } = await import("../extract/vertical/registry.ts");
@@ -29,6 +42,7 @@ export async function listDeterministicExtractors() {
 
 export async function runDeterministicExtractor(
 	params: Params,
+	options: WebExtractToolOptions,
 	signal: AbortSignal,
 	onUpdate?: ToolUpdate,
 ) {
@@ -48,11 +62,19 @@ export async function runDeterministicExtractor(
 		url,
 		message: `extractor ${extractor}`,
 	});
+	const prerenderedPage = await maybePrerenderVerticalPage(
+		url,
+		params,
+		options.scrapeDeps,
+		signal,
+		onUpdate,
+	);
 	const { runVerticalExtractor } = await import("../extract/vertical/registry.ts");
 	const result = await runVerticalExtractor(
 		extractor,
 		url,
 		{
+			prerenderedPage,
 			requestOptions: {
 				cacheTtlSeconds: config.scrapeDefaults.cacheTtlSeconds,
 				maxAgeSeconds: config.scrapeDefaults.maxAgeSeconds,
@@ -60,30 +82,77 @@ export async function runDeterministicExtractor(
 				respectRobots: params.respectRobots,
 			},
 			onProgress: onUpdate
-				? (options) =>
+				? (progress) =>
 						emitProgress(onUpdate, {
-							state: options.state as "waiting" | "loading" | "processing" | "done" | "error",
-							message: options.message,
-							url: options.url,
+							state: progress.state as "waiting" | "loading" | "processing" | "done" | "error",
+							message: progress.message,
+							url: progress.url,
 						})
 				: undefined,
 		},
 		signal,
 	);
+	const resultWithMetadata: VerticalResultWithMetadata = prerenderedPage
+		? {
+				...result,
+				browserFallback: {
+					used: true,
+					backend: params.browserBackend ?? "cloak",
+				},
+			}
+		: result;
 	return toolResult({
-		text: verticalExtractorText(extractor, result),
-		data: result,
+		text: verticalExtractorText(extractor, resultWithMetadata),
+		data: resultWithMetadata,
 		url,
 		format: "json",
 		sources: result.sources,
-		summary: verticalExtractorSummary(extractor, result),
+		summary: verticalExtractorSummary(extractor, resultWithMetadata),
 		error: result.error && {
 			...result.error,
 			phase: "vertical_extract",
 			url,
 		},
-		assistantGuidance: verticalExtractorGuidance(result),
+		assistantGuidance: verticalExtractorGuidance(resultWithMetadata),
 	});
+}
+
+async function maybePrerenderVerticalPage(
+	url: string,
+	params: Params,
+	scrapeDeps: ScrapePipelineDeps | undefined,
+	signal: AbortSignal,
+	onUpdate?: ToolUpdate,
+): Promise<VerticalExtractorPage | undefined> {
+	if (params.mode !== "browser") return;
+	await emitProgress(onUpdate, {
+		state: "loading",
+		url,
+		message: "rendering page for vertical fallback",
+	});
+	const result = await scrapeUrl(
+		url,
+		{
+			mode: "browser",
+			format: "html",
+			browserBackend: params.browserBackend,
+			sessionId: params.sessionId,
+			saveSession: params.saveSession,
+			clearSession: params.clearSession,
+			respectRobots: params.respectRobots,
+		},
+		scrapeDeps,
+		signal,
+	);
+	if (result.error) return;
+	return {
+		requestedUrl: url,
+		finalUrl: result.finalUrl ?? result.url ?? url,
+		status: result.status ?? 200,
+		contentType: result.contentType,
+		text: result.data.html ?? result.data.text ?? result.summary ?? "",
+		html: result.data.html,
+	};
 }
 
 /**
@@ -110,16 +179,20 @@ export function renderVerticalResult(
 	}
 
 	const data = wrapper?.data as Record<string, unknown> | undefined;
+	const browserFallback = browserFallbackMetadata(wrapper);
 	const [metaLine] = extractorPreview(data);
 	const check = success("\u2713", theme);
-	const treeLine = `\u2514\u2500 ${check} ${name} done${muted(` \u00B7 ${metaLine}`, theme)}`;
+	const summaryDetails = [metaLine, browserFallbackLabel(browserFallback)]
+		.filter(Boolean)
+		.join(" \u00B7 ");
+	const treeLine = `\u2514\u2500 ${check} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
 
 	if (!expanded || !data) {
 		return renderText(treeLine, { padToWidth: true });
 	}
 
 	// Build expanded sections: transcript as plain text, everything else as tree
-	const sections = buildVerticalSections(data);
+	const sections = buildVerticalSections(data, browserFallback);
 	const body = renderTreeSections(sections, 80, theme);
 
 	const transcript = data.transcript as
@@ -152,8 +225,35 @@ export function renderVerticalResult(
 	return renderText(`${header}\n\n${body}`, { padToWidth: true });
 }
 
-function buildVerticalSections(data: Record<string, unknown>): TreeSection[] {
+function browserFallbackMetadata(
+	wrapper: Record<string, unknown> | undefined,
+): VerticalBrowserFallbackMetadata["browserFallback"] | undefined {
+	const fallback = wrapper?.browserFallback as
+		| VerticalBrowserFallbackMetadata["browserFallback"]
+		| undefined;
+	return fallback?.used ? fallback : undefined;
+}
+
+function browserFallbackLabel(
+	fallback: VerticalBrowserFallbackMetadata["browserFallback"] | undefined,
+): string | undefined {
+	return fallback?.used ? `browser fallback · ${fallback.backend}` : undefined;
+}
+
+function buildVerticalSections(
+	data: Record<string, unknown>,
+	browserFallback?: VerticalBrowserFallbackMetadata["browserFallback"],
+): TreeSection[] {
 	const sections: TreeSection[] = [];
+	if (browserFallback?.used) {
+		sections.push({
+			name: "extraction",
+			rows: [
+				{ key: "path", value: "browser-prerender \u2192 vertical" },
+				{ key: "browserBackend", value: browserFallback.backend },
+			],
+		});
+	}
 
 	// Video info
 	const videoRows: TreeSection["rows"] = [];
@@ -200,7 +300,7 @@ function buildVerticalSections(data: Record<string, unknown>): TreeSection[] {
 /** Plain-text summary for the call result line (theme applied by renderResult). */
 function verticalExtractorSummary(
 	extractor: string | undefined,
-	result: VerticalExtractionResult,
+	result: VerticalResultWithMetadata,
 ): string {
 	const name = extractor ?? result.extractor;
 	const blocked = blockedSource(result.data);
@@ -211,13 +311,16 @@ function verticalExtractorSummary(
 		return `\u2514\u2500 \u2715 ${name} failed \u00B7 ${result.error.code}`;
 	}
 	const [metaLine] = extractorPreview(result.data);
-	return `\u2514\u2500 \u2713 ${name} done \u00B7 ${metaLine}`;
+	const details = [metaLine, browserFallbackLabel(result.browserFallback)]
+		.filter(Boolean)
+		.join(" \u00B7 ");
+	return `\u2514\u2500 \u2713 ${name} done \u00B7 ${details}`;
 }
 
 /** Plain-text answer context (theme applied by renderResult). */
 function verticalExtractorText(
 	extractor: string | undefined,
-	result: VerticalExtractionResult,
+	result: VerticalResultWithMetadata,
 ): string {
 	const name = extractor ?? result.extractor;
 	const blocked = blockedSource(result.data);
@@ -233,6 +336,9 @@ function verticalExtractorText(
 		return `\u2514\u2500 \u2715 ${name} failed \u00B7 ${result.error.code}`;
 	}
 	const [metaLine] = extractorPreview(result.data);
+	const details = [metaLine, browserFallbackLabel(result.browserFallback)]
+		.filter(Boolean)
+		.join(" \u00B7 ");
 	const treePrefix = `\u2514\u2500 \u2713 ${name} done`;
 
 	// Include full transcript text (up to 2000 chars) in the answer context
@@ -241,10 +347,10 @@ function verticalExtractorText(
 	if (transcript?.text) {
 		const text = transcript.text.replaceAll(/\s+/gu, " ").trim();
 		const snippet = text.length > 2000 ? text.slice(0, 2000) + "\u2026" : text;
-		return `${treePrefix} \u00B7 ${metaLine}\n\u2502 ${snippet}`;
+		return `${treePrefix} \u00B7 ${details}\n\u2502 ${snippet}`;
 	}
 
-	return `${treePrefix} \u00B7 ${metaLine}`;
+	return `${treePrefix} \u00B7 ${details}`;
 }
 
 /**

@@ -27,8 +27,9 @@ Read a single URL or content.
 | `snapshotName` | string | Save result as named snapshot baseline |
 | `snapshotTag` | string | Tag for this snapshot version |
 | `diff` | boolean/object | `true` for latest, or `{ snapshotName?, snapshotTag?, compareTag?, maxSnapshotAgeSeconds? }` |
-| `stealth` | boolean | Anti-detection patches (browser mode) |
+| `stealth` | boolean | Anti-detection patches (browser mode, playwright backend) |
 | `autoWait` | boolean | Wait for network idle (browser mode) |
+| `browserBackend` | enum | `"cloak"` (default) or `"playwright"` |
 
 ## Examples
 

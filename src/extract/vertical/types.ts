@@ -6,6 +6,8 @@ export interface VerticalExtractorPage {
 	finalUrl: string;
 	status: number;
 	contentType?: string;
+	html?: string;
+	requestedUrl?: string;
 }
 
 export interface VerticalExtractorProgress {

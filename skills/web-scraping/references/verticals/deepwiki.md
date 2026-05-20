@@ -29,3 +29,7 @@ web_extract action=deepwiki url="https://deepwiki.com/vercel/next.js"
 - `activeSection` is the currently selected section in DeepWiki's menu
 - `githubUrl` is always `https://github.com/:owner/:repo`
 - Use `github_repo` first for metadata/README; use `deepwiki` when you need the AI-generated navigation and source file breakdown that DeepWiki provides
+
+## Browser fallback
+
+Default to this vertical's API/direct HTTP path; it is faster and more reliable than browser rendering. Add `mode=browser` only as an explicit fallback when JS-rendered page state, bot mitigation, or a logged-in CloakBrowser session is needed. In browser mode, pi-scraper pre-renders the page with CloakBrowser and passes that rendered page to the extractor's page-fetch path.

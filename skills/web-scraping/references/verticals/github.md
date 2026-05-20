@@ -67,3 +67,7 @@ web_extract action=github_release url="https://github.com/facebook/react/release
 ```
 
 **Returns:** owner, repo, tag, name, url, draft, prerelease, author, publishedAt, createdAt, body, assets[{name, size, downloads, url}]
+
+## Browser fallback
+
+Default to this vertical's API path; it is faster and more reliable than browser rendering. Use `mode=browser` only as an explicit fallback when the normal API path is blocked/rate-limited or when you need a logged-in CloakBrowser session (`sessionId` + `saveSession=true`).

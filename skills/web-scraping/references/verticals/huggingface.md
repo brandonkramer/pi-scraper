@@ -52,3 +52,7 @@ web_extract action=huggingface_dataset url="https://huggingface.co/datasets/ILSV
 - `pipelineTag` (models only) indicates the task type: "text-generation", "text-classification", "image-classification", etc.
 - `gated` can be boolean or string — indicates if the model requires login approval
 - The `huggingface_model` extractor rejects reserved paths (e.g., `huggingface.co/datasets/...` goes to the dataset extractor)
+
+## Browser fallback
+
+Default to this vertical's API path; it is faster and more reliable than browser rendering. Use `mode=browser` only as an explicit fallback when the normal API path is blocked/rate-limited or when you need a logged-in CloakBrowser session (`sessionId` + `saveSession=true`).

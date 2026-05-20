@@ -69,3 +69,7 @@ web_extract action=crates_io url="https://crates.io/crates/anyhow"
 - All three use upstream registry APIs (`registry.npmjs.org`, `pypi.org/pypi/.../json`, `crates.io/api/v1/crates/...`)
 - No HTML scraping — fast and reliable
 - npm supports scoped packages (`@scope/name`) and specific version queries
+
+## Browser fallback
+
+Default to this vertical's API path; it is faster and more reliable than browser rendering. Use `mode=browser` only as an explicit fallback when the normal API path is blocked/rate-limited or when you need a logged-in CloakBrowser session (`sessionId` + `saveSession=true`).

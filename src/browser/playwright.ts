@@ -1,12 +1,16 @@
+/** @file Browser module — CloakBrowser is the default backend for mode:"browser". */
+
+import { DEFAULT_BROWSER_BACKEND } from "../defaults.ts";
 import { createAbortError } from "../http/abort.ts";
 import { assertSafeFetchUrl } from "../http/url-safety.ts";
+import type { BrowserBackend } from "../types.ts";
 import {
 	assertSafeBrowserUrl,
 	BrowserRenderError,
 	createBrowserRouteGuard,
+	type BrowserContext,
 	type BrowserRouteGuard,
 	type BrowserSafetyCheck,
-	type BrowserContext,
 	type BrowserSafetyState,
 	type Page,
 } from "./route-guard.ts";
@@ -15,10 +19,16 @@ import {
 	destroyBrowserSession,
 	releaseBrowserSession,
 } from "./session-pool.ts";
-/** @file Browser playwright module. */
 import { applyStealthPatches } from "./stealth.ts";
 
 export { BrowserRenderError } from "./route-guard.ts";
+export type { BrowserBackend };
+
+/** Minimal Browser interface — compatible with both playwright-core and cloakbrowser Browser types. */
+export interface Browser {
+	newContext(options: Record<string, unknown>): Promise<BrowserContext>;
+	close(): Promise<void>;
+}
 
 export interface BrowserRenderOptions {
 	timeoutSeconds?: number;
@@ -27,6 +37,10 @@ export interface BrowserRenderOptions {
 	proxy?: string;
 	browserProfile?: string;
 	waitUntil?: "domcontentloaded" | "load" | "networkidle";
+
+	// Backend selection
+	/** @default "cloak" */
+	browserBackend?: BrowserBackend;
 
 	// Session + stealth support
 	sessionId?: string;
@@ -58,23 +72,33 @@ export interface BrowserRenderer {
 }
 
 export interface PlaywrightRendererFactoryOptions {
-	loader?: () => Promise<PlaywrightModule>;
 	safetyCheck?: BrowserSafetyCheck;
+	/** @default "cloak" */
+	browserBackend?: BrowserBackend;
+	browserLoader?: (backend: BrowserBackend, options: BrowserRenderOptions) => Promise<Browser>;
 }
 
 export function createPlaywrightRenderer(
 	factoryOptions: PlaywrightRendererFactoryOptions = {},
 ): BrowserRenderer {
+	const loader = factoryOptions.browserLoader ?? defaultBrowserLoader;
 	return {
 		fetchRendered: (input, options, signal) =>
 			renderWithLoader(
 				input,
-				options,
+				{ ...options, browserBackend: options?.browserBackend ?? factoryOptions.browserBackend },
 				signal,
-				factoryOptions.loader ?? defaultPlaywrightLoader,
+				loader,
 				factoryOptions.safetyCheck ?? assertSafeFetchUrl,
 			),
 	};
+}
+
+async function defaultBrowserLoader(
+	backend: BrowserBackend,
+	options: BrowserRenderOptions,
+): Promise<Browser> {
+	return await launchBrowserBackend(backend, options);
 }
 
 export async function fetchRendered(
@@ -82,14 +106,14 @@ export async function fetchRendered(
 	options: BrowserRenderOptions = {},
 	signal?: AbortSignal,
 ): Promise<BrowserRenderResult> {
-	return await renderWithLoader(input, options, signal, defaultPlaywrightLoader);
+	return await renderWithLoader(input, options, signal, defaultBrowserLoader);
 }
 
 async function renderWithLoader(
 	input: string | URL,
 	options: BrowserRenderOptions = {},
 	signal: AbortSignal | undefined,
-	loader: () => Promise<PlaywrightModule>,
+	browserLoader: (backend: BrowserBackend, options: BrowserRenderOptions) => Promise<Browser>,
 	safetyCheck: BrowserSafetyCheck = assertSafeFetchUrl,
 ): Promise<BrowserRenderResult> {
 	const browserSafety: BrowserSafetyState = {
@@ -100,7 +124,7 @@ async function renderWithLoader(
 	const url = safe.normalizedUrl;
 	if (signal?.aborted) throw abortError(url);
 
-	const playwright = await loadPlaywright(url, loader);
+	const backend = options.browserBackend ?? DEFAULT_BROWSER_BACKEND;
 	let browser: Browser | undefined;
 	let abortListener: (() => void) | undefined;
 	let page: Page | undefined;
@@ -110,31 +134,58 @@ async function renderWithLoader(
 	try {
 		// 1) Acquire page: pooled session or fresh browser
 		if (options.sessionId) {
-			const launchBrowser: Parameters<typeof acquireBrowserSession>[1]["launchBrowser"] = () =>
-				playwright.chromium
-					.launch({
+			const isCloakPersistent = backend === "cloak" && options.saveSession;
+
+			if (isCloakPersistent) {
+				// Cloak persistent context: cookies/localStorage survive across Pi restarts
+				const launchContext = async () => {
+					const cloak = await import("cloakbrowser");
+					const userDataDir = cloakUserDataDir(options.sessionId!);
+					// oxlint-disable-next-line typescript/no-explicit-any -- bridge playwright-core ↔ playwright types
+					const pwContext: any = await cloak.launchPersistentContext({
+						userDataDir,
 						headless: true,
-						proxy: options.proxy ? { server: options.proxy } : undefined,
-					})
-					.then((b: unknown) => b) as ReturnType<
-					Parameters<typeof acquireBrowserSession>[1]["launchBrowser"]
-				>;
-			const s = await acquireBrowserSession(options.sessionId, {
-				launchBrowser,
-				safetyCheck,
-				profile: options.browserProfile,
-				proxy: options.proxy,
-				headers: options.headers,
-			});
-			page = s.page as unknown as Page;
-			browser = s.session.browser as unknown as Browser;
-			guard = s.session.guard;
-			session = s.session;
+						proxy: options.proxy,
+						timezone: options.timezone,
+						locale: options.locale,
+					});
+					// launchPersistentContext manages the browser internally;
+					// closing the context persists the profile and closes the browser.
+					// oxlint-disable-next-line typescript/no-explicit-any -- bridge local Browser ↔ cloakbrowser types
+					const cloakBrowser: unknown = {
+						close: async () => {
+							await pwContext.close();
+						},
+					};
+					return { browser: cloakBrowser, context: pwContext };
+				};
+				const s = await acquireBrowserSession(options.sessionId, {
+					launchContext,
+					safetyCheck,
+					profile: options.browserProfile,
+					proxy: options.proxy,
+				} as Parameters<typeof acquireBrowserSession>[1]);
+				page = s.page as unknown as Page;
+				browser = s.session.browser as unknown as Browser;
+				guard = s.session.guard;
+				session = s.session;
+			} else {
+				// oxlint-disable-next-line typescript/no-explicit-any -- bridge local Browser ↔ playwright core types
+				const launchBrowser: any = () => browserLoader(backend, options);
+				const s = await acquireBrowserSession(options.sessionId, {
+					launchBrowser,
+					safetyCheck,
+					profile: options.browserProfile,
+					proxy: options.proxy,
+					headers: options.headers,
+				});
+				page = s.page as unknown as Page;
+				browser = s.session.browser as unknown as Browser;
+				guard = s.session.guard;
+				session = s.session;
+			}
 		} else {
-			browser = (await playwright.chromium.launch({
-				headless: true,
-				proxy: options.proxy ? { server: options.proxy } : undefined,
-			})) as unknown as Browser;
+			browser = (await browserLoader(backend, options)) as unknown as Browser;
 			const context = await browser.newContext({
 				extraHTTPHeaders: options.headers,
 				serviceWorkers: "block",
@@ -156,8 +207,10 @@ async function renderWithLoader(
 		}
 		guard.setCheckedHostsForPage(page, browserSafety.checkedHosts);
 
-		// 2) Apply stealth patches before navigation
-		if (options.stealth) {
+		// 2) Apply JS-level stealth patches before navigation.
+		//    CloakBrowser patches everything at the C++ level, so JS patches are
+		//    redundant and would send detectable CDP traffic (page.evaluate).
+		if (options.stealth && backend !== "cloak") {
 			await applyStealthPatches(page as unknown as Parameters<typeof applyStealthPatches>[0], {
 				webdriver: true,
 				canvasNoise: options.hideCanvas ?? false,
@@ -224,20 +277,61 @@ async function renderWithLoader(
 	}
 }
 
-async function loadPlaywright(
-	url: string,
-	loader: () => Promise<PlaywrightModule>,
-): Promise<PlaywrightModule> {
+/** Launch a browser using the selected backend. */
+async function launchBrowserBackend(
+	backend: BrowserBackend,
+	options: BrowserRenderOptions,
+): Promise<Browser> {
+	if (backend === "cloak") {
+		return await launchCloakBrowser(options);
+	}
+	return await launchPlaywrightBackend(options);
+}
+
+/** Resolve a CloakBrowser persistent profile directory for a session ID. */
+function cloakUserDataDir(sessionId: string): string {
+	const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
+	return `${home}/.pi/browser-sessions/${encodeURIComponent(sessionId)}`;
+}
+
+/** Launch via CloakBrowser — patched Chromium binary, stealth at C++ level. */
+async function launchCloakBrowser(options: BrowserRenderOptions): Promise<Browser> {
 	try {
-		return await loader();
+		const cloak = await import("cloakbrowser");
+		const browser = await cloak.launch({
+			headless: true,
+			proxy: options.proxy,
+			timezone: options.timezone,
+			locale: options.locale,
+		});
+		return browser as unknown as Browser;
 	} catch (cause) {
 		throw new BrowserRenderError({
 			code: "BROWSER_UNAVAILABLE",
 			phase: "browser",
 			message:
-				"Playwright is not installed or Chromium browser binaries are unavailable. Playwright is an optional dependency; if it was omitted, run `npm install playwright` in the extension directory, then `npx playwright install chromium`.",
+				"CloakBrowser backend is not available. Install cloakbrowser and playwright-core, or use browserBackend: 'playwright'.",
 			retryable: false,
-			url,
+			cause,
+		});
+	}
+}
+
+/** Launch via plain Playwright — stock Chromium browser. */
+async function launchPlaywrightBackend(options: BrowserRenderOptions): Promise<Browser> {
+	try {
+		const { chromium } = await import("playwright");
+		return (await chromium.launch({
+			headless: true,
+			proxy: options.proxy ? { server: options.proxy } : undefined,
+		})) as unknown as Browser;
+	} catch (cause) {
+		throw new BrowserRenderError({
+			code: "BROWSER_UNAVAILABLE",
+			phase: "browser",
+			message:
+				"Playwright is not installed. Playwright is an optional dependency; run `npm install playwright` and `npx playwright install chromium`.",
+			retryable: false,
 			cause,
 		});
 	}
@@ -308,20 +402,4 @@ async function pierceShadowRoots(page: Page): Promise<void> {
 			}
 		}
 	});
-}
-
-async function defaultPlaywrightLoader(): Promise<PlaywrightModule> {
-	const moduleName = "playwright";
-	return (await import(moduleName)) as PlaywrightModule;
-}
-
-export interface PlaywrightModule {
-	chromium: {
-		launch(options: Record<string, unknown>): Promise<Browser>;
-	};
-}
-
-interface Browser {
-	newContext(options: Record<string, unknown>): Promise<BrowserContext>;
-	close(): Promise<void>;
 }

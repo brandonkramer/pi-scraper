@@ -29,3 +29,7 @@ web_extract action=hackernews url="https://news.ycombinator.com/item?id=40349012
 - `text` is the self-post body for Ask HN, Show HN, etc.
 - `score` is the upvote count; `comments` is the total descendant count (not just top-level)
 - Does NOT fetch the full comment tree — use the item's `text` field for Ask HN self-posts
+
+## Browser fallback
+
+Default to this vertical's API/direct HTTP path; it is faster and more reliable than browser rendering. Add `mode=browser` only as an explicit fallback when JS-rendered page state, bot mitigation, or a logged-in CloakBrowser session is needed. In browser mode, pi-scraper pre-renders the page with CloakBrowser and passes that rendered page to the extractor's page-fetch path.

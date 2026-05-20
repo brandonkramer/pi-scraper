@@ -53,7 +53,9 @@ web_extract action=list
 ## Rules
 
 - **Prefer vertical > pattern > selector > adhoc LLM.** Use the cheapest extraction that works.
-- Vertical extractors hit APIs directly — no HTML scraping. Common: `github_repo`, `npm`, `arxiv`.
+- Vertical extractors default to API/direct HTTP paths because they are faster and more reliable. Use `mode=browser` only as an explicit CloakBrowser fallback; it pre-renders the page, then supplies that rendered page to extractors that call `fetchPage`.
 - Pattern mode is deterministic and works offline (no LLM needed).
+- Selector mode can target CSS classes (`.card`), IDs (`#price`), tags/attributes (`img[src]`, `a[href]`), or XPath; use pattern/excerpts when matching actual visible text.
 - Selector mode supports adaptive fallback: if a saved selector fails, it tries to relocate it.
+- For images/files, first extract the URL with selector/pattern, then call `web_scrape saveToFile=true` to download.
 - Adhoc mode requires a model adapter (Pi host model or registered adapter).

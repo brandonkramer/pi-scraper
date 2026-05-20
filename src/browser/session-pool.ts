@@ -37,7 +37,13 @@ export function configurePool(options: BrowserSessionPoolOptions): void {
 export async function acquireBrowserSession(
 	id: string,
 	options: {
-		launchBrowser: () => Promise<Browser>;
+		launchBrowser?: () => Promise<Browser>;
+		/**
+		 * Alternative to launchBrowser + browser.newContext for backends like CloakBrowser where the
+		 * context is created via launchPersistentContext() instead. Returns the browser and pre-created
+		 * context. When set, launchBrowser and headers are ignored.
+		 */
+		launchContext?: () => Promise<{ browser: Browser; context: BrowserContext }>;
 		safetyCheck: BrowserSafetyCheck;
 		profile?: string;
 		proxy?: string;
@@ -59,12 +65,22 @@ export async function acquireBrowserSession(
 		evictLRUSession();
 	}
 
-	const browser = await options.launchBrowser();
-	const context = await browser.newContext({
-		extraHTTPHeaders: options.headers,
-		serviceWorkers: "block",
-		proxy: options.proxy ? { server: options.proxy } : undefined,
-	});
+	let browser: Browser;
+	let context: BrowserContext;
+
+	if (options.launchContext) {
+		const r = await options.launchContext();
+		browser = r.browser;
+		context = r.context;
+	} else {
+		browser = await options.launchBrowser!();
+		context = await browser.newContext({
+			extraHTTPHeaders: options.headers,
+			serviceWorkers: "block",
+			proxy: options.proxy ? { server: options.proxy } : undefined,
+		});
+	}
+
 	const guard = createBrowserRouteGuard(options.safetyCheck);
 	// oxlint-disable-next-line typescript/no-explicit-any -- bridge between route-guard.ts minimal Route and Playwright's full Route type
 	await context.route("**/*", guard.handler as (route: any) => Promise<void>);

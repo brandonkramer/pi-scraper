@@ -30,3 +30,7 @@ web_extract action=arxiv url="https://arxiv.org/abs/1701.00001"
 - `pdfUrl` is the direct PDF link (useful for downstream download/reference)
 - PDF URLs are normalized: `.pdf` suffix is stripped for the API query, `pdfUrl` is provided separately
 - Supports both new-style IDs (`2301.00001`) and old-style IDs (`1701.00001`)
+
+## Browser fallback
+
+Default to this vertical's API/direct HTTP path; it is faster and more reliable than browser rendering. Add `mode=browser` only as an explicit fallback when JS-rendered page state, bot mitigation, or a logged-in CloakBrowser session is needed. In browser mode, pi-scraper pre-renders the page with CloakBrowser and passes that rendered page to the extractor's page-fetch path.

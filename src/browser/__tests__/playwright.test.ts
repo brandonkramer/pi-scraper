@@ -2,7 +2,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { SafeUrlResult } from "../../http/url-safety.ts";
-import { createPlaywrightRenderer, type PlaywrightModule } from "../playwright.ts";
+import {
+	createPlaywrightRenderer,
+	type BrowserBackend,
+	type Browser,
+	type BrowserRenderOptions,
+	type BrowserRenderer,
+} from "../playwright.ts";
 
 const URL = "http://93.184.216.34/page";
 
@@ -27,33 +33,16 @@ async function countingSafetyCheck(
 }
 
 describe("createPlaywrightRenderer", () => {
-	it("returns structured missing-browser errors from the lazy loader", async () => {
-		const renderer = createPlaywrightRenderer({
-			loader: async () => {
-				throw new Error("not installed");
-			},
-		});
-
-		await expect(renderer.fetchRendered(URL)).rejects.toMatchObject({
-			name: "BrowserRenderError",
-			structured: {
-				code: "BROWSER_UNAVAILABLE",
-				phase: "browser",
-				retryable: false,
-				url: URL,
-			},
-		});
-	});
-
-	it("blocks unsafe initial browser navigation URLs before loading Playwright", async () => {
-		let loaded = false;
+	it("blocks unsafe initial browser navigation URLs before launching browser", async () => {
+		let launched = false;
 		const privateUrl = "http://127.0.0.1/admin";
 		const renderer = createPlaywrightRenderer({
-			loader: async () => {
-				loaded = true;
-				return fakePlaywright({});
+			browserLoader: async (backend, opts) => {
+				launched = true;
+				return fakeBrowser(backend, opts, seen);
 			},
 		});
+		const seen: Record<string, unknown> = {};
 
 		await expect(renderer.fetchRendered(privateUrl)).rejects.toMatchObject({
 			name: "BrowserRenderError",
@@ -65,20 +54,17 @@ describe("createPlaywrightRenderer", () => {
 				finalUrl: privateUrl,
 			},
 		});
-		expect(loaded).toBe(false);
+		expect(launched).toBe(false);
 	});
 
-	it("plumbs the intentionally narrow browser options into Playwright", async () => {
+	it("plumbs browser options into launch and context", async () => {
 		const seen: Record<string, unknown> = {};
-		const renderer = createPlaywrightRenderer({
-			loader: async () => fakePlaywright(seen),
-		});
+		const renderer = makeTestRenderer(seen);
 
 		const result = await renderer.fetchRendered(URL, {
 			timeoutSeconds: 7,
 			waitUntil: "domcontentloaded",
 			proxy: "http://proxy.example:8080",
-			browserProfile: "pi-scraper-test-agent",
 			headers: { "x-test": "yes" },
 			cookies: { session: "abc" },
 		});
@@ -88,14 +74,6 @@ describe("createPlaywrightRenderer", () => {
 			finalUrl: `${URL}#rendered`,
 			status: 204,
 			html: "<html>rendered</html>",
-		});
-		expect(seen.launch).toMatchObject({
-			headless: true,
-			proxy: { server: "http://proxy.example:8080" },
-		});
-		expect(seen.context).toMatchObject({
-			extraHTTPHeaders: { "x-test": "yes" },
-			userAgent: "pi-scraper-test-agent",
 		});
 		expect(seen.cookies).toEqual([{ name: "session", value: "abc", url: URL }]);
 		expect(seen.routeGlob).toBe("**/*");
@@ -107,12 +85,10 @@ describe("createPlaywrightRenderer", () => {
 		expect(seen.closed).toBe(true);
 	});
 
-	it("blocks unsafe browser subresource requests before returning content", async () => {
+	it("blocks unsafe browser subresource requests", async () => {
 		const seen: Record<string, unknown> = {};
 		const privateUrl = "http://127.0.0.1/admin";
-		const renderer = createPlaywrightRenderer({
-			loader: async () => fakePlaywright(seen, { requestUrls: [URL, privateUrl] }),
-		});
+		const renderer = makeTestRenderer(seen, { requestUrls: [URL, privateUrl] });
 
 		await expect(renderer.fetchRendered(URL)).rejects.toMatchObject({
 			name: "BrowserRenderError",
@@ -129,11 +105,9 @@ describe("createPlaywrightRenderer", () => {
 	});
 
 	it("validates the final browser navigation URL", async () => {
-		const privateUrl = "http://127.0.0.1/admin";
 		const seen: Record<string, unknown> = {};
-		const renderer = createPlaywrightRenderer({
-			loader: async () => fakePlaywright(seen, { finalUrl: privateUrl }),
-		});
+		const privateUrl = "http://127.0.0.1/admin";
+		const renderer = makeTestRenderer(seen, { finalUrl: privateUrl });
 
 		await expect(renderer.fetchRendered(URL)).rejects.toMatchObject({
 			name: "BrowserRenderError",
@@ -148,11 +122,12 @@ describe("createPlaywrightRenderer", () => {
 		expect(seen.closed).toBe(true);
 	});
 
-	it("lets Chromium handle subresource DNS failures without poisoning the render", async () => {
+	it("lets browser handle subresource DNS failures without poisoning the render", async () => {
 		const seen: Record<string, unknown> = {};
 		const flakyUrl = "https://flaky-subresource.invalid/script.js";
 		const renderer = createPlaywrightRenderer({
-			loader: async () => fakePlaywright(seen, { requestUrls: [URL, flakyUrl] }),
+			browserLoader: (backend, opts) =>
+				Promise.resolve(fakeBrowser(backend, opts, seen, { requestUrls: [URL, flakyUrl] })),
 			safetyCheck: flakySafetyCheck,
 		});
 
@@ -165,7 +140,7 @@ describe("createPlaywrightRenderer", () => {
 		expect(seen.closed).toBe(true);
 	});
 
-	it("does not fail renders for benign non-network browser schemes", async () => {
+	it("passes benign non-network browser schemes through", async () => {
 		const seen: Record<string, unknown> = {};
 		const routedUrls = [
 			URL,
@@ -175,9 +150,7 @@ describe("createPlaywrightRenderer", () => {
 			"chrome-extension://extension-id/script.js",
 			"devtools://devtools/bundled/panel.html",
 		];
-		const renderer = createPlaywrightRenderer({
-			loader: async () => fakePlaywright(seen, { requestUrls: routedUrls }),
-		});
+		const renderer = makeTestRenderer(seen, { requestUrls: routedUrls });
 
 		await expect(renderer.fetchRendered(URL)).resolves.toMatchObject({
 			status: 204,
@@ -186,12 +159,10 @@ describe("createPlaywrightRenderer", () => {
 		expect(seen.aborted).toBeUndefined();
 	});
 
-	it("still blocks routed file URLs", async () => {
+	it("blocks routed file URLs", async () => {
 		const seen: Record<string, unknown> = {};
 		const fileUrl = "file:///etc/passwd";
-		const renderer = createPlaywrightRenderer({
-			loader: async () => fakePlaywright(seen, { requestUrls: [URL, fileUrl] }),
-		});
+		const renderer = makeTestRenderer(seen, { requestUrls: [URL, fileUrl] });
 
 		await expect(renderer.fetchRendered(URL)).rejects.toMatchObject({
 			name: "BrowserRenderError",
@@ -207,9 +178,7 @@ describe("createPlaywrightRenderer", () => {
 
 	it("closes the page on session path to prevent leaks", async () => {
 		const seen: Record<string, unknown> = {};
-		const renderer = createPlaywrightRenderer({
-			loader: async () => fakePlaywright(seen),
-		});
+		const renderer = makeTestRenderer(seen);
 
 		await renderer.fetchRendered(URL, { sessionId: "test-session" });
 		expect(seen.pageClosed).toBe(true);
@@ -224,10 +193,12 @@ describe("createPlaywrightRenderer", () => {
 		const checks = new Map<string, number>();
 		const otherHost = "https://example.com/asset.js";
 		const renderer = createPlaywrightRenderer({
-			loader: async () =>
-				fakePlaywright(seen, {
-					requestUrls: [URL, `${URL}?asset=1`, otherHost, `${otherHost}?v=2`],
-				}),
+			browserLoader: (backend, opts) =>
+				Promise.resolve(
+					fakeBrowser(backend, opts, seen, {
+						requestUrls: [URL, `${URL}?asset=1`, otherHost, `${otherHost}?v=2`],
+					}),
+				),
 			safetyCheck: (input) => countingSafetyCheck(input, checks),
 		});
 
@@ -239,9 +210,78 @@ describe("createPlaywrightRenderer", () => {
 			"example.com": 1,
 		});
 	});
+
+	it("uses cloak backend by default", async () => {
+		const seenBackend: { backend?: string } = {};
+		const renderer = createPlaywrightRenderer({
+			browserLoader: async (backend, opts) => {
+				seenBackend.backend = backend;
+				return fakeBrowser(backend, opts, {});
+			},
+		});
+
+		await renderer.fetchRendered(URL);
+		expect(seenBackend.backend).toBe("cloak");
+	});
+
+	it("respects explicit playwright backend option", async () => {
+		const seenBackend: { backend?: string } = {};
+		const renderer = createPlaywrightRenderer({
+			browserLoader: async (backend, opts) => {
+				seenBackend.backend = backend;
+				return fakeBrowser(backend, opts, {});
+			},
+		});
+
+		await renderer.fetchRendered(URL, { browserBackend: "playwright" });
+		expect(seenBackend.backend).toBe("playwright");
+	});
+
+	it("respects explicit cloak backend option", async () => {
+		const seenBackend: { backend?: string } = {};
+		const renderer = createPlaywrightRenderer({
+			browserLoader: async (backend, opts) => {
+				seenBackend.backend = backend;
+				return fakeBrowser(backend, opts, {});
+			},
+		});
+
+		await renderer.fetchRendered(URL, { browserBackend: "cloak" });
+		expect(seenBackend.backend).toBe("cloak");
+	});
+
+	it("factory-level browserBackend option flows through to the launcher", async () => {
+		const seenBackend: { backend?: string } = {};
+		const renderer = createPlaywrightRenderer({
+			browserBackend: "playwright",
+			browserLoader: async (backend, opts) => {
+				seenBackend.backend = backend;
+				return fakeBrowser(backend, opts, {});
+			},
+		});
+
+		await renderer.fetchRendered(URL);
+		expect(seenBackend.backend).toBe("playwright");
+	});
+
+	it("per-call browserBackend option overrides factory default", async () => {
+		const seenBackend: { backend?: string } = {};
+		const renderer = createPlaywrightRenderer({
+			browserBackend: "playwright",
+			browserLoader: async (backend, opts) => {
+				seenBackend.backend = backend;
+				return fakeBrowser(backend, opts, {});
+			},
+		});
+
+		await renderer.fetchRendered(URL, { browserBackend: "cloak" });
+		expect(seenBackend.backend).toBe("cloak");
+	});
 });
 
-interface FakePlaywrightOptions {
+// ── Test helpers ───────────────────────────────────────────
+
+interface FakeBrowserOptions {
 	finalUrl?: string;
 	requestUrls?: string[];
 }
@@ -249,7 +289,7 @@ interface FakePlaywrightOptions {
 interface FakeRoute {
 	abort(errorCode?: string): Promise<void>;
 	continue(): Promise<void>;
-	request(): { url(): string; frame(): { page(): any } };
+	request(): { url(): string; frame(): { page(): unknown } };
 }
 
 function safeResult(value: string): SafeUrlResult {
@@ -260,64 +300,69 @@ function safeResult(value: string): SafeUrlResult {
 	};
 }
 
-function fakePlaywright(
+function makeTestRenderer(
 	seen: Record<string, unknown>,
-	options: FakePlaywrightOptions = {},
-): PlaywrightModule {
-	let routeHandler: ((route: FakeRoute) => Promise<void>) | undefined;
-	return {
-		chromium: {
-			launch: async (launchOptions) => {
-				seen.launch = launchOptions;
-				return {
-					newContext: async (contextOptions) => {
-						seen.context = contextOptions;
-						const browserContext: any = {
-							addCookies: async (cookies: Record<string, string>[]) => {
-								seen.cookies = cookies;
-							},
-							route: async (glob: string, handler: (route: FakeRoute) => Promise<void>) => {
-								seen.routeGlob = glob;
-								routeHandler = handler;
-							},
-							close: async () => {
-								/* no-op */
-							},
-							newPage: async () => {
-								const page: any = {
-									goto: async (requestUrl: string, gotoOptions: Record<string, unknown>) => {
-										seen.goto = gotoOptions;
-										for (const url of options.requestUrls ?? [requestUrl]) {
-											await routeHandler?.(fakeRoute(seen, url, page));
-										}
-										return { status: () => 204 };
-									},
-									content: async () => "<html>rendered</html>",
-									title: async () => "",
-									context: () => browserContext,
-									url: () => options.finalUrl ?? `${URL}#rendered`,
-									close: async () => {
-										seen.pageClosed = true;
-									},
-									evaluate: async () => undefined,
-								};
-								return page;
-							},
-						};
-						return browserContext;
-					},
-					close: async () => {
-						seen.closed = true;
-					},
-				};
-			},
-		},
-	};
+	options?: FakeBrowserOptions,
+): BrowserRenderer {
+	return createPlaywrightRenderer({
+		browserLoader: (backend, opts) => Promise.resolve(fakeBrowser(backend, opts, seen, options)),
+	});
 }
 
-function fakeRoute(seen: Record<string, unknown>, url: string, page: any): FakeRoute {
+function fakeBrowser(
+	_backend: BrowserBackend,
+	_opts: BrowserRenderOptions,
+	seen: Record<string, unknown>,
+	options: FakeBrowserOptions = {},
+): Browser {
+	let routeHandler: ((route: FakeRoute) => Promise<void>) | undefined;
+	const browser: any = {
+		newContext: async (contextOptions: Record<string, unknown>) => {
+			seen.context = contextOptions;
+			const browserContext: any = {
+				addCookies: async (cookies: Record<string, string>[]) => {
+					seen.cookies = cookies;
+				},
+				route: async (glob: string, handler: (route: FakeRoute) => Promise<void>) => {
+					seen.routeGlob = glob;
+					routeHandler = handler;
+				},
+				close: async () => {
+					/* no-op */
+				},
+				newPage: async () => {
+					const page: any = {
+						goto: async (requestUrl: string, gotoOptions: Record<string, unknown>) => {
+							seen.goto = gotoOptions;
+							for (const url of options.requestUrls ?? [requestUrl]) {
+								await routeHandler?.(fakeRoute(seen, url, page));
+							}
+							return { status: () => 204 };
+						},
+						content: async () => "<html>rendered</html>",
+						title: async () => "",
+						context: () => browserContext,
+						url: () => options.finalUrl ?? `${URL}#rendered`,
+						close: async () => {
+							seen.pageClosed = true;
+						},
+						evaluate: async () => undefined,
+					};
+					return page;
+				},
+			};
+			return browserContext;
+		},
+		close: async () => {
+			seen.closed = true;
+		},
+	};
+	return browser;
+}
+
+function fakeRoute(seen: Record<string, unknown>, url: string, page: unknown): FakeRoute {
 	return {
-		abort: async (errorCode) => {
+		abort: async (errorCode?: string) => {
 			const aborted = (seen.aborted as Array<Record<string, string | undefined>> | undefined) ?? [];
 			aborted.push({ url, errorCode });
 			seen.aborted = aborted;

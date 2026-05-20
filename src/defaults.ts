@@ -26,6 +26,7 @@ export const DEFAULT_TIMEOUT_SECONDS = 20;
 export const DEFAULT_MAX_BYTES = 30 * 1024 * 1024;
 export const DEFAULT_MAX_CHARS = 50_000;
 export const DEFAULT_RESPECT_ROBOTS = true;
+export const DEFAULT_BROWSER_BACKEND = "cloak" as const;
 
 export const PI_TRUNCATION_LIMITS = {
 	maxBytes: 50 * 1024,

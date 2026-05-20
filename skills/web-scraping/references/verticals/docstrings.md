@@ -30,3 +30,7 @@ web_extract action=docstrings url="https://raw.githubusercontent.com/expressjs/e
 - Determines language from file extension: `.ts`/`.tsx`/`.[cm]js`/`.jsx` → JSDoc/TSDoc, `.py` → Python docstrings, `.rs` → Rust doc comments
 - Extracts all exported symbols with full parameter and return type annotations
 - Use `format=raw` + `linesMatching` on the same URL if you need to grep the raw source body instead
+
+## Browser fallback
+
+Default to this vertical's API/direct HTTP path; it is faster and more reliable than browser rendering. Add `mode=browser` only as an explicit fallback when JS-rendered page state, bot mitigation, or a logged-in CloakBrowser session is needed. In browser mode, pi-scraper pre-renders the page with CloakBrowser and passes that rendered page to the extractor's page-fetch path.

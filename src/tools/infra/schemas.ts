@@ -43,6 +43,11 @@ export const scrapeOutputOptionSchema = {
 	...sessionOptionSchema,
 	stealth: Type.Optional(Type.Any()),
 	autoWait: Type.Optional(Type.Any()),
+	browserBackend: Type.Optional(
+		Type.Unsafe<"cloak" | "playwright">({
+			description: "Browser backend (cloak|playwright).",
+		}),
+	),
 } as const;
 
 export function urlProperty(description?: string): ReturnType<typeof Type.String> {

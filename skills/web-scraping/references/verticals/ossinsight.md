@@ -76,3 +76,7 @@ web_extract action=ossinsight_repo_analytics url="https://ossinsight.io/analyze/
 - `rows` in rankings/trending contains per-repo stats; `stars`, `forks`, etc. may be omitted if zero
 - `total` in repo analytics is the cumulative stargazer count at that month
 - The `ossinsight_collection_ranking` extractor matches collection slugs to IDs via a lookup against `ossinsight_collections`
+
+## Browser fallback
+
+Default to this vertical's API/direct HTTP path; it is faster and more reliable than browser rendering. Add `mode=browser` only as an explicit fallback when JS-rendered page state, bot mitigation, or a logged-in CloakBrowser session is needed. In browser mode, pi-scraper pre-renders the page with CloakBrowser and passes that rendered page to the extractor's page-fetch path.

@@ -1,17 +1,18 @@
 ---
 name: web-scraping
-description: Use for known URLs/content to scrape/read, summarize, map robots/sitemaps/llms, crawl links, batch URLs, diff snapshots, extract JSON/regex/verticals/selector, get responseId/jobId, not search/research
+description: Use for known URLs/content to scrape/read with fast or browser mode, summarize, map robots/sitemaps/llms, crawl links, batch URLs, diff snapshots, extract JSON/regex/verticals/selector, get YouTube transcripts/captions, get responseId/jobId, not search/research
 ---
 
 ## How to choose
 
-1. **URL from a known site?** → use `web_extract` with the matching vertical action (table below). Hits APIs directly — no HTML scraping. (GitHub, npm, Reddit, PyPI, arXiv, etc.)
+1. **URL from a known site?** → use `web_extract` with the matching vertical action (table below). Hits APIs directly — no HTML scraping. (GitHub, YouTube transcripts, npm, Reddit, PyPI, arXiv, etc.)
 2. **Need the raw page content?** → `web_scrape`. Read a single URL. Add `mode=fingerprint` if bot-protected.
-3. **Need a summary?** → `web_extract action=summarize`. **Need structured data?** → `web_extract` with pattern (sections/regex/excerpts), selector (CSS/XPath), or adhoc (LLM).
-4. **Need to explore a site?** → `web_crawl` to follow links and read pages. Or `web_map` for URL inventory only.
-5. **Multiple independent URLs?** → `web_batch` for parallel scraping.
-6. **Compare page changes?** → `web_scrape({ url, diff })` against stored snapshots.
-7. **Get a previous result back?** → `web_get_result` by responseId, jobId, or snapshot.
+3. **Need JS rendering, bot mitigation, or logged-in pages?** → use `mode=browser` (CloakBrowser default; `browserBackend=playwright` opt-out).
+4. **Need a summary?** → `web_extract action=summarize`. **Need structured data?** → `web_extract` with pattern (sections/regex/excerpts), selector (CSS class/ID/attribute/XPath), or adhoc (LLM). For images/files, extract the URL then use `web_scrape saveToFile=true`.
+5. **Need to explore a site?** → `web_crawl` to follow links and read pages. Or `web_map` for URL inventory only.
+6. **Multiple independent URLs?** → `web_batch` for parallel scraping.
+7. **Compare page changes?** → `web_scrape({ url, diff })` against stored snapshots.
+8. **Get a previous result back?** → `web_get_result` by responseId, jobId, or snapshot.
 
 ## Tools
 
@@ -44,7 +45,7 @@ Use `web_extract action=<name> url=<url>` — bypasses HTML scraping via site AP
 | `pypi.org/project/:name` | `pypi` | [ref](references/verticals/package-registries.md) |
 | `crates.io/crates/:name` | `crates_io` | [ref](references/verticals/package-registries.md) |
 | `hub.docker.com/r/:ns/:repo` or `_/:repo` | `docker_hub` | [ref](references/verticals/docker-hub.md) |
-| YouTube video (`watch?v=`, `youtu.be`, `shorts`) | `youtube` | [ref](references/verticals/youtube.md) |
+| YouTube video (`watch?v=`, `youtu.be`, `shorts`) — metadata, comments, transcripts/captions | `youtube` | [ref](references/verticals/youtube.md) |
 | reddit post (`/r/:sub/comments/:id`, `redd.it/:id`) | `reddit` | [ref](references/verticals/reddit.md) |
 | subreddit feed (`/r/:sub` + sort) | `reddit-listing` | [ref](references/verticals/reddit.md) |
 | `news.ycombinator.com/item?id=:id` | `hackernews` | [ref](references/verticals/hackernews.md) |

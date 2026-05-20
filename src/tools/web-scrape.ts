@@ -1,6 +1,7 @@
 /** @file Pi tool adapter for single-URL scraping, snapshot writing, and diffing. */
 import { Type, type Static } from "typebox";
 
+import { DEFAULT_BROWSER_BACKEND } from "../defaults.ts";
 import {
 	diffScrapeResult,
 	saveSnapshot,
@@ -48,11 +49,11 @@ export const webScrapeSchema = Type.Object({
 	exclude: Type.Optional(Type.Array(Type.Any())),
 	onlyMainContent: Type.Optional(Type.Any()),
 	timeoutSeconds: Type.Optional(Type.Any()),
-	maxBytes: Type.Optional(Type.Integer({ description: "Max bytes to fetch (default 31457280)." })),
+	maxBytes: Type.Optional(Type.Integer({ description: "Max bytes." })),
 	maxChars: Type.Optional(Type.Any()),
 	headers: Type.Optional(
 		Type.Record(Type.String(), Type.String(), {
-			description: "Custom request headers to send with the fetch.",
+			description: "Request headers.",
 		}),
 	),
 	proxy: Type.Optional(Type.Any()),
@@ -62,7 +63,7 @@ export const webScrapeSchema = Type.Object({
 	followMetaRefresh: Type.Optional(Type.Unsafe<boolean>({})),
 	saveToFile: Type.Optional(
 		Type.Unsafe<boolean | { dir?: string; filename?: string; maxBytes?: number }>({
-			description: "true or {dir,filename,maxBytes} — download to content-addressed disk storage",
+			description: "true or {dir,filename,maxBytes}",
 		}),
 	),
 	snapshotName: Type.Optional(Type.String({ description: "Name." })),
@@ -87,6 +88,11 @@ export const webScrapeSchema = Type.Object({
 	...sessionOptionSchema,
 	stealth: Type.Optional(Type.Any()),
 	autoWait: Type.Optional(Type.Any()),
+	browserBackend: Type.Optional(
+		Type.Unsafe<"cloak" | "playwright">({
+			description: "Browser backend (cloak|playwright).",
+		}),
+	),
 });
 
 type Params = Static<typeof webScrapeSchema>;
@@ -188,6 +194,12 @@ async function readScrape(
 	});
 	const { scrapeUrl } = await import("../scrape/pipeline.ts");
 	let result = await scrapeUrl(params.url, scrapeOptions, {}, signal);
+
+	// Derive display mode: show "cloak" or "playwright" for browser mode
+	const displayMode =
+		result.mode === "browser"
+			? ((scrapeOptions.browserBackend as string | undefined) ?? DEFAULT_BROWSER_BACKEND)
+			: result.mode;
 	const needles = params.linesMatching;
 	if (needles && needles.length > 0 && !result.error) {
 		const text = result.data.rawText ?? result.data.text ?? "";
@@ -270,7 +282,7 @@ async function readScrape(
 		: undefined;
 	const shaped = shapeScrapeResult(result, stored.responseId, matchPreview);
 	const { notice: sessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
-	const description = describeScrapeResult(result);
+	const description = describeScrapeResult(result, { displayMode });
 	const scrapeText = matchPreview
 		? `${description.split("\n", 1)[0]}\n${matchPreview}`
 		: description;
@@ -286,7 +298,7 @@ async function readScrape(
 		url: result.url,
 		finalUrl: result.finalUrl,
 		status: result.status,
-		mode: result.mode,
+		mode: displayMode,
 		format: result.format,
 		timing: result.timing,
 		truncated: result.truncated,

@@ -46,6 +46,34 @@ describe("selected web tool handlers", () => {
 		expect((result.details as ResultEnvelope).format).toBe("json");
 	});
 
+	it("pre-renders vertical fetchPage input when mode=browser", async () => {
+		const tool = createWebExtractTool({
+			scrapeDeps: {
+				browserRenderer: {
+					fetchRendered: async () => ({
+						url: "https://docs.example.com/docs/intro",
+						finalUrl: "https://docs.example.com/docs/intro",
+						status: 200,
+						html: "<main><h1>Rendered Docs</h1><p>Browser-only content.</p></main>",
+					}),
+				},
+			},
+		});
+		const result = await tool.execute(
+			"call",
+			{
+				action: "vertical",
+				extractor: "docsite",
+				url: "https://docs.example.com/docs/intro",
+				mode: "browser",
+			},
+			signal,
+		);
+		const data = ((result.details as ResultEnvelope).data as { data?: { title?: string } }).data;
+		expect(data?.title).toBe("Rendered Docs");
+		expect(result.content[0]?.text).toContain("browser fallback · cloak");
+	});
+
 	it("keeps web_extract adapter vertical-agnostic", () => {
 		const source = readFileSync(new URL("../web-extract.ts", import.meta.url), "utf8");
 

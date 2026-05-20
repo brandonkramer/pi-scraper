@@ -8,7 +8,11 @@ import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
-import { modelProviderOptionSchema, scrapeModeOptionSchema, urlProperty } from "./infra/schemas.ts";
+import {
+	modelProviderOptionSchema,
+	scrapeOutputOptionSchema,
+	urlProperty,
+} from "./infra/schemas.ts";
 import { runAdHocExtraction } from "./web-extract-adhoc.ts";
 import { hasPatternRequest, runPatternInspection } from "./web-extract-pattern.ts";
 import { runSelectorExtractionTool } from "./web-extract-selector.ts";
@@ -39,7 +43,7 @@ export const webExtractSchema = Type.Object({
 	sentences: Type.Optional(Type.Number()),
 	bullets: Type.Optional(Type.Number()),
 	...modelProviderOptionSchema,
-	...scrapeModeOptionSchema,
+	...scrapeOutputOptionSchema,
 	sourceFormat: Type.Optional(Type.Any()),
 	include: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	extractSchema: Type.Optional(Type.Any()),
@@ -49,24 +53,22 @@ export const webExtractSchema = Type.Object({
 	excerpts: Type.Optional(
 		Type.Unsafe<PatternExcerptRequest[]>({
 			type: "array",
-			description: "{needle,before,after,caseSensitive,maxOccurrences}",
+			description: "{needle,before,after,maxOccurrences}",
 		}),
 	),
 	regexes: Type.Optional(
 		Type.Unsafe<PatternRegexRequest[]>({
 			type: "array",
-			description:
-				"{name,pattern,flags,capture,captureGroup,includeContains,maxMatches,dedupe,sort,contextBefore,contextAfter}",
+			description: "{name,pattern,flags,captureGroup,maxMatches,contextBefore,contextAfter}",
 		}),
 	),
 	sections: Type.Optional(
 		Type.Unsafe<PatternSectionRequest[]>({
 			type: "array",
-			description: "{name,start,end,includeStart,includeEnd,caseSensitive,maxChars}",
+			description: "{name,start,end,includeStart,includeEnd,maxChars}",
 		}),
 	),
 	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
-	mode: Type.Optional(Type.Any()),
 	extract: Type.Optional(Type.Any()),
 	// Selector extraction (Task 27)
 	selector: Type.Optional(Type.Any()),
@@ -99,7 +101,8 @@ export function createWebExtractTool(
 		async execute(_toolCallId, params: Params, signal, onUpdate, context) {
 			const action = inferExtractAction(params);
 			if (action === "list") return await listDeterministicExtractors();
-			if (action === "vertical") return await runDeterministicExtractor(params, signal, onUpdate);
+			if (action === "vertical")
+				return await runDeterministicExtractor(params, options, signal, onUpdate);
 			if (action === "pattern")
 				return await runPatternInspection(params, options, signal, onUpdate);
 			if (action === "surface")

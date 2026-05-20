@@ -1,6 +1,5 @@
 # 🕸️ pi-scraper
 
-**Crawl, map, and extract with precision.**  
 *A scraper-first, Pi-native, and local-first extension for the Pi ecosystem.*
 
 ---
@@ -9,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Pi Compatibility](https://img.shields.io/badge/pi-%3E%3D0.74.0-purple?style=flat-square)](https://github.com/earendil-works/pi-agent)
 
-`pi-scraper` reads known URLs and sites. Use it to scrape, summarize one page, crawl, map URLs, diff snapshots, retrieve stored results, or download/extract deterministic/structured data.
+`pi-scraper` reads known URLs and sites. Use it to scrape, summarize one page, crawl, map URLs, diff snapshots, retrieve stored results, or download/extract deterministic/structured data — including CloakBrowser-backed browser mode with C++ fingerprint patches and persistent sessions.
 
 ---
 
@@ -29,6 +28,7 @@ Ask naturally; Pi can choose the right web tool automatically:
 > - "List all URLs available from **https://example.com**."
 > - "Crawl **https://example.com**, up to 25 pages."
 > - "Compare **https://example.com** against my homepage snapshot."
+> - "Open **https://example.com/login** in browser mode, save the session, then scrape **/dashboard**."
 
 ---
 
@@ -41,7 +41,7 @@ Ask naturally; Pi can choose the right web tool automatically:
 | **`fast`** | ❌ | 🚀 | Static HTML, documentation, and quick text extraction. |
 | **`fingerprint`**| ❌ | 🏎️ | Sites that block simple bots (uses TLS fingerprinting). |
 | **`readable`** | ❌ | ⏱️ | Articles and blogs where noise reduction is critical. |
-| **`browser`** | ✅ | 🐢 | Heavily JS-rendered sites (requires Playwright). |
+| **`browser`** | ✅ | 🐢 | Heavily JS-rendered sites (uses CloakBrowser by default). |
 | **`auto`** | 🤖 | 🔄 | **Default.** Automatically selects the best path based on signals. |
 
 ---
@@ -66,7 +66,7 @@ Ask naturally; Pi can choose the right web tool automatically:
 
 | Area | Parameters | Description |
 | :--- | :--- | :--- |
-| **Shared** | `sessionId`, `saveSession`, `clearSession`, `stealth`, `autoWait`, `proxy`, `headers`, `provider` | Sessions, browser controls, and LLM provider selection. |
+| **Shared** | `sessionId`, `saveSession`, `clearSession`, `stealth`, `autoWait`, `browserBackend`, `proxy`, `headers`, `provider` | Sessions, browser controls, and LLM provider selection. |
 | **Scrape** | `url`, `urls`, `content`, `task`, `mode`, `format`, `refresh`, `respectRobots`, `timeoutSeconds` | Targets, tasks (`read`/`summarize`), and fetch behavior. |
 | **Limits** | `maxBytes`, `maxChars`, `onlyMainContent` | Size limits and content cleaning. |
 | **Filtering** | `include`, `exclude`, `linesMatching`, `contextLines`, `caseSensitive` | Glob patterns and line-based content filtering. |
@@ -119,6 +119,73 @@ Extract structured data using CSS selectors, XPath, or plain text search.
   "limit": 5
 }
 ```
+
+---
+
+## 🌐 Browser Mode Support
+
+`mode: "browser"` uses **CloakBrowser** by default — a patched Chromium binary with 48 C++-level fingerprint patches.
+
+### ⚙️ Backend options
+
+| Backend | Default | Browser | Stealth level | Requirement |
+|---------|----------|---------|---------------|-------------|
+| `"cloak"` | ✅ | CloakBrowser Chromium 145 | C++ source-level (48 patches) | Bundled |
+| `"playwright"` | ❌ | Stock Playwright Chromium | JS `page.evaluate()` via `stealth=true` | `npm install playwright` |
+
+### 🛡️ Fingerprint evasion
+
+CloakBrowser does not need `stealth=true` — all anti-detection patches (navigator.webdriver, canvas, WebGL, audio, fonts, GPU, screen, WebRTC, network timing) are applied at the **C++ binary level**, undetectable by any JS-level bot detection.
+
+Test results from CloakBrowser:
+- reCAPTCHA v3 score: **0.9** (human)
+- Cloudflare Turnstile: **PASS**
+- FingerprintJS: **PASS**
+- BrowserScan: **NORMAL** (4/4)
+- 30+ detection sites: **passed**
+
+### 💾 Persistent sessions (CloakBrowser only)
+
+When using CloakBrowser with `sessionId` + `saveSession=true`:
+
+```
+web_scrape url="https://example.com" mode=browser sessionId="my-session" saveSession=true
+```
+
+CloakBrowser uses **`launchPersistentContext()`** which writes cookies, localStorage, and session state to a disk profile at `~/.pi/browser-sessions/<sessionId>/`. This:
+- Avoids incognito/private-mode detection (BrowserScan penalizes incognito by ~10%)
+- Survives Pi restarts and process reloads
+- Keeps login state across multiple scrape calls
+
+To persist an authenticated login flow:
+
+1. **Log in and Save the Session**
+   Open the login page in browser mode. Specifying `saveSession=true` writes the cookies and session state to your local profile.
+   ```bash
+   web_scrape url="https://example.com/login" mode=browser sessionId="site-session" saveSession=true
+   ```
+
+2. **Scrape Authenticated Content**
+   Subsequent calls using the same `sessionId` automatically inherit the authenticated state (cookies, local storage, etc.).
+   ```bash
+   web_scrape url="https://example.com/dashboard" mode=browser sessionId="site-session"
+   ```
+
+3. **Clear the Session when Done (Optional)**
+   Wipe the saved session and context from your local disk.
+   ```bash
+   web_scrape url="https://example.com" mode=browser sessionId="site-session" clearSession=true
+   ```
+
+### 🔧 CloakBrowser-specific options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `timezone` | string | IANA timezone (e.g. `"America/New_York"`). Set via binary flag — undetectable. |
+| `locale` | string | BCP 47 locale (e.g. `"en-US"`). Set via `--lang` binary flag. |
+| `proxy` | string | HTTP or SOCKS5 proxy URL. |
+
+These are safe to set even with the Playwright backend (ignored or applied via JS patches).
 
 ---
 
@@ -242,10 +309,16 @@ npm test           # Run unit tests
 npm run test:tools # Run tool smoke tests
 ```
 
-### Optional Browser Support
-If you need `mode: "browser"`, install the Chromium binaries:
+### 🔄 Playwright backend (opt-out)
+
+To use stock Playwright Chromium instead of CloakBrowser:
 ```bash
+npm install playwright
 npx playwright install chromium
+```
+
+```
+web_scrape url="https://example.com" mode=browser browserBackend=playwright stealth=true
 ```
 
 ---

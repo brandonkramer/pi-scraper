@@ -21,3 +21,7 @@ web_extract action=docker_hub url="https://hub.docker.com/r/bitnami/postgresql"
 ```
 
 **Returns:** namespace, name, type, description, stars, pulls, private, owner, createdAt, updatedAt
+
+## Browser fallback
+
+Default to this vertical's API path; it is faster and more reliable than browser rendering. Use `mode=browser` only as an explicit fallback when the normal API path is blocked/rate-limited or when you need a logged-in CloakBrowser session (`sessionId` + `saveSession=true`).
