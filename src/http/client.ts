@@ -232,6 +232,17 @@ export class HttpClient {
 				: cookieHeader;
 		}
 
+		// Normalize all header keys to lowercase to prevent HTTP/2
+		// ERR_HTTP2_HEADER_SINGLE_VALUE when user-supplied headers use different
+		// casing (e.g. "User-Agent") than the default lowercased keys. The spread
+		// only deduplicates identical keys in the JavaScript object, but "user-agent"
+		// and "User-Agent" are distinct JS keys — HTTP/2 lowercases them both,
+		// producing a duplicate header value.
+		const lowerHeaders: Record<string, string> = {};
+		for (const [key, value] of Object.entries(mergedHeaders)) {
+			lowerHeaders[key.toLowerCase()] = value;
+		}
+
 		try {
 			const response = await request(url, {
 				method: options.method ?? "GET",
@@ -240,7 +251,7 @@ export class HttpClient {
 				headers: {
 					"user-agent": this.userAgent,
 					accept: "*/*",
-					...mergedHeaders,
+					...lowerHeaders,
 				},
 				signal,
 			});
