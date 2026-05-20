@@ -1,5 +1,6 @@
 /**
- * @fileoverview Fetched-resource field formatter and per-item list composer used by scrape, batch, and crawl detail renderers.
+ * @file Fetched-resource field formatter and per-item list composer used by scrape, batch, and
+ *   crawl detail renderers.
  */
 import { formatBytes, formatDuration } from "./format.ts";
 
@@ -23,9 +24,7 @@ export function formatResourceFields(fields: FetchedResourceFields): string {
 		fields.contentType,
 		formatBytes(fields.downloadedBytes),
 		formatDuration(fields.durationMs),
-		fields.cached
-			? `cache hit${fields.staleness ? ` ${fields.staleness}` : ""}`
-			: undefined,
+		fields.cached ? `cache hit${fields.staleness ? ` ${fields.staleness}` : ""}` : undefined,
 		fields.truncated ? "truncated" : undefined,
 	].filter(Boolean);
 	return parts.join(" · ") || "fetched";
@@ -50,15 +49,12 @@ export function renderResourceItemList(
 	},
 ): string {
 	const max = options.maxItems ?? 20;
-	const lines = [options.header];
+	const lines = [`\u2514\u2500 ${options.header}`];
 	for (const item of items.slice(0, max)) {
 		lines.push(...renderResourceItemLines(item));
 	}
 	if (items.length > max) lines.push(`… ${items.length - max} more item(s)`);
-	const jobId =
-		typeof options.metadata?.jobId === "string"
-			? options.metadata.jobId
-			: undefined;
+	const jobId = typeof options.metadata?.jobId === "string" ? options.metadata.jobId : undefined;
 	const packageResponseId =
 		typeof options.metadata?.packageResponseId === "string"
 			? options.metadata.packageResponseId
@@ -66,8 +62,7 @@ export function renderResourceItemList(
 	if (jobId || packageResponseId) {
 		lines.push("", "Stored handles:");
 		if (jobId) lines.push(`jobId: ${jobId}`);
-		if (packageResponseId)
-			lines.push(`packageResponseId: ${packageResponseId}`);
+		if (packageResponseId) lines.push(`packageResponseId: ${packageResponseId}`);
 	}
 	return lines.join("\n");
 }
@@ -80,8 +75,7 @@ function renderResourceItemLines(item: ResourceListItem): string[] {
 		];
 	}
 	const lines = [`✓ ${item.url}`, `  ${formatResourceFields(item.fields)}`];
-	if (item.finalUrl && item.finalUrl !== item.url)
-		lines.push(`  final: ${item.finalUrl}`);
+	if (item.finalUrl && item.finalUrl !== item.url) lines.push(`  final: ${item.finalUrl}`);
 	if (item.title) lines.push(`  title: ${item.title}`);
 	if (item.excerpt) lines.push(`  excerpt: ${item.excerpt}`);
 	return lines;

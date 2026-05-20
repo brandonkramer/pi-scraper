@@ -31,7 +31,6 @@ const scrapeOnlyFields = [
 ] as const;
 
 const configOnlyFields = [
-	"headers",
 	"browserProfile",
 	"osProfile",
 	"removeImages",

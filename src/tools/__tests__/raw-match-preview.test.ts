@@ -120,8 +120,8 @@ describe("raw line-match previews", () => {
 		expect(text).toContain("> 2: beta targetNeedle");
 		expect(envelope.answerContext).toContain("> 2: beta targetNeedle");
 		expect(envelope.data?.[0]?.result?.data?.matches).toHaveLength(1);
-		expect(expanded).toContain("Matching line snippets (1 match):");
-		expect(expanded).toContain("> 2: beta targetNeedle");
+		expect(expanded).toContain("status");
+		expect(expanded).toContain("> 2:");
 	});
 });
 

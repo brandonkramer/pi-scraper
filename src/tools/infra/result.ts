@@ -19,6 +19,7 @@ export interface ResultShellOptions<TData> {
 	mode?: string;
 	format?: OutputFormat | string;
 	contentType?: string;
+	headers?: Record<string, string>;
 	downloadedBytes?: number;
 	cache?: ResultEnvelope<TData>["cache"];
 	freshness?: ResultEnvelope<TData>["freshness"];
@@ -60,6 +61,7 @@ export function toolResult<TData>(
 			responseId: options.responseId,
 			data: options.data,
 			contentType: options.contentType,
+			headers: options.headers,
 			downloadedBytes: options.downloadedBytes,
 			cache: options.cache,
 			freshness,

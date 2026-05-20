@@ -38,6 +38,7 @@ export function resultBase(
 	contentType?: string,
 	downloadedBytes?: number,
 	cache?: ScrapeResult["cache"],
+	headers?: Record<string, string>,
 ): ScrapeResult {
 	return {
 		url,
@@ -50,6 +51,7 @@ export function resultBase(
 		contentType,
 		downloadedBytes,
 		cache,
+		headers,
 		data: { route: "binary", extractionPath: [mode] },
 	};
 }

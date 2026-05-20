@@ -23,15 +23,12 @@ export function renderMapResultCard(
 ): RenderComponent {
 	return {
 		render(width: number) {
-			const title = theme?.bold?.("web_map") ?? "web_map";
 			const rows = urls
-				.slice(0, expanded ? urls.length : 12)
+				.slice(0, expanded ? 50 : 12)
 				.map((entry) => renderMapRow(entry, width, theme));
 			const more =
-				!expanded && urls.length > rows.length
-					? muted(`… ${urls.length - rows.length} more urls`, theme)
-					: "";
-			const lines = [title, ...rows];
+				urls.length > rows.length ? muted(`… ${urls.length - rows.length} more urls`, theme) : "";
+			const lines = [...rows];
 			if (more) lines.push(more);
 			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
 		},
@@ -67,8 +64,7 @@ export function renderWebMapResult(
 	>;
 	const urls = Array.isArray(envelope.data?.urls) ? envelope.data.urls : [];
 	const summary = [
-		theme?.bold?.("web_map") ?? "web_map",
-		`${urls.length} URL(s)`,
+		`└─ ${urls.length} URL(s)`,
 		!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
 	]
 		.filter(Boolean)

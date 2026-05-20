@@ -74,6 +74,7 @@ export async function responseScrape(
 		response.contentType,
 		response.downloadedBytes,
 		response.cache,
+		response.headers,
 	);
 	if (route.kind === "binary")
 		return {

@@ -44,6 +44,7 @@ Use `web_extract action=<name> url=<url>` — bypasses HTML scraping via site AP
 | `pypi.org/project/:name` | `pypi` | [ref](references/verticals/package-registries.md) |
 | `crates.io/crates/:name` | `crates_io` | [ref](references/verticals/package-registries.md) |
 | `hub.docker.com/r/:ns/:repo` or `_/:repo` | `docker_hub` | [ref](references/verticals/docker-hub.md) |
+| YouTube video (`watch?v=`, `youtu.be`, `shorts`) | `youtube` | [ref](references/verticals/youtube.md) |
 | reddit post (`/r/:sub/comments/:id`, `redd.it/:id`) | `reddit` | [ref](references/verticals/reddit.md) |
 | subreddit feed (`/r/:sub` + sort) | `reddit-listing` | [ref](references/verticals/reddit.md) |
 | `news.ycombinator.com/item?id=:id` | `hackernews` | [ref](references/verticals/hackernews.md) |

@@ -299,6 +299,7 @@ function fakePlaywright(
 									close: async () => {
 										seen.pageClosed = true;
 									},
+									evaluate: async () => undefined,
 								};
 								return page;
 							},

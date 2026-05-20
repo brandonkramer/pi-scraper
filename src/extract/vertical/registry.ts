@@ -31,6 +31,7 @@ import { ossInsightTrendingReposExtractor } from "../vertical/extractors/ossinsi
 import { pypiPackageExtractor } from "../vertical/extractors/pypi.ts";
 import { redditExtractor } from "../vertical/extractors/reddit/index.ts";
 import { redditListingExtractor } from "../vertical/extractors/reddit/listing.ts";
+import { youtubeExtractor } from "../vertical/extractors/youtube.ts";
 
 export const verticalExtractors = [
 	githubRepoExtractor,
@@ -54,6 +55,7 @@ export const verticalExtractors = [
 	ossInsightCollectionRankingExtractor,
 	ossInsightTrendingReposExtractor,
 	ossInsightRepoAnalyticsExtractor,
+	youtubeExtractor,
 ] as const satisfies readonly VerticalExtractor[];
 
 export interface VerticalRegistryDeps {
@@ -172,6 +174,25 @@ function httpContext(
 					forceText: true,
 					respectRobots: false,
 					headers: { accept: "application/json" },
+					...requestOptions,
+				},
+				signal,
+			);
+			return JSON.parse(response.text ?? "null") as T;
+		},
+		fetchJsonPost: async <T>(url: string, body: unknown, signal?: AbortSignal) => {
+			recordVerticalSource(sources, url, "api");
+			const response = await client.fetchUrl(
+				url,
+				{
+					method: "POST",
+					body: JSON.stringify(body),
+					forceText: true,
+					respectRobots: false,
+					headers: {
+						accept: "application/json",
+						"content-type": "application/json",
+					},
 					...requestOptions,
 				},
 				signal,

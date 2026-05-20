@@ -14,7 +14,11 @@ import { hasPatternRequest, runPatternInspection } from "./web-extract-pattern.t
 import { runSelectorExtractionTool } from "./web-extract-selector.ts";
 import { runSummarize } from "./web-extract-summarize.ts";
 import { runApiSurfaceExtraction } from "./web-extract-surface.ts";
-import { listDeterministicExtractors, runDeterministicExtractor } from "./web-extract-vertical.ts";
+import {
+	listDeterministicExtractors,
+	renderVerticalResult,
+	runDeterministicExtractor,
+} from "./web-extract-vertical.ts";
 
 const extractActions = [
 	"list",
@@ -107,7 +111,11 @@ export function createWebExtractTool(
 		},
 		renderCall: (args, theme) =>
 			renderSimpleCall("web_extract", renderExtractCallParts(args), theme),
-		renderResult: (result, { expanded }, theme) => renderEnvelopeResult(result, expanded, theme),
+		renderResult: (result, { expanded }, theme) => {
+			const text = result.content[0]?.text ?? "";
+			if (text.startsWith("\u2514\u2500")) return renderVerticalResult(result, expanded, theme);
+			return renderEnvelopeResult(result, expanded, theme);
+		},
 	});
 }
 

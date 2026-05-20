@@ -16,6 +16,7 @@ export interface VerticalExtractorProgress {
 
 export interface VerticalExtractorContext {
 	fetchJson<T = unknown>(url: string, signal?: AbortSignal): Promise<T>;
+	fetchJsonPost?<T = unknown>(url: string, body: unknown, signal?: AbortSignal): Promise<T>;
 	fetchText?(url: string, signal?: AbortSignal): Promise<string>;
 	fetchPage?(url: string, signal?: AbortSignal): Promise<VerticalExtractorPage>;
 	emitProgress?(options: VerticalExtractorProgress): void | Promise<void>;

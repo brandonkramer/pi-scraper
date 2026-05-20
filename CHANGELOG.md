@@ -2,6 +2,13 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [Unreleased]
+
+### Added
+
+- Added a `youtube` vertical extractor for video metadata, transcript tracks/text, and best-effort comment previews.
+- Updated bundled web-scraping skill docs with YouTube vertical routing guidance.
+
 ## [0.7.0] - 2026-05-19
 
 ### Added

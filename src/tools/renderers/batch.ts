@@ -22,10 +22,10 @@ import {
 	sessionNotice,
 	contextPackageResponseId,
 } from "../../tui/envelope.ts";
-import { pickExcerpt } from "../../tui/preview.ts";
+import { formatBytes, formatDuration } from "../../tui/format.ts";
 import { renderProgressCard } from "../../tui/progress.ts";
-import { type ResourceListItem, renderResourceItemList } from "../../tui/resource.ts";
 import { muted, separator } from "../../tui/theme.ts";
+import { renderTreeSections, type TreeSection } from "../../tui/tree.ts";
 import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 import {
 	isProgress,
@@ -60,65 +60,62 @@ export interface BatchItem {
 	error?: { code?: string; phase?: string; message?: string };
 }
 
-export function batchExpandedDetails(
+export function batchExpandedSections(
 	items: readonly BatchItem[],
-	metadata: { jobId?: unknown; packageResponseId?: unknown } = {},
-): string {
-	const cap = excerptCapForCount(items.length);
-	return renderResourceItemList(
-		items.map((item) => toBatchListItem(item, cap)),
-		{
-			header: "Per-URL details:",
-			metadata,
-		},
-	);
-}
+	metadata: { jobId?: unknown; packageResponseId?: unknown },
+	width: number,
+	theme?: RenderTheme,
+): string[] {
+	const sections: TreeSection[] = [];
 
-function excerptCapForCount(count: number): number {
-	return Math.max(100, Math.min(500, Math.floor(1000 / Math.max(1, count))));
-}
+	for (const item of items) {
+		const url = item.url ?? item.result?.url ?? "unknown URL";
 
-function toBatchListItem(item: BatchItem, excerptCap = 180): ResourceListItem {
-	if (!item.ok) {
-		return {
-			ok: false,
-			url: item.url ?? "unknown URL",
-			fields: {},
-			error: item.error,
-		};
+		/* url section header */
+		const sec: TreeSection = { name: url, rows: [] };
+		sections.push(sec);
+
+		if (item.ok) {
+			if (item.result?.status) sec.rows.push({ key: "status", value: String(item.result.status) });
+			if (item.result?.mode) sec.rows.push({ key: "mode", value: item.result.mode });
+			if (item.result?.format) sec.rows.push({ key: "format", value: item.result.format });
+			if (item.result?.downloadedBytes !== undefined)
+				sec.rows.push({
+					key: "size",
+					value: formatBytes(item.result.downloadedBytes) ?? "",
+				});
+			if (item.result?.timing?.durationMs !== undefined)
+				sec.rows.push({
+					key: "duration",
+					value: formatDuration(item.result.timing.durationMs) ?? "",
+				});
+			if (item.result?.data?.title) sec.rows.push({ key: "title", value: item.result.data.title });
+			/* match preview */
+			if (item.result?.data?.matches && item.result.data.matches.length > 0) {
+				const excerpt = formatLineMatchPreview(item.result.data.matches, {
+					maxChars: 200,
+					maxMatches: 3,
+				});
+				if (excerpt) sec.rows.push({ key: "matches", value: excerpt });
+			}
+		} else if (item.error) {
+			if (item.error.code) sec.rows.push({ key: "code", value: item.error.code });
+			if (item.error.message) sec.rows.push({ key: "message", value: item.error.message });
+		}
 	}
-	const result = item.result;
-	const url = item.url ?? result?.url ?? "unknown URL";
-	const matchPreview = formatLineMatchPreview(result?.data?.matches, {
-		maxChars: excerptCap,
-		maxMatches: 3,
-	});
-	return {
-		ok: true,
-		url,
-		finalUrl: result?.finalUrl,
-		title: result?.data?.title,
-		excerpt:
-			matchPreview ??
-			pickExcerpt(
-				result?.data?.description,
-				result?.data?.markdown,
-				result?.data?.text,
-				result?.data?.route,
-				excerptCap,
-			),
-		fields: {
-			status: result?.status,
-			mode: result?.mode,
-			format: result?.format,
-			contentType: result?.contentType,
-			downloadedBytes: result?.downloadedBytes,
-			durationMs: result?.timing?.durationMs,
-			cached: result?.cache?.cached,
-			staleness: result?.cache?.staleness,
-			truncated: result?.truncated,
-		},
-	};
+
+	const result = [renderTreeSections(sections, width, theme)];
+
+	const jobId = typeof metadata.jobId === "string" ? metadata.jobId : undefined;
+	const packageResponseId =
+		typeof metadata.packageResponseId === "string" ? metadata.packageResponseId : undefined;
+	if (jobId || packageResponseId) {
+		result.push("");
+		if (jobId) result.push(muted(`jobId: ${jobId}`, theme));
+		if (packageResponseId) result.push(muted(`packageResponseId: ${packageResponseId}`, theme));
+	}
+
+	return result;
 }
 
 export function renderWebBatchResult(
@@ -144,7 +141,7 @@ export function renderWebBatchResult(
 		: [
 				successCountSegment(succeeded, "succeeded", theme),
 				failureCountSegment(failed, "failed", theme),
-				activityCountSegment(cacheHits, "cache hits", "ⓞ", theme),
+				activityCountSegment(cacheHits, "cache hits", "↻", theme),
 				freshnessLabel(envelope),
 				!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
 			]
@@ -154,15 +151,16 @@ export function renderWebBatchResult(
 	const progress = isBatchProgressView(progressValue)
 		? progressValue
 		: batchProgressFromItems(items);
+	const metadata = {
+		jobId: envelope.diagnostics?.jobId,
+		packageResponseId: contextPackageResponseId(envelope),
+	};
 	return renderBatchResultCard(
 		{
 			progress,
 			summary,
 			notice: sessionNotice(envelope),
-			preview: batchExpandedDetails(items, {
-				jobId: envelope.diagnostics?.jobId,
-				packageResponseId: contextPackageResponseId(envelope),
-			}),
+			expandedSections: (width) => batchExpandedSections(items, metadata, width, theme),
 			responseId: envelope.responseId,
 			padToWidth: false,
 		},

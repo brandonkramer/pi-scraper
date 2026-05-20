@@ -18,6 +18,7 @@ import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.ts";
 import { freshnessFromTimestamp } from "../storage/cache/freshness.ts";
 import { storeResponseWithId } from "../storage/responses/store.ts";
 import { renderSimpleCall } from "../tui/call.ts";
+import { failure } from "../tui/theme.ts";
 import { qualityFromCache, refreshUrlAction, storedTraceContext } from "./infra/agentic-context.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
@@ -49,6 +50,11 @@ export const webScrapeSchema = Type.Object({
 	timeoutSeconds: Type.Optional(Type.Any()),
 	maxBytes: Type.Optional(Type.Integer({ description: "Max bytes to fetch (default 31457280)." })),
 	maxChars: Type.Optional(Type.Any()),
+	headers: Type.Optional(
+		Type.Record(Type.String(), Type.String(), {
+			description: "Custom request headers to send with the fetch.",
+		}),
+	),
 	proxy: Type.Optional(Type.Any()),
 	respectRobots: Type.Optional(Type.Any()),
 	refresh: Type.Optional(Type.Any()),
@@ -275,7 +281,7 @@ async function readScrape(
 	return toolResult({
 		text: result.error
 			? `Scrape failed: ${result.error.message}`
-			: `${scrapeText}\nresponseId: ${stored.responseId}${sessionSuffix}${snapshotSuffix}${savedFilePath ? `\nsaved to: ${savedFilePath}` : ""}`,
+			: `${scrapeText}${sessionSuffix}${snapshotSuffix}${savedFilePath ? `\nsaved to: ${savedFilePath}` : ""}`,
 		data: result.data,
 		url: result.url,
 		finalUrl: result.finalUrl,
@@ -285,6 +291,7 @@ async function readScrape(
 		timing: result.timing,
 		truncated: result.truncated,
 		contentType: result.contentType,
+		headers: result.headers,
 		downloadedBytes: result.downloadedBytes,
 		cache: result.cache,
 		responseId: stored.responseId,
@@ -430,8 +437,8 @@ function shapeScrapeResult(result: ScrapeResult, responseId: string, matchPrevie
 	return {
 		summary,
 		answerContext: result.error
-			? `The scrape failed during ${result.error.phase}: ${result.error.message}`
-			: `${matchPreview ?? "Page content below."}\nresponseId ${responseId} for stored access.`,
+			? failure(`The scrape failed during ${result.error.phase}: ${result.error.message}`)
+			: (matchPreview ?? ""),
 		...storedTraceContext({
 			responseId,
 			source: {

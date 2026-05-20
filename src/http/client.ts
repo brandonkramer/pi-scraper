@@ -45,6 +45,7 @@ export interface HttpClientOptions extends UrlSafetyOptions {
 
 export interface FetchUrlOptions extends CommonRequestOptions {
 	method?: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
+	body?: string | Uint8Array;
 	downloadBinary?: boolean;
 	forceText?: boolean;
 	maxRedirects?: number;
@@ -234,6 +235,7 @@ export class HttpClient {
 		try {
 			const response = await request(url, {
 				method: options.method ?? "GET",
+				body: options.body,
 				dispatcher: this.dispatcher,
 				headers: {
 					"user-agent": this.userAgent,

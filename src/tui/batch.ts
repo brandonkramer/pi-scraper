@@ -49,6 +49,7 @@ export function renderBatchResultCard(
 		notice?: string;
 		preview?: string;
 		markdownPreview?: (width: number) => RenderComponent | undefined;
+		expandedSections?: (width: number) => string[];
 		responseId?: string;
 		padToWidth?: boolean;
 	},
@@ -61,7 +62,11 @@ export function renderBatchResultCard(
 			summary: options.summary,
 			expanded,
 			notice: options.notice,
-			expandedSections: () => [options.preview],
+			expandedSections: (width) => {
+				const preview = options.preview ? [options.preview] : [];
+				const custom = options.expandedSections?.(width) ?? [];
+				return [...preview, ...custom];
+			},
 			markdownPreview: options.markdownPreview,
 			responseId: options.responseId,
 			padToWidth: options.padToWidth,
@@ -77,13 +82,12 @@ function renderBatchProgressText(
 	theme?: RenderTheme,
 ): string {
 	const label = batch.label ?? "web_batch";
-	const title = [
-		theme?.bold?.(label) ?? label,
+	const title = `${muted("\u2514\u2500 ", theme)}${theme?.bold?.(label) ?? label} · ${[
 		muted(`${batch.completed}/${batch.total} done`, theme),
 		muted(`ok ${batch.succeeded}`, theme),
 		muted(`err ${batch.failed}`, theme),
 		muted(`concurrency ${batch.concurrency}`, theme),
-	].join(" · ");
+	].join(" · ")}`;
 	const rows = batch.items
 		.slice(0, expanded ? batch.items.length : 12)
 		.map((item) => renderBatchRow(item, width, theme));

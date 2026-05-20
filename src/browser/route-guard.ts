@@ -211,6 +211,7 @@ export interface Page {
 	url(): string;
 	close(): Promise<void>;
 	context(): BrowserContext;
+	evaluate<T = unknown>(fn: string | (() => T | Promise<T>), ...args: unknown[]): Promise<T>;
 }
 
 export interface BrowserContext {

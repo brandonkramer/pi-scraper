@@ -1,12 +1,11 @@
 /**
- * @fileoverview Pi terminal UI status pill primitive with tuned background behavior.
- *
- * The background reset stripping is intentionally conservative to avoid trailing
- * dark cells after `]` and background bleed past the pill boundary.
+ * @file Pi terminal UI status pill primitive with tuned background behavior. The background reset
+ *   stripping is intentionally conservative to avoid trailing dark cells after `]` and background
+ *   bleed past the pill boundary.
  */
-import type { RenderTheme } from "./types.ts";
-import { inlineThemeText, neutral } from "./theme.ts";
 import { currentSpinnerFrame } from "./spinner.ts";
+import { inlineThemeText, neutral } from "./theme.ts";
+import type { RenderTheme } from "./types.ts";
 
 export type StatusPillState = "waiting" | "loading" | "done" | "error";
 
@@ -19,28 +18,19 @@ export interface StatusPillOptions {
 }
 
 export function renderStatusPill(options: StatusPillOptions): string {
-	const inner = centerStatusLabel(
-		options.label,
-		Math.max(1, options.width - 2),
-	);
+	const inner = centerStatusLabel(options.label, Math.max(1, options.width - 2));
 	const text = `[${inner}]`;
 	const theme = options.theme;
 	if (!theme?.bg) return neutral(text, theme);
 	const tail = backgroundStart(statusTailBackground(options.state), theme);
-	if (options.state === "done")
-		return `${backgroundText("toolSuccessBg", text, theme)}${tail}`;
-	if (options.state === "error")
-		return `${backgroundText("toolErrorBg", text, theme)}${tail}`;
-	if (options.state === "loading")
-		return `${renderLoadingStatusFill(options, text)}${tail}`;
+	if (options.state === "done") return `${backgroundText("toolSuccessBg", text, theme)}${tail}`;
+	if (options.state === "error") return `${backgroundText("toolErrorBg", text, theme)}${tail}`;
+	if (options.state === "loading") return `${renderLoadingStatusFill(options, text)}${tail}`;
 	return `${backgroundText("toolPendingBg", neutral(text, theme), theme)}${tail}`;
 }
 
-export function renderStatusGlyph(
-	state: StatusPillState,
-	theme?: RenderTheme,
-): string {
-	if (state === "done") return inlineThemeText("success", "✓", theme) ?? "✓";
+export function renderStatusGlyph(state: StatusPillState, theme?: RenderTheme): string {
+	if (state === "done") return inlineThemeText("accent", "✓", theme) ?? "✓";
 	if (state === "error") return inlineThemeText("error", "✕", theme) ?? "✕";
 	if (state === "loading") {
 		const frame = currentSpinnerFrame();
@@ -49,15 +39,9 @@ export function renderStatusGlyph(
 	return inlineThemeText("muted", "·", theme) ?? "·";
 }
 
-function renderLoadingStatusFill(
-	options: StatusPillOptions,
-	text: string,
-): string {
+function renderLoadingStatusFill(options: StatusPillOptions, text: string): string {
 	const theme = options.theme;
-	const filledWidth = Math.max(
-		1,
-		Math.ceil(text.length * loadingRatio(options)),
-	);
+	const filledWidth = Math.max(1, Math.ceil(text.length * loadingRatio(options)));
 	const filled = text.slice(0, filledWidth);
 	const rest = text.slice(filledWidth);
 	return `${backgroundText("selectedBg", filled, theme)}${
@@ -83,11 +67,7 @@ function centerStatusLabel(label: string, width: number): string {
 	return `${" ".repeat(left)}${base}`.padEnd(width, " ");
 }
 
-function backgroundText(
-	name: string,
-	text: string,
-	theme?: RenderTheme,
-): string {
+function backgroundText(name: string, text: string, theme?: RenderTheme): string {
 	try {
 		return theme?.bg?.(name, text) ?? text;
 	} catch {

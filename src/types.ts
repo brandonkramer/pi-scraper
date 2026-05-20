@@ -158,6 +158,8 @@ export interface ResultEnvelope<TData = unknown> {
 	responseId?: string;
 	data: TData;
 	contentType?: string;
+	/** HTTP response headers from the fetch (always captured, shown in expanded view). */
+	headers?: Record<string, string>;
 	downloadedBytes?: number;
 	cache?: CacheMetadata;
 	freshness?: FreshnessMetadata;

@@ -1,12 +1,8 @@
-/**
- * @fileoverview extract __tests__ registry.test module.
- */
+/** @file Extract **tests** registry.test module. */
 import { describe, expect, it } from "vitest";
+
 import type { VerticalExtractorContext } from "../../vertical/capabilities.ts";
-import {
-	listExtractorCapabilities,
-	runVerticalExtractor,
-} from "../../vertical/registry.ts";
+import { listExtractorCapabilities, runVerticalExtractor } from "../../vertical/registry.ts";
 
 const context: VerticalExtractorContext = {
 	fetchJson: async <T>(url: string) => {
@@ -163,17 +159,14 @@ const context: VerticalExtractorContext = {
 				<section><h2>Relevant source files</h2><a>README.md</a><span>package.json</span></section>
 				<footer>Footer links</footer>`;
 		}
-		if (!url.includes("export.arxiv.org"))
-			throw new Error(`Unexpected text URL: ${url}`);
+		if (!url.includes("export.arxiv.org")) throw new Error(`Unexpected text URL: ${url}`);
 		return `<?xml version="1.0"?><feed><entry><id>http://arxiv.org/abs/2401.12345v1</id><title>Test Paper</title><summary>A useful paper.</summary><published>2024-01-01T00:00:00Z</published><updated>2024-01-02T00:00:00Z</updated><author><name>Ada Lovelace</name></author><category term="cs.CL"/><link title="pdf" href="http://arxiv.org/pdf/2401.12345v1"/></entry></feed>`;
 	},
 };
 
 describe("vertical extractor registry", () => {
 	it("lists capability declarations for deterministic extractors", () => {
-		const names = listExtractorCapabilities().map(
-			(capability) => capability.name,
-		);
+		const names = listExtractorCapabilities().map((capability) => capability.name);
 		expect(names).toEqual(
 			expect.arrayContaining([
 				"github_repo",
@@ -196,6 +189,7 @@ describe("vertical extractor registry", () => {
 				"ossinsight_collection_ranking",
 				"ossinsight_trending_repos",
 				"ossinsight_repo_analytics",
+				"youtube",
 			]),
 		);
 		expect(listExtractorCapabilities()[0]).toMatchObject({
@@ -206,22 +200,18 @@ describe("vertical extractor registry", () => {
 	});
 
 	it("runs named API-oriented extractors", async () => {
-		const github = await runVerticalExtractor(
-			"github_repo",
-			"https://github.com/mario/pi",
-			{ context },
-		);
+		const github = await runVerticalExtractor("github_repo", "https://github.com/mario/pi", {
+			context,
+		});
 		expect(github.data).toMatchObject({
 			fullName: "mario/pi",
 			stars: 42,
 			license: "MIT",
 		});
 
-		const npm = await runVerticalExtractor(
-			"npm",
-			"https://www.npmjs.com/package/pi-scraper",
-			{ context },
-		);
+		const npm = await runVerticalExtractor("npm", "https://www.npmjs.com/package/pi-scraper", {
+			context,
+		});
 		expect(npm.data).toMatchObject({
 			name: "pi-scraper",
 			latestVersion: "1.2.3",
@@ -237,25 +227,19 @@ describe("vertical extractor registry", () => {
 			version: "2.0.0",
 			requestedVersion: "2.0.0",
 		});
-		expect(
-			(npmVersion.data as Record<string, unknown> | undefined)?.latestVersion,
-		).toBeUndefined();
+		expect((npmVersion.data as Record<string, unknown> | undefined)?.latestVersion).toBeUndefined();
 
-		const npmxPackage = await runVerticalExtractor(
-			"npm",
-			"https://npmx.dev/package/pi-scraper",
-			{ context },
-		);
+		const npmxPackage = await runVerticalExtractor("npm", "https://npmx.dev/package/pi-scraper", {
+			context,
+		});
 		expect(npmxPackage.data).toMatchObject({
 			name: "pi-scraper",
 			latestVersion: "1.2.3",
 		});
 
-		const deepwiki = await runVerticalExtractor(
-			"deepwiki",
-			"https://deepwiki.com/mario/pi",
-			{ context },
-		);
+		const deepwiki = await runVerticalExtractor("deepwiki", "https://deepwiki.com/mario/pi", {
+			context,
+		});
 		expect(deepwiki.data).toMatchObject({
 			owner: "mario",
 			repo: "pi",
@@ -264,34 +248,25 @@ describe("vertical extractor registry", () => {
 			commit: "3cb2c4",
 			activeSection: "Overview",
 		});
-		expect(
-			(deepwiki.data as Record<string, unknown> | undefined)?.sections,
-		).toEqual([
+		expect((deepwiki.data as Record<string, unknown> | undefined)?.sections).toEqual([
 			"Overview",
 			"Repository Structure",
 			"Packages",
 			"Feature Flags",
 			"Build System",
 		]);
-		expect(
-			(deepwiki.data as Record<string, unknown> | undefined)?.sourceFiles,
-		).toEqual(["README.md", "package.json"]);
+		expect((deepwiki.data as Record<string, unknown> | undefined)?.sourceFiles).toEqual([
+			"README.md",
+			"package.json",
+		]);
 		await expect(
-			runVerticalExtractor(
-				"deepwiki",
-				"https://deepwiki.com/mario/pi/overview",
-				{ context },
-			),
+			runVerticalExtractor("deepwiki", "https://deepwiki.com/mario/pi/overview", { context }),
 		).resolves.toMatchObject({ data: { owner: "mario", repo: "pi" } });
 	});
 
 	it("runs added GitHub issue, PR, and release extractors", async () => {
 		await expect(
-			runVerticalExtractor(
-				"github_issue",
-				"https://github.com/mario/pi/issues/7",
-				{ context },
-			),
+			runVerticalExtractor("github_issue", "https://github.com/mario/pi/issues/7", { context }),
 		).resolves.toMatchObject({
 			data: { number: 7, title: "Bug", labels: ["bug"] },
 		});
@@ -303,11 +278,9 @@ describe("vertical extractor registry", () => {
 			data: { number: 8, title: "Patch", changedFiles: 2 },
 		});
 		await expect(
-			runVerticalExtractor(
-				"github_release",
-				"https://github.com/mario/pi/releases/tag/v1.0.0",
-				{ context },
-			),
+			runVerticalExtractor("github_release", "https://github.com/mario/pi/releases/tag/v1.0.0", {
+				context,
+			}),
 		).resolves.toMatchObject({ data: { tag: "v1.0.0", name: "One" } });
 	});
 
@@ -327,20 +300,14 @@ describe("vertical extractor registry", () => {
 			data: { namespace: "library", name: "redis", pulls: 1000 },
 		});
 		await expect(
-			runVerticalExtractor(
-				"huggingface_model",
-				"https://huggingface.co/org/model",
-				{ context },
-			),
+			runVerticalExtractor("huggingface_model", "https://huggingface.co/org/model", { context }),
 		).resolves.toMatchObject({
 			data: { id: "org/model", pipelineTag: "text-generation" },
 		});
 		await expect(
-			runVerticalExtractor(
-				"huggingface_dataset",
-				"https://huggingface.co/datasets/org/dataset",
-				{ context },
-			),
+			runVerticalExtractor("huggingface_dataset", "https://huggingface.co/datasets/org/dataset", {
+				context,
+			}),
 		).resolves.toMatchObject({ data: { id: "org/dataset", downloads: 12 } });
 	});
 
@@ -360,11 +327,9 @@ describe("vertical extractor registry", () => {
 	});
 
 	it("extracts raw source docstrings through a deterministic vertical", async () => {
-		const result = await runVerticalExtractor(
-			"docstrings",
-			"https://example.com/src/api.ts",
-			{ context },
-		);
+		const result = await runVerticalExtractor("docstrings", "https://example.com/src/api.ts", {
+			context,
+		});
 
 		expect(result.error).toBeUndefined();
 		expect(result.data).toMatchObject({
@@ -378,11 +343,7 @@ describe("vertical extractor registry", () => {
 			runVerticalExtractor("missing", "https://example.com", { context }),
 		).resolves.toMatchObject({ error: { code: "EXTRACTOR_NOT_FOUND" } });
 		await expect(
-			runVerticalExtractor(
-				"github_repo",
-				"https://github.com/mario/pi/issues/7",
-				{ context },
-			),
+			runVerticalExtractor("github_repo", "https://github.com/mario/pi/issues/7", { context }),
 		).resolves.toMatchObject({ error: { code: "URL_NOT_SUPPORTED" } });
 		await expect(
 			runVerticalExtractor("github_repo", "https://example.com", { context }),

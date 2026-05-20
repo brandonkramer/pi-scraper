@@ -194,6 +194,10 @@ async function renderWithLoader(
 
 		const finalUrl = page.url();
 		await assertSafeBrowserUrl(finalUrl, url, finalUrl, browserSafety);
+
+		/* Pierce shadow roots so downstream parsers (linkedom) can read the content */
+		await pierceShadowRoots(page);
+
 		return {
 			url,
 			finalUrl,
@@ -279,6 +283,30 @@ async function autoWaitForChallenge(
 		retryable: false,
 		url,
 		recommendedMode: "fingerprint",
+	});
+}
+/**
+ * Pierce Shadow DOM roots so `page.content()` serializes shadow content as regular HTML that
+ * downstream parsers (linkedom) can read. Injects a `<div class="__shadow_content">` sibling after
+ * each host element containing the flattened shadow root HTML. Non-destructive — the page DOM and
+ * shadow roots are unchanged; only the serialized output is augmented.
+ */
+async function pierceShadowRoots(page: Page): Promise<void> {
+	await page.evaluate(() => {
+		const stack: Array<Document | ShadowRoot> = [document];
+		while (stack.length > 0) {
+			const root = stack.pop()!;
+			const hosts = root.querySelectorAll("*");
+			for (const host of hosts) {
+				const shadow = (host as Element & { shadowRoot: ShadowRoot | null }).shadowRoot;
+				if (shadow === null) continue;
+				const wrapper = document.createElement("div");
+				wrapper.className = "__shadow_content";
+				wrapper.innerHTML = shadow.innerHTML;
+				host.parentNode?.insertBefore(wrapper, host.nextSibling);
+				stack.push(shadow);
+			}
+		}
 	});
 }
 

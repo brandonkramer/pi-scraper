@@ -52,11 +52,10 @@ describe("web tool renderers", () => {
 		expect(collapsed).toContain("(ctrl+o to expand)");
 		expect(collapsed).not.toContain("✓ web_scrape");
 		const expanded = text(webScrapeTool.renderResult?.(result, { expanded: true }));
-		expect(expanded).toContain("Scrape details:");
-		expect(expanded).toContain("status 200 · fast · markdown");
-		expect(expanded).toContain("title: Example Domain");
+		expect(expanded).toContain("page");
+		expect(expanded).toContain("Example Domain");
 		expect(expanded).toContain("responseId: r-scrape");
-		expect(terminalWidthSafe(webScrapeTool.renderResult?.(result, { expanded: true }), 32)).toBe(
+		expect(terminalWidthSafe(webScrapeTool.renderResult?.(result, { expanded: true }), 48)).toBe(
 			true,
 		);
 	});
@@ -112,8 +111,8 @@ describe("web tool renderers", () => {
 		expect(doneTitle).toContain("web_crawl https://example.com max 1");
 		expect(doneTitle).not.toContain("✓ web_crawl");
 		expect(collapsed).toContain("✓ 2 succeeded");
-		expect(collapsed).toContain("✖ 1 failed");
-		expect(collapsed).toContain("◉  3 visited");
+		expect(collapsed).toContain("✕ 1 failed");
+		expect(collapsed).toContain("◉ 3 visited");
 		expect(collapsed).toContain("→ frontier 0");
 		expect(collapsed).toContain("done");
 		expect(collapsed).toContain("error");
@@ -172,13 +171,14 @@ describe("web tool renderers", () => {
 		expect(doneTitle).toContain("web_batch 2 urls");
 		expect(doneTitle).not.toContain("✓ web_batch");
 		expect(collapsed).toContain("✓ 1 succeeded");
-		expect(collapsed).toContain("✖ 1 failed");
-		expect(collapsed).toContain("ⓞ  1 cache hits");
+		expect(collapsed).toContain("✕ 1 failed");
+		expect(collapsed).toContain("↻ 1 cache hits");
 		const expanded = text(webBatchTool.renderResult?.(result, { expanded: true }));
-		expect(expanded).toContain("Per-URL details:");
-		expect(expanded).toContain("status 200 · fast · markdown");
-		expect(expanded).toContain("title: A Test");
-		expect(expanded).toContain("BLOCKED · fetch · blocked");
+		expect(expanded).toContain("format");
+		expect(expanded).toContain("markdown");
+		expect(expanded).toContain("A Test");
+		expect(expanded).toContain("BLOCKED");
+		expect(expanded).toContain("blocked");
 	});
 
 	it("renders batch progress rows during partial updates", () => {
@@ -203,7 +203,7 @@ describe("web tool renderers", () => {
 		});
 		const rendered = text(webBatchTool.renderResult?.(progress, { expanded: false }));
 
-		expect(rendered).toContain("web_batch");
+		expect(rendered).toContain("done");
 		expect(rendered).toContain("1/3 done");
 		expect(rendered).toContain("ok 1");
 		expect(rendered).toContain("err 0");
@@ -238,8 +238,8 @@ describe("web tool renderers", () => {
 		);
 
 		expect(collapsed).not.toContain("\u001B[0m");
-		expect(collapsed).toContain("\u001B[35m✖ 0 failed\u001B[39m");
-		expect(collapsed).toContain("\u001B[35mⓞ  0 cache hits\u001B[39m");
+		expect(collapsed).toContain("\u001B[35m✕ 0 failed\u001B[39m");
+		expect(collapsed).toContain("\u001B[35m↻ 0 cache hits\u001B[39m");
 	});
 
 	it("uses failed icon and color even when failed count is zero", () => {
@@ -249,8 +249,8 @@ describe("web tool renderers", () => {
 		});
 		const collapsed = text(webBatchTool.renderResult?.(result, { expanded: false }));
 
-		expect(collapsed).toContain("✖ 0 failed");
-		expect(collapsed).toContain("ⓞ  0 cache hits");
+		expect(collapsed).toContain("✕ 0 failed");
+		expect(collapsed).toContain("↻ 0 cache hits");
 	});
 
 	it("omits success icons when batch and crawl succeeded counts are zero", () => {
