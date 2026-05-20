@@ -4,6 +4,8 @@ All notable changes to `pi-scraper` are summarized from the git history and rele
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-20
+
 ### Added
 
 - **YouTube vertical extractor** (`web_extract action="vertical" extractor="youtube"`) — fetches video metadata, transcript tracks, and best-effort comment previews via YouTube's Innertube ANDROID client (`20.10.38`).
