@@ -6,8 +6,29 @@ All notable changes to `pi-scraper` are summarized from the git history and rele
 
 ### Added
 
-- Added a `youtube` vertical extractor for video metadata, transcript tracks/text, and best-effort comment previews.
-- Updated bundled web-scraping skill docs with YouTube vertical routing guidance.
+- **YouTube vertical extractor** (`web_extract action="vertical" extractor="youtube"`) — fetches video metadata, transcript tracks, and best-effort comment previews via YouTube's Innertube ANDROID client (`20.10.38`).
+  - Returns `title`, `channel`, `channelId`, `views`, `lengthSeconds`, `isLiveContent`, `publishedAt`, `thumbnail`.
+  - Returns `transcript` with `languageCode`, `segments` (each with `start`, `duration`, `text`), and joined `text`.
+  - Returns `transcriptTracks` array with `languageCode`, `name`, `kind`, and `isTranslatable`.
+  - Returns `comments` (up to 20 preview comments) and `commentCount`.
+  - Supports `youtube.com/watch`, `youtu.be`, `youtube.com/shorts` URLs with optional `?lang=`.
+  - Handles both old `commentRenderer` and new `commentEntityPayload` structures.
+  - Gracefully degrades when transcript or comments are unavailable (`transcriptStatus` / `commentsStatus` in `source` metadata).
+
+- **Theme-aware vertical result rendering** — `renderVerticalResult` applies ANSI colors (green `✓`, red `✕`, muted `·`) via Pi's `renderResult` callback.
+  - Expanded view shows transcript as flowing `│` text with timestamps, not individual tree connectors.
+  - Structured tree sections for `video` metadata, `comments`, and `source` provider info.
+  - Collapsed view shows compact summary line (`└─ ✓ youtube done · title · views · N segments`).
+  - Answer context includes up to 2000 characters of transcript text for LLM consumption.
+
+- **Batch result tree formatting** — batch result titles get `└─` prefix with progress counts (`2/2 done · ok 2 · err 0`).
+
+- Updated bundled web-scraping skill docs with YouTube vertical routing guidance and per-vertical reference doc at `skills/web-scraping/references/verticals/youtube.md`.
+
+### Fixed
+
+- `renderVerticalResult` correctly reads through the `VerticalExtractionResult` wrapper (`details.data.data`) to access video metadata, transcript, and comments.
+- `renderVerticalResult` error rendering: `└─ ✕ youtube failed · YOUTUBE_VIDEO_UNPLAYABLE` (red `✕`, muted error code).
 
 ## [0.7.0] - 2026-05-19
 
