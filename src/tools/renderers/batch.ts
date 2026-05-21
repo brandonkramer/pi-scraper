@@ -37,27 +37,29 @@ import {
 export interface BatchItem {
 	ok?: boolean;
 	url?: string;
-	result?: {
-		url?: string;
-		finalUrl?: string;
-		status?: number;
-		mode?: string;
-		format?: string;
-		contentType?: string;
-		downloadedBytes?: number;
-		truncated?: boolean;
-		timing?: { durationMs?: number; fetchMs?: number; parseMs?: number };
-		cache?: { cached?: boolean; staleness?: string; ageSeconds?: number };
-		data?: {
-			title?: string;
-			description?: string;
-			markdown?: string;
-			text?: string;
-			route?: string;
-			matches?: LineMatch[];
-		};
-	};
+	result?: BatchItemRenderResult;
 	error?: { code?: string; phase?: string; message?: string };
+}
+
+interface BatchItemRenderResult {
+	url?: string;
+	finalUrl?: string;
+	status?: number;
+	mode?: string;
+	format?: string;
+	contentType?: string;
+	downloadedBytes?: number;
+	truncated?: boolean;
+	timing?: { durationMs?: number; fetchMs?: number; parseMs?: number };
+	cache?: { cached?: boolean; staleness?: string; ageSeconds?: number };
+	data?: {
+		title?: string;
+		description?: string;
+		markdown?: string;
+		text?: string;
+		route?: string;
+		matches?: LineMatch[];
+	};
 }
 
 export function batchExpandedSections(
