@@ -10,10 +10,10 @@ import { isFileResult, renderFileResultCard } from "../../tui/file.ts";
 import { formatBytes, formatDuration } from "../../tui/format.ts";
 import { formatPreview, previewText } from "../../tui/preview.ts";
 import { progressStartedAtMs } from "../../tui/progress.ts";
+import { defineResultRenderer } from "../../tui/result-renderer.ts";
 import { renderUrlStatusRow } from "../../tui/rows.ts";
 import { currentSpinnerFrame } from "../../tui/spinner.ts";
 import { renderStackedResultCard } from "../../tui/stacked.ts";
-import { renderText } from "../../tui/text.ts";
 import {
 	getMarkdownTheme,
 	muted,
@@ -93,8 +93,8 @@ function renderScrapeProgressCard(
 	const failed = details.state === "error";
 	const status = failed ? "error" : details.state === "done" ? "done" : "loading";
 	const startedAtMs = progressStartedAtMs(details) ?? Date.now();
-	return {
-		render(width: number) {
+	return defineResultRenderer({
+		renderContent(width) {
 			const row = renderUrlStatusRow({
 				url,
 				label: status,
@@ -120,15 +120,12 @@ function renderScrapeProgressCard(
 			}
 			if (details.state !== "done" && details.state !== "error") {
 				const frame = currentSpinnerFrame();
-				const text = [...lines, "", `${frame} Working...`].join("\n");
-				return renderText(text, { padToWidth: true }).render(width);
+				return [...lines, "", `${frame} Working...`].join("\n");
 			}
-			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
+			return lines.join("\n");
 		},
-		invalidate() {
-			/* no-op */
-		},
-	};
+		padToWidth: true,
+	});
 }
 
 function renderScrapeResultCard(

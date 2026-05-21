@@ -3,8 +3,10 @@ import { Markdown } from "@earendil-works/pi-tui";
 
 import type { ModelUsage } from "../extract/adhoc/model.ts";
 import type { PiToolShell, ResultEnvelope, StructuredError } from "../types.ts";
+import { defineResultRenderer } from "./result-renderer.ts";
 import { renderText } from "./text.ts";
 import { getMarkdownTheme } from "./theme.ts";
+import type { TreeSection } from "./tree.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 
 export function errorLabel(
@@ -55,16 +57,11 @@ export function renderEnvelopeResult(
 	if (!expanded || details?.format !== "markdown" || preview.length <= 100) {
 		return renderText(body, { padToWidth: true });
 	}
-	return {
-		render(width: number): string[] {
-			const text = renderText(body, { padToWidth: true }).render(width);
-			const md = new Markdown(preview.slice(0, 800), 0, 0, getMarkdownTheme(theme));
-			return [...text, "", ...md.render(width)];
-		},
-		invalidate(): void {
-			// Markdown component has its own caching.
-		},
-	};
+	return defineResultRenderer({
+		renderContent: () => body,
+		padToWidth: true,
+		markdownPreview: () => new Markdown(preview.slice(0, 800), 0, 0, getMarkdownTheme(theme)),
+	});
 }
 
 function expandedEnvelopeText(
@@ -117,4 +114,97 @@ function formatCostUSD(cost: number): string {
 	if (cost < 0.0001) return `~$${cost.toExponential(1)}`;
 	if (cost < 1) return `$${cost.toFixed(4)}`;
 	return `$${cost.toFixed(2)}`;
+}
+
+export const DEFAULT_HIDDEN_ENVELOPE_KEYS = new Set([
+	"_stored",
+	"__id",
+	"format",
+	"contentType",
+	"fullOutputPath",
+	"text",
+	"sources",
+	"citations",
+	"sourceNotes",
+	"modelUsage",
+	"nextActions",
+	"assistantGuidance",
+	"kind",
+	"snapshotSaved",
+	"diagnostics",
+	"cache",
+	"freshness",
+	"qualitySignals",
+	"headers",
+	"downloadedBytes",
+	"timing",
+	"summary",
+	"answerContext",
+	"finalUrl",
+	"error",
+]);
+
+export const DEFAULT_ENVELOPE_KEY_DESCRIPTIONS: Record<string, string> = {
+	text: "summary",
+	data: "response payload",
+	url: "source URL",
+	responseId: "stored response ID",
+	jobId: "job identifier",
+	summary: "overview",
+	answerContext: "agent context",
+	source: "source label",
+};
+
+export const DEFAULT_ENVELOPE_DISPLAY_ORDER = ["truncated", "responseId", "data", "url"] as const;
+
+export interface BuildEnvelopeRowsOptions {
+	hide?: ReadonlySet<string>;
+	describe?: Record<string, string>;
+	order?: readonly string[];
+	sectionName?: string;
+}
+
+export function stringifyEnvelopeValue(value: unknown): string {
+	if (typeof value === "string") return value.slice(0, 80);
+	if (Array.isArray(value)) return `${value.length} item${value.length === 1 ? "" : "s"}`;
+	if (value && typeof value === "object") {
+		const keys = Object.keys(value);
+		return `${keys.length} field${keys.length === 1 ? "" : "s"}`;
+	}
+	if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+		return String(value);
+	}
+	return "[unknown]";
+}
+
+export function buildEnvelopeRows(
+	envelope: Record<string, unknown> | undefined,
+	options: BuildEnvelopeRowsOptions = {},
+): TreeSection[] {
+	const hide = options.hide ?? DEFAULT_HIDDEN_ENVELOPE_KEYS;
+	const describe = options.describe ?? DEFAULT_ENVELOPE_KEY_DESCRIPTIONS;
+	const order = options.order ?? DEFAULT_ENVELOPE_DISPLAY_ORDER;
+	const section: TreeSection = { name: options.sectionName ?? "result", rows: [] };
+
+	const fieldMap = new Map<string, string>();
+	for (const [key, value] of Object.entries(envelope ?? {})) {
+		if (hide.has(key)) continue;
+		if (value === null || value === undefined) continue;
+		if (typeof value === "string" && !value) continue;
+		const desc = describe[key];
+		const val = stringifyEnvelopeValue(value);
+		fieldMap.set(key, desc ? `${val} (${desc})` : val);
+	}
+
+	for (const key of order) {
+		if (fieldMap.has(key)) {
+			section.rows.push({ key, value: fieldMap.get(key)! });
+			fieldMap.delete(key);
+		}
+	}
+	for (const [key, value] of fieldMap) {
+		section.rows.push({ key, value });
+	}
+
+	return section.rows.length > 0 ? [section] : [];
 }

@@ -1,3 +1,4 @@
+import { backgroundStart, backgroundText } from "./bg-paint.ts";
 /**
  * @file Pi terminal UI status pill primitive with tuned background behavior. The background reset
  *   stripping is intentionally conservative to avoid trailing dark cells after `]` and background
@@ -65,24 +66,6 @@ function centerStatusLabel(label: string, width: number): string {
 	if (base.length >= width) return base.slice(0, width);
 	const left = Math.floor((width - base.length) / 2);
 	return `${" ".repeat(left)}${base}`.padEnd(width, " ");
-}
-
-function backgroundText(name: string, text: string, theme?: RenderTheme): string {
-	try {
-		return theme?.bg?.(name, text) ?? text;
-	} catch {
-		return text;
-	}
-}
-
-function backgroundStart(name: string, theme?: RenderTheme): string {
-	const reset = "\u001B[49m";
-	try {
-		const value = theme?.bg?.(name, "") ?? "";
-		return value.endsWith(reset) ? value.slice(0, -reset.length) : value;
-	} catch {
-		return "";
-	}
 }
 
 function statusTailBackground(state: StatusPillState): string {

@@ -1,4 +1,5 @@
 import { renderProgressCard } from "../../tui/progress.ts";
+import { defineResultRenderer } from "../../tui/result-renderer.ts";
 import { renderUrlBadgeRow } from "../../tui/rows.ts";
 import { renderText } from "../../tui/text.ts";
 import { muted, separator } from "../../tui/theme.ts";
@@ -21,21 +22,26 @@ export function renderMapResultCard(
 	expanded: boolean,
 	theme?: RenderTheme,
 ): RenderComponent {
-	return {
-		render(width: number) {
-			const rows = urls
-				.slice(0, expanded ? 50 : 12)
-				.map((entry) => renderMapRow(entry, width, theme));
-			const more =
-				urls.length > rows.length ? muted(`… ${urls.length - rows.length} more urls`, theme) : "";
-			const lines = [...rows];
-			if (more) lines.push(more);
-			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
+	return defineResultRenderer({
+		renderContent(width) {
+			return renderMapLines(urls, expanded, width, theme);
 		},
-		invalidate() {
-			/* no-op */
-		},
-	};
+		padToWidth: true,
+	});
+}
+
+function renderMapLines(
+	urls: readonly MapUrlEntryView[],
+	expanded: boolean,
+	width: number,
+	theme?: RenderTheme,
+): string {
+	const rows = urls.slice(0, expanded ? 50 : 12).map((entry) => renderMapRow(entry, width, theme));
+	const more =
+		urls.length > rows.length ? muted(`… ${urls.length - rows.length} more urls`, theme) : "";
+	const lines = [...rows];
+	if (more) lines.push(more);
+	return lines.join("\n");
 }
 
 function renderMapRow(entry: MapUrlEntryView, width: number, theme?: RenderTheme): string {
@@ -74,17 +80,14 @@ export function renderWebMapResult(
 			padToWidth: true,
 		});
 	}
-	return {
-		render(width: number) {
-			const mapCard = renderMapResultCard(urls, expanded, theme);
-			const mapText = mapCard.render(width).join("\n");
+	return defineResultRenderer({
+		renderContent(width) {
+			const mapText = renderMapLines(urls, expanded, width, theme);
 			const lines = [summary, mapText];
 			if (expanded && envelope.responseId)
 				lines.push("", muted(`responseId: ${envelope.responseId}`, theme));
-			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
+			return lines.join("\n");
 		},
-		invalidate() {
-			/* no-op */
-		},
-	};
+		padToWidth: true,
+	});
 }

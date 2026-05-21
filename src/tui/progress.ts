@@ -4,7 +4,7 @@ import { formatChecklistItem, formatChecklistText } from "./checklist.ts";
 import { activityCountSegment, failureCountSegment, successCountSegment } from "./counts.ts";
 import { renderStatusGlyph, renderStatusPill } from "./pill.ts";
 import type { StatusPillState } from "./pill.ts";
-import { renderText } from "./text.ts";
+import { defineResultRenderer } from "./result-renderer.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 
 export function renderProgressBar(progress: number, width = 12): string {
@@ -37,8 +37,8 @@ export function renderProgressCard(
 ): RenderComponent {
 	const startedAtMs = progressStartedAtMs(details) ?? Date.now();
 	const icons = options?.allowIcons ?? false;
-	return {
-		render(width: number) {
+	return defineResultRenderer({
+		renderContent(width) {
 			const statusWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
 			const state = progressPillState(details.state);
 			const count = details.total ? ` ${details.current ?? 0}/${details.total}` : "";
@@ -81,12 +81,8 @@ export function renderProgressCard(
 						.join(" · "),
 				);
 			}
-			return renderText(lines.filter(Boolean).join("\n"), {
-				padToWidth: true,
-			}).render(width);
+			return lines.filter(Boolean).join("\n");
 		},
-		invalidate() {
-			/* no-op */
-		},
-	};
+		padToWidth: true,
+	});
 }

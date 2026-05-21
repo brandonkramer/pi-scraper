@@ -1,4 +1,4 @@
-import { renderText } from "./text.ts";
+import { defineResultRenderer } from "./result-renderer.ts";
 import { muted } from "./theme.ts";
 /** @file Pi terminal UI stacked result card primitive. */
 import type { RenderComponent, RenderTheme } from "./types.ts";
@@ -19,8 +19,8 @@ export function renderStackedResultCard(
 	options: StackedResultCardOptions,
 	theme?: RenderTheme,
 ): RenderComponent {
-	return {
-		render(width: number) {
+	return defineResultRenderer({
+		renderContent(width) {
 			const body = typeof options.body === "function" ? options.body(width) : options.body;
 			const lines = [body, "", options.summary];
 			if (options.notice) lines.push("", muted(options.notice, theme));
@@ -31,14 +31,9 @@ export function renderStackedResultCard(
 				}
 				if (options.responseId) lines.push("", muted(`responseId: ${options.responseId}`, theme));
 			}
-			const result = renderText(lines.join("\n"), {
-				padToWidth: options.padToWidth !== false,
-			}).render(width);
-			const md = options.markdownPreview?.(width);
-			return md ? [...result, "", ...md.render(width)] : result;
+			return lines.join("\n");
 		},
-		invalidate() {
-			/* no-op */
-		},
-	};
+		padToWidth: options.padToWidth,
+		markdownPreview: options.markdownPreview,
+	});
 }

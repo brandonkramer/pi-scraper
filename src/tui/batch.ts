@@ -7,10 +7,10 @@ import type {
 import type { ProgressDetails } from "../types.ts";
 import { renderStatusPill } from "./pill.ts";
 import { renderProgressBar } from "./progress.ts";
+import { defineResultRenderer } from "./result-renderer.ts";
 import { renderUrlStatusRow } from "./rows.ts";
 import { withSpinnerFooter } from "./spinner.ts";
 import { renderStackedResultCard } from "./stacked.ts";
-import { renderText } from "./text.ts";
 import { muted } from "./theme.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 
@@ -24,22 +24,16 @@ export function renderBatchProgressCard(
 ): RenderComponent {
 	const batch = details.data?.batchProgress;
 	const tick = details.data?.spinnerTick;
-	return {
-		render(width: number) {
+	return defineResultRenderer({
+		renderContent(width) {
 			const text = batch
 				? renderBatchProgressText(batch, width, expanded, theme)
 				: muted("No batch progress available.", theme);
 			const isDone = batch ? batch.completed >= batch.total : false;
 			const lines = text.split("\n");
-			if (!isDone) {
-				return renderText(withSpinnerFooter(lines, tick)).render(width);
-			}
-			return renderText(lines.join("\n")).render(width);
+			return isDone ? lines.join("\n") : withSpinnerFooter(lines, tick);
 		},
-		invalidate() {
-			/* no-op */
-		},
-	};
+	});
 }
 
 export function renderBatchResultCard(

@@ -1,7 +1,9 @@
 /**
  * @file Entry point for the /scrape-config slash command. Dispatches to sub-actions: status,
  *   model-provider, scrape-mode, cache, robots, reload. No-args opens an interactive picker when
- *   ctx.ui.select is available.
+ *   ctx.ui.select is available. Future richer config UI should reuse Pi built-ins (SettingsList,
+ *   SelectList, Input, Container, Spacer, DynamicBorder, keyText/keyHint) instead of adding bespoke
+ *   local interaction primitives.
  */
 import { type Static, Type } from "typebox";
 
