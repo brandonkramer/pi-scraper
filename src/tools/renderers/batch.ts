@@ -71,22 +71,22 @@ export function batchExpandedSections(
 	const b = createTreeBuilder();
 	for (const item of items) {
 		const url = item.url ?? item.result?.url ?? "unknown URL";
+		const r = item.result;
 		if (item.ok) {
-			b.add(url, "status", item.result?.status ? String(item.result.status) : undefined);
-			b.add(url, "mode", item.result?.mode);
-			b.add(url, "format", item.result?.format);
-			if (item.result?.downloadedBytes !== undefined)
-				b.add(url, "size", formatBytes(item.result.downloadedBytes) ?? "");
-			if (item.result?.timing?.durationMs !== undefined)
-				b.add(url, "duration", formatDuration(item.result.timing.durationMs) ?? "");
-			b.add(url, "title", item.result?.data?.title);
-			if (item.result?.data?.matches && item.result.data.matches.length > 0) {
+			b.add(url, "status", r?.status ? String(r.status) : undefined);
+			b.add(url, "mode", r?.mode);
+			b.add(url, "format", r?.format);
+			if (r?.downloadedBytes !== undefined)
+				b.add(url, "size", formatBytes(r.downloadedBytes) ?? "");
+			if (r?.timing?.durationMs !== undefined)
+				b.add(url, "duration", formatDuration(r.timing.durationMs) ?? "");
+			b.add(url, "title", r?.data?.title);
+			if (r?.data?.matches?.length)
 				b.add(
 					url,
 					"matches",
-					formatLineMatchPreview(item.result.data.matches, { maxChars: 200, maxMatches: 3 }),
+					formatLineMatchPreview(r.data.matches, { maxChars: 200, maxMatches: 3 }),
 				);
-			}
 		} else if (item.error) {
 			b.add(url, "code", item.error.code);
 			b.add(url, "message", item.error.message);
@@ -94,16 +94,14 @@ export function batchExpandedSections(
 	}
 
 	const result = [renderTreeSections(b.sections, width, theme)];
-
 	const jobId = typeof metadata.jobId === "string" ? metadata.jobId : undefined;
-	const packageResponseId =
+	const pkg =
 		typeof metadata.packageResponseId === "string" ? metadata.packageResponseId : undefined;
-	if (jobId || packageResponseId) {
+	if (jobId || pkg) {
 		result.push("");
 		if (jobId) result.push(muted(`jobId: ${jobId}`, theme));
-		if (packageResponseId) result.push(muted(`packageResponseId: ${packageResponseId}`, theme));
+		if (pkg) result.push(muted(`packageResponseId: ${pkg}`, theme));
 	}
-
 	return result;
 }
 
@@ -115,9 +113,7 @@ export function renderWebBatchResult(
 	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
 	if (isProgress(details)) {
 		if (isBatchProgress(details)) return renderBatchProgressCard(details, expanded, theme);
-		return renderProgressCard("web_batch", details, theme, {
-			allowIcons: true,
-		});
+		return renderProgressCard("web_batch", details, theme, { allowIcons: true });
 	}
 	const envelope = details as Partial<ResultEnvelope<BatchItemResult[]>>;
 	const items = Array.isArray(envelope.data) ? envelope.data : [];
