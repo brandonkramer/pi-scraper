@@ -111,33 +111,11 @@ function formatCostUSD(cost: number): string {
 	return `$${cost.toFixed(2)}`;
 }
 
-export const DEFAULT_HIDDEN_ENVELOPE_KEYS = new Set([
-	"_stored",
-	"__id",
-	"format",
-	"contentType",
-	"fullOutputPath",
-	"text",
-	"sources",
-	"citations",
-	"sourceNotes",
-	"modelUsage",
-	"nextActions",
-	"assistantGuidance",
-	"kind",
-	"snapshotSaved",
-	"diagnostics",
-	"cache",
-	"freshness",
-	"qualitySignals",
-	"headers",
-	"downloadedBytes",
-	"timing",
-	"summary",
-	"answerContext",
-	"finalUrl",
-	"error",
-]);
+export const DEFAULT_HIDDEN_ENVELOPE_KEYS = new Set(
+	"_stored __id format contentType fullOutputPath text sources citations sourceNotes modelUsage nextActions assistantGuidance kind snapshotSaved diagnostics cache freshness qualitySignals headers downloadedBytes timing summary answerContext finalUrl error".split(
+		" ",
+	),
+);
 
 export const DEFAULT_ENVELOPE_KEY_DESCRIPTIONS: Record<string, string> = {
 	text: "summary",
