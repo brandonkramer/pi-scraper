@@ -301,9 +301,8 @@ function addHeaderSections(
 	}
 }
 
-function parseAgeSeconds(value: string | undefined): number | undefined {
-	if (value === undefined) return;
-	const n = Number(value);
+function parseAgeSeconds(v: string | undefined): number | undefined {
+	const n = v === undefined ? NaN : Number(v);
 	return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
@@ -353,15 +352,10 @@ function parseCacheControl(value: string | undefined): CacheControlInfo | undefi
 	return maxAge !== undefined ? { maxAge, swr } : undefined;
 }
 
-function formatHttpTime(dateStr: string): string {
-	try {
-		const d = new Date(dateStr);
-		if (Number.isNaN(d.getTime())) return dateStr;
-		const hh = d.getUTCHours().toString().padStart(2, "0");
-		const mm = d.getUTCMinutes().toString().padStart(2, "0");
-		const ss = d.getUTCSeconds().toString().padStart(2, "0");
-		return `${hh}:${mm}:${ss} GMT`;
-	} catch {
-		return dateStr;
-	}
+const pad2 = (n: number) => n.toString().padStart(2, "0");
+
+function formatHttpTime(s: string): string {
+	const d = new Date(s);
+	if (Number.isNaN(d.getTime())) return s;
+	return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())} GMT`;
 }
