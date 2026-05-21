@@ -16,7 +16,17 @@ export default async function registerPiScraperExtension(pi: ExtensionAPI): Prom
 	await registerWebTools(pi);
 	registerWebCommands(pi);
 	registerSessionStartHealthChecks(pi as PiHealthRegistrar);
+	registerToolErrorPropagation(pi);
 	wireCleanupHooks();
+}
+
+function registerToolErrorPropagation(pi: ExtensionAPI): void {
+	pi.on("tool_result", (event) => {
+		if (!event.toolName.startsWith("web_")) return;
+		const details = event.details as { error?: unknown } | undefined;
+		if (!details?.error || event.isError) return;
+		return { isError: true };
+	});
 }
 
 function wireCleanupHooks(): void {

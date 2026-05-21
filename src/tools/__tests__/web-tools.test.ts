@@ -6,11 +6,12 @@ import { describe, expect, it } from "vitest";
 import type { ModelAdapter, ModelRequest, ModelResponse } from "../../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
 import { renderText } from "../../tui/text.ts";
-import type { RenderComponent } from "../../tui/types.ts";
+import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 import type { ResultEnvelope } from "../../types.ts";
 import type { PiToolRegistrar, WebTool } from "../infra/define.ts";
 import { registerWebTools } from "../infra/register.ts";
 import { createWebExtractTool, webExtractTool } from "../web-extract.ts";
+import { webGetResultTool } from "../web-get-result.ts";
 import { createWebScrapeTool } from "../web-scrape.ts";
 
 function summarizeOrExtractAdapter(request: ModelRequest): string | { ok: boolean } {
@@ -420,6 +421,48 @@ describe("selected web tool handlers", () => {
 		expect(
 			renderComponentText(webExtractTool.renderResult?.(result, { expanded: true }, undefined)),
 		).toContain("extractor");
+	});
+
+	it("renders get-result collapsed status for found and missing results", async () => {
+		const missingResult = await webGetResultTool.execute("call", { jobId: "missing-job" }, signal);
+		expect(missingResult.isError).toBe(true);
+
+		const theme: RenderTheme = {
+			fg: (name, text) => `<fg:${name}>${text}</fg:${name}>`,
+			bg: (name, text) => `<bg:${name}>${text}</bg:${name}>`,
+		};
+		const found = renderComponentText(
+			webGetResultTool.renderResult?.(
+				{
+					content: [{ type: "text", text: "Stored result abc: 1 field" }],
+					details: { data: { ok: true }, truncated: false },
+				},
+				{ expanded: false },
+				theme,
+			),
+		);
+		const missing = renderComponentText(
+			webGetResultTool.renderResult?.(
+				{
+					content: [{ type: "text", text: "missing" }],
+					details: {
+						truncated: false,
+						error: {
+							code: "STORED_RESULT_NOT_FOUND",
+							phase: "retrieve",
+							message: "missing",
+							retryable: false,
+						},
+					},
+				},
+				{ expanded: false },
+				theme,
+			),
+		);
+
+		expect(found).toContain("<fg:accent>✓ result found</fg:accent>");
+		expect(missing).toContain("<bg:toolErrorBg>");
+		expect(missing).toContain("✕ no result");
 	});
 
 	it("wraps long custom renderer lines to the requested terminal width", () => {

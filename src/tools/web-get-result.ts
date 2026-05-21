@@ -4,21 +4,23 @@ import { type Static, Type } from "typebox";
 import { listSnapshots } from "../diff/snapshots.ts";
 import { getJobManifest } from "../storage/jobs/manifest.ts";
 import { readResponse } from "../storage/responses/read.ts";
+import { paintFirstLineBg } from "../tui/bg-paint.ts";
 import { renderSimpleCall } from "../tui/call.ts";
-import { renderText } from "../tui/text.ts";
-import { inlineThemeText } from "../tui/theme.ts";
-import { renderTreeSections, type TreeSection } from "../tui/tree.ts";
+import { buildEnvelopeRows } from "../tui/envelope.ts";
+import { defineResultRenderer } from "../tui/result-renderer.ts";
+import { paintFg } from "../tui/theme.ts";
+import { renderTreeSections } from "../tui/tree.ts";
 import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import type { PiToolShell } from "../types.ts";
+import type { PiToolShell, ResultEnvelope, StructuredError } from "../types.ts";
 import { defineWebTool } from "./infra/define.ts";
 import { errorResult, structuredToolError, toolResult } from "./infra/result.ts";
 
 export const webGetResultSchema = Type.Object({
-	responseId: Type.Optional(Type.Any()),
-	jobId: Type.Optional(Type.Any()),
-	snapshotUrl: Type.Optional(Type.Any()),
-	snapshotName: Type.Optional(Type.Any()),
-	snapshotTag: Type.Optional(Type.Any()),
+	responseId: Type.Optional(Type.String({ description: "Stored response ID." })),
+	jobId: Type.Optional(Type.String({ description: "Job identifier." })),
+	snapshotUrl: Type.Optional(Type.String({ description: "Snapshot source URL." })),
+	snapshotName: Type.Optional(Type.String({ description: "Snapshot baseline name." })),
+	snapshotTag: Type.Optional(Type.String({ description: "Snapshot version tag." })),
 });
 
 type Params = Static<typeof webGetResultSchema>;
@@ -33,7 +35,7 @@ export const webGetResultTool = defineWebTool({
 		if (params.responseId) return await getResponse(params.responseId);
 		if (params.snapshotUrl)
 			return await getSnapshotList(params.snapshotUrl, params.snapshotName, params.snapshotTag);
-		return errorResult({
+		return getResultError({
 			code: "GET_RESULT_INPUT_MISSING",
 			phase: "retrieve",
 			message: "Provide responseId, jobId, or snapshotUrl.",
@@ -44,8 +46,8 @@ export const webGetResultTool = defineWebTool({
 		renderSimpleCall(
 			"web_get_result",
 			[
-				args.jobId ? `job:${String(args.jobId)}` : args.responseId,
-				args.snapshotUrl ? `snapshots:${String(args.snapshotUrl)}` : undefined,
+				args.jobId ? `job:${args.jobId}` : args.responseId,
+				args.snapshotUrl ? `snapshots:${args.snapshotUrl}` : undefined,
 			],
 			theme,
 		),
@@ -66,7 +68,7 @@ async function getJob(jobId: string) {
 				"This is a local job manifest with counters, sanitized params, errors, and stored response references. It does not inline page content.",
 		});
 	} catch (error) {
-		return errorResult(structuredToolError(error, "JOB_MANIFEST_NOT_FOUND", "retrieve"));
+		return getResultError(structuredToolError(error, "JOB_MANIFEST_NOT_FOUND", "retrieve"));
 	}
 }
 
@@ -86,7 +88,9 @@ async function getSnapshotList(snapshotUrl: string, snapshotName?: string, snaps
 				"Snapshot listings include local paths plus metadata such as timestamp, mode, snapshotName, and snapshotTag for selecting web_scrape diff compareTag baselines.",
 		});
 	} catch (error) {
-		return errorResult(structuredToolError(error, "SNAPSHOT_LIST_FAILED", "retrieve", snapshotUrl));
+		return getResultError(
+			structuredToolError(error, "SNAPSHOT_LIST_FAILED", "retrieve", snapshotUrl),
+		);
 	}
 }
 
@@ -103,8 +107,12 @@ async function getResponse(responseId: string) {
 			summary: `Retrieved stored response ${responseId}.`,
 		});
 	} catch (error) {
-		return errorResult(structuredToolError(error, "STORED_RESULT_NOT_FOUND", "retrieve"));
+		return getResultError(structuredToolError(error, "STORED_RESULT_NOT_FOUND", "retrieve"));
 	}
+}
+
+function getResultError(error: StructuredError): PiToolShell<ResultEnvelope<undefined>> {
+	return { ...errorResult(error), isError: true };
 }
 
 function summarizeData(value: unknown): string {
@@ -117,116 +125,28 @@ function summarizeData(value: unknown): string {
 	return JSON.stringify(value);
 }
 
-/**
- * Render web_get_result with a summary header and a field tree in expanded view. The inline text
- * becomes the description in the tree header.
- */
-const HIDDEN_ENVELOPE_KEYS = new Set([
-	"_stored",
-	"__id",
-	"format",
-	"contentType",
-	"fullOutputPath",
-	"text",
-	"sources",
-	"citations",
-	"sourceNotes",
-	"modelUsage",
-	"nextActions",
-	"assistantGuidance",
-	"kind",
-	"snapshotSaved",
-	"diagnostics",
-	"cache",
-	"freshness",
-	"qualitySignals",
-	"headers",
-	"downloadedBytes",
-	"timing",
-	"summary",
-	"answerContext",
-	"finalUrl",
-	"error",
-]);
-
-const ENVELOPE_KEY_DESCRIPTIONS: Record<string, string> = {
-	text: "summary",
-	data: "response payload",
-	url: "source URL",
-	responseId: "stored response ID",
-	jobId: "job identifier",
-	summary: "overview",
-	answerContext: "agent context",
-	source: "source label",
-};
-
-function describeField(key: string): string | undefined {
-	return ENVELOPE_KEY_DESCRIPTIONS[key];
-}
-
+/** Render web_get_result with a summary header and a field tree in expanded view. */
 function renderGetResult(
 	result: PiToolShell,
 	expanded: boolean,
 	theme?: RenderTheme,
 ): RenderComponent {
 	const envelope = result.details as Record<string, unknown> | undefined;
+	const hasError = Boolean(envelope?.error);
+	const statusLine = hasError
+		? paintFg(theme, "error", "✕ no result")
+		: paintFg(theme, "accent", "✓ result found");
+	const sections = buildEnvelopeRows(envelope);
 
-	const section: TreeSection = { name: "result", rows: [] };
-	const summary = typeof envelope?.summary === "string" ? envelope.summary : "";
-	const shortSummary = summary.replace(/ [0-9a-f-]{36}\.?$/u, "");
-	const DISPLAY_ORDER = ["truncated", "responseId", "data", "url"];
-
-	const fieldMap = new Map<string, string>();
-	for (const [key, value] of Object.entries(envelope ?? {})) {
-		if (HIDDEN_ENVELOPE_KEYS.has(key)) continue;
-		if (value === null || value === undefined) continue;
-		if (typeof value === "string" && !value) continue;
-		const desc = describeField(key);
-		let val: string;
-		if (typeof value === "string") {
-			val = value.slice(0, 80);
-		} else if (Array.isArray(value)) {
-			val = `${value.length} item${value.length === 1 ? "" : "s"}`;
-		} else if (typeof value === "object") {
-			const keys = Object.keys(value);
-			val = `${keys.length} field${keys.length === 1 ? "" : "s"}`;
-		} else if (
-			typeof value === "number" ||
-			typeof value === "boolean" ||
-			typeof value === "bigint"
-		) {
-			val = String(value);
-		} else {
-			val = "[unknown]";
-		}
-		fieldMap.set(key, desc ? `${val} (${desc})` : val);
-	}
-
-	for (const key of DISPLAY_ORDER) {
-		if (fieldMap.has(key)) {
-			section.rows.push({ key, value: fieldMap.get(key)! });
-			fieldMap.delete(key);
-		}
-	}
-	for (const [key, value] of fieldMap) {
-		section.rows.push({ key, value });
-	}
-
-	const sections = section.rows.length > 0 ? [section] : [];
-
-	return {
-		render(width: number) {
-			const lines: string[] = [
-				`└─ ${inlineThemeText("accent", "✓", theme) ?? "✓"} ${shortSummary}`,
-			];
+	return defineResultRenderer({
+		renderContent(width) {
+			const lines = [`└─ ${statusLine}`];
 			if (expanded && sections.length > 0) {
 				const tree = renderTreeSections(sections, width, theme);
 				if (tree) lines.push("", ...tree.split("\n"));
 			}
-			return renderText(lines.join("\n"), { padToWidth: true }).render(width);
+			return lines.join("\n");
 		},
-		invalidate() {
-			/* no-op */
-		},
-	};
+		mapLines: hasError ? (lines) => paintFirstLineBg(lines, "toolErrorBg", theme) : undefined,
+	});
 }

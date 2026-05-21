@@ -48,6 +48,7 @@ export interface PiTextContent {
 export interface PiToolShell<TDetails = unknown> {
 	content: PiTextContent[];
 	details: TDetails;
+	isError?: boolean;
 }
 
 export interface TimingInfo {
