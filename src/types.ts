@@ -105,7 +105,7 @@ export interface CacheMetadata extends FreshnessMetadata {
 	staleness?: string;
 }
 
-/** Source note used by agent-facing tools to ground concise synthesis context. */
+/** Agent-facing source note. */
 export interface AgenticSourceNote {
 	id: string;
 	title?: string;
@@ -116,7 +116,7 @@ export interface AgenticSourceNote {
 	sourceType?: string;
 }
 
-/** Trust and coverage signals that help downstream assistants avoid overclaiming. */
+/** Trust/coverage signals. */
 export interface AgenticQualitySignals {
 	confidence?: "high" | "medium" | "low";
 	freshness?: "current" | "stale_possible" | "unknown";
@@ -127,7 +127,7 @@ export interface AgenticQualitySignals {
 	knownGaps?: string[];
 }
 
-/** Follow-up capability hint for assistants; not a required user-facing question. */
+/** Follow-up capability hint. */
 export interface AgenticNextAction {
 	action: "retrieve" | "refresh" | "rerun" | "narrow" | "compare" | "inspect" | "export";
 	tool?: `web_${string}`;
@@ -303,13 +303,7 @@ export interface ExtractorCapability {
 	requirements?: ToolRequirement[];
 }
 
-/**
- * Creates a string enum schema compatible with JSON Schema `enum` pattern.
- *
- * @remarks
- *   Inlined from the previous `@earendil-works/pi-ai` re-export so pi-scraper can drop the full
- *   pi-ai dependency tree while keeping the same schema shape.
- */
+/** JSON Schema string enum builder. Inlined from pi-ai re-export. */
 export function StringEnum<T extends string>(
 	values: readonly T[],
 	options?: { description?: string; default?: string },
