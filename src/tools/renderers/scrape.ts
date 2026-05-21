@@ -174,12 +174,10 @@ function buildScrapeSections(
 	const headers = envelope.headers;
 	const hasHeaders = !!headers && Object.keys(headers).length > 0;
 	const b = createTreeBuilder();
-	const dataTitle =
-		typeof envelope.data?.title === "string" ? envelope.data.title || undefined : undefined;
-	const dataDesc =
-		typeof envelope.data?.description === "string"
-			? envelope.data.description || undefined
-			: undefined;
+	const t = envelope.data?.title;
+	const d = envelope.data?.description;
+	const dataTitle = typeof t === "string" && t ? t : undefined;
+	const dataDesc = typeof d === "string" && d ? d : undefined;
 
 	b.add("page", "title", dataTitle);
 	if (hasHeaders) {

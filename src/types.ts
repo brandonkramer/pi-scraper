@@ -210,12 +210,7 @@ export interface ProgressDetails<TData = unknown> {
 }
 
 export function isProgress(value: unknown): value is ProgressDetails {
-	return Boolean(
-		value &&
-		typeof value === "object" &&
-		"_progress" in value &&
-		(value as ProgressDetails)._progress,
-	);
+	return !!value && typeof value === "object" && "_progress" in value && !!value._progress;
 }
 
 export interface CommonRequestOptions {
