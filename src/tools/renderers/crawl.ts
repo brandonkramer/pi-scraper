@@ -69,15 +69,8 @@ function excerptCapForCount(count: number): number {
 }
 
 function toCrawlListItem(page: CrawlPageView, excerptCap = 180): ResourceListItem {
-	if (page.error) {
-		return {
-			ok: false,
-			url: page.finalUrl ?? page.url ?? "unknown URL",
-			fields: {},
-			error: page.error,
-		};
-	}
 	const url = page.finalUrl ?? page.url ?? "unknown URL";
+	if (page.error) return { ok: false, url, fields: {}, error: page.error };
 	return {
 		ok: true,
 		url,

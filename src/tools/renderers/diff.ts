@@ -45,22 +45,10 @@ export function renderWebDiffResult(
 		expanded,
 		{
 			items: [
-				{
-					label: "fetched current page",
-					state: diff?.current ? "done" : "info",
-				},
-				{
-					label: "loaded previous snapshot",
-					state: diff?.previous ? "done" : "warning",
-				},
-				{
-					label: "compared normalized content",
-					state: diff ? "done" : "info",
-				},
-				{
-					label: "saved snapshot",
-					state: envelope.responseId ? "done" : "info",
-				},
+				{ label: "fetched current page", state: diff?.current ? "done" : "info" },
+				{ label: "loaded previous snapshot", state: diff?.previous ? "done" : "warning" },
+				{ label: "compared normalized content", state: diff ? "done" : "info" },
+				{ label: "saved snapshot", state: envelope.responseId ? "done" : "info" },
 			],
 			preview: envelope.answerContext ?? result.content[0]?.text,
 			responseId: envelope.responseId,
