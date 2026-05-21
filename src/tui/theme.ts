@@ -26,6 +26,15 @@ export const success = (text: string, theme?: RenderTheme) => paintFg(theme, "su
 export const failure = (text: string, theme?: RenderTheme) => paintFg(theme, "error", text);
 export const separator = (theme?: RenderTheme) => muted(" · ", theme);
 
+/** Paint background fill using the theme bg palette. */
+export function backgroundText(name: string, text: string, theme?: RenderTheme): string {
+	try {
+		return theme?.bg?.(name, text) ?? text;
+	} catch {
+		return text;
+	}
+}
+
 export function activity(text: string, theme?: RenderTheme): string {
 	return inlineThemeText("warning", text, theme) ?? paintFg(theme, "accent", text);
 }
