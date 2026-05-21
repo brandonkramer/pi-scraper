@@ -15,10 +15,7 @@ import { muted } from "./theme.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 
 export function renderBatchProgressCard(
-	details: ProgressDetails<{
-		batchProgress: BatchProgressView;
-		spinnerTick?: number;
-	}>,
+	details: ProgressDetails<{ batchProgress: BatchProgressView; spinnerTick?: number }>,
 	expanded: boolean,
 	theme?: RenderTheme,
 ): RenderComponent {
@@ -36,34 +33,31 @@ export function renderBatchProgressCard(
 	});
 }
 
+export interface BatchResultCardOptions {
+	progress: BatchProgressView;
+	summary: string;
+	notice?: string;
+	preview?: string;
+	markdownPreview?: (width: number) => RenderComponent | undefined;
+	expandedSections?: (width: number) => string[];
+	responseId?: string;
+	padToWidth?: boolean;
+}
+
 export function renderBatchResultCard(
-	options: {
-		progress: BatchProgressView;
-		summary: string;
-		notice?: string;
-		preview?: string;
-		markdownPreview?: (width: number) => RenderComponent | undefined;
-		expandedSections?: (width: number) => string[];
-		responseId?: string;
-		padToWidth?: boolean;
-	},
+	options: BatchResultCardOptions,
 	expanded: boolean,
 	theme?: RenderTheme,
 ): RenderComponent {
 	return renderStackedResultCard(
 		{
+			...options,
 			body: (width) => renderBatchProgressText(options.progress, width, expanded, theme),
-			summary: options.summary,
 			expanded,
-			notice: options.notice,
-			expandedSections: (width) => {
-				const preview = options.preview ? [options.preview] : [];
-				const custom = options.expandedSections?.(width) ?? [];
-				return [...preview, ...custom];
-			},
-			markdownPreview: options.markdownPreview,
-			responseId: options.responseId,
-			padToWidth: options.padToWidth,
+			expandedSections: (width) => [
+				...(options.preview ? [options.preview] : []),
+				...(options.expandedSections?.(width) ?? []),
+			],
 		},
 		theme,
 	);
@@ -110,13 +104,7 @@ function renderStatusBox(item: BatchProgressItemView, width: number, theme?: Ren
 	if (item.status === "processing" && typeof item.progress === "number")
 		return renderProgressBar(item.progress, width - 2);
 	const state = statusState(item.status);
-	return renderStatusPill({
-		label: state,
-		state,
-		width,
-		theme,
-		startedAtMs: item.startedAtMs,
-	});
+	return renderStatusPill({ label: state, state, width, theme, startedAtMs: item.startedAtMs });
 }
 
 function statusState(status: BatchProgressStatus) {
