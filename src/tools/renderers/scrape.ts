@@ -46,18 +46,13 @@ export function renderWebScrapeResult(
 	if (isProgress(details)) return renderScrapeProgressCard(details, expanded, theme);
 	const envelope = details as Partial<ResultEnvelope<Record<string, unknown>>>;
 
-	const isCached = envelope.cache?.cached;
-	const sourceLabel = isCached
-		? activity(
-				`\u21BB cache hit${envelope.cache?.staleness ? ` ${envelope.cache.staleness}` : ""}`,
-				theme,
-			)
+	const stale = envelope.cache?.staleness;
+	const sourceLabel = envelope.cache?.cached
+		? activity(`\u21BB cache hit${stale ? ` ${stale}` : ""}`, theme)
 		: success("\u21BB fresh fetch", theme);
 
-	const summary = envelope.error
+	const parts: Array<string | undefined> = envelope.error
 		? [`${envelope.mode ?? ""} mode`, envelope.format ?? ""]
-				.filter(Boolean)
-				.join(theme ? separator(theme) : " · ")
 		: [
 				`${statusDot(envelope.status, theme)} ${envelope.status ?? ""}`,
 				`${envelope.mode ?? ""} mode`,
@@ -66,9 +61,8 @@ export function renderWebScrapeResult(
 				muted(formatDuration(envelope.timing?.durationMs) ?? "", theme),
 				freshnessLabel(envelope),
 				expanded ? undefined : muted("(ctrl+o to expand)", theme),
-			]
-				.filter(Boolean)
-				.join(theme ? separator(theme) : " · ");
+			];
+	const summary = parts.filter(Boolean).join(separator(theme));
 	return renderScrapeResultCard(
 		envelope,
 		{
