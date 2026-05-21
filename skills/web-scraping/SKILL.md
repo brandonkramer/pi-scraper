@@ -21,6 +21,8 @@ Each tool has a reference with full args, examples, and rules.
 | Tool | When | Ref |
 |------|------|-----|
 | `web_scrape` | Read a single URL or inline content (check verticals table first for known sites) | [ref](references/tools/web_scrape.md) |
+| `web_scrape format=raw` | Verify raw server output (no transformations) | [ref](references/tools/web_scrape.md) |
+| `web_scrape format=text` | Get plain text with all HTML stripped | [ref](references/tools/web_scrape.md) |
 | `web_extract action=summarize` | Summarize via LLM (single source) | [ref](references/tools/web_summarize.md) |
 | `web_map` | Inventory URLs from robots/sitemaps/llms (no bodies) | [ref](references/tools/web_map.md) |
 | `web_crawl` | Follow links, read pages, build context | [ref](references/tools/web_crawl.md) |
