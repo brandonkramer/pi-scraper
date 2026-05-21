@@ -36,11 +36,11 @@ export async function crawlRun(params: Params, signal: AbortSignal, onUpdate?: T
 	}
 	const config = await loadEffectiveConfig();
 	const progressView: BatchProgressView = {
-		total: Number(params.maxPages ?? params.limit ?? 1) || 1,
+		total: Math.max(1, params.maxPages ?? params.limit ?? 1),
 		completed: 0,
 		succeeded: 0,
 		failed: 0,
-		concurrency: Number(params.concurrency ?? 1) || 1,
+		concurrency: Math.max(1, params.concurrency ?? 1),
 		items: [{ url, status: "queued" }],
 		label: "web_crawl",
 	};

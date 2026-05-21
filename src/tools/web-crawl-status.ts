@@ -32,7 +32,7 @@ export async function crawlStatus(params: Params) {
 			"Provide crawlId for crawl status.",
 		);
 	}
-	const crawlId = String(params.crawlId);
+	const crawlId = params.crawlId;
 	try {
 		const metadata = await loadCrawlMetadata(crawlId);
 		const entry = enrichCrawl(metadata);
@@ -63,7 +63,7 @@ export async function crawlStatus(params: Params) {
 
 export async function crawlList(params: Params) {
 	const limit = params.limit ?? 20;
-	const seed = params.seed === undefined ? undefined : String(params.seed);
+	const seed = params.seed;
 	const crawls = await listCrawlMetadata({
 		seed,
 		status: params.status as CrawlStatus | undefined,
