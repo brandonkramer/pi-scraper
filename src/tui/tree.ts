@@ -10,6 +10,24 @@ export interface TreeSection {
 	rows: Array<{ key: string; value: string }>;
 }
 
+export interface TreeBuilder {
+	sections: TreeSection[];
+	add(section: string, key: string, value: string | undefined): void;
+}
+
+export function createTreeBuilder(): TreeBuilder {
+	const sections: TreeSection[] = [];
+	return {
+		sections,
+		add(section, key, value) {
+			if (value === undefined || value === "") return;
+			let sec = sections.find((s) => s.name === section);
+			if (!sec) sections.push((sec = { name: section, rows: [] }));
+			sec.rows.push({ key, value });
+		},
+	};
+}
+
 export function renderTreeSections(
 	sections: TreeSection[],
 	terminalWidth: number,

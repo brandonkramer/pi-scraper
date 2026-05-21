@@ -24,8 +24,8 @@ import {
 } from "../../tui/envelope.ts";
 import { formatBytes, formatDuration } from "../../tui/format.ts";
 import { renderProgressCard } from "../../tui/progress.ts";
-import { muted, separator } from "../../tui/theme.ts";
-import { renderTreeSections, type TreeSection } from "../../tui/tree.ts";
+import { joinSegments, muted } from "../../tui/theme.ts";
+import { createTreeBuilder, renderTreeSections } from "../../tui/tree.ts";
 import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 import {
 	isProgress,
@@ -37,27 +37,29 @@ import {
 export interface BatchItem {
 	ok?: boolean;
 	url?: string;
-	result?: {
-		url?: string;
-		finalUrl?: string;
-		status?: number;
-		mode?: string;
-		format?: string;
-		contentType?: string;
-		downloadedBytes?: number;
-		truncated?: boolean;
-		timing?: { durationMs?: number; fetchMs?: number; parseMs?: number };
-		cache?: { cached?: boolean; staleness?: string; ageSeconds?: number };
-		data?: {
-			title?: string;
-			description?: string;
-			markdown?: string;
-			text?: string;
-			route?: string;
-			matches?: LineMatch[];
-		};
-	};
+	result?: BatchItemRenderResult;
 	error?: { code?: string; phase?: string; message?: string };
+}
+
+interface BatchItemRenderResult {
+	url?: string;
+	finalUrl?: string;
+	status?: number;
+	mode?: string;
+	format?: string;
+	contentType?: string;
+	downloadedBytes?: number;
+	truncated?: boolean;
+	timing?: { durationMs?: number; fetchMs?: number; parseMs?: number };
+	cache?: { cached?: boolean; staleness?: string; ageSeconds?: number };
+	data?: {
+		title?: string;
+		description?: string;
+		markdown?: string;
+		text?: string;
+		route?: string;
+		matches?: LineMatch[];
+	};
 }
 
 export function batchExpandedSections(
@@ -66,45 +68,32 @@ export function batchExpandedSections(
 	width: number,
 	theme?: RenderTheme,
 ): string[] {
-	const sections: TreeSection[] = [];
-
+	const b = createTreeBuilder();
 	for (const item of items) {
 		const url = item.url ?? item.result?.url ?? "unknown URL";
-
-		/* url section header */
-		const sec: TreeSection = { name: url, rows: [] };
-		sections.push(sec);
-
 		if (item.ok) {
-			if (item.result?.status) sec.rows.push({ key: "status", value: String(item.result.status) });
-			if (item.result?.mode) sec.rows.push({ key: "mode", value: item.result.mode });
-			if (item.result?.format) sec.rows.push({ key: "format", value: item.result.format });
+			b.add(url, "status", item.result?.status ? String(item.result.status) : undefined);
+			b.add(url, "mode", item.result?.mode);
+			b.add(url, "format", item.result?.format);
 			if (item.result?.downloadedBytes !== undefined)
-				sec.rows.push({
-					key: "size",
-					value: formatBytes(item.result.downloadedBytes) ?? "",
-				});
+				b.add(url, "size", formatBytes(item.result.downloadedBytes) ?? "");
 			if (item.result?.timing?.durationMs !== undefined)
-				sec.rows.push({
-					key: "duration",
-					value: formatDuration(item.result.timing.durationMs) ?? "",
-				});
-			if (item.result?.data?.title) sec.rows.push({ key: "title", value: item.result.data.title });
-			/* match preview */
+				b.add(url, "duration", formatDuration(item.result.timing.durationMs) ?? "");
+			b.add(url, "title", item.result?.data?.title);
 			if (item.result?.data?.matches && item.result.data.matches.length > 0) {
-				const excerpt = formatLineMatchPreview(item.result.data.matches, {
-					maxChars: 200,
-					maxMatches: 3,
-				});
-				if (excerpt) sec.rows.push({ key: "matches", value: excerpt });
+				b.add(
+					url,
+					"matches",
+					formatLineMatchPreview(item.result.data.matches, { maxChars: 200, maxMatches: 3 }),
+				);
 			}
 		} else if (item.error) {
-			if (item.error.code) sec.rows.push({ key: "code", value: item.error.code });
-			if (item.error.message) sec.rows.push({ key: "message", value: item.error.message });
+			b.add(url, "code", item.error.code);
+			b.add(url, "message", item.error.message);
 		}
 	}
 
-	const result = [renderTreeSections(sections, width, theme)];
+	const result = [renderTreeSections(b.sections, width, theme)];
 
 	const jobId = typeof metadata.jobId === "string" ? metadata.jobId : undefined;
 	const packageResponseId =
@@ -138,15 +127,16 @@ export function renderWebBatchResult(
 	const cacheHits = items.filter((item) => item.ok && item.result?.cache?.cached).length;
 	const summary = envelope.error
 		? errorLabel("web_batch", envelope.error, { allowIcons: true })
-		: [
-				successCountSegment(succeeded, "succeeded", theme),
-				failureCountSegment(failed, "failed", theme),
-				activityCountSegment(cacheHits, "cache hits", "↻", theme),
-				freshnessLabel(envelope),
-				!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
-			]
-				.filter(Boolean)
-				.join(separator(theme));
+		: joinSegments(
+				[
+					successCountSegment(succeeded, "succeeded", theme),
+					failureCountSegment(failed, "failed", theme),
+					activityCountSegment(cacheHits, "cache hits", "↻", theme),
+					freshnessLabel(envelope),
+					!expanded && muted("(ctrl+o to expand)", theme),
+				],
+				theme,
+			);
 	const progressValue = envelope.diagnostics?.batchProgress;
 	const progress = isBatchProgressView(progressValue)
 		? progressValue

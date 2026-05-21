@@ -94,10 +94,11 @@ function renderBatchProgressText(
 
 function renderBatchRow(item: BatchProgressItemView, width: number, theme?: RenderTheme): string {
 	const statusWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
+	const state = statusState(item.status);
 	return renderUrlStatusRow({
 		url: item.url,
-		label: statusLabel(item.status),
-		state: statusPillState(item.status),
+		label: state,
+		state,
 		width,
 		theme,
 		startedAtMs: item.startedAtMs,
@@ -106,25 +107,19 @@ function renderBatchRow(item: BatchProgressItemView, width: number, theme?: Rend
 }
 
 function renderStatusBox(item: BatchProgressItemView, width: number, theme?: RenderTheme): string {
-	if (item.status === "processing" && typeof item.progress === "number") {
+	if (item.status === "processing" && typeof item.progress === "number")
 		return renderProgressBar(item.progress, width - 2);
-	}
+	const state = statusState(item.status);
 	return renderStatusPill({
-		label: statusLabel(item.status),
-		state: statusPillState(item.status),
+		label: state,
+		state,
 		width,
 		theme,
 		startedAtMs: item.startedAtMs,
 	});
 }
 
-function statusPillState(status: BatchProgressStatus) {
-	if (status === "queued") return "waiting";
-	if (status === "processing") return "loading";
-	return status;
-}
-
-function statusLabel(status: BatchProgressStatus): string {
+function statusState(status: BatchProgressStatus) {
 	if (status === "queued") return "waiting";
 	if (status === "processing") return "loading";
 	return status;

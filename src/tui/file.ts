@@ -8,18 +8,18 @@ import { renderText } from "./text.ts";
 import { muted } from "./theme.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 
+const FILE_TYPE_PREFIXES = [
+	"application/octet-stream",
+	"application/pdf",
+	"image/",
+	"audio/",
+	"video/",
+];
+
 export function isFileResult(envelope: Partial<ResultEnvelope<unknown>>): boolean {
-	if (
-		envelope.contentType === "application/octet-stream" ||
-		envelope.contentType === "application/pdf" ||
-		envelope.contentType?.startsWith("image/") === true ||
-		envelope.contentType?.startsWith("audio/") === true ||
-		envelope.contentType?.startsWith("video/") === true
-	)
-		return true;
-	const data = envelope.data;
-	if (data && typeof data === "object" && "fileSize" in data) return true;
-	return false;
+	const ct = envelope.contentType ?? "";
+	if (FILE_TYPE_PREFIXES.some((p) => ct === p || ct.startsWith(p))) return true;
+	return !!(envelope.data && typeof envelope.data === "object" && "fileSize" in envelope.data);
 }
 
 export function renderFileResultCard(
