@@ -2,7 +2,7 @@ import { formatChecklistItem, formatChecklistText } from "../../tui/checklist.ts
 import { errorLabel, freshnessLabel } from "../../tui/envelope.ts";
 import { renderProgressCard } from "../../tui/progress.ts";
 import { renderText } from "../../tui/text.ts";
-import { muted, separator } from "../../tui/theme.ts";
+import { joinSegments, muted, separator } from "../../tui/theme.ts";
 import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 /** @file Pi web_scrape/diff tool result renderer. */
 import {
@@ -39,9 +39,7 @@ export function renderWebDiffResult(
 	const diff = envelope.data;
 	const title = envelope.error
 		? errorLabel("web_scrape", envelope.error, { allowIcons: false })
-		: [diffTitle(diff, envelope.summary), freshnessLabel(envelope)]
-				.filter(Boolean)
-				.join(separator());
+		: joinSegments([diffTitle(diff, envelope.summary), freshnessLabel(envelope)]);
 	return renderChecklistResult(
 		title,
 		expanded,

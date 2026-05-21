@@ -26,6 +26,14 @@ export const success = (text: string, theme?: RenderTheme) => paintFg(theme, "su
 export const failure = (text: string, theme?: RenderTheme) => paintFg(theme, "error", text);
 export const separator = (theme?: RenderTheme) => muted(" · ", theme);
 
+/** Join segments with separator, filtering out undefined/null items. */
+export function joinSegments(
+	parts: (string | undefined | false | null)[],
+	theme?: RenderTheme,
+): string {
+	return parts.filter(Boolean).join(separator(theme));
+}
+
 /** Paint background fill using the theme bg palette. */
 export function backgroundText(name: string, text: string, theme?: RenderTheme): string {
 	try {

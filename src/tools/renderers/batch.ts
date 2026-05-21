@@ -24,7 +24,7 @@ import {
 } from "../../tui/envelope.ts";
 import { formatBytes, formatDuration } from "../../tui/format.ts";
 import { renderProgressCard } from "../../tui/progress.ts";
-import { muted, separator } from "../../tui/theme.ts";
+import { joinSegments, muted } from "../../tui/theme.ts";
 import { createTreeBuilder, renderTreeSections } from "../../tui/tree.ts";
 import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 import {
@@ -125,15 +125,16 @@ export function renderWebBatchResult(
 	const cacheHits = items.filter((item) => item.ok && item.result?.cache?.cached).length;
 	const summary = envelope.error
 		? errorLabel("web_batch", envelope.error, { allowIcons: true })
-		: [
-				successCountSegment(succeeded, "succeeded", theme),
-				failureCountSegment(failed, "failed", theme),
-				activityCountSegment(cacheHits, "cache hits", "↻", theme),
-				freshnessLabel(envelope),
-				!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
-			]
-				.filter(Boolean)
-				.join(separator(theme));
+		: joinSegments(
+				[
+					successCountSegment(succeeded, "succeeded", theme),
+					failureCountSegment(failed, "failed", theme),
+					activityCountSegment(cacheHits, "cache hits", "↻", theme),
+					freshnessLabel(envelope),
+					!expanded && muted("(ctrl+o to expand)", theme),
+				],
+				theme,
+			);
 	const progressValue = envelope.diagnostics?.batchProgress;
 	const progress = isBatchProgressView(progressValue)
 		? progressValue

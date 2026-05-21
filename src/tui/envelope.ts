@@ -117,16 +117,11 @@ export const DEFAULT_HIDDEN_ENVELOPE_KEYS = new Set(
 	),
 );
 
-export const DEFAULT_ENVELOPE_KEY_DESCRIPTIONS: Record<string, string> = {
-	text: "summary",
-	data: "response payload",
-	url: "source URL",
-	responseId: "stored response ID",
-	jobId: "job identifier",
-	summary: "overview",
-	answerContext: "agent context",
-	source: "source label",
-};
+export const DEFAULT_ENVELOPE_KEY_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
+	"text=summary,data=response payload,url=source URL,responseId=stored response ID,jobId=job identifier,summary=overview,answerContext=agent context,source=source label"
+		.split(",")
+		.map((p) => p.split("=") as [string, string]),
+);
 
 export const DEFAULT_ENVELOPE_DISPLAY_ORDER = ["truncated", "responseId", "data", "url"] as const;
 
