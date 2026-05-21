@@ -3,9 +3,7 @@ import type { PiToolShell, ResultEnvelope } from "../types.ts";
 import type { RenderTheme } from "./types.ts";
 
 export function formatPreview(format: string | undefined, content: string): string {
-	if (format === "json") return `\`\`\`json\n${content}\n\`\`\``;
-	if (format === "html") return `\`\`\`html\n${content}\n\`\`\``;
-	return content;
+	return format === "json" || format === "html" ? `\`\`\`${format}\n${content}\n\`\`\`` : content;
 }
 
 export function renderMetadataLines(
@@ -31,21 +29,14 @@ function metadataLine(label: string, value: string, theme?: RenderTheme): string
 	return `${coloredLabel}${coloredValue}`;
 }
 
-/**
- * Pick the first non-empty candidate and collapse whitespace.
- *
- * @remarks
- *   Defaults to 180 chars for collapsed-view previews. Pass a custom cap (e.g. 500) for
- *   expanded-view excerpts.
- */
+/** First non-empty candidate, whitespace-collapsed. Final number arg overrides 180-char cap. */
 export function pickExcerpt(
 	...args: ReadonlyArray<string | undefined | number>
 ): string | undefined {
 	const mutable = args as Array<string | undefined | number>;
 	const maxChars = typeof mutable.at(-1) === "number" ? (mutable.pop() as number) : 180;
-	for (const value of mutable as Array<string | undefined>) {
+	for (const value of mutable as Array<string | undefined>)
 		if (value) return value.replaceAll(/\s+/gu, " ").trim().slice(0, maxChars);
-	}
 }
 
 export function previewText(
