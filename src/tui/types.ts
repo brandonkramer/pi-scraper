@@ -1,26 +1,12 @@
-/**
- * @file Reusable Pi terminal UI rendering contracts. These types define the boundary between TUI
- *   primitives and tool-specific composition. Tool adapters import these for renderer signatures
- *   while keeping tool-execution and tool-adapter contracts separate.
- */
+/** @file Pi TUI rendering contracts. Boundary between TUI primitives and tool composition. */
 import type { Component } from "@earendil-works/pi-tui";
 
-/**
- * Subset of Pi's interactive {@link Theme} palette hooks. Uses plain `string` color names so
- * headless tests and custom bg slots (e.g. `toolErrorBg`) work without importing the Theme class.
- */
+/** Subset of Pi's Theme palette using plain string names; supports custom bg slots like toolErrorBg. */
 export interface RenderTheme {
 	fg?: (name: string, text: string) => string;
 	bg?: (name: string, text: string) => string;
 	bold?: (text: string) => string;
 }
 
-/**
- * Re-export of pi-tui's Component type for custom tool renderers.
- *
- * @remarks
- *   Pi's interactive renderer calls `child.render(width)` on custom render output; returning plain
- *   strings crashes the TUI. Using the native Component type avoids duplication and stays aligned
- *   with the runtime contract.
- */
+/** Re-export of pi-tui's Component for custom tool renderers. */
 export type RenderComponent = Component;
