@@ -99,14 +99,9 @@ function renderScrapeProgressCard(
 				startedAtMs,
 			});
 			const summary = `web_scrape ${details.state}${separator(theme)}${muted("(ctrl+o to expand)", theme)}`;
-			const lines: string[] = [row, "", summary];
+			const lines = [row, "", summary];
 			if (expanded && details.checklist?.length)
-				lines.push(
-					"",
-					...details.checklist.map((i) =>
-						formatChecklistText({ label: i.label, detail: i.detail }),
-					),
-				);
+				lines.push("", ...details.checklist.map(formatChecklistText));
 			if (working) lines.push("", `${currentSpinnerFrame()} Working...`);
 			return lines.join("\n");
 		},
@@ -127,7 +122,6 @@ function renderScrapeResultCard(
 ): RenderComponent {
 	const url = envelope.finalUrl ?? envelope.url ?? "unknown URL";
 	const state = envelope.error ? "error" : "done";
-	const md = () => markdownPreviewComponent(envelope.format, options.preview, theme);
 	return renderStackedResultCard(
 		{
 			body: (width) => renderUrlStatusRow({ url, label: state, state, width, theme }),
@@ -135,7 +129,7 @@ function renderScrapeResultCard(
 			expanded: options.expanded,
 			notice: options.notice,
 			expandedSections: (width) => scrapeExpandedSections(envelope, options, width, theme),
-			markdownPreview: md,
+			markdownPreview: () => markdownPreviewComponent(envelope.format, options.preview, theme),
 			responseId: options.responseId,
 		},
 		theme,
