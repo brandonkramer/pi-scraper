@@ -30,7 +30,14 @@ export const webBatchSchema = Type.Object({
 	linesMatching: Type.Optional(Type.Array(Type.Unsafe<string>({}))),
 	contextLines: Type.Optional(Type.Unsafe<number>({})),
 	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
-	compile: Type.Optional(Type.Any()),
+	compile: Type.Optional(
+		Type.Union([
+			Type.Boolean(),
+			Type.Object({
+				mode: Type.Optional(Type.String()),
+			}),
+		]),
+	),
 });
 
 type Params = Static<typeof webBatchSchema>;

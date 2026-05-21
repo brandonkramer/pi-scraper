@@ -18,7 +18,7 @@ const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
 	web_crawl: 290,
 	web_map: 180,
 	web_batch: 230,
-	web_extract: 560,
+	web_extract: 700,
 	web_get_result: 160,
 };
 

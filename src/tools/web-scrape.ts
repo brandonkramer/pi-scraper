@@ -29,36 +29,42 @@ import {
 	toolErrorResult,
 	toolResult,
 } from "./infra/result.ts";
-import { sessionOptionSchema, urlProperty } from "./infra/schemas.ts";
+import {
+	outputFormatSchema,
+	scrapeModeOptionSchema,
+	sessionOptionSchema,
+	urlProperty,
+} from "./infra/schemas.ts";
 import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
 import { sessionLifecycle } from "./infra/session-lifecycle.ts";
 import { renderWebDiffResult } from "./renderers/diff.ts";
 import { renderWebScrapeResult } from "./renderers/scrape.ts";
 
 const scrapeTasks = ["read", "summarize"] as const;
+const scrapeTaskSchema = Type.Union([Type.Literal("read"), Type.Literal("summarize")]);
 
 export const webScrapeSchema = Type.Object({
-	task: Type.Optional(Type.Any()),
+	task: Type.Optional(scrapeTaskSchema),
 	url: Type.Optional(urlProperty()),
-	content: Type.Optional(Type.Any()),
-	sentences: Type.Optional(Type.Any()),
-	bullets: Type.Optional(Type.Any()),
-	mode: Type.Optional(Type.Any()),
-	format: Type.Optional(Type.Any()),
-	include: Type.Optional(Type.Array(Type.Any())),
-	exclude: Type.Optional(Type.Array(Type.Any())),
-	onlyMainContent: Type.Optional(Type.Any()),
-	timeoutSeconds: Type.Optional(Type.Any()),
+	content: Type.Optional(Type.String()),
+	sentences: Type.Optional(Type.Integer()),
+	bullets: Type.Optional(Type.Integer()),
+	...scrapeModeOptionSchema,
+	format: Type.Optional(outputFormatSchema),
+	include: Type.Optional(Type.Array(Type.String())),
+	exclude: Type.Optional(Type.Array(Type.String())),
+	onlyMainContent: Type.Optional(Type.Boolean()),
+	timeoutSeconds: Type.Optional(Type.Integer()),
 	maxBytes: Type.Optional(Type.Integer({ description: "Max bytes." })),
-	maxChars: Type.Optional(Type.Any()),
+	maxChars: Type.Optional(Type.Integer()),
 	headers: Type.Optional(
 		Type.Record(Type.String(), Type.String(), {
-			description: "Request headers.",
+			description: "Headers.",
 		}),
 	),
-	proxy: Type.Optional(Type.Any()),
-	respectRobots: Type.Optional(Type.Any()),
-	refresh: Type.Optional(Type.Any()),
+	proxy: Type.Optional(Type.String()),
+	respectRobots: Type.Optional(Type.Boolean()),
+	refresh: Type.Optional(Type.Boolean()),
 	followAlternates: Type.Optional(Type.Unsafe<boolean>({})),
 	followMetaRefresh: Type.Optional(Type.Unsafe<boolean>({})),
 	saveToFile: Type.Optional(
@@ -86,8 +92,8 @@ export const webScrapeSchema = Type.Object({
 	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
 
 	...sessionOptionSchema,
-	stealth: Type.Optional(Type.Any()),
-	autoWait: Type.Optional(Type.Any()),
+	stealth: Type.Optional(Type.Boolean()),
+	autoWait: Type.Optional(Type.Boolean()),
 	browserBackend: Type.Optional(
 		Type.Unsafe<"cloak" | "playwright">({
 			description: "Browser backend (cloak|playwright).",
@@ -131,7 +137,7 @@ export function createWebScrapeTool(
 export const webScrapeTool = createWebScrapeTool();
 
 function inferScrapeTask(params: Params): ScrapeTask {
-	if (params.task) return params.task as ScrapeTask;
+	if (params.task) return params.task;
 	if (params.content && !params.url) return "summarize";
 	return "read";
 }
@@ -149,7 +155,7 @@ function renderScrapeCallParts(params: Params): string[] {
 					: undefined,
 		].filter(Boolean) as string[];
 	}
-	return [`(${String(params.mode ?? "auto")} → ${String(params.format ?? "markdown")})`];
+	return [`(${params.mode ?? "auto"} → ${params.format ?? "markdown"})`];
 }
 
 async function readScrape(

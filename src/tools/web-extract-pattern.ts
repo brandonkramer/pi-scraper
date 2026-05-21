@@ -15,7 +15,7 @@ export function hasPatternRequest(params: Params): boolean {
 	if (params.sourceFormat) return true;
 	if (Array.isArray(params.include) && params.include.length > 0) return true;
 	if (params.extractSchema) return true;
-	if (params.length > 0) return true;
+	if (params.length) return true; // oxlint-disable-line unicorn/explicit-length-check
 	if (Array.isArray(params.markers) && params.markers.length > 0) return true;
 	if (Array.isArray(params.contains) && params.contains.length > 0) return true;
 	if (Array.isArray(params.excerpts) && params.excerpts.length > 0) return true;

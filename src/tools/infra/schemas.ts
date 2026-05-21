@@ -41,8 +41,8 @@ export const scrapeOutputOptionSchema = {
 	...scrapeModeOptionSchema,
 	format: Type.Optional(outputFormatSchema),
 	...sessionOptionSchema,
-	stealth: Type.Optional(Type.Any()),
-	autoWait: Type.Optional(Type.Any()),
+	stealth: Type.Optional(Type.Boolean()),
+	autoWait: Type.Optional(Type.Boolean()),
 	browserBackend: Type.Optional(
 		Type.Unsafe<"cloak" | "playwright">({
 			description: "Browser backend (cloak|playwright).",

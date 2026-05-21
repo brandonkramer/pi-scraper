@@ -33,21 +33,48 @@ const extractActions = [
 	"summarize",
 	"adhoc",
 ] as const;
+
+const extractActionSchema = Type.Union([
+	Type.Literal("list"),
+	Type.Literal("vertical"),
+	Type.Literal("pattern"),
+	Type.Literal("surface"),
+	Type.Literal("selector"),
+	Type.Literal("summarize"),
+	Type.Literal("adhoc"),
+]);
+
+const extractSchemaPresetSchema = Type.Union(
+	[
+		Type.Literal("api-reference"),
+		Type.Literal("changelog"),
+		Type.Literal("faq"),
+		Type.Literal("compatibility-table"),
+	],
+	{ description: "Predefined extraction schema." },
+);
+
 export const webExtractSchema = Type.Object({
-	action: Type.Optional(Type.Any()),
-	extractor: Type.Optional(Type.Any()),
+	action: Type.Optional(extractActionSchema),
+	extractor: Type.Optional(Type.String({ description: "Vertical extractor name." })),
 	url: Type.Optional(urlProperty()),
-	content: Type.Optional(Type.Any()),
-	prompt: Type.Optional(Type.Any()),
-	schema: Type.Optional(Type.Any()),
+	content: Type.Optional(Type.String({ description: "Inline content (when no URL)." })),
+	prompt: Type.Optional(Type.String({ description: "Adhoc extraction prompt." })),
+	schema: Type.Optional(
+		Type.Any({ description: "JSON schema or shape for structured extraction." }),
+	),
 	sentences: Type.Optional(Type.Number()),
 	bullets: Type.Optional(Type.Number()),
 	...modelProviderOptionSchema,
 	...scrapeOutputOptionSchema,
-	sourceFormat: Type.Optional(Type.Any()),
+	sourceFormat: Type.Optional(Type.String({ description: "Override source content format." })),
 	include: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
-	extractSchema: Type.Optional(Type.Any()),
-	length: Type.Optional(Type.Any()),
+	extractSchema: Type.Optional(extractSchemaPresetSchema),
+	length: Type.Optional(
+		Type.Union([Type.Boolean(), Type.String()], {
+			description: "truthy flag or string preset",
+		}),
+	),
 	markers: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	contains: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	excerpts: Type.Optional(
@@ -69,17 +96,19 @@ export const webExtractSchema = Type.Object({
 		}),
 	),
 	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
-	extract: Type.Optional(Type.Any()),
+	extract: Type.Optional(
+		Type.String({ description: "Specific extraction target, e.g. 'api-surface'." }),
+	),
 	// Selector extraction (Task 27)
-	selector: Type.Optional(Type.Any()),
-	selectorType: Type.Optional(Type.Any()),
-	attribute: Type.Optional(Type.Any()),
-	identifier: Type.Optional(Type.Any()),
-	adaptive: Type.Optional(Type.Any()),
-	autoSave: Type.Optional(Type.Any()),
-	threshold: Type.Optional(Type.Any()),
-	limit: Type.Optional(Type.Any()),
-	respectRobots: Type.Optional(Type.Any()),
+	selector: Type.Optional(Type.String({ description: "CSS/XPath selector." })),
+	selectorType: Type.Optional(Type.String({ description: "css or xpath." })),
+	attribute: Type.Optional(Type.String({ description: "HTML attribute to extract." })),
+	identifier: Type.Optional(Type.String({ description: "Named extraction identifier." })),
+	adaptive: Type.Optional(Type.Boolean({ description: "Adaptive selector relocation." })),
+	autoSave: Type.Optional(Type.Boolean({ description: "Auto-save results." })),
+	threshold: Type.Optional(Type.Number({ description: "Confidence threshold." })),
+	limit: Type.Optional(Type.Integer({ description: "Result limit." })),
+	respectRobots: Type.Optional(Type.Boolean({ description: "Default: true." })),
 });
 
 export type Params = Static<typeof webExtractSchema>;
@@ -125,7 +154,7 @@ export function createWebExtractTool(
 export const webExtractTool = createWebExtractTool();
 
 function inferExtractAction(params: Params): ExtractAction {
-	if (params.action) return params.action as ExtractAction;
+	if (params.action) return params.action;
 	if (params.selector) return "selector";
 	if (!params.url && !params.content && !params.extractor) return "list";
 	if (params.extract === "api-surface") return "surface";

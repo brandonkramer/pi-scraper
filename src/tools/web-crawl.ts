@@ -4,36 +4,41 @@ import { type Static, Type } from "typebox";
 import { renderSimpleCall } from "../tui/call.ts";
 import { renderEnvelopeResult } from "../tui/envelope.ts";
 import { defineWebTool } from "./infra/define.ts";
-import { sessionOptionSchema, urlProperty } from "./infra/schemas.ts";
+import { scrapeModeOptionSchema, sessionOptionSchema, urlProperty } from "./infra/schemas.ts";
 import { renderWebCrawlResult } from "./renderers/crawl.ts";
 import { crawlRun } from "./web-crawl-run.ts";
 import { crawlStatus, crawlList } from "./web-crawl-status.ts";
 
 const crawlActions = ["run", "status", "list"] as const;
+const crawlActionSchema = Type.Union([
+	Type.Literal("run"),
+	Type.Literal("status"),
+	Type.Literal("list"),
+]);
 
 export const webCrawlSchema = Type.Object({
-	action: Type.Optional(Type.Any()),
+	action: Type.Optional(crawlActionSchema),
 	url: Type.Optional(urlProperty()),
-	maxPages: Type.Optional(Type.Any()),
-	maxDepth: Type.Optional(Type.Any()),
-	sameOrigin: Type.Optional(Type.Any()),
-	seedSitemap: Type.Optional(Type.Any()),
-	crawlId: Type.Optional(Type.Any()),
-	resume: Type.Optional(Type.Any()),
-	seed: Type.Optional(Type.Any()),
-	status: Type.Optional(Type.Any()),
-	limit: Type.Optional(Type.Any()),
-	concurrency: Type.Optional(Type.Any()),
-	perHostConcurrency: Type.Optional(Type.Any()),
-	mode: Type.Optional(Type.Any()),
-	include: Type.Optional(Type.Array(Type.Any())),
-	exclude: Type.Optional(Type.Array(Type.Any())),
-	extract: Type.Optional(Type.Any()),
-	compile: Type.Optional(Type.Any()),
+	maxPages: Type.Optional(Type.Integer()),
+	maxDepth: Type.Optional(Type.Integer()),
+	sameOrigin: Type.Optional(Type.Boolean()),
+	seedSitemap: Type.Optional(Type.Boolean()),
+	crawlId: Type.Optional(Type.String()),
+	resume: Type.Optional(Type.Boolean()),
+	seed: Type.Optional(Type.String()),
+	status: Type.Optional(Type.String()),
+	limit: Type.Optional(Type.Integer()),
+	concurrency: Type.Optional(Type.Integer()),
+	perHostConcurrency: Type.Optional(Type.Integer()),
+	...scrapeModeOptionSchema,
+	include: Type.Optional(Type.Array(Type.String())),
+	exclude: Type.Optional(Type.Array(Type.String())),
+	extract: Type.Optional(Type.String()),
+	compile: Type.Optional(Type.Boolean()),
 
 	...sessionOptionSchema,
-	stealth: Type.Optional(Type.Any()),
-	autoWait: Type.Optional(Type.Any()),
+	stealth: Type.Optional(Type.Boolean()),
+	autoWait: Type.Optional(Type.Boolean()),
 });
 
 export type Params = Static<typeof webCrawlSchema>;
@@ -66,7 +71,7 @@ export const webCrawlTool = defineWebTool({
 });
 
 function inferCrawlAction(params: Params): CrawlAction {
-	if (params.action) return params.action as CrawlAction;
+	if (params.action) return params.action;
 	if (params.crawlId && !params.url && params.resume !== true) return "status";
 	if ((params.seed || params.status || params.limit) && !params.url) return "list";
 	return "run";
