@@ -78,9 +78,7 @@ export function renderWebScrapeResult(
 
 function statusDot(status: number | undefined, theme?: RenderTheme): string {
 	if (status === undefined) return "\u25CF";
-	if (status < 300) return success("\u25CF", theme);
-	if (status < 400) return neutral("\u25CF", theme);
-	return failure("\u25CF", theme);
+	return (status < 300 ? success : status < 400 ? neutral : failure)("\u25CF", theme);
 }
 
 function renderScrapeProgressCard(

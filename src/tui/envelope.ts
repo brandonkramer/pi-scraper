@@ -132,13 +132,11 @@ export function stringifyEnvelopeValue(value: unknown): string {
 	if (typeof value === "string") return value.slice(0, 80);
 	if (Array.isArray(value)) return `${value.length} item${value.length === 1 ? "" : "s"}`;
 	if (value && typeof value === "object") {
-		const keys = Object.keys(value);
-		return `${keys.length} field${keys.length === 1 ? "" : "s"}`;
+		const k = Object.keys(value).length;
+		return `${k} field${k === 1 ? "" : "s"}`;
 	}
-	if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
-		return String(value);
-	}
-	return "[unknown]";
+	const t = typeof value;
+	return t === "number" || t === "boolean" || t === "bigint" ? String(value) : "[unknown]";
 }
 
 export function buildEnvelopeRows(
