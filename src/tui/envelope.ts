@@ -4,7 +4,6 @@ import { Markdown } from "@earendil-works/pi-tui";
 import type { ModelUsage } from "../extract/adhoc/model.ts";
 import type { PiToolShell, ResultEnvelope, StructuredError } from "../types.ts";
 import { defineResultRenderer } from "./result-renderer.ts";
-import { renderText } from "./text.ts";
 import { getMarkdownTheme } from "./theme.ts";
 import { createTreeBuilder, type TreeSection } from "./tree.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
@@ -47,20 +46,25 @@ export function renderEnvelopeResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const details = result.details as Partial<ResultEnvelope<unknown>> | undefined;
-	const status = details?.status ? `${details.status}` : "done";
-	const id = details?.responseId ? ` · responseId: ${details.responseId}` : "";
-	const url = details?.finalUrl ?? details?.url;
 	const preview = result.content[0]?.text ?? "";
-	const freshness = details?.freshness?.stale ? " · stale" : "";
-	const summary = details?.summary ?? `${status}${url ? ` · ${url}` : ""}${id}${freshness}`;
+	const summary =
+		details?.summary ??
+		[
+			details?.status ?? "done",
+			details?.finalUrl ?? details?.url,
+			details?.responseId ? `responseId: ${details.responseId}` : undefined,
+			details?.freshness?.stale ? "stale" : undefined,
+		]
+			.filter(Boolean)
+			.join(" · ");
 	const body = expanded ? expandedEnvelopeText(summary, preview, details) : summary;
-	if (!expanded || details?.format !== "markdown" || preview.length <= 100) {
-		return renderText(body, { padToWidth: true });
-	}
+	const hasLongMarkdown = expanded && details?.format === "markdown" && preview.length > 100;
 	return defineResultRenderer({
 		renderContent: () => body,
 		padToWidth: true,
-		markdownPreview: () => new Markdown(preview.slice(0, 800), 0, 0, getMarkdownTheme(theme)),
+		markdownPreview: hasLongMarkdown
+			? () => new Markdown(preview.slice(0, 800), 0, 0, getMarkdownTheme(theme))
+			: undefined,
 	});
 }
 
@@ -69,32 +73,23 @@ function expandedEnvelopeText(
 	preview: string,
 	details: Partial<ResultEnvelope<unknown>> | undefined,
 ): string {
-	const lines = [summary];
-	if (details?.answerContext) {
-		lines.push("", details.answerContext.slice(0, 500));
-	} else if (preview) {
-		lines.push("", preview.slice(0, 500));
-	}
-	if (details?.freshness?.stale) {
-		lines.push("", "Freshness: stale; refresh source if time-sensitive.");
-	}
+	const b = createTreeBuilder();
+	if (details?.freshness?.stale) b.add("info", "freshness", "stale; refresh if time-sensitive");
 	const usageLine = details?.modelUsage ? formatModelUsage(details.modelUsage) : undefined;
-	if (usageLine) {
-		lines.push("", usageLine);
-	}
-	if (details?.nextActions?.length) {
-		lines.push(
-			"",
-			"Next actions:",
-			...details.nextActions
-				.slice(0, 3)
-				.map(
-					(action) =>
-						`- ${action.action}${action.tool ? ` via ${action.tool}` : ""}: ${action.description}`,
-				),
-		);
-	}
-	return lines.join("\n");
+	if (usageLine) b.add("info", "model usage", usageLine);
+	const extra =
+		b.sections.length > 0
+			? b.sections.map((s) => s.rows.map((r) => `${r.key}: ${r.value}`).join("\n")).join("\n") +
+				"\n"
+			: "";
+	const previewBlock = (details?.answerContext ?? preview).slice(0, 500);
+	const next = details?.nextActions
+		?.slice(0, 3)
+		.map((a) => `- ${a.action}${a.tool ? ` via ${a.tool}` : ""}: ${a.description}`)
+		.join("\n");
+	return [summary, extra, previewBlock, next ? `\nNext actions:\n${next}` : ""]
+		.filter(Boolean)
+		.join("\n");
 }
 
 /** Build a compact one-line usage footer. Returns undefined when no fields are presentable. */
