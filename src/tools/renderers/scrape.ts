@@ -200,8 +200,8 @@ function buildScrapeSections(
 			? envelope.data.description || undefined
 			: undefined;
 
+	b.add("page", "title", dataTitle);
 	if (hasHeaders) {
-		b.add("page", "title", dataTitle);
 		const url = envelope.finalUrl ?? envelope.url;
 		if (url) {
 			try {
@@ -210,11 +210,8 @@ function buildScrapeSections(
 				/* ignore */
 			}
 		}
-		b.add("page", "description", dataDesc);
-	} else {
-		b.add("page", "title", dataTitle);
-		b.add("page", "description", dataDesc);
 	}
+	b.add("page", "description", dataDesc);
 
 	/* details */
 	b.add("details", "url", envelope.url);
@@ -230,17 +227,9 @@ function buildScrapeSections(
 	b.add("details", "type", envelope.contentType);
 	b.add("details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
 
-	/* error */
 	if (envelope.error) {
-		b.add(
-			"error",
-			"code",
-			envelope.error.code
-				? theme
-					? failure(envelope.error.code, theme)
-					: envelope.error.code
-				: undefined,
-		);
+		const code = envelope.error.code;
+		b.add("error", "code", code ? (theme ? failure(code, theme) : code) : undefined);
 		b.add("error", "phase", envelope.error.phase);
 		b.add("error", "message", envelope.error.message);
 	}
@@ -318,23 +307,20 @@ function parseAgeSeconds(value: string | undefined): number | undefined {
 	return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
-function formatSeconds(totalSeconds: number): string {
-	const MIN = 60;
-	const HOUR = 60 * MIN;
-	const DAY = 24 * HOUR;
-	if (totalSeconds < MIN) return `${totalSeconds}s`;
-	if (totalSeconds < HOUR) {
-		const m = Math.floor(totalSeconds / MIN);
-		const s = totalSeconds % MIN;
-		return s > 0 ? `${m}m ${s}s` : `${m}m`;
+function formatSeconds(s: number): string {
+	if (s < 60) return `${s}s`;
+	if (s < 3600) {
+		const m = Math.floor(s / 60);
+		const r = s % 60;
+		return r > 0 ? `${m}m ${r}s` : `${m}m`;
 	}
-	if (totalSeconds < DAY) {
-		const h = Math.floor(totalSeconds / HOUR);
-		const m = Math.floor((totalSeconds % HOUR) / MIN);
-		return m > 0 ? `${h}h ${m}m` : `${h}h`;
+	if (s < 86400) {
+		const h = Math.floor(s / 3600);
+		const r = Math.floor((s % 3600) / 60);
+		return r > 0 ? `${h}h ${r}m` : `${h}h`;
 	}
-	const d = Math.floor(totalSeconds / DAY);
-	const h = Math.floor((totalSeconds % DAY) / HOUR);
+	const d = Math.floor(s / 86400);
+	const h = Math.floor((s % 86400) / 3600);
 	return h > 0 ? `${d}d ${h}h` : `${d}d`;
 }
 
@@ -343,21 +329,25 @@ interface CacheControlInfo {
 	swr: number | undefined;
 }
 
+const CC_FIELDS: Array<[string, "maxAge" | "swr"]> = [
+	["max-age=", "maxAge"],
+	["s-maxage=", "maxAge"],
+	["stale-while-revalidate=", "swr"],
+];
+
 function parseCacheControl(value: string | undefined): CacheControlInfo | undefined {
 	if (!value) return;
 	let maxAge: number | undefined;
 	let swr: number | undefined;
 	for (const part of value.toLowerCase().split(",")) {
 		const t = part.trim();
-		if (t.startsWith("max-age=")) {
-			const n = Number(t.slice(8));
-			if (Number.isFinite(n)) maxAge = n;
-		} else if (t.startsWith("s-maxage=")) {
-			const n = Number(t.slice(9));
-			if (Number.isFinite(n)) maxAge = n;
-		} else if (t.startsWith("stale-while-revalidate=")) {
-			const n = Number(t.slice(24));
-			if (Number.isFinite(n)) swr = n;
+		for (const [prefix, field] of CC_FIELDS) {
+			if (!t.startsWith(prefix)) continue;
+			const n = Number(t.slice(prefix.length));
+			if (Number.isFinite(n)) {
+				if (field === "maxAge") maxAge = n;
+				else swr = n;
+			}
 		}
 	}
 	return maxAge !== undefined ? { maxAge, swr } : undefined;
