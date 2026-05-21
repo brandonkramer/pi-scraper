@@ -34,10 +34,8 @@ export function sessionNotice(envelope: Partial<ResultEnvelope<unknown>>): strin
 export function contextPackageResponseId(
 	envelope: Partial<ResultEnvelope<unknown>>,
 ): string | undefined {
-	const value = envelope.diagnostics?.contextPackage;
-	if (typeof value !== "object" || value === null) return;
-	const responseId = (value as { responseId?: unknown }).responseId;
-	return typeof responseId === "string" ? responseId : undefined;
+	const value = envelope.diagnostics?.contextPackage as { responseId?: unknown } | undefined;
+	return typeof value?.responseId === "string" ? value.responseId : undefined;
 }
 
 export function renderEnvelopeResult(
@@ -88,23 +86,26 @@ function expandedEnvelopeText(
 		.join("\n");
 }
 
-/** Build a compact one-line usage footer. Returns undefined when no fields are presentable. */
+const tokSuffix = (v: unknown, s: string): string | undefined =>
+	typeof v === "number" ? `${v} ${s}` : undefined;
+
+/** Compact one-line usage footer. Undefined when no fields are presentable. */
 function formatModelUsage(u: ModelUsage): string | undefined {
-	const parts: string[] = [];
-	if (u.provider) parts.push(u.provider);
-	if (u.model) parts.push(u.model);
-	if (typeof u.inputTokens === "number") parts.push(`${u.inputTokens} in`);
-	if (typeof u.outputTokens === "number") parts.push(`${u.outputTokens} out`);
-	if (typeof u.totalTokens === "number") parts.push(`${u.totalTokens} total`);
-	if (typeof u.costUSD === "number") parts.push(formatCostUSD(u.costUSD));
+	const parts = [
+		u.provider,
+		u.model,
+		tokSuffix(u.inputTokens, "in"),
+		tokSuffix(u.outputTokens, "out"),
+		tokSuffix(u.totalTokens, "total"),
+		typeof u.costUSD === "number" ? formatCostUSD(u.costUSD) : undefined,
+	].filter(Boolean);
 	return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
-function formatCostUSD(cost: number): string {
-	if (cost === 0) return "$0";
-	if (cost < 0.0001) return `~$${cost.toExponential(1)}`;
-	if (cost < 1) return `$${cost.toFixed(4)}`;
-	return `$${cost.toFixed(2)}`;
+function formatCostUSD(c: number): string {
+	if (c === 0) return "$0";
+	if (c < 0.0001) return `~$${c.toExponential(1)}`;
+	return `$${c.toFixed(c < 1 ? 4 : 2)}`;
 }
 
 export const DEFAULT_HIDDEN_ENVELOPE_KEYS = new Set(

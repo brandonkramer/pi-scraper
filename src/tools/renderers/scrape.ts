@@ -1,7 +1,4 @@
-/**
- * @file Pi web_scrape tool result and progress card renderers, including the URL result card
- *   composition.
- */
+/** @file Pi web_scrape result, progress card, and URL result card composition. */
 import { Markdown } from "@earendil-works/pi-tui";
 
 import { formatChecklistText } from "../../tui/checklist.ts";
@@ -15,13 +12,13 @@ import { renderUrlStatusRow } from "../../tui/rows.ts";
 import { currentSpinnerFrame } from "../../tui/spinner.ts";
 import { renderStackedResultCard } from "../../tui/stacked.ts";
 import {
+	activity,
+	failure,
 	getMarkdownTheme,
 	muted,
 	neutral,
 	separator,
 	success,
-	failure,
-	activity,
 } from "../../tui/theme.ts";
 import {
 	createTreeBuilder,
