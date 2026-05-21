@@ -6,7 +6,7 @@ import type { PiToolShell, ResultEnvelope, StructuredError } from "../types.ts";
 import { defineResultRenderer } from "./result-renderer.ts";
 import { renderText } from "./text.ts";
 import { getMarkdownTheme } from "./theme.ts";
-import type { TreeSection } from "./tree.ts";
+import { createTreeBuilder, type TreeSection } from "./tree.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 
 export function errorLabel(
@@ -184,27 +184,22 @@ export function buildEnvelopeRows(
 	const hide = options.hide ?? DEFAULT_HIDDEN_ENVELOPE_KEYS;
 	const describe = options.describe ?? DEFAULT_ENVELOPE_KEY_DESCRIPTIONS;
 	const order = options.order ?? DEFAULT_ENVELOPE_DISPLAY_ORDER;
-	const section: TreeSection = { name: options.sectionName ?? "result", rows: [] };
+	const sectionName = options.sectionName ?? "result";
 
 	const fieldMap = new Map<string, string>();
 	for (const [key, value] of Object.entries(envelope ?? {})) {
-		if (hide.has(key)) continue;
-		if (value === null || value === undefined) continue;
+		if (hide.has(key) || value === null || value === undefined) continue;
 		if (typeof value === "string" && !value) continue;
-		const desc = describe[key];
 		const val = stringifyEnvelopeValue(value);
-		fieldMap.set(key, desc ? `${val} (${desc})` : val);
+		fieldMap.set(key, describe[key] ? `${val} (${describe[key]})` : val);
 	}
 
-	for (const key of order) {
+	const b = createTreeBuilder();
+	for (const key of order)
 		if (fieldMap.has(key)) {
-			section.rows.push({ key, value: fieldMap.get(key)! });
+			b.add(sectionName, key, fieldMap.get(key));
 			fieldMap.delete(key);
 		}
-	}
-	for (const [key, value] of fieldMap) {
-		section.rows.push({ key, value });
-	}
-
-	return section.rows.length > 0 ? [section] : [];
+	for (const [key, value] of fieldMap) b.add(sectionName, key, value);
+	return b.sections;
 }

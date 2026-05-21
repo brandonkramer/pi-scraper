@@ -42,7 +42,7 @@ export function renderStatusPill(options: StatusPillOptions): string {
 	const text = `[${inner}]`;
 	const theme = options.theme;
 	if (!theme?.bg) return neutral(text, theme);
-	const tail = backgroundStart(statusTailBackground(options.state), theme);
+	const tail = bgStart(tailBg(options.state), theme);
 	if (options.state === "done") return `${backgroundText("toolSuccessBg", text, theme)}${tail}`;
 	if (options.state === "error") return `${backgroundText("toolErrorBg", text, theme)}${tail}`;
 	if (options.state === "loading") return `${renderLoadingStatusFill(options, text)}${tail}`;
@@ -87,7 +87,7 @@ function centerStatusLabel(label: string, width: number): string {
 	return `${" ".repeat(left)}${base}`.padEnd(width, " ");
 }
 
-function statusTailBackground(state: StatusPillState): string {
+function tailBg(state: StatusPillState): string {
 	if (state === "done") return "toolSuccessBg";
 	if (state === "error") return "toolErrorBg";
 	return "toolPendingBg";
