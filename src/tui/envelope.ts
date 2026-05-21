@@ -73,15 +73,11 @@ function expandedEnvelopeText(
 	preview: string,
 	details: Partial<ResultEnvelope<unknown>> | undefined,
 ): string {
-	const b = createTreeBuilder();
-	if (details?.freshness?.stale) b.add("info", "freshness", "stale; refresh if time-sensitive");
-	const usageLine = details?.modelUsage ? formatModelUsage(details.modelUsage) : undefined;
-	if (usageLine) b.add("info", "model usage", usageLine);
-	const extra =
-		b.sections.length > 0
-			? b.sections.map((s) => s.rows.map((r) => `${r.key}: ${r.value}`).join("\n")).join("\n") +
-				"\n"
-			: "";
+	const extras: string[] = [];
+	if (details?.freshness?.stale) extras.push("freshness: stale; refresh if time-sensitive");
+	const usage = details?.modelUsage ? formatModelUsage(details.modelUsage) : undefined;
+	if (usage) extras.push(`model usage: ${usage}`);
+	const extra = extras.length > 0 ? `${extras.join("\n")}\n` : "";
 	const previewBlock = (details?.answerContext ?? preview).slice(0, 500);
 	const next = details?.nextActions
 		?.slice(0, 3)
