@@ -23,7 +23,12 @@ import {
 	failure,
 	activity,
 } from "../../tui/theme.ts";
-import { renderTreeSections } from "../../tui/tree.ts";
+import {
+	createTreeBuilder,
+	renderTreeSections,
+	type TreeBuilder,
+	type TreeSection,
+} from "../../tui/tree.ts";
 import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 import {
 	isProgress,
@@ -140,30 +145,20 @@ function renderScrapeResultCard(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const url = envelope.finalUrl ?? envelope.url ?? "unknown URL";
+	const state = envelope.error ? "error" : "done";
+	const md = () => markdownPreviewComponent(envelope.format, options.preview, theme);
 	return renderStackedResultCard(
 		{
-			body: (width) => renderScrapeRow(url, Boolean(envelope.error), width, theme),
+			body: (width) => renderUrlStatusRow({ url, label: state, state, width, theme }),
 			summary: options.summary,
 			expanded: options.expanded,
 			notice: options.notice,
 			expandedSections: (width) => scrapeExpandedSections(envelope, options, width, theme),
-			markdownPreview: (_width) =>
-				markdownPreviewComponent(envelope.format, options.preview, theme),
+			markdownPreview: md,
 			responseId: options.responseId,
 		},
 		theme,
 	);
-}
-
-function renderScrapeRow(url: string, failed: boolean, width: number, theme?: RenderTheme): string {
-	const state = failed ? "error" : "done";
-	return renderUrlStatusRow({
-		url,
-		label: state,
-		state,
-		width,
-		theme,
-	});
 }
 
 function markdownPreviewComponent(
@@ -184,131 +179,137 @@ function scrapeExpandedSections(
 	if (isFileResult(envelope)) {
 		return [renderFileResultCard(envelope, theme).render(width).join("\n")];
 	}
-	const sections: string[] = [];
-
-	// Always build the full tree: header-derived sections + scrape details + errors
-	const allSections = buildScrapeDetailsSections(envelope, theme);
-	const headers = envelope.headers;
-	if (headers && Object.keys(headers).length > 0) {
-		// Prepend page section (richer: includes site) before details
-		const headerSections = buildHeaderSections(envelope, headers);
-		const pageSec = headerSections.find((s) => s.name === "page");
-		const other = headerSections.filter((s) => s.name !== "page");
-		if (pageSec) allSections.unshift(pageSec);
-		allSections.push(...other);
-	}
-
-	sections.push(renderTreeSections(allSections, width, theme));
-
+	const allSections = buildScrapeSections(envelope, theme);
+	const out = [renderTreeSections(allSections, width, theme)];
 	if (options.preview && !markdownPreviewComponent(envelope.format, options.preview, theme))
-		sections.push(formatPreview(envelope.format, options.preview).slice(0, 1200));
-	return sections;
+		out.push(formatPreview(envelope.format, options.preview).slice(0, 1200));
+	return out;
 }
 
-/* --- header boxes --- */
+function buildScrapeSections(
+	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
+	theme?: RenderTheme,
+): TreeSection[] {
+	const headers = envelope.headers;
+	const hasHeaders = !!headers && Object.keys(headers).length > 0;
+	const b = createTreeBuilder();
+	const dataTitle =
+		typeof envelope.data?.title === "string" ? envelope.data.title || undefined : undefined;
+	const dataDesc =
+		typeof envelope.data?.description === "string"
+			? envelope.data.description || undefined
+			: undefined;
 
-function buildHeaderSections(
+	if (hasHeaders) {
+		b.add("page", "title", dataTitle);
+		const url = envelope.finalUrl ?? envelope.url;
+		if (url) {
+			try {
+				b.add("page", "site", new URL(url).hostname.replace(/^www\./iu, ""));
+			} catch {
+				/* ignore */
+			}
+		}
+		b.add("page", "description", dataDesc);
+	} else {
+		b.add("page", "title", dataTitle);
+		b.add("page", "description", dataDesc);
+	}
+
+	/* details */
+	b.add("details", "url", envelope.url);
+	if (envelope.finalUrl && envelope.finalUrl !== envelope.url)
+		b.add("details", "final", envelope.finalUrl);
+	b.add("details", "status", envelope.status ? String(envelope.status) : undefined);
+	b.add("details", "mode", envelope.mode);
+	b.add("details", "format", envelope.format);
+	if (envelope.downloadedBytes !== undefined)
+		b.add("details", "size", formatBytes(envelope.downloadedBytes) ?? "");
+	if (envelope.timing?.durationMs !== undefined)
+		b.add("details", "duration", formatDuration(envelope.timing.durationMs) ?? "");
+	b.add("details", "type", envelope.contentType);
+	b.add("details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
+
+	/* error */
+	if (envelope.error) {
+		b.add(
+			"error",
+			"code",
+			envelope.error.code
+				? theme
+					? failure(envelope.error.code, theme)
+					: envelope.error.code
+				: undefined,
+		);
+		b.add("error", "phase", envelope.error.phase);
+		b.add("error", "message", envelope.error.message);
+	}
+
+	if (hasHeaders) addHeaderSections(b, envelope, headers);
+	return b.sections;
+}
+
+function addHeaderSections(
+	b: TreeBuilder,
 	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
 	headers: Record<string, string>,
-): Array<{ name: string; rows: Array<{ key: string; value: string }> }> {
-	interface SectionRow {
-		key: string;
-		value: string;
-	}
-	const sections: Array<{ name: string; rows: SectionRow[] }> = [];
-
-	const addRow = (secName: string, key: string, value: string) => {
-		let sec = sections.find((s) => s.name === secName);
-		if (!sec) {
-			sec = { name: secName, rows: [] };
-			sections.push(sec);
-		}
-		sec.rows.push({ key, value });
-	};
-
-	/* page */
-	const title =
-		typeof envelope.data?.title === "string" && envelope.data.title
-			? envelope.data.title
-			: undefined;
-	const url = envelope.finalUrl ?? envelope.url;
-	const description =
-		typeof envelope.data?.description === "string" && envelope.data.description
-			? envelope.data.description
-			: undefined;
-	if (title) addRow("page", "title", title);
-	if (url) {
-		try {
-			addRow("page", "site", new URL(url).hostname.replace(/^www\./iu, ""));
-		} catch {
-			/* ignore */
-		}
-	}
-	if (description) addRow("page", "description", description);
-
+): void {
 	/* cache */
-	if (headers["cf-cache-status"]) addRow("cache", "status", headers["cf-cache-status"]);
+	b.add("cache", "status", headers["cf-cache-status"]);
 	if (headers["age"]) {
 		const sec = parseAgeSeconds(headers["age"]);
-		addRow("cache", "age", sec !== undefined ? formatSeconds(sec) : headers["age"]);
+		b.add("cache", "age", sec !== undefined ? formatSeconds(sec) : headers["age"]);
 	}
 	const cc = parseCacheControl(headers["cache-control"]);
 	const cdnCc = parseCacheControl(headers["cdn-cache-control"]);
-	if (cdnCc) {
-		let v = `max-age ${formatSeconds(cdnCc.maxAge)}`;
-		if (cdnCc.swr) v += `  +swr ${formatSeconds(cdnCc.swr)}`;
-		addRow("cache", "cdn", v);
-	} else if (cc) {
-		let v = `max-age ${formatSeconds(cc.maxAge)}`;
-		if (cc.swr) v += `  +swr ${formatSeconds(cc.swr)}`;
-		addRow("cache", "cdn", v);
-	}
+	const fmtCc = (info: CacheControlInfo) => {
+		let v = `max-age ${formatSeconds(info.maxAge)}`;
+		if (info.swr) v += `  +swr ${formatSeconds(info.swr)}`;
+		return v;
+	};
+	if (cdnCc) b.add("cache", "cdn", fmtCc(cdnCc));
+	else if (cc) b.add("cache", "cdn", fmtCc(cc));
 	if (cc?.maxAge !== undefined && (!cdnCc || cdnCc.maxAge !== cc.maxAge)) {
 		let v = `max-age ${formatSeconds(cc.maxAge)}`;
 		if (cc.swr && (!cdnCc || cdnCc.swr !== cc.swr)) v += `  +swr ${formatSeconds(cc.swr)}`;
-		addRow("cache", "browser", v);
+		b.add("cache", "browser", v);
 	}
 
 	/* server */
-	if (headers["server"]) addRow("server", "vendor", headers["server"]);
+	b.add("server", "vendor", headers["server"]);
 	if (headers["cf-ray"]) {
 		const di = headers["cf-ray"].lastIndexOf("-");
 		const ray = di !== -1 ? headers["cf-ray"].slice(0, di) : headers["cf-ray"];
 		const loc = di !== -1 ? headers["cf-ray"].slice(di + 1) : "";
-		addRow("server", "ray", `${ray}${loc ? `  \u2192  ${loc}` : ""}`);
+		b.add("server", "ray", `${ray}${loc ? `  \u2192  ${loc}` : ""}`);
 	}
 
 	/* time */
-	if (headers["date"]) addRow("time", "fetched", formatHttpTime(headers["date"]));
+	if (headers["date"]) b.add("time", "fetched", formatHttpTime(headers["date"]));
 	if (headers["last-modified"]) {
 		let mv = formatHttpTime(headers["last-modified"]);
-		const modMs = new Date(headers["last-modified"]).getTime();
-		const nowMs = new Date(headers["date"] ?? Date.now()).getTime();
-		const diffSec = Math.floor((nowMs - modMs) / 1000);
+		const diffSec = Math.floor(
+			(new Date(headers["date"] ?? Date.now()).getTime() -
+				new Date(headers["last-modified"]).getTime()) /
+				1000,
+		);
 		if (diffSec > 0) mv += `  (${formatSeconds(diffSec)} ago)`;
-		addRow("time", "modified", mv);
+		b.add("time", "modified", mv);
 	}
 
 	/* raw headers */
-	const headerEntries: Array<[string, string]> = Object.entries(headers).filter(
-		(entry): entry is [string, string] => typeof entry[1] === "string",
+	const headerEntries = Object.entries(headers).filter(
+		(e): e is [string, string] => typeof e[1] === "string",
 	);
-	for (const [k, v] of headerEntries) {
-		const truncated = v.length > 120 ? `${v.slice(0, 120)}...` : v;
-		addRow("headers", `${k}:`, truncated);
-	}
+	for (const [k, v] of headerEntries)
+		b.add("headers", `${k}:`, v.length > 120 ? `${v.slice(0, 120)}...` : v);
 
 	/* trace */
 	const respId = envelope.responseId ?? "";
 	if (respId || headerEntries.length > 0) {
-		if (respId) {
-			const shortId = respId.length >= 8 ? respId.slice(0, 8) : respId;
-			addRow("trace", "response", shortId);
-		}
-		addRow("trace", "headers", `${headerEntries.length} total`);
+		if (respId) b.add("trace", "response", respId.length >= 8 ? respId.slice(0, 8) : respId);
+		b.add("trace", "headers", `${headerEntries.length} total`);
 	}
-
-	return sections;
 }
 
 function parseAgeSeconds(value: string | undefined): number | undefined {
@@ -373,60 +374,4 @@ function formatHttpTime(dateStr: string): string {
 	} catch {
 		return dateStr;
 	}
-}
-
-function buildScrapeDetailsSections(
-	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
-	theme?: RenderTheme,
-): Array<{ name: string; rows: Array<{ key: string; value: string }> }> {
-	const sections: Array<{
-		name: string;
-		rows: Array<{ key: string; value: string }>;
-	}> = [];
-
-	const addRow = (secName: string, key: string, value: string) => {
-		let sec = sections.find((s) => s.name === secName);
-		if (!sec) {
-			sec = { name: secName, rows: [] };
-			sections.push(sec);
-		}
-		sec.rows.push({ key, value });
-	};
-
-	/* page */
-	const title =
-		typeof envelope.data?.title === "string" && envelope.data.title
-			? envelope.data.title
-			: undefined;
-	const description =
-		typeof envelope.data?.description === "string" && envelope.data.description
-			? envelope.data.description
-			: undefined;
-	if (title) addRow("page", "title", title);
-	if (description) addRow("page", "description", description);
-
-	/* details */
-	if (envelope.url) addRow("details", "url", envelope.url);
-	if (envelope.finalUrl && envelope.finalUrl !== envelope.url)
-		addRow("details", "final", envelope.finalUrl);
-	if (envelope.status) addRow("details", "status", String(envelope.status));
-	if (envelope.mode) addRow("details", "mode", envelope.mode);
-	if (envelope.format) addRow("details", "format", envelope.format);
-	if (envelope.downloadedBytes !== undefined)
-		addRow("details", "size", formatBytes(envelope.downloadedBytes) ?? "");
-	if (envelope.timing?.durationMs !== undefined)
-		addRow("details", "duration", formatDuration(envelope.timing.durationMs) ?? "");
-	if (envelope.contentType) addRow("details", "type", envelope.contentType);
-	const source = envelope.cache?.cached ? "cache hit" : "fresh fetch";
-	addRow("details", "source", source);
-
-	/* error */
-	if (envelope.error) {
-		if (envelope.error.code)
-			addRow("error", "code", theme ? failure(envelope.error.code, theme) : envelope.error.code);
-		if (envelope.error.phase) addRow("error", "phase", envelope.error.phase);
-		if (envelope.error.message) addRow("error", "message", envelope.error.message);
-	}
-
-	return sections;
 }

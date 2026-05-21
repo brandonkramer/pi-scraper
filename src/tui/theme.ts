@@ -1,10 +1,7 @@
 /** @file Reusable Pi terminal UI theme text helpers. */
 import type { MarkdownTheme } from "@earendil-works/pi-tui";
 
-import { backgroundText } from "./bg-paint.ts";
 import type { RenderTheme } from "./types.ts";
-
-export type PaintTone = "success" | "error" | "warning" | "muted" | "accent" | "danger";
 
 export function inlineThemeText(
 	name: string,
@@ -12,53 +9,25 @@ export function inlineThemeText(
 	theme?: RenderTheme,
 ): string | undefined {
 	const themed = theme?.fg?.(name, text);
-	return themed?.replaceAll("\u001B[0m", "\u001B[39m");
+	if (!themed) return undefined;
+	return themed.replaceAll("\u001B[0m", "\u001B[39m");
 }
 
-export function paintFg(
-	theme: RenderTheme | undefined,
-	tone: PaintTone | string,
-	text: string,
-): string {
+export function paintFg(theme: RenderTheme | undefined, tone: string, text: string): string {
 	if (tone === "accent") return theme?.fg?.("accent", text) ?? text;
-	if (tone === "error" || tone === "danger") {
-		return inlineThemeText("error", text, theme) ?? inlineThemeText("danger", text, theme) ?? text;
-	}
-	return inlineThemeText(tone, text, theme) ?? text;
+	const target = tone === "danger" ? "error" : tone;
+	return inlineThemeText(target, text, theme) ?? text;
 }
 
-export function paintBg(theme: RenderTheme | undefined, name: string, text: string): string {
-	return backgroundText(name, text, theme);
-}
-
-export function muted(text: string, theme?: RenderTheme): string {
-	return paintFg(theme, "muted", text);
-}
-
-export function accent(text: string, theme?: RenderTheme): string {
-	return paintFg(theme, "accent", text);
-}
-
-export function neutral(text: string, theme?: RenderTheme): string {
-	return paintFg(theme, "muted", text);
-}
-
-export function success(text: string, theme?: RenderTheme): string {
-	return paintFg(theme, "success", text);
-}
-
-export function failure(text: string, theme?: RenderTheme): string {
-	return paintFg(theme, "error", text);
-}
+export const muted = (text: string, theme?: RenderTheme) => paintFg(theme, "muted", text);
+export const accent = (text: string, theme?: RenderTheme) => paintFg(theme, "accent", text);
+export const neutral = muted;
+export const success = (text: string, theme?: RenderTheme) => paintFg(theme, "success", text);
+export const failure = (text: string, theme?: RenderTheme) => paintFg(theme, "error", text);
+export const separator = (theme?: RenderTheme) => muted(" · ", theme);
 
 export function activity(text: string, theme?: RenderTheme): string {
-	const warning = inlineThemeText("warning", text, theme);
-	if (warning) return warning;
-	return paintFg(theme, "accent", text);
-}
-
-export function separator(theme?: RenderTheme): string {
-	return neutral(" · ", theme);
+	return inlineThemeText("warning", text, theme) ?? paintFg(theme, "accent", text);
 }
 
 /**
