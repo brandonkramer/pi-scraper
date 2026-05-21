@@ -20,22 +20,10 @@ export type ProgressState =
 
 export type ToolRequirement = "local" | "browser" | "cloud" | "llm";
 
-/**
- * Object record used when narrowing unknown JSON-like values.
- *
- * @remarks
- *   This is intentionally broad: callers that need array or prototype exclusion should add those
- *   checks locally after narrowing to object shape.
- */
+/** JSON-like object record. Intentionally broad; narrow further at callsites. */
 export type UnknownRecord = Record<string, unknown>;
 
-/**
- * Narrows unknown values to non-null object records.
- *
- * @remarks
- *   Shared by storage and tool adapter boundaries that receive loosely typed host or persisted
- *   data.
- */
+/** Narrow unknown to non-null object record. Used at storage/adapter boundaries. */
 export function isUnknownRecord(value: unknown): value is UnknownRecord {
 	return typeof value === "object" && value !== null;
 }
@@ -177,31 +165,22 @@ export interface ResultEnvelope<TData = unknown> {
 	qualitySignals?: AgenticQualitySignals;
 	nextActions?: AgenticNextAction[];
 	assistantGuidance?: string;
-	/**
-	 * Fetch path note for callers; currently set when scrape follows a same-origin alternate URL or a
-	 * meta-refresh redirect.
-	 */
-	fetchedVia?:
-		| {
-				kind: "alternate";
-				url: string;
-				finalUrl?: string;
-				type?: string;
-				originalUrl?: string;
-				originalFinalUrl?: string;
-		  }
-		| {
-				kind: "meta-refresh";
-				url: string;
-				finalUrl?: string;
-				originalUrl?: string;
-				originalFinalUrl?: string;
-				/** Chain of URLs traversed via meta-refresh redirects. */
-				chain?: string[];
-		  };
+	/** Fetch path note: set when scrape follows a same-origin alternate or a meta-refresh redirect. */
+	fetchedVia?: FetchedViaInfo;
 	diagnostics?: Record<string, unknown>;
 	error?: StructuredError;
 }
+
+interface FetchedViaCommon {
+	url: string;
+	finalUrl?: string;
+	originalUrl?: string;
+	originalFinalUrl?: string;
+}
+
+export type FetchedViaInfo =
+	| (FetchedViaCommon & { kind: "alternate"; type?: string })
+	| (FetchedViaCommon & { kind: "meta-refresh"; chain?: string[] });
 
 export interface ProgressChecklistItem {
 	id: string;
