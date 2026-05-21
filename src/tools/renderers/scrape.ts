@@ -251,17 +251,15 @@ function addHeaderSections(
 	}
 	const cc = parseCacheControl(headers["cache-control"]);
 	const cdnCc = parseCacheControl(headers["cdn-cache-control"]);
-	const fmtCc = (info: CacheControlInfo) => {
-		let v = `max-age ${formatSeconds(info.maxAge)}`;
-		if (info.swr) v += `  +swr ${formatSeconds(info.swr)}`;
-		return v;
-	};
-	if (cdnCc) b.add("cache", "cdn", fmtCc(cdnCc));
-	else if (cc) b.add("cache", "cdn", fmtCc(cc));
+	const fmtCc = (maxAge: number, swr: number | undefined) =>
+		swr
+			? `max-age ${formatSeconds(maxAge)}  +swr ${formatSeconds(swr)}`
+			: `max-age ${formatSeconds(maxAge)}`;
+	const primary = cdnCc ?? cc;
+	if (primary) b.add("cache", "cdn", fmtCc(primary.maxAge, primary.swr));
 	if (cc?.maxAge !== undefined && (!cdnCc || cdnCc.maxAge !== cc.maxAge)) {
-		let v = `max-age ${formatSeconds(cc.maxAge)}`;
-		if (cc.swr && (!cdnCc || cdnCc.swr !== cc.swr)) v += `  +swr ${formatSeconds(cc.swr)}`;
-		b.add("cache", "browser", v);
+		const swr = cc.swr && (!cdnCc || cdnCc.swr !== cc.swr) ? cc.swr : undefined;
+		b.add("cache", "browser", fmtCc(cc.maxAge, swr));
 	}
 
 	/* server */
@@ -276,14 +274,10 @@ function addHeaderSections(
 	/* time */
 	if (headers["date"]) b.add("time", "fetched", formatHttpTime(headers["date"]));
 	if (headers["last-modified"]) {
-		let mv = formatHttpTime(headers["last-modified"]);
-		const diffSec = Math.floor(
-			(new Date(headers["date"] ?? Date.now()).getTime() -
-				new Date(headers["last-modified"]).getTime()) /
-				1000,
-		);
-		if (diffSec > 0) mv += `  (${formatSeconds(diffSec)} ago)`;
-		b.add("time", "modified", mv);
+		const now = new Date(headers["date"] ?? Date.now()).getTime();
+		const diffSec = Math.floor((now - new Date(headers["last-modified"]).getTime()) / 1000);
+		const suffix = diffSec > 0 ? `  (${formatSeconds(diffSec)} ago)` : "";
+		b.add("time", "modified", `${formatHttpTime(headers["last-modified"])}${suffix}`);
 	}
 
 	/* raw headers */
