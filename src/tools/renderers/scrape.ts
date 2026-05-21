@@ -279,21 +279,14 @@ function parseAgeSeconds(v: string | undefined): number | undefined {
 	return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
+const fmtTwoUnit = (whole: number, big: string, rem: number, small: string) =>
+	rem > 0 ? `${whole}${big} ${rem}${small}` : `${whole}${big}`;
+
 function formatSeconds(s: number): string {
 	if (s < 60) return `${s}s`;
-	if (s < 3600) {
-		const m = Math.floor(s / 60);
-		const r = s % 60;
-		return r > 0 ? `${m}m ${r}s` : `${m}m`;
-	}
-	if (s < 86400) {
-		const h = Math.floor(s / 3600);
-		const r = Math.floor((s % 3600) / 60);
-		return r > 0 ? `${h}h ${r}m` : `${h}h`;
-	}
-	const d = Math.floor(s / 86400);
-	const h = Math.floor((s % 86400) / 3600);
-	return h > 0 ? `${d}d ${h}h` : `${d}d`;
+	if (s < 3600) return fmtTwoUnit(Math.floor(s / 60), "m", s % 60, "s");
+	if (s < 86400) return fmtTwoUnit(Math.floor(s / 3600), "h", Math.floor((s % 3600) / 60), "m");
+	return fmtTwoUnit(Math.floor(s / 86400), "d", Math.floor((s % 86400) / 3600), "h");
 }
 
 interface CacheControlInfo {
