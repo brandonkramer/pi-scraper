@@ -89,9 +89,10 @@ function renderScrapeProgressCard(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const url = details.url ?? "unknown URL";
-	const failed = details.state === "error";
-	const status = failed ? "error" : details.state === "done" ? "done" : "loading";
+	const status =
+		details.state === "error" ? "error" : details.state === "done" ? "done" : "loading";
 	const startedAtMs = progressStartedAtMs(details) ?? Date.now();
+	const working = status === "loading";
 	return defineResultRenderer({
 		renderContent(width) {
 			const row = renderUrlStatusRow({
@@ -102,25 +103,16 @@ function renderScrapeProgressCard(
 				theme,
 				startedAtMs,
 			});
-			const summary = `web_scrape ${details.state}${
-				theme ? separator(theme) : " · "
-			}${muted("(ctrl+o to expand)", theme)}`;
-			const lines = [row, "", summary];
-			if (expanded && details.checklist?.length) {
+			const summary = `web_scrape ${details.state}${separator(theme)}${muted("(ctrl+o to expand)", theme)}`;
+			const lines: string[] = [row, "", summary];
+			if (expanded && details.checklist?.length)
 				lines.push(
 					"",
-					...details.checklist.map((item) =>
-						formatChecklistText({
-							label: item.label,
-							detail: item.detail,
-						}),
+					...details.checklist.map((i) =>
+						formatChecklistText({ label: i.label, detail: i.detail }),
 					),
 				);
-			}
-			if (details.state !== "done" && details.state !== "error") {
-				const frame = currentSpinnerFrame();
-				return [...lines, "", `${frame} Working...`].join("\n");
-			}
+			if (working) lines.push("", `${currentSpinnerFrame()} Working...`);
 			return lines.join("\n");
 		},
 		padToWidth: true,
