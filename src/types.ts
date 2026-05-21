@@ -240,12 +240,9 @@ export interface CommonScrapeOptions extends CommonRequestOptions {
 	browserProfile?: string;
 	osProfile?: string;
 
-	// Session support (Tasks 28 + 30)
 	sessionId?: string;
 	saveSession?: boolean;
 	clearSession?: boolean;
-
-	// Browser rendering options (Tasks 29 + 30)
 	browserBackend?: BrowserBackend;
 	waitUntil?: "domcontentloaded" | "load" | "networkidle";
 	stealth?: boolean;
@@ -257,7 +254,6 @@ export interface CommonScrapeOptions extends CommonRequestOptions {
 	locale?: string;
 	timezone?: string;
 
-	// Raw inspection / line filtering (Task 48)
 	linesMatching?: string[];
 	contextLines?: number;
 	caseSensitive?: boolean;

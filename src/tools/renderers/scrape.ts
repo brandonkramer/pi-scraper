@@ -253,17 +253,15 @@ function addHeaderSections(
 		b.add("time", "modified", `${formatHttpTime(headers["last-modified"])}${suffix}`);
 	}
 
-	/* raw headers */
 	const headerEntries = Object.entries(headers).filter(
 		(e): e is [string, string] => typeof e[1] === "string",
 	);
 	for (const [k, v] of headerEntries)
 		b.add("headers", `${k}:`, v.length > 120 ? `${v.slice(0, 120)}...` : v);
 
-	/* trace */
 	const respId = envelope.responseId ?? "";
 	if (respId || headerEntries.length > 0) {
-		if (respId) b.add("trace", "response", respId.length >= 8 ? respId.slice(0, 8) : respId);
+		if (respId) b.add("trace", "response", respId.slice(0, 8));
 		b.add("trace", "headers", `${headerEntries.length} total`);
 	}
 }
