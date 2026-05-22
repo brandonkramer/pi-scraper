@@ -22,10 +22,9 @@ export default async function registerPiScraperExtension(pi: ExtensionAPI): Prom
 
 function registerToolErrorPropagation(pi: ExtensionAPI): void {
 	pi.on("tool_result", (event) => {
-		if (!event.toolName.startsWith("web_")) return;
-		const details = event.details as { error?: unknown } | undefined;
-		if (!details?.error || event.isError) return;
-		return { isError: true };
+		if (!event.toolName.startsWith("web_") || event.isError) return;
+		const err = (event.details as { error?: unknown } | undefined)?.error;
+		return err ? { isError: true } : undefined;
 	});
 }
 
@@ -39,14 +38,8 @@ function wireCleanupHooks(): void {
 			/* ignore */
 		});
 	};
-	const runCleanupAndExit = (code: number) => {
-		void cleanup().finally(() => process.exit(code));
-	};
-	// SIGTERM / SIGINT: clean up then explicitly exit so Node doesn't hang
-	process.once("SIGTERM", () => runCleanupAndExit(143));
-	process.once("SIGINT", () => runCleanupAndExit(130));
-	// beforeExit: process is already draining; fire-and-forget cleanup
-	process.once("beforeExit", () => {
-		void cleanup();
-	});
+	const exitAfter = (code: number) => void cleanup().finally(() => process.exit(code));
+	process.once("SIGTERM", () => exitAfter(143));
+	process.once("SIGINT", () => exitAfter(130));
+	process.once("beforeExit", () => void cleanup());
 }

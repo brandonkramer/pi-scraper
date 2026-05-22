@@ -1,7 +1,4 @@
-/**
- * @file Pi web_scrape tool result and progress card renderers, including the URL result card
- *   composition.
- */
+/** @file Pi web_scrape result, progress card, and URL result card composition. */
 import { Markdown } from "@earendil-works/pi-tui";
 
 import { formatChecklistText } from "../../tui/checklist.ts";
@@ -15,13 +12,13 @@ import { renderUrlStatusRow } from "../../tui/rows.ts";
 import { currentSpinnerFrame } from "../../tui/spinner.ts";
 import { renderStackedResultCard } from "../../tui/stacked.ts";
 import {
+	activity,
+	failure,
 	getMarkdownTheme,
 	muted,
 	neutral,
 	separator,
 	success,
-	failure,
-	activity,
 } from "../../tui/theme.ts";
 import {
 	createTreeBuilder,
@@ -46,18 +43,13 @@ export function renderWebScrapeResult(
 	if (isProgress(details)) return renderScrapeProgressCard(details, expanded, theme);
 	const envelope = details as Partial<ResultEnvelope<Record<string, unknown>>>;
 
-	const isCached = envelope.cache?.cached;
-	const sourceLabel = isCached
-		? activity(
-				`\u21BB cache hit${envelope.cache?.staleness ? ` ${envelope.cache.staleness}` : ""}`,
-				theme,
-			)
+	const stale = envelope.cache?.staleness;
+	const sourceLabel = envelope.cache?.cached
+		? activity(`\u21BB cache hit${stale ? ` ${stale}` : ""}`, theme)
 		: success("\u21BB fresh fetch", theme);
 
-	const summary = envelope.error
+	const parts: Array<string | undefined> = envelope.error
 		? [`${envelope.mode ?? ""} mode`, envelope.format ?? ""]
-				.filter(Boolean)
-				.join(theme ? separator(theme) : " · ")
 		: [
 				`${statusDot(envelope.status, theme)} ${envelope.status ?? ""}`,
 				`${envelope.mode ?? ""} mode`,
@@ -66,9 +58,8 @@ export function renderWebScrapeResult(
 				muted(formatDuration(envelope.timing?.durationMs) ?? "", theme),
 				freshnessLabel(envelope),
 				expanded ? undefined : muted("(ctrl+o to expand)", theme),
-			]
-				.filter(Boolean)
-				.join(theme ? separator(theme) : " · ");
+			];
+	const summary = parts.filter(Boolean).join(separator(theme));
 	return renderScrapeResultCard(
 		envelope,
 		{
@@ -84,9 +75,7 @@ export function renderWebScrapeResult(
 
 function statusDot(status: number | undefined, theme?: RenderTheme): string {
 	if (status === undefined) return "\u25CF";
-	if (status < 300) return success("\u25CF", theme);
-	if (status < 400) return neutral("\u25CF", theme);
-	return failure("\u25CF", theme);
+	return (status < 300 ? success : status < 400 ? neutral : failure)("\u25CF", theme);
 }
 
 function renderScrapeProgressCard(
@@ -95,9 +84,10 @@ function renderScrapeProgressCard(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const url = details.url ?? "unknown URL";
-	const failed = details.state === "error";
-	const status = failed ? "error" : details.state === "done" ? "done" : "loading";
+	const status =
+		details.state === "error" ? "error" : details.state === "done" ? "done" : "loading";
 	const startedAtMs = progressStartedAtMs(details) ?? Date.now();
+	const working = status === "loading";
 	return defineResultRenderer({
 		renderContent(width) {
 			const row = renderUrlStatusRow({
@@ -108,25 +98,11 @@ function renderScrapeProgressCard(
 				theme,
 				startedAtMs,
 			});
-			const summary = `web_scrape ${details.state}${
-				theme ? separator(theme) : " · "
-			}${muted("(ctrl+o to expand)", theme)}`;
+			const summary = `web_scrape ${details.state}${separator(theme)}${muted("(ctrl+o to expand)", theme)}`;
 			const lines = [row, "", summary];
-			if (expanded && details.checklist?.length) {
-				lines.push(
-					"",
-					...details.checklist.map((item) =>
-						formatChecklistText({
-							label: item.label,
-							detail: item.detail,
-						}),
-					),
-				);
-			}
-			if (details.state !== "done" && details.state !== "error") {
-				const frame = currentSpinnerFrame();
-				return [...lines, "", `${frame} Working...`].join("\n");
-			}
+			if (expanded && details.checklist?.length)
+				lines.push("", ...details.checklist.map(formatChecklistText));
+			if (working) lines.push("", `${currentSpinnerFrame()} Working...`);
 			return lines.join("\n");
 		},
 		padToWidth: true,
@@ -146,7 +122,6 @@ function renderScrapeResultCard(
 ): RenderComponent {
 	const url = envelope.finalUrl ?? envelope.url ?? "unknown URL";
 	const state = envelope.error ? "error" : "done";
-	const md = () => markdownPreviewComponent(envelope.format, options.preview, theme);
 	return renderStackedResultCard(
 		{
 			body: (width) => renderUrlStatusRow({ url, label: state, state, width, theme }),
@@ -154,7 +129,7 @@ function renderScrapeResultCard(
 			expanded: options.expanded,
 			notice: options.notice,
 			expandedSections: (width) => scrapeExpandedSections(envelope, options, width, theme),
-			markdownPreview: md,
+			markdownPreview: () => markdownPreviewComponent(envelope.format, options.preview, theme),
 			responseId: options.responseId,
 		},
 		theme,
@@ -193,15 +168,13 @@ function buildScrapeSections(
 	const headers = envelope.headers;
 	const hasHeaders = !!headers && Object.keys(headers).length > 0;
 	const b = createTreeBuilder();
-	const dataTitle =
-		typeof envelope.data?.title === "string" ? envelope.data.title || undefined : undefined;
-	const dataDesc =
-		typeof envelope.data?.description === "string"
-			? envelope.data.description || undefined
-			: undefined;
+	const t = envelope.data?.title;
+	const d = envelope.data?.description;
+	const dataTitle = typeof t === "string" && t ? t : undefined;
+	const dataDesc = typeof d === "string" && d ? d : undefined;
 
+	b.add("page", "title", dataTitle);
 	if (hasHeaders) {
-		b.add("page", "title", dataTitle);
 		const url = envelope.finalUrl ?? envelope.url;
 		if (url) {
 			try {
@@ -210,11 +183,8 @@ function buildScrapeSections(
 				/* ignore */
 			}
 		}
-		b.add("page", "description", dataDesc);
-	} else {
-		b.add("page", "title", dataTitle);
-		b.add("page", "description", dataDesc);
 	}
+	b.add("page", "description", dataDesc);
 
 	/* details */
 	b.add("details", "url", envelope.url);
@@ -230,17 +200,9 @@ function buildScrapeSections(
 	b.add("details", "type", envelope.contentType);
 	b.add("details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
 
-	/* error */
 	if (envelope.error) {
-		b.add(
-			"error",
-			"code",
-			envelope.error.code
-				? theme
-					? failure(envelope.error.code, theme)
-					: envelope.error.code
-				: undefined,
-		);
+		const code = envelope.error.code;
+		b.add("error", "code", code ? (theme ? failure(code, theme) : code) : undefined);
 		b.add("error", "phase", envelope.error.phase);
 		b.add("error", "message", envelope.error.message);
 	}
@@ -262,17 +224,15 @@ function addHeaderSections(
 	}
 	const cc = parseCacheControl(headers["cache-control"]);
 	const cdnCc = parseCacheControl(headers["cdn-cache-control"]);
-	const fmtCc = (info: CacheControlInfo) => {
-		let v = `max-age ${formatSeconds(info.maxAge)}`;
-		if (info.swr) v += `  +swr ${formatSeconds(info.swr)}`;
-		return v;
-	};
-	if (cdnCc) b.add("cache", "cdn", fmtCc(cdnCc));
-	else if (cc) b.add("cache", "cdn", fmtCc(cc));
+	const fmtCc = (maxAge: number, swr: number | undefined) =>
+		swr
+			? `max-age ${formatSeconds(maxAge)}  +swr ${formatSeconds(swr)}`
+			: `max-age ${formatSeconds(maxAge)}`;
+	const primary = cdnCc ?? cc;
+	if (primary) b.add("cache", "cdn", fmtCc(primary.maxAge, primary.swr));
 	if (cc?.maxAge !== undefined && (!cdnCc || cdnCc.maxAge !== cc.maxAge)) {
-		let v = `max-age ${formatSeconds(cc.maxAge)}`;
-		if (cc.swr && (!cdnCc || cdnCc.swr !== cc.swr)) v += `  +swr ${formatSeconds(cc.swr)}`;
-		b.add("cache", "browser", v);
+		const swr = cc.swr && (!cdnCc || cdnCc.swr !== cc.swr) ? cc.swr : undefined;
+		b.add("cache", "browser", fmtCc(cc.maxAge, swr));
 	}
 
 	/* server */
@@ -287,55 +247,38 @@ function addHeaderSections(
 	/* time */
 	if (headers["date"]) b.add("time", "fetched", formatHttpTime(headers["date"]));
 	if (headers["last-modified"]) {
-		let mv = formatHttpTime(headers["last-modified"]);
-		const diffSec = Math.floor(
-			(new Date(headers["date"] ?? Date.now()).getTime() -
-				new Date(headers["last-modified"]).getTime()) /
-				1000,
-		);
-		if (diffSec > 0) mv += `  (${formatSeconds(diffSec)} ago)`;
-		b.add("time", "modified", mv);
+		const now = new Date(headers["date"] ?? Date.now()).getTime();
+		const diffSec = Math.floor((now - new Date(headers["last-modified"]).getTime()) / 1000);
+		const suffix = diffSec > 0 ? `  (${formatSeconds(diffSec)} ago)` : "";
+		b.add("time", "modified", `${formatHttpTime(headers["last-modified"])}${suffix}`);
 	}
 
-	/* raw headers */
 	const headerEntries = Object.entries(headers).filter(
 		(e): e is [string, string] => typeof e[1] === "string",
 	);
 	for (const [k, v] of headerEntries)
 		b.add("headers", `${k}:`, v.length > 120 ? `${v.slice(0, 120)}...` : v);
 
-	/* trace */
 	const respId = envelope.responseId ?? "";
 	if (respId || headerEntries.length > 0) {
-		if (respId) b.add("trace", "response", respId.length >= 8 ? respId.slice(0, 8) : respId);
+		if (respId) b.add("trace", "response", respId.slice(0, 8));
 		b.add("trace", "headers", `${headerEntries.length} total`);
 	}
 }
 
-function parseAgeSeconds(value: string | undefined): number | undefined {
-	if (value === undefined) return;
-	const n = Number(value);
+function parseAgeSeconds(v: string | undefined): number | undefined {
+	const n = v === undefined ? NaN : Number(v);
 	return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
-function formatSeconds(totalSeconds: number): string {
-	const MIN = 60;
-	const HOUR = 60 * MIN;
-	const DAY = 24 * HOUR;
-	if (totalSeconds < MIN) return `${totalSeconds}s`;
-	if (totalSeconds < HOUR) {
-		const m = Math.floor(totalSeconds / MIN);
-		const s = totalSeconds % MIN;
-		return s > 0 ? `${m}m ${s}s` : `${m}m`;
-	}
-	if (totalSeconds < DAY) {
-		const h = Math.floor(totalSeconds / HOUR);
-		const m = Math.floor((totalSeconds % HOUR) / MIN);
-		return m > 0 ? `${h}h ${m}m` : `${h}h`;
-	}
-	const d = Math.floor(totalSeconds / DAY);
-	const h = Math.floor((totalSeconds % DAY) / HOUR);
-	return h > 0 ? `${d}d ${h}h` : `${d}d`;
+const fmtTwoUnit = (whole: number, big: string, rem: number, small: string) =>
+	rem > 0 ? `${whole}${big} ${rem}${small}` : `${whole}${big}`;
+
+function formatSeconds(s: number): string {
+	if (s < 60) return `${s}s`;
+	if (s < 3600) return fmtTwoUnit(Math.floor(s / 60), "m", s % 60, "s");
+	if (s < 86400) return fmtTwoUnit(Math.floor(s / 3600), "h", Math.floor((s % 3600) / 60), "m");
+	return fmtTwoUnit(Math.floor(s / 86400), "d", Math.floor((s % 86400) / 3600), "h");
 }
 
 interface CacheControlInfo {
@@ -343,35 +286,34 @@ interface CacheControlInfo {
 	swr: number | undefined;
 }
 
+const CC_FIELDS: Array<[string, "maxAge" | "swr"]> = [
+	["max-age=", "maxAge"],
+	["s-maxage=", "maxAge"],
+	["stale-while-revalidate=", "swr"],
+];
+
 function parseCacheControl(value: string | undefined): CacheControlInfo | undefined {
 	if (!value) return;
 	let maxAge: number | undefined;
 	let swr: number | undefined;
 	for (const part of value.toLowerCase().split(",")) {
 		const t = part.trim();
-		if (t.startsWith("max-age=")) {
-			const n = Number(t.slice(8));
-			if (Number.isFinite(n)) maxAge = n;
-		} else if (t.startsWith("s-maxage=")) {
-			const n = Number(t.slice(9));
-			if (Number.isFinite(n)) maxAge = n;
-		} else if (t.startsWith("stale-while-revalidate=")) {
-			const n = Number(t.slice(24));
-			if (Number.isFinite(n)) swr = n;
+		for (const [prefix, field] of CC_FIELDS) {
+			if (!t.startsWith(prefix)) continue;
+			const n = Number(t.slice(prefix.length));
+			if (Number.isFinite(n)) {
+				if (field === "maxAge") maxAge = n;
+				else swr = n;
+			}
 		}
 	}
 	return maxAge !== undefined ? { maxAge, swr } : undefined;
 }
 
-function formatHttpTime(dateStr: string): string {
-	try {
-		const d = new Date(dateStr);
-		if (Number.isNaN(d.getTime())) return dateStr;
-		const hh = d.getUTCHours().toString().padStart(2, "0");
-		const mm = d.getUTCMinutes().toString().padStart(2, "0");
-		const ss = d.getUTCSeconds().toString().padStart(2, "0");
-		return `${hh}:${mm}:${ss} GMT`;
-	} catch {
-		return dateStr;
-	}
+const pad2 = (n: number) => n.toString().padStart(2, "0");
+
+function formatHttpTime(s: string): string {
+	const d = new Date(s);
+	if (Number.isNaN(d.getTime())) return s;
+	return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())} GMT`;
 }

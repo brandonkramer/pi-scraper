@@ -36,21 +36,12 @@ function renderMapLines(
 	width: number,
 	theme?: RenderTheme,
 ): string {
-	const rows = urls.slice(0, expanded ? 50 : 12).map((entry) => renderMapRow(entry, width, theme));
-	const more =
-		urls.length > rows.length ? muted(`… ${urls.length - rows.length} more urls`, theme) : "";
-	const lines = [...rows];
-	if (more) lines.push(more);
-	return lines.join("\n");
-}
-
-function renderMapRow(entry: MapUrlEntryView, width: number, theme?: RenderTheme): string {
-	return renderUrlBadgeRow({
-		url: entry.url,
-		badge: entry.source,
-		width,
-		theme,
-	});
+	const rows = urls
+		.slice(0, expanded ? 50 : 12)
+		.map((entry) => renderUrlBadgeRow({ url: entry.url, badge: entry.source, width, theme }));
+	if (urls.length > rows.length)
+		rows.push(muted(`… ${urls.length - rows.length} more urls`, theme));
+	return rows.join("\n");
 }
 
 export function renderWebMapResult(
@@ -60,13 +51,9 @@ export function renderWebMapResult(
 ): RenderComponent {
 	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
 	if (isProgress(details))
-		return renderProgressCard("web_map", details, theme, {
-			allowIcons: false,
-		});
+		return renderProgressCard("web_map", details, theme, { allowIcons: false });
 	const envelope = details as Partial<
-		ResultEnvelope<{
-			urls?: { url: string; source?: string; title?: string }[];
-		}>
+		ResultEnvelope<{ urls?: { url: string; source?: string; title?: string }[] }>
 	>;
 	const urls = Array.isArray(envelope.data?.urls) ? envelope.data.urls : [];
 	const summary = [
@@ -74,12 +61,9 @@ export function renderWebMapResult(
 		!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
 	]
 		.filter(Boolean)
-		.join(theme ? separator(theme) : " · ");
-	if (urls.length === 0) {
-		return renderText(`${summary}\n\n${muted("No URLs discovered.", theme)}`, {
-			padToWidth: true,
-		});
-	}
+		.join(separator(theme));
+	if (urls.length === 0)
+		return renderText(`${summary}\n\n${muted("No URLs discovered.", theme)}`, { padToWidth: true });
 	return defineResultRenderer({
 		renderContent(width) {
 			const mapText = renderMapLines(urls, expanded, width, theme);

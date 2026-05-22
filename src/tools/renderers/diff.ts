@@ -2,7 +2,7 @@ import { formatChecklistItem, formatChecklistText } from "../../tui/checklist.ts
 import { errorLabel, freshnessLabel } from "../../tui/envelope.ts";
 import { renderProgressCard } from "../../tui/progress.ts";
 import { renderText } from "../../tui/text.ts";
-import { muted, separator } from "../../tui/theme.ts";
+import { joinSegments, muted, separator } from "../../tui/theme.ts";
 import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 /** @file Pi web_scrape/diff tool result renderer. */
 import {
@@ -32,37 +32,21 @@ export function renderWebDiffResult(
 ): RenderComponent {
 	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
 	if (isProgress(details))
-		return renderProgressCard("web_scrape diff", details, theme, {
-			allowIcons: false,
-		});
+		return renderProgressCard("web_scrape diff", details, theme, { allowIcons: false });
 	const envelope = details as Partial<ResultEnvelope<DiffData>>;
 	const diff = envelope.data;
 	const title = envelope.error
 		? errorLabel("web_scrape", envelope.error, { allowIcons: false })
-		: [diffTitle(diff, envelope.summary), freshnessLabel(envelope)]
-				.filter(Boolean)
-				.join(separator());
+		: joinSegments([diffTitle(diff, envelope.summary), freshnessLabel(envelope)]);
 	return renderChecklistResult(
 		title,
 		expanded,
 		{
 			items: [
-				{
-					label: "fetched current page",
-					state: diff?.current ? "done" : "info",
-				},
-				{
-					label: "loaded previous snapshot",
-					state: diff?.previous ? "done" : "warning",
-				},
-				{
-					label: "compared normalized content",
-					state: diff ? "done" : "info",
-				},
-				{
-					label: "saved snapshot",
-					state: envelope.responseId ? "done" : "info",
-				},
+				{ label: "fetched current page", state: diff?.current ? "done" : "info" },
+				{ label: "loaded previous snapshot", state: diff?.previous ? "done" : "warning" },
+				{ label: "compared normalized content", state: diff ? "done" : "info" },
+				{ label: "saved snapshot", state: envelope.responseId ? "done" : "info" },
 			],
 			preview: envelope.answerContext ?? result.content[0]?.text,
 			responseId: envelope.responseId,
@@ -85,17 +69,16 @@ export function renderChecklistResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	if (!expanded) {
-		const hint = muted("(ctrl+o to expand)", theme);
 		const notice = options.notice ? `\n\n${muted(options.notice, theme)}` : "";
-		return renderText(`${title}${separator(theme)}${hint}${notice}`, {
+		return renderText(`${title}${separator(theme)}${muted("(ctrl+o to expand)", theme)}${notice}`, {
 			padToWidth: true,
 		});
 	}
 	const lines = [title];
 	if (options.notice) lines.push("", muted(options.notice, theme));
 	if (options.items?.length) {
-		const formatter = options.icons === false ? formatChecklistText : formatChecklistItem;
-		lines.push("", ...options.items.map(formatter));
+		const fmt = options.icons === false ? formatChecklistText : formatChecklistItem;
+		lines.push("", ...options.items.map(fmt));
 	}
 	if (options.preview) lines.push("", options.preview.slice(0, 500));
 	if (options.responseId) lines.push("", muted(`responseId: ${options.responseId}`, theme));

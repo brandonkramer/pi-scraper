@@ -54,30 +54,16 @@ export function crawlExpandedDetails(
 	pages: readonly CrawlPageView[],
 	metadata: { jobId?: unknown; packageResponseId?: unknown } = {},
 ): string {
-	const cap = excerptCapForCount(pages.length);
+	const cap = Math.max(100, Math.min(500, Math.floor(1000 / Math.max(1, pages.length))));
 	return renderResourceItemList(
 		pages.map((page) => toCrawlListItem(page, cap)),
-		{
-			header: "Per-page details:",
-			metadata,
-		},
+		{ header: "Per-page details:", metadata },
 	);
 }
 
-function excerptCapForCount(count: number): number {
-	return Math.max(100, Math.min(500, Math.floor(1000 / Math.max(1, count))));
-}
-
 function toCrawlListItem(page: CrawlPageView, excerptCap = 180): ResourceListItem {
-	if (page.error) {
-		return {
-			ok: false,
-			url: page.finalUrl ?? page.url ?? "unknown URL",
-			fields: {},
-			error: page.error,
-		};
-	}
 	const url = page.finalUrl ?? page.url ?? "unknown URL";
+	if (page.error) return { ok: false, url, fields: {}, error: page.error };
 	return {
 		ok: true,
 		url,
@@ -106,9 +92,7 @@ export function renderWebCrawlResult(
 	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
 	if (isProgress(details)) {
 		if (isBatchProgress(details)) return renderBatchProgressCard(details, expanded, theme);
-		return renderProgressCard("web_crawl", details, theme, {
-			allowIcons: true,
-		});
+		return renderProgressCard("web_crawl", details, theme, { allowIcons: true });
 	}
 	const envelope = details as Partial<ResultEnvelope<{ metadata?: CrawlMeta; pages?: unknown[] }>>;
 	const metadata = envelope.data?.metadata;

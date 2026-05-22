@@ -4,9 +4,9 @@ import { type Static, Type } from "typebox";
 import { listSnapshots } from "../diff/snapshots.ts";
 import { getJobManifest } from "../storage/jobs/manifest.ts";
 import { readResponse } from "../storage/responses/read.ts";
-import { paintFirstLineBg } from "../tui/bg-paint.ts";
 import { renderSimpleCall } from "../tui/call.ts";
 import { buildEnvelopeRows } from "../tui/envelope.ts";
+import { paintFirstLineBg } from "../tui/pill.ts";
 import { defineResultRenderer } from "../tui/result-renderer.ts";
 import { paintFg } from "../tui/theme.ts";
 import { renderTreeSections } from "../tui/tree.ts";
@@ -74,11 +74,7 @@ async function getJob(jobId: string) {
 
 async function getSnapshotList(snapshotUrl: string, snapshotName?: string, snapshotTag?: string) {
 	try {
-		const entries = await listSnapshots({
-			url: snapshotUrl,
-			snapshotName,
-			snapshotTag,
-		});
+		const entries = await listSnapshots({ url: snapshotUrl, snapshotName, snapshotTag });
 		return toolResult({
 			text: `Found ${entries.length} snapshot(s) for ${snapshotUrl}`,
 			data: entries,
@@ -116,10 +112,12 @@ function getResultError(error: StructuredError): PiToolShell<ResultEnvelope<unde
 }
 
 function summarizeData(value: unknown): string {
-	if (Array.isArray(value)) return `${value.length} item${value.length === 1 ? "" : "s"}`;
-	if (value && typeof value === "object")
-		return `${Object.keys(value).length} field${Object.keys(value).length === 1 ? "" : "s"}`;
 	if (value === null || value === undefined) return "done";
+	if (Array.isArray(value)) return `${value.length} item${value.length === 1 ? "" : "s"}`;
+	if (typeof value === "object") {
+		const k = Object.keys(value).length;
+		return `${k} field${k === 1 ? "" : "s"}`;
+	}
 	if (typeof value === "string") return value;
 	if (typeof value === "number" || typeof value === "boolean") return String(value);
 	return JSON.stringify(value);
@@ -132,12 +130,13 @@ function renderGetResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const envelope = result.details as Record<string, unknown> | undefined;
-	const hasError = Boolean(envelope?.error);
-	const statusLine = hasError
-		? paintFg(theme, "error", "✕ no result")
-		: paintFg(theme, "accent", "✓ result found");
+	const hasError = !!envelope?.error;
+	const statusLine = paintFg(
+		theme,
+		hasError ? "error" : "accent",
+		hasError ? "✕ no result" : "✓ result found",
+	);
 	const sections = buildEnvelopeRows(envelope);
-
 	return defineResultRenderer({
 		renderContent(width) {
 			const lines = [`└─ ${statusLine}`];

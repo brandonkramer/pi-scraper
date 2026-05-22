@@ -20,22 +20,10 @@ export type ProgressState =
 
 export type ToolRequirement = "local" | "browser" | "cloud" | "llm";
 
-/**
- * Object record used when narrowing unknown JSON-like values.
- *
- * @remarks
- *   This is intentionally broad: callers that need array or prototype exclusion should add those
- *   checks locally after narrowing to object shape.
- */
+/** JSON-like object record. Intentionally broad; narrow further at callsites. */
 export type UnknownRecord = Record<string, unknown>;
 
-/**
- * Narrows unknown values to non-null object records.
- *
- * @remarks
- *   Shared by storage and tool adapter boundaries that receive loosely typed host or persisted
- *   data.
- */
+/** Narrow unknown to non-null object record. Used at storage/adapter boundaries. */
 export function isUnknownRecord(value: unknown): value is UnknownRecord {
 	return typeof value === "object" && value !== null;
 }
@@ -117,7 +105,7 @@ export interface CacheMetadata extends FreshnessMetadata {
 	staleness?: string;
 }
 
-/** Source note used by agent-facing tools to ground concise synthesis context. */
+/** Agent-facing source note. */
 export interface AgenticSourceNote {
 	id: string;
 	title?: string;
@@ -128,7 +116,7 @@ export interface AgenticSourceNote {
 	sourceType?: string;
 }
 
-/** Trust and coverage signals that help downstream assistants avoid overclaiming. */
+/** Trust/coverage signals. */
 export interface AgenticQualitySignals {
 	confidence?: "high" | "medium" | "low";
 	freshness?: "current" | "stale_possible" | "unknown";
@@ -139,7 +127,7 @@ export interface AgenticQualitySignals {
 	knownGaps?: string[];
 }
 
-/** Follow-up capability hint for assistants; not a required user-facing question. */
+/** Follow-up capability hint. */
 export interface AgenticNextAction {
 	action: "retrieve" | "refresh" | "rerun" | "narrow" | "compare" | "inspect" | "export";
 	tool?: `web_${string}`;
@@ -177,31 +165,22 @@ export interface ResultEnvelope<TData = unknown> {
 	qualitySignals?: AgenticQualitySignals;
 	nextActions?: AgenticNextAction[];
 	assistantGuidance?: string;
-	/**
-	 * Fetch path note for callers; currently set when scrape follows a same-origin alternate URL or a
-	 * meta-refresh redirect.
-	 */
-	fetchedVia?:
-		| {
-				kind: "alternate";
-				url: string;
-				finalUrl?: string;
-				type?: string;
-				originalUrl?: string;
-				originalFinalUrl?: string;
-		  }
-		| {
-				kind: "meta-refresh";
-				url: string;
-				finalUrl?: string;
-				originalUrl?: string;
-				originalFinalUrl?: string;
-				/** Chain of URLs traversed via meta-refresh redirects. */
-				chain?: string[];
-		  };
+	/** Fetch path note: set when scrape follows a same-origin alternate or a meta-refresh redirect. */
+	fetchedVia?: FetchedViaInfo;
 	diagnostics?: Record<string, unknown>;
 	error?: StructuredError;
 }
+
+interface FetchedViaCommon {
+	url: string;
+	finalUrl?: string;
+	originalUrl?: string;
+	originalFinalUrl?: string;
+}
+
+export type FetchedViaInfo =
+	| (FetchedViaCommon & { kind: "alternate"; type?: string })
+	| (FetchedViaCommon & { kind: "meta-refresh"; chain?: string[] });
 
 export interface ProgressChecklistItem {
 	id: string;
@@ -231,12 +210,7 @@ export interface ProgressDetails<TData = unknown> {
 }
 
 export function isProgress(value: unknown): value is ProgressDetails {
-	return Boolean(
-		value &&
-		typeof value === "object" &&
-		"_progress" in value &&
-		(value as ProgressDetails)._progress,
-	);
+	return !!value && typeof value === "object" && "_progress" in value && !!value._progress;
 }
 
 export interface CommonRequestOptions {
@@ -266,12 +240,9 @@ export interface CommonScrapeOptions extends CommonRequestOptions {
 	browserProfile?: string;
 	osProfile?: string;
 
-	// Session support (Tasks 28 + 30)
 	sessionId?: string;
 	saveSession?: boolean;
 	clearSession?: boolean;
-
-	// Browser rendering options (Tasks 29 + 30)
 	browserBackend?: BrowserBackend;
 	waitUntil?: "domcontentloaded" | "load" | "networkidle";
 	stealth?: boolean;
@@ -283,7 +254,6 @@ export interface CommonScrapeOptions extends CommonRequestOptions {
 	locale?: string;
 	timezone?: string;
 
-	// Raw inspection / line filtering (Task 48)
 	linesMatching?: string[];
 	contextLines?: number;
 	caseSensitive?: boolean;
@@ -324,13 +294,7 @@ export interface ExtractorCapability {
 	requirements?: ToolRequirement[];
 }
 
-/**
- * Creates a string enum schema compatible with JSON Schema `enum` pattern.
- *
- * @remarks
- *   Inlined from the previous `@earendil-works/pi-ai` re-export so pi-scraper can drop the full
- *   pi-ai dependency tree while keeping the same schema shape.
- */
+/** JSON Schema string enum builder. Inlined from pi-ai re-export. */
 export function StringEnum<T extends string>(
 	values: readonly T[],
 	options?: { description?: string; default?: string },
