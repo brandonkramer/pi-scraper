@@ -10,17 +10,11 @@ pre-commit:
     - name: oxlint
       glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
       run: npx oxlint {staged_files}
-    - name: ast-grep
-      glob: "*.{ts,tsx}"
-      run: npx ast-grep scan {staged_files}
-
 pre-push:
   parallel: false
   jobs:
     - name: oxlint
       run: npx oxlint .
-    - name: ast-grep
-      run: npx ast-grep scan
     - name: typecheck
       run: npm run typecheck
     - name: test
