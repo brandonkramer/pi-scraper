@@ -71,7 +71,8 @@ export async function runSelectorExtractionTool(
 			data,
 			url: result.url,
 			format: "json",
-			summary,
+			// Omit summary when it duplicates main text to avoid double-rendering
+			summary: showSummary ? undefined : summary,
 			assistantGuidance: buildGuidance(result.selectorResult),
 		});
 	} catch (error) {
