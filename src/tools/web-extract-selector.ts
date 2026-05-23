@@ -61,12 +61,11 @@ export async function runSelectorExtractionTool(
 		const summary = buildSummary(result.selectorResult, result.extractResult);
 		const data = limitSelectorData(result.extractResult);
 		// Use summary as the main display text when there are multiple matches,
-		// to avoid the Pi TUI producing blank lines from huge extracted content.
-		// Full data is retrievable via web_get_result with the responseId.
-		const text =
-			result.selectorResult.directMatches + result.selectorResult.adaptiveMatches > 1
-				? summary
-				: result.extractResult.text || summary;
+		// Show extracted content for direct matches and small adaptive/healed sets;
+		// use summary for large adaptive/healed sets to avoid blank-line overflow.
+		const showSummary =
+			result.selectorResult.strategy !== "direct" && result.selectorResult.adaptiveMatches > 5;
+		const text = showSummary ? summary : result.extractResult.text || summary;
 		return toolResult({
 			text,
 			data,
