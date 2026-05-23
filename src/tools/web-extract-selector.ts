@@ -16,6 +16,7 @@ import { inputErrorResult, toolResult } from "./infra/result.ts";
 import type { WebExtractToolOptions } from "./web-extract.ts";
 
 const DATA_PREVIEW_LIMIT = 10;
+const TEXT_PREVIEW_CHARS = 2000;
 
 export interface SelectorParams {
 	action?: string;
@@ -60,8 +61,9 @@ export async function runSelectorExtractionTool(
 		);
 		const summary = buildSummary(result.selectorResult, result.extractResult);
 		const data = limitSelectorData(result.extractResult);
+		const text = result.extractResult.text ? limitTextContent(result.extractResult.text) : summary;
 		return toolResult({
-			text: result.extractResult.text || summary,
+			text,
 			data,
 			url: result.url,
 			format: "json",
@@ -123,6 +125,13 @@ function buildGuidance(selectorResult: {
 	if (selectorResult.directMatches > 0 && !selectorResult.saved) {
 		return "Consider enabling autoSave to make this extraction robust against future layout changes.";
 	}
+}
+
+/** Limit text to a reasonable display size with a truncation notice. */
+function limitTextContent(text: string): string {
+	if (text.length <= TEXT_PREVIEW_CHARS) return text;
+	const truncated = text.slice(0, TEXT_PREVIEW_CHARS);
+	return `${truncated}\n\n… (truncated, ${(text.length / 1024).toFixed(0)} KB total — use responseId for full text)`;
 }
 
 /**
