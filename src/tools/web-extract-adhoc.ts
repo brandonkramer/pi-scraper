@@ -1,6 +1,7 @@
 /** @file Web_extract action="adhoc" handler — model-backed schema extraction. */
 import { loadEffectiveConfig } from "../config.ts";
 import { extractAdHoc, MissingExtractInputError } from "../extract/adhoc/index.ts";
+import type { GroundedField } from "../extract/grounding.ts";
 import type { ToolExecutionContext } from "./infra/define.ts";
 import {
 	resolveAdapterFromRegistry,
@@ -86,7 +87,7 @@ export async function runAdHocExtraction(
 			" using cached scrape input",
 		);
 		return scrapeInputToolResult({
-			text: summarizeExtraction(result.data),
+			text: summarizeExtraction(result.data, result.grounded),
 			data: result,
 			input: result.input,
 			fallbackUrl: params.url,
@@ -105,7 +106,11 @@ export async function runAdHocExtraction(
 	}
 }
 
-function summarizeExtraction(data: unknown): string {
+function summarizeExtraction(data: unknown, grounded?: GroundedField[]): string {
 	if (typeof data === "string") return data.slice(0, 1200);
-	return `Extracted structured data\n${JSON.stringify(data, null, 2).slice(0, 1200)}`;
+	const base = `Extracted structured data\n${JSON.stringify(data, null, 2).slice(0, 1200)}`;
+	if (!grounded || grounded.length === 0) return base;
+	const verified = grounded.filter((g) => g.sourceSpan !== null).length;
+	const total = grounded.length;
+	return `${base}\n(${verified}/${total} fields source-grounded)`;
 }

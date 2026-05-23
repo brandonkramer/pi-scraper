@@ -128,3 +128,4 @@ This peer-optional design ensures users without custom LLM setups do not need to
 - Selector mode supports adaptive fallback: if a saved selector fails, it tries fingerprint-based relocation; if that also fails, it falls back to text-anchor healing (parsing the selector for tag/class/id signals and matching semantic neighbors).
 - For images/files, first extract the URL with selector/pattern, then call `web_scrape saveToFile=true` to download.
 - Adhoc mode requires a model adapter (Pi host model or registered adapter).
+- **Source grounding**: `action=adhoc` automatically post-processes LLM output to locate each extracted string value in the cleaned source text, returning `grounded[]` with `{field, value, sourceSpan: {start, end}}` for verifiable fields and `sourceSpan: null` for unverifiable ones.

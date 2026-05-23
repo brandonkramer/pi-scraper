@@ -1,14 +1,13 @@
-/**
- * @fileoverview Ad-hoc extraction public entrypoint.
- */
+/** @file Ad-hoc extraction public entrypoint. */
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
 import type { ModelAdapter } from "../adhoc/model.ts";
+import { groundExtractionResult } from "../grounding.ts";
+import { prepareExtractionInput } from "../input.ts";
 import {
 	type AdHocExtractOptions,
 	type AdHocExtractResult,
 	MissingExtractInputError,
 } from "./types.ts";
-import { prepareExtractionInput } from "../input.ts";
 
 export { MissingExtractInputError };
 export type { AdHocExtractOptions, AdHocExtractResult };
@@ -29,5 +28,12 @@ export async function extractAdHoc<T = unknown>(
 		},
 		signal,
 	);
-	return { input: prepared.input, data: response.data, raw: response.raw, usage: response.usage };
+	const grounded = groundExtractionResult(response.data, prepared.content);
+	return {
+		input: prepared.input,
+		data: response.data,
+		grounded,
+		raw: response.raw,
+		usage: response.usage,
+	};
 }
