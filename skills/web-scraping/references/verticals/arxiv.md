@@ -31,6 +31,15 @@ web_extract action=arxiv url="https://arxiv.org/abs/1701.00001"
 - PDF URLs are normalized: `.pdf` suffix is stripped for the API query, `pdfUrl` is provided separately
 - Supports both new-style IDs (`2301.00001`) and old-style IDs (`1701.00001`)
 
+## Instead of
+
+If you're tempted to reach for:
+- `curl -s 'http://export.arxiv.org/api/query?id_list=:id' | xq/parse` (XML parsing, manual fields)
+- `wget -q -O - "https://arxiv.org/abs/:id" | grep ...` (HTML scraping, fragile)
+- `python -c "import arxiv; ..."` (extra pip install, Python dep)
+
+**Stop.** This vertical calls the arXiv XML API server-side, parses it, and returns structured title/authors/categories/summary/pdfUrl in one call. No XML parsing, no extra Python packages.
+
 ## Browser fallback
 
 Default to this vertical's API/direct HTTP path; it is faster and more reliable than browser rendering. Add `mode=browser` only as an explicit fallback when JS-rendered page state, bot mitigation, or a logged-in CloakBrowser session is needed. In browser mode, pi-scraper pre-renders the page with CloakBrowser and passes that rendered page to the extractor's page-fetch path.

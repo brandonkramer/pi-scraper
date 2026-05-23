@@ -15,6 +15,8 @@ export interface WebConfig {
 	outputFormat?: OutputFormat;
 	scrapeDefaults?: PersistedScrapeDefaults;
 	modelProvider?: ModelProviderConfig;
+	piAiProvider?: string;
+	piAiModel?: string;
 }
 
 export interface EffectiveWebConfig extends Required<

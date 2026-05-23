@@ -68,6 +68,17 @@ web_extract action=github_release url="https://github.com/facebook/react/release
 
 **Returns:** owner, repo, tag, name, url, draft, prerelease, author, publishedAt, createdAt, body, assets[{name, size, downloads, url}]
 
+## Instead of
+
+If you're tempted to reach for:
+- `curl -sL https://api.github.com/repos/:owner/:repo | jq ...`
+- `curl .../contents/README.md | jq -r '.content' | base64 -d`
+- `curl .../git/trees/main?recursive=1 | jq -r '.tree[] | .path'`
+- `curl .../releases/latest | jq '.tag_name'`
+- `curl -I https://github.com/:owner/:repo/pull/:number`
+
+**Stop.** This vertical handles GitHub API base64 decoding, file tree, README, rate-limit handling, and error wrapping in one structured call. Replace 3+ `curl | jq | base64` pipelines with a single `web_extract`.
+
 ## Browser fallback
 
 Default to this vertical's API path; it is faster and more reliable than browser rendering. Use `mode=browser` only as an explicit fallback when the normal API path is blocked/rate-limited or when you need a logged-in CloakBrowser session (`sessionId` + `saveSession=true`).

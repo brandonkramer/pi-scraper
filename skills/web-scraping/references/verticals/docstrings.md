@@ -31,6 +31,16 @@ web_extract action=docstrings url="https://raw.githubusercontent.com/expressjs/e
 - Extracts all exported symbols with full parameter and return type annotations
 - Use `format=raw` + `linesMatching` on the same URL if you need to grep the raw source body instead
 
+## Instead of
+
+If you're tempted to reach for:
+- `curl -s <raw-source-url> | grep -A 10 "@param"` (fragile, one language)
+- `python -c "import ast; ..."` (Python-only, extra runtime)
+- `typedoc --json ... | jq '...'` (TypeScript-only, heavy tool install)
+- `npm install -g documentation && documentation read ...` (heavy JS tooling)
+
+**Stop.** This vertical parses TS/JS/Py/Rust source files server-side and returns structured export symbols with full parameter/return type annotations in one call. Language auto-detection, no CLI tools, no extra installs.
+
 ## Browser fallback
 
 Default to this vertical's API/direct HTTP path; it is faster and more reliable than browser rendering. Add `mode=browser` only as an explicit fallback when JS-rendered page state, bot mitigation, or a logged-in CloakBrowser session is needed. In browser mode, pi-scraper pre-renders the page with CloakBrowser and passes that rendered page to the extractor's page-fetch path.

@@ -70,6 +70,17 @@ web_extract action=crates_io url="https://crates.io/crates/anyhow"
 - No HTML scraping — fast and reliable
 - npm supports scoped packages (`@scope/name`) and specific version queries
 
+## Instead of
+
+If you're tempted to reach for:
+- `curl -s https://registry.npmjs.org/:name | jq ...` (npm)
+- `npm view :name version --json 2>/dev/null` (npm, needs Node installed)
+- `curl -s https://pypi.org/pypi/:name/json | jq ...` (PyPI)
+- `pip show :name --json 2>/dev/null` (PyPI, needs Python)
+- `curl -s https://crates.io/api/v1/crates/:name | jq ...` (crates.io)
+
+**Stop.** This vertical hits all three registry APIs internally and returns structured name/version/license/homepage in one call. No curl, no jq, no language runtime needed.
+
 ## Browser fallback
 
 Default to this vertical's API path; it is faster and more reliable than browser rendering. Use `mode=browser` only as an explicit fallback when the normal API path is blocked/rate-limited or when you need a logged-in CloakBrowser session (`sessionId` + `saveSession=true`).

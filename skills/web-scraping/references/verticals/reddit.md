@@ -47,6 +47,15 @@ web_extract action=reddit-listing url="https://www.reddit.com/r/typescript"
 - Post extractor fetches top 5 comments by default.
 - **No bypass available.** Reddit's robots.txt is enforced.
 
+## Instead of
+
+If you're tempted to reach for:
+- `curl -s 'https://www.reddit.com/r/:sub/.json' | jq ...` (may be blocked by robots.txt)
+- `curl -s 'https://old.reddit.com/r/:sub/comments/:id/.json' | jq ...` (same issue)
+- Scraping Reddit's HTML and parsing it manually
+
+**Stop.** This vertical handles robots.txt enforcement, endpoint fallback (new Reddit → old Reddit), and structured output for posts and subreddit feeds — in one call. No manual `.json` suffix juggling.
+
 ## Browser fallback
 
 Default to this vertical's API/direct HTTP path; it is faster and more reliable than browser rendering. Add `mode=browser` only as an explicit fallback when JS-rendered page state, bot mitigation, or a logged-in CloakBrowser session is needed. In browser mode, pi-scraper pre-renders the page with CloakBrowser and passes that rendered page to the extractor's page-fetch path.

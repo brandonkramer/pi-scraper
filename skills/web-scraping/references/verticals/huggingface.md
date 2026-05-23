@@ -53,6 +53,15 @@ web_extract action=huggingface_dataset url="https://huggingface.co/datasets/ILSV
 - `gated` can be boolean or string — indicates if the model requires login approval
 - The `huggingface_model` extractor rejects reserved paths (e.g., `huggingface.co/datasets/...` goes to the dataset extractor)
 
+## Instead of
+
+If you're tempted to reach for:
+- `curl -s https://huggingface.co/api/models/:owner/:model | jq ...` (raw API, no shaping)
+- `curl -s https://huggingface.co/api/datasets/:owner/:dataset | jq ...` (same)
+- Scraping Hugging Face HTML for model/dataset card data
+
+**Stop.** This vertical calls the Hugging Face API internally and returns structured id/pipelineTag/downloads/likes/cardData in one call. No `curl | jq` needed.
+
 ## Browser fallback
 
 Default to this vertical's API path; it is faster and more reliable than browser rendering. Use `mode=browser` only as an explicit fallback when the normal API path is blocked/rate-limited or when you need a logged-in CloakBrowser session (`sessionId` + `saveSession=true`).

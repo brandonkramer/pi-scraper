@@ -30,6 +30,14 @@ web_extract action=hackernews url="https://news.ycombinator.com/item?id=40349012
 - `score` is the upvote count; `comments` is the total descendant count (not just top-level)
 - Does NOT fetch the full comment tree — use the item's `text` field for Ask HN self-posts
 
+## Instead of
+
+If you're tempted to reach for:
+- `curl -s 'https://hacker-news.firebaseio.com/v0/item/:id.json' | jq ...` (raw Firebase API, no shaping)
+- `curl -s 'https://news.ycombinator.com/item?id=:id' | grep ...` (HTML scraping, fragile)
+
+**Stop.** This vertical calls the Firebase API internally and returns structured type/title/url/score/text in one call. No `jq`, no HTML parsing.
+
 ## Browser fallback
 
 Default to this vertical's API/direct HTTP path; it is faster and more reliable than browser rendering. Add `mode=browser` only as an explicit fallback when JS-rendered page state, bot mitigation, or a logged-in CloakBrowser session is needed. In browser mode, pi-scraper pre-renders the page with CloakBrowser and passes that rendered page to the extractor's page-fetch path.

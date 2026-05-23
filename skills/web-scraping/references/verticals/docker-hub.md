@@ -22,6 +22,15 @@ web_extract action=docker_hub url="https://hub.docker.com/r/bitnami/postgresql"
 
 **Returns:** namespace, name, type, description, stars, pulls, private, owner, createdAt, updatedAt
 
+## Instead of
+
+If you're tempted to reach for:
+- `curl -s https://hub.docker.com/v2/repositories/:namespace/:repo | jq ...`
+- `curl -s https://hub.docker.com/v2/repositories/library/:repo | jq ...` (official images)
+- Scraping Docker Hub HTML
+
+**Stop.** This vertical calls the Docker Hub API internally and returns structured namespace/name/stars/pulls/description in one call. No `curl | jq` needed.
+
 ## Browser fallback
 
 Default to this vertical's API path; it is faster and more reliable than browser rendering. Use `mode=browser` only as an explicit fallback when the normal API path is blocked/rate-limited or when you need a logged-in CloakBrowser session (`sessionId` + `saveSession=true`).
