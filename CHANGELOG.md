@@ -2,7 +2,7 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
-## [Unreleased]
+## [0.9.0] - 2026-05-23
 
 ### Added
 
