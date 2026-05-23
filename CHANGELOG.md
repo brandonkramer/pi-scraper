@@ -24,6 +24,26 @@ All notable changes to `pi-scraper` are summarized from the git history and rele
 - **Selector self-healing** (`web_extract action=selector`) — third-tier text-anchor fallback when direct match and fingerprint relocation both fail; parses selector signals (tag/class/id) to find semantic neighbors.
 - **Source-grounded adhoc extraction** (`web_extract action=adhoc`) — post-processes LLM output to locate each extracted value in cleaned source text; returns `grounded[]` with `{field, value, sourceSpan: {start, end}}` or `sourceSpan: null` when unverifiable.
 
+### Changed
+
+- **TUI renderer compaction** — major result-display overhaul across all tools:
+  - Introduced `TreeBuilder` helper for composable tree-section output; collapsed two scrape section builders into unified `buildScrapeSections`.
+  - Compacted status pills with `STATE_BG`/`GLYPH` lookup tables; inlined progress card details and `renderResult` callbacks.
+  - Deduplicated format helpers: `formatSeconds` → `fmtTwoUnit`, added `parseAgeSeconds`, `formatHttpTime`, `pad2`.
+  - Simplified envelope rendering: `KEY_DESCRIPTIONS` via `Object.fromEntries`, inlined `expandedEnvelopeText` extras, flattened `renderEnvelopeResult`.
+  - Trimmed verbose JSDoc across `types.ts`, `tui/types.ts`; collapsed `ProgressState` union.
+  - Batch rows: contextual `matches?.length` optional chaining, extracted `BatchResultCardOptions`.
+- **Type.Any() → typed schemas** — replaced `Type.Any()` across all `web_*` tool schemas with properly typed schemas (enums, typed arrays, strict unions) so LLMs see valid values at decision time.
+- **Skill docs** — mentioned `raw` and `text` scrape formats; moved Peer-Optional Model Adapter reference out of Crawl section into Adhoc LLM Extraction section.
+
+### Fixed
+
+- **Stored result lookup failures now marked as errors** — `web_get_result` properly flags failed lookups (missing `responseId`, expired snapshot) as error results instead of silently returning undefined.
+
+### Removed
+
+- **ast-grep from lefthook** — pre-commit ast-grep checks removed; the lefthook pipeline now relies on oxlint and `check-residue.sh`.
+
 ## [0.8.3] - 2026-05-21
 
 ### Fixed
