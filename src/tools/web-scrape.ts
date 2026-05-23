@@ -10,6 +10,7 @@ import {
 } from "../diff/snapshots.ts";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import { saveBodyToDownloads } from "../http/download-storage.ts";
+import { resolveProxyParam } from "../http/proxy-pool.ts";
 import { getOrCreateSession } from "../http/session.ts";
 import { describeScrapeResult, formatAge } from "../scrape/describe.ts";
 import { filterLines } from "../scrape/line-filter.ts";
@@ -62,7 +63,7 @@ export const webScrapeSchema = Type.Object({
 			description: "Headers.",
 		}),
 	),
-	proxy: Type.Optional(Type.String()),
+	proxy: Type.Optional(Type.Union([Type.String(), Type.Array(Type.String())])),
 	respectRobots: Type.Optional(Type.Boolean()),
 	refresh: Type.Optional(Type.Boolean()),
 	followAlternates: Type.Optional(Type.Unsafe<boolean>({})),
@@ -173,11 +174,12 @@ async function readScrape(
 	}
 	const { loadEffectiveConfig } = await import("../config.ts");
 	const config = await loadEffectiveConfig();
+	const resolvedProxy = resolveProxyParam(params.proxy);
 	const session = params.sessionId ? await getOrCreateSession(params.sessionId) : undefined;
 	if (session) {
 		const extra = params as Record<string, unknown>;
 		if (extra.browserProfile) session.defaultBrowserProfile = extra.browserProfile as string;
-		if (params.proxy) session.defaultProxy = params.proxy;
+		if (resolvedProxy) session.defaultProxy = resolvedProxy;
 		if (params.mode) session.defaultMode = params.mode;
 		if (extra.headers)
 			session.defaultHeaders = {
@@ -185,7 +187,8 @@ async function readScrape(
 				...(extra.headers as Record<string, string>),
 			};
 	}
-	const scrapeOptions = resolveScrapeOptions(params, config, session);
+	const cleanParams = { ...params, proxy: resolvedProxy };
+	const scrapeOptions = resolveScrapeOptions(cleanParams, config, session);
 	await emitProgress(onUpdate, {
 		state: "loading",
 		url: params.url,
@@ -334,10 +337,11 @@ async function summarizeScrape(params: Params, options: WebScrapeToolOptions, si
 		const { loadEffectiveConfig } = await import("../config.ts");
 		const { summarizePage } = await import("../extract/summarize.ts");
 		const config = await loadEffectiveConfig();
+		const summaryParams = { ...params, proxy: resolveProxyParam(params.proxy) };
 		const result = await summarizePage(
 			{
 				...config.scrapeDefaults,
-				...params,
+				...summaryParams,
 				mode: params.mode ?? config.scrapeMode,
 				format: params.format ?? config.outputFormat,
 			},
@@ -368,7 +372,8 @@ async function diffScrape(
 	const { loadEffectiveConfig } = await import("../config.ts");
 	const config = await loadEffectiveConfig();
 	const diffOptions = typeof params.diff === "boolean" ? {} : (params.diff as DiffParams);
-	const scrapeOptions = resolveScrapeOptions(params, config);
+	const diffCleanParams = { ...params, proxy: resolveProxyParam(params.proxy) };
+	const scrapeOptions = resolveScrapeOptions(diffCleanParams, config);
 	await emitProgress(onUpdate, {
 		state: "loading",
 		url: params.url,

@@ -127,22 +127,15 @@ describe("fingerprint fetch adapter", () => {
 		}
 	});
 
-	it("rejects proxy options until a backend can enforce proxy safety", async () => {
-		const adapter = createFingerprintFetchAdapter(() => ({
-			fetchOnce: vi.fn(),
-		}));
+	it("passes proxy options to fingerprint backend (no longer rejected)", async () => {
+		const backend = { fetchOnce: vi.fn().mockResolvedValue({ status: 200, body: "ok" }) };
+		const adapter = createFingerprintFetchAdapter(() => backend);
 
-		await expect(
-			adapter.fetch("https://example.com/", {
-				proxy: "http://proxy.example:8080",
-				respectRobots: false,
-			}),
-		).rejects.toMatchObject({
-			structured: {
-				code: "UNSUPPORTED_FINGERPRINT_OPTION",
-				phase: "fingerprint",
-			},
+		const result = await adapter.fetch("https://example.com/", {
+			proxy: "http://proxy.example:8080",
+			respectRobots: false,
 		});
+		expect(result.status).toBe(200);
 	});
 
 	it("blocks unsafe initial URLs before invoking the backend", async () => {

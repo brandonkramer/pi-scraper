@@ -28,6 +28,10 @@ export const webCrawlSchema = Type.Object({
 	seed: Type.Optional(Type.String()),
 	status: Type.Optional(Type.String()),
 	limit: Type.Optional(Type.Integer()),
+	strategy: Type.Optional(
+		Type.Union([Type.Literal("bfs"), Type.Literal("dfs"), Type.Literal("best-first")]),
+	),
+	proxy: Type.Optional(Type.Union([Type.String(), Type.Array(Type.String())])),
 	concurrency: Type.Optional(Type.Integer()),
 	perHostConcurrency: Type.Optional(Type.Integer()),
 	...scrapeModeOptionSchema,

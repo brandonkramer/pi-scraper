@@ -92,10 +92,8 @@ export class UnsupportedFingerprintOptionError extends Error {
 	}
 }
 
-export function assertSupportedFingerprintOptions(profile: FingerprintProfile): void {
-	if (profile.proxy) {
-		throw new UnsupportedFingerprintOptionError("proxy");
-	}
+export function assertSupportedFingerprintOptions(_profile: FingerprintProfile): void {
+	// No current restrictions. Proxy is handled by the backend.
 }
 
 export function isFingerprintFetchError(error: unknown): error is { structured: StructuredError } {

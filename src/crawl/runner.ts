@@ -14,7 +14,7 @@ import {
 } from "../storage/jobs/errors.ts";
 import { setupScrapeJob } from "../storage/jobs/setup.ts";
 import type { CommonScrapeOptions, StructuredError } from "../types.ts";
-import { CrawlFrontier, type FrontierItem } from "./frontier.ts";
+import { type CrawlStrategy, CrawlFrontier, type FrontierItem } from "./frontier.ts";
 import {
 	type CrawlMetadata,
 	type CrawlStateOptions,
@@ -38,6 +38,7 @@ export interface CrawlRunOptions extends CommonScrapeOptions, CrawlStateOptions 
 	sameOrigin?: boolean;
 	include?: string[];
 	exclude?: string[];
+	strategy?: CrawlStrategy;
 	seedSitemap?: boolean;
 	resume?: boolean;
 	concurrency?: number;
@@ -73,6 +74,7 @@ export async function runCrawl(
 		sameOrigin: options.sameOrigin ?? DEFAULT_CRAWL_LIMITS.sameOrigin,
 		include: options.include,
 		exclude: options.exclude,
+		strategy: options.strategy,
 		initialQueue: state.frontier,
 		initialSeen: state.visited,
 	});

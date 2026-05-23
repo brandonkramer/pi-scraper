@@ -255,6 +255,7 @@ export class HttpClient {
 				},
 				signal,
 			});
+
 			const result = await materializeFetchStreamResponse({
 				url,
 				status: response.statusCode,

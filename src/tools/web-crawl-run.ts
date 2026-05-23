@@ -11,6 +11,7 @@ import {
 import { loadEffectiveConfig } from "../config.ts";
 import { runCrawl } from "../crawl/runner.ts";
 import { loadCrawlMetadata, updateCrawlMetadata, type CrawlMetadata } from "../crawl/state.ts";
+import { resolveProxyParam } from "../http/proxy-pool.ts";
 import type { ScrapeResult } from "../scrape/pipeline.ts";
 import { freshnessFromTimestamp } from "../storage/cache/freshness.ts";
 import { storeCompiledContext } from "../storage/context/build.ts";
@@ -49,6 +50,8 @@ export async function crawlRun(params: Params, signal: AbortSignal, onUpdate?: T
 		{
 			...config.scrapeDefaults,
 			...params,
+			proxy: resolveProxyParam(params.proxy),
+			strategy: params.strategy,
 			mode: params.mode ?? config.scrapeMode,
 			format: config.outputFormat,
 			onProgress: (progress) => {

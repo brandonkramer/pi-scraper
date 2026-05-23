@@ -14,21 +14,15 @@ const expectedNames = [
 ] as const;
 
 const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
-	web_scrape: 420,
-	web_crawl: 290,
+	web_scrape: 430,
+	web_crawl: 330,
 	web_map: 180,
 	web_batch: 230,
 	web_extract: 700,
 	web_get_result: 160,
 };
 
-const scrapeOnlyFields = [
-	"proxy",
-	"maxChars",
-	"onlyMainContent",
-	"timeoutSeconds",
-	"refresh",
-] as const;
+const scrapeOnlyFields = ["maxChars", "onlyMainContent", "timeoutSeconds", "refresh"] as const;
 
 const configOnlyFields = [
 	"browserProfile",
