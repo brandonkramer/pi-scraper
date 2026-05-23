@@ -4,6 +4,24 @@ All notable changes to `pi-scraper` are summarized from the git history and rele
 
 ## [Unreleased]
 
+### Added
+
+- **Crawl Strategies** (`web_crawl`) — choose traversal strategy via the `strategy` parameter (`bfs`, `dfs`, or `best-first`).
+  - `bfs` (Default): explores sibling pages at current depth first.
+  - `dfs`: goes deep before wide using a LIFO/stack frontier (perfect for hierarchical document sub-trees).
+  - `best-first`: dynamically sorts and prioritizes pages with highest structural/index value (uses a `depth * 10 + URL pattern bonus` scoring algorithm).
+  - Active strategy is rendered directly in the live progress TUI card.
+- **Proxy Pools & Health Tracking** (`web_scrape` & `web_crawl`) — route requests through rotating proxy arrays.
+  - Pass single proxy string or string array: `proxy=["http://proxy1:8080", "http://proxy2:8080"]`.
+  - ProxyPool manages round-robin rotation with concurrency-safe isolation.
+  - Monitors proxy health: failed requests trigger a 60-second cooldown; 3 consecutive failures temporarily remove a proxy as unhealthy.
+  - Fully integrated and compatible with TLS fingerprinting (`mode=fingerprint`).
+- **Peer-Optional Fallback Model Adapter** (`@earendil-works/pi-ai`) — added optional lazy-loaded `@earendil-works/pi-ai` adapter for page-scoped summaries and adhoc extraction.
+  - Tiered resolution: Pi's host model (`ctx.model`) -> `@earendil-works/pi-ai` adapter (using configs `piAiProvider`/`piAiModel`) -> cross-extension `pi:model-adapter/*` event-bus fallback.
+  - Dynamic imports ensure a zero-dependency install footprint for users who only use deterministic tools.
+- **"Instead of" Guides in Vertical Skill Docs** — Added "Instead of" sections across all 12 vertical extraction reference files. Helps agents avoid anti-patterns like custom `curl | jq | base64` shell pipelines, pointing them to single-call `web_extract` verticals instead.
+- **Markdown semantic chunks** (`web_scrape`) — `chunks=true` returns paragraph-bounded, token-budgeted `chunks[]` alongside full markdown for RAG workflows (`maxTokens` default 500, `overlapTokens` default 50).
+
 ## [0.8.3] - 2026-05-21
 
 ### Fixed

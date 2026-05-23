@@ -3,6 +3,7 @@ import {
 	isBatchProgress,
 	isBatchProgressView,
 } from "../../batch/progress-state.ts";
+import { formatCrawlStrategyLabel } from "../../crawl/state.ts";
 import { renderBatchProgressCard, renderBatchResultCard } from "../../tui/batch.ts";
 import {
 	activityCountSegment,
@@ -27,6 +28,7 @@ export interface CrawlMeta {
 	failedCount: number;
 	visitedCount: number;
 	frontierCount: number;
+	strategy?: string;
 }
 
 export interface CrawlPageView {
@@ -104,6 +106,12 @@ export function renderWebCrawlResult(
 				failureCountSegment(failed, "failed", theme),
 				activityCountSegment(metadata?.visitedCount ?? 0, "visited", "◉", theme),
 				neutral(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
+				metadata?.strategy
+					? neutral(
+							`· ${formatCrawlStrategyLabel(metadata.strategy) ?? metadata.strategy} crawl`,
+							theme,
+						)
+					: undefined,
 				!expanded ? muted("(ctrl+o to expand)", theme) : undefined,
 			]
 				.filter(Boolean)

@@ -33,6 +33,15 @@ web_extract action=summarize content="# Hello World" sentences=2
 web_extract action=summarize url="https://example.com" provider="gemini"
 ```
 
+## Fallback Model Adapter (`@earendil-works/pi-ai`)
+
+For summarizing pages or text using `web_extract action="summarize"`, the scraper employs a tiered fallback adapter system:
+- **Primary**: Pi's host model (`ctx.model`).
+- **Secondary**: Peer-optional `@earendil-works/pi-ai` adapter (lazy-loaded and auto-registered with priority 30) using custom configs (`piAiProvider`/`piAiModel`).
+- **Fallback**: The cross-extension `pi:model-adapter/*` event-bus registry.
+
+This peer-optional design ensures users without custom LLM setups do not need to install heavy AI dependencies.
+
 ## Rules
 
 - **Single source only.** No multi-source summarization — use `web_batch` + `compile=true` for multiple pages.

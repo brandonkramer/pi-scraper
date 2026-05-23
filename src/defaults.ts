@@ -25,6 +25,8 @@ export const DEFAULT_OUTPUT_FORMAT: OutputFormat = "markdown";
 export const DEFAULT_TIMEOUT_SECONDS = 20;
 export const DEFAULT_MAX_BYTES = 30 * 1024 * 1024;
 export const DEFAULT_MAX_CHARS = 50_000;
+export const DEFAULT_CHUNK_MAX_TOKENS = 500;
+export const DEFAULT_CHUNK_OVERLAP_TOKENS = 50;
 export const DEFAULT_RESPECT_ROBOTS = true;
 export const DEFAULT_BROWSER_BACKEND = "cloak" as const;
 

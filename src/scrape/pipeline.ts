@@ -7,7 +7,13 @@ import { type AlternateLink, discoverAlternateLinks } from "../parse/discovery/a
 import { discoverMetaRefresh, type MetaRefresh } from "../parse/discovery/meta-refresh.ts";
 import { loadDom } from "../parse/dom/adapter.ts";
 import type { ReadableExtraction, extractReadable } from "../parse/page/readable.ts";
-import type { CommonScrapeOptions, OutputFormat, ResultEnvelope, ScrapeMode } from "../types.ts";
+import type {
+	Chunk,
+	CommonScrapeOptions,
+	OutputFormat,
+	ResultEnvelope,
+	ScrapeMode,
+} from "../types.ts";
 import { normalizeGitHubBlobUrl } from "../url/github-raw.ts";
 import { pickAlternateForFormat, shouldFollowAlternate } from "./alternate-match.ts";
 import type { LineMatch } from "./line-filter.ts";
@@ -42,6 +48,8 @@ export interface ScrapeData {
 	charset?: string;
 	/** Line-filter matches when linesMatching was provided. */
 	matches?: LineMatch[];
+	/** Token-budgeted markdown chunks when `chunks: true`. */
+	chunks?: Chunk[];
 }
 
 export type ScrapeResult = ResultEnvelope<ScrapeData>;

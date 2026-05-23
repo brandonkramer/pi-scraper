@@ -82,6 +82,12 @@ export interface Citation {
 	endOffset?: number;
 }
 
+export interface Chunk {
+	text: string;
+	tokenCount: number;
+	index: number;
+}
+
 export interface ResponseStorageMetadata {
 	responseId: string;
 	fullOutputPath: string;
@@ -232,6 +238,12 @@ export interface CommonRequestOptions {
 export interface CommonScrapeOptions extends CommonRequestOptions {
 	mode?: ScrapeMode;
 	format?: OutputFormat;
+	/** Return `chunks[]` alongside full markdown (paragraph-bounded, token-budgeted). */
+	chunks?: boolean;
+	/** Max tokens per chunk when `chunks` is true (default 500). */
+	maxTokens?: number;
+	/** Overlap tokens between consecutive chunks (default 50). */
+	overlapTokens?: number;
 	include?: string[];
 	exclude?: string[];
 	onlyMainContent?: boolean;

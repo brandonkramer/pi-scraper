@@ -14,15 +14,23 @@ const expectedNames = [
 ] as const;
 
 const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
-	web_scrape: 430,
+	web_scrape: 500,
 	web_crawl: 330,
 	web_map: 180,
 	web_batch: 230,
-	web_extract: 700,
+	web_extract: 860,
 	web_get_result: 160,
 };
 
-const scrapeOnlyFields = ["maxChars", "onlyMainContent", "timeoutSeconds", "refresh"] as const;
+const scrapeOnlyFields = [
+	"maxChars",
+	"onlyMainContent",
+	"timeoutSeconds",
+	"refresh",
+	"chunks",
+	"maxTokens",
+	"overlapTokens",
+] as const;
 
 const configOnlyFields = [
 	"browserProfile",
@@ -52,7 +60,7 @@ describe("web tool contracts", () => {
 			tokens: approximateTokens(serializeContract(tool).length),
 		}));
 		const totalTokens = contractStats.reduce((total, stat) => total + stat.tokens, 0);
-		expect(totalTokens).toBeLessThanOrEqual(1960);
+		expect(totalTokens).toBeLessThanOrEqual(2220);
 		for (const stat of contractStats) {
 			const name = stat.name as (typeof expectedNames)[number];
 			expect(stat.tokens).toBeLessThanOrEqual(perToolTokenCeilings[name]);

@@ -22,8 +22,21 @@ export interface CrawlMetadata {
 	failedCount: number;
 	currentDepth?: number;
 	maxDepthVisited?: number;
+	strategy?: string;
 	lastError?: Pick<StructuredError, "code" | "message" | "phase" | "url">;
 	responseId?: string;
+}
+
+const STRATEGY_LABELS: Record<string, string> = {
+	bfs: "BFS",
+	dfs: "DFS",
+	"best-first": "best-first",
+};
+
+/** Human-readable crawl strategy label for progress/TUI output. */
+export function formatCrawlStrategyLabel(strategy?: string): string | undefined {
+	if (!strategy) return undefined;
+	return STRATEGY_LABELS[strategy] ?? strategy;
 }
 
 export interface CrawlState {

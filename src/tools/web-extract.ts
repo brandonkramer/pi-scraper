@@ -16,6 +16,12 @@ import {
 import { runAdHocExtraction } from "./web-extract-adhoc.ts";
 import { hasPatternRequest, runPatternInspection } from "./web-extract-pattern.ts";
 import { runSelectorExtractionTool } from "./web-extract-selector.ts";
+import {
+	runCssExtract,
+	runXpathExtract,
+	runRegexExtract,
+	runCosine,
+} from "./web-extract-strategies.ts";
 import { runSummarize } from "./web-extract-summarize.ts";
 import { runApiSurfaceExtraction } from "./web-extract-surface.ts";
 import {
@@ -32,6 +38,10 @@ const extractActions = [
 	"selector",
 	"summarize",
 	"adhoc",
+	"css-extract",
+	"xpath-extract",
+	"regex-extract",
+	"cosine",
 ] as const;
 
 const extractActionSchema = Type.Union([
@@ -42,6 +52,10 @@ const extractActionSchema = Type.Union([
 	Type.Literal("selector"),
 	Type.Literal("summarize"),
 	Type.Literal("adhoc"),
+	Type.Literal("css-extract"),
+	Type.Literal("xpath-extract"),
+	Type.Literal("regex-extract"),
+	Type.Literal("cosine"),
 ]);
 
 const extractSchemaPresetSchema = Type.Union(
@@ -109,6 +123,19 @@ export const webExtractSchema = Type.Object({
 	threshold: Type.Optional(Type.Number({ description: "Confidence threshold." })),
 	limit: Type.Optional(Type.Integer({ description: "Result limit." })),
 	respectRobots: Type.Optional(Type.Boolean({ description: "Default: true." })),
+	// Strategy extraction params (css-extract, xpath-extract, regex-extract, cosine)
+	selectors: Type.Optional(
+		Type.Unsafe<Record<string, string>>({
+			type: "object",
+			description: "Field-to-selector mapping for css-extract/xpath-extract/regex-extract",
+		}),
+	),
+	query: Type.Optional(Type.String({ description: "Search query for cosine relevance scoring." })),
+	topN: Type.Optional(Type.Integer({ description: "Top-N results for cosine (default 5)." })),
+	minScore: Type.Optional(Type.Number({ description: "Minimum cosine score (0-1, default 0)." })),
+	flags: Type.Optional(
+		Type.String({ description: "Regex flags for regex-extract (default 'g')." }),
+	),
 });
 
 export type Params = Static<typeof webExtractSchema>;
@@ -139,6 +166,12 @@ export function createWebExtractTool(
 			if (action === "selector")
 				return await runSelectorExtractionTool(params, options, signal, onUpdate);
 			if (action === "summarize") return await runSummarize(params, options, signal, context);
+			if (action === "css-extract") return await runCssExtract(params, options, signal, onUpdate);
+			if (action === "xpath-extract")
+				return await runXpathExtract(params, options, signal, onUpdate);
+			if (action === "regex-extract")
+				return await runRegexExtract(params, options, signal, onUpdate);
+			if (action === "cosine") return await runCosine(params, options, signal, onUpdate);
 			return await runAdHocExtraction(params, options, signal, context);
 		},
 		renderCall: (args, theme) =>
@@ -156,11 +189,14 @@ export const webExtractTool = createWebExtractTool();
 function inferExtractAction(params: Params): ExtractAction {
 	if (params.action) return params.action;
 	if (params.selector) return "selector";
+	if (params.selectors && typeof params.selectors === "object" && !Array.isArray(params.selectors))
+		return "css-extract";
 	if (!params.url && !params.content && !params.extractor) return "list";
 	if (params.extract === "api-surface") return "surface";
 	if (params.extractor) return "vertical";
 	if (hasPatternRequest(params)) return "pattern";
 	if (params.sentences !== undefined || params.bullets !== undefined) return "summarize";
+	if (params.query) return "cosine";
 	return "adhoc";
 }
 
@@ -171,5 +207,12 @@ function renderExtractCallParts(params: Params): string[] {
 		return ["selector", params.selector, params.url ?? "provided content"].filter(
 			Boolean,
 		) as string[];
+	if (action === "css-extract")
+		return ["css-extract", params.url ?? "inline content"].filter(Boolean);
+	if (action === "xpath-extract")
+		return ["xpath-extract", params.url ?? "inline content"].filter(Boolean);
+	if (action === "regex-extract")
+		return ["regex-extract", params.url ?? "inline content"].filter(Boolean);
+	if (action === "cosine") return ["cosine", params.url ?? "inline content"].filter(Boolean);
 	return [action, params.extractor, params.url ?? "provided content"].filter(Boolean) as string[];
 }

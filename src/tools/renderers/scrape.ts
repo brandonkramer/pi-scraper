@@ -29,6 +29,7 @@ import {
 import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 import {
 	isProgress,
+	type Chunk,
 	type PiToolShell,
 	type ProgressDetails,
 	type ResultEnvelope,
@@ -199,6 +200,13 @@ function buildScrapeSections(
 		b.add("details", "duration", formatDuration(envelope.timing.durationMs) ?? "");
 	b.add("details", "type", envelope.contentType);
 	b.add("details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
+
+	/* chunks */
+	const chunks = envelope.data?.chunks as Chunk[] | undefined;
+	if (chunks?.length) {
+		b.add("chunks", "count", String(chunks.length));
+		b.add("chunks", "tokens", `${chunks.reduce((sum, chunk) => sum + chunk.tokenCount, 0)} total`);
+	}
 
 	if (envelope.error) {
 		const code = envelope.error.code;

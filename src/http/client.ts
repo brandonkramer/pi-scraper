@@ -1,4 +1,4 @@
-import { request, type Dispatcher } from "undici";
+import { ProxyAgent, request, type Dispatcher } from "undici";
 
 import {
 	DEFAULT_MAX_BYTES,
@@ -243,11 +243,17 @@ export class HttpClient {
 			lowerHeaders[key.toLowerCase()] = value;
 		}
 
+		// Use ProxyAgent when a proxy URL is configured
+		const effectiveDispatcher =
+			typeof options.proxy === "string" && options.proxy.length > 0
+				? new ProxyAgent(options.proxy)
+				: this.dispatcher;
+
 		try {
 			const response = await request(url, {
 				method: options.method ?? "GET",
 				body: options.body,
-				dispatcher: this.dispatcher,
+				dispatcher: effectiveDispatcher,
 				headers: {
 					"user-agent": this.userAgent,
 					accept: "*/*",

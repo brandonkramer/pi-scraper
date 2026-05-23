@@ -20,7 +20,7 @@ Read a single URL or content.
 | `include` | array | CSS selectors for extraction |
 | `exclude` | array | CSS selectors to remove |
 | `onlyMainContent` | boolean | Strip nav/ads/sidebars |
-| `proxy` | string | Proxy URL |
+| `proxy` | string \\| string[] | Single proxy or round-robin rotation |
 | `sessionId` | string | Stateful flows (cookies, login, consent) |
 | `saveSession` | boolean | Persist session |
 | `clearSession` | boolean | Reset session state |
@@ -38,6 +38,9 @@ Read a single URL or content.
 | `sentences` | number | Truncate to N sentences |
 | `bullets` | number | Format as N bullet points |
 | `task` | string | `read` (default) or `summarize` |
+| `chunks` | boolean | Return token-budgeted `chunks[]` alongside full markdown (RAG) |
+| `maxTokens` | number | Max tokens per chunk when `chunks=true` (default 500) |
+| `overlapTokens` | number | Overlap tokens between chunks (default 50) |
 
 ## Examples
 
@@ -62,6 +65,15 @@ web_scrape url="https://example.com" diff={"snapshotName":"homepage"}
 # Compare against latest baseline (any name)
 web_scrape url="https://example.com" diff=true
 
+# Proxy rotation
+web_scrape url="https://example.com" proxy=["http://proxy1:8080","http://proxy2:8080","http://proxy3:8080"]
+
+# Single proxy
+web_scrape url="https://example.com" proxy="http://proxy:8080"
+
+# RAG: token-budgeted markdown chunks
+web_scrape url="https://example.com" chunks=true maxTokens=500 overlapTokens=50
+
 # Fingerprint for bot-protected
 web_scrape url="https://bot-protected.example" mode=fingerprint format=markdown
 
@@ -73,6 +85,21 @@ web_scrape url="https://example.com/consent" mode=fingerprint sessionId="my-site
 web_scrape url="https://example.com/dashboard" sessionId="my-site"
 
 ```
+
+## Markdown chunks (RAG)
+
+When `chunks=true`, `web_scrape` returns `chunks[]` alongside the full markdown body:
+- Paragraph-bounded splits (respects `\n\n` boundaries)
+- Each chunk ≤ `maxTokens` (default 500)
+- `overlapTokens` (default 50) duplicated at chunk boundaries for context continuity
+- Shape: `{ text, tokenCount, index }[]`
+
+## Proxy Pools & Health Tracking
+
+To bypass rate limits, geo-blocks, and IP bans, `pi-scraper` supports a robust proxy pool across both `web_scrape` and `web_crawl`:
+- **Syntax**: Pass a single proxy string or an array of string URLs: `proxy=["http://proxy1:8080", "http://proxy2:8080"]`.
+- **Health Management**: The built-in proxy pool rotates addresses round-robin. It actively monitors request status; any failed request initiates a **60-second cooldown** for that proxy, and **3 consecutive failures** flags the proxy as unhealthy, removing it from rotation.
+- **TLS Fingerprint Integration**: Proxy pools and rotation are fully compatible with bot-bypass TLS fingerprinting (`mode=fingerprint`).
 
 ## Rules
 

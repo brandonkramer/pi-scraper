@@ -10,7 +10,12 @@ import {
 } from "../batch/progress-state.ts";
 import { loadEffectiveConfig } from "../config.ts";
 import { runCrawl } from "../crawl/runner.ts";
-import { loadCrawlMetadata, updateCrawlMetadata, type CrawlMetadata } from "../crawl/state.ts";
+import {
+	formatCrawlStrategyLabel,
+	loadCrawlMetadata,
+	updateCrawlMetadata,
+	type CrawlMetadata,
+} from "../crawl/state.ts";
 import { resolveProxyParam } from "../http/proxy-pool.ts";
 import type { ScrapeResult } from "../scrape/pipeline.ts";
 import { freshnessFromTimestamp } from "../storage/cache/freshness.ts";
@@ -92,7 +97,9 @@ export async function crawlRun(params: Params, signal: AbortSignal, onUpdate?: T
 	const packageText = contextPackage
 		? ` package: ${contextPackage.value.package.urlCount} page(s), packageResponseId: ${contextPackage.responseId}.`
 		: "";
-	const text = `Crawl ${crawl.crawlId}: ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}.${surfaceText}${packageText} responseId: ${finalStored.responseId}`;
+	const strategyLabel = formatCrawlStrategyLabel(crawl.metadata.strategy);
+	const strategyText = strategyLabel ? ` strategy=${strategyLabel},` : "";
+	const text = `Crawl ${crawl.crawlId}:${strategyText} ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}.${surfaceText}${packageText} responseId: ${finalStored.responseId}`;
 	const { notice: sessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
 	return toolResult({
 		text: text + sessionSuffix,

@@ -19,6 +19,7 @@ import {
 	type CrawlMetadata,
 	type CrawlStateOptions,
 	createCrawlState,
+	formatCrawlStrategyLabel,
 	loadCrawlState,
 	saveCrawlState,
 } from "./state.ts";
@@ -68,6 +69,8 @@ export async function runCrawl(
 			})
 		: undefined;
 	const state = loaded ?? createCrawlState(seedUrl, options.crawlId);
+	const crawlStrategy = options.strategy ?? state.metadata?.strategy;
+	if (crawlStrategy && state.metadata) state.metadata.strategy = crawlStrategy;
 	const frontier = new CrawlFrontier({
 		seedUrl: state.seedUrl,
 		maxDepth: options.maxDepth ?? DEFAULT_CRAWL_LIMITS.maxDepth,
@@ -172,6 +175,7 @@ export async function runCrawl(
 					failedCount: counts.failed,
 					currentDepth,
 					maxDepthVisited,
+					strategy: crawlStrategy ?? state.metadata?.strategy,
 					lastError: lastError ?? state.metadata?.lastError,
 				};
 				const shouldFlush = jobWriter.shouldFlush(force);
@@ -283,7 +287,9 @@ function resultLinks(result: ScrapeResult): string[] {
 
 function progressSummary(metadata: CrawlMetadata, maxPages: number): string {
 	const done = metadata.succeededCount + metadata.failedCount;
-	return `${done}/${maxPages} pages · ${metadata.failedCount} failed · depth ${metadata.currentDepth ?? 0} · frontier ${metadata.frontierCount}`;
+	const strategy = formatCrawlStrategyLabel(metadata.strategy);
+	const strategySegment = strategy ? ` · strategy ${strategy}` : "";
+	return `${done}/${maxPages} pages · ${metadata.failedCount} failed · depth ${metadata.currentDepth ?? 0} · frontier ${metadata.frontierCount}${strategySegment}`;
 }
 
 function errorSummary(

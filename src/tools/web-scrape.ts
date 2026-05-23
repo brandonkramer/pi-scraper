@@ -92,6 +92,14 @@ export const webScrapeSchema = Type.Object({
 	contextLines: Type.Optional(Type.Unsafe<number>({})),
 	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
 
+	chunks: Type.Optional(
+		Type.Boolean({ description: "Return chunked output alongside full text." }),
+	),
+	maxTokens: Type.Optional(Type.Integer({ description: "Max tokens per chunk (default 500)." })),
+	overlapTokens: Type.Optional(
+		Type.Integer({ description: "Overlap tokens between chunks (default 50)." }),
+	),
+
 	...sessionOptionSchema,
 	stealth: Type.Optional(Type.Boolean()),
 	autoWait: Type.Optional(Type.Boolean()),
@@ -215,6 +223,20 @@ async function readScrape(
 		const matches = filterLines(text, needles, params.contextLines, params.caseSensitive);
 		result = { ...result, data: { ...result.data, matches } };
 	}
+
+	// Chunking: paragraph-bounded, token-budgeted segments for RAG workflows
+	if (params.chunks && !result.error) {
+		const sourceText = result.data.markdown ?? result.data.text ?? "";
+		if (sourceText.length > 0) {
+			const { chunkMarkdown } = await import("../parse/chunker.ts");
+			const chunks = chunkMarkdown(sourceText, {
+				maxTokens: params.maxTokens,
+				overlapTokens: params.overlapTokens,
+			});
+			result = { ...result, data: { ...result.data, chunks } };
+		}
+	}
+
 	await emitProgress(onUpdate, {
 		state: result.error ? "error" : "done",
 		url: result.finalUrl ?? params.url,

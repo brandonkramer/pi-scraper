@@ -8,8 +8,8 @@ description: Use for known URLs/content to scrape/read with fast or browser mode
 1. **URL from a known site?** → use `web_extract` with the matching vertical action (table below). Hits APIs directly — no HTML scraping. (GitHub, YouTube transcripts, npm, Reddit, PyPI, arXiv, etc.)
 2. **Need the raw page content?** → `web_scrape`. Read a single URL. Add `mode=fingerprint` if bot-protected.
 3. **Need JS rendering, bot mitigation, or logged-in pages?** → use `mode=browser` (CloakBrowser default; `browserBackend=playwright` opt-out).
-4. **Need a summary?** → `web_extract action=summarize`. **Need structured data?** → `web_extract` with pattern (sections/regex/excerpts), selector (CSS class/ID/attribute/XPath), or adhoc (LLM). For images/files, extract the URL then use `web_scrape saveToFile=true`.
-5. **Need to explore a site?** → `web_crawl` to follow links and read pages. Or `web_map` for URL inventory only.
+4. **Need a summary?** → `web_extract action=summarize`. **Need structured data?** → `web_extract` with pattern (sections/regex/excerpts), selector (CSS class/ID/attribute/XPath), css-extract/xpath-extract (field-mapped JSON), regex-extract (capture groups), cosine (relevance scoring), or adhoc (LLM). For images/files, extract the URL then use `web_scrape saveToFile=true`.
+5. **Need to explore a site?** → `web_crawl` to follow links and read pages (BFS/DFS/best-first). Or `web_map` for URL inventory only.
 6. **Multiple independent URLs?** → `web_batch` for parallel scraping.
 7. **Compare page changes?** → `web_scrape({ url, diff })` against stored snapshots.
 8. **Get a previous result back?** → `web_get_result` by responseId, jobId, or snapshot.
@@ -28,7 +28,7 @@ Each tool has a reference with full args, examples, and rules.
 | `web_crawl` | Follow links, read pages, build context | [ref](references/tools/web_crawl.md) |
 | `web_batch` | Scrape many independent URLs in parallel | [ref](references/tools/web_batch.md) |
 | `web_scrape` + `diff` | Diff current content against stored snapshot | [ref](references/tools/web_diff.md) |
-| `web_extract` | Vertical/pattern/selector/adhoc extraction | [ref](references/tools/web_extract.md) |
+| `web_extract` | Vertical/pattern/selector/strategy/adhoc extraction | [ref](references/tools/web_extract.md) |
 | `web_get_result` | Retrieve stored result by responseId/jobId/snapshot | [ref](references/tools/web_get_result.md) |
 
 ## Vertical extractors

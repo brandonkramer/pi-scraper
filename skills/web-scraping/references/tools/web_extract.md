@@ -10,6 +10,10 @@ Extract structured data from URLs or content — verticals, patterns, selectors,
 | `pattern` | `sections`, `regexes`, `excerpts`, `markers`, `jsonPaths` | Deterministic extraction |
 | `selector` | `selector` or `action=selector` | CSS/XPath with adaptive fallback |
 | `surface` | `extract=api-surface` | API surface extraction |
+| `css-extract` | `selectors` + `action=css-extract` | Field-mapped CSS: structured JSON per selector |
+| `xpath-extract` | `selectors` + `action=xpath-extract` | Field-mapped XPath: structured JSON per selector |
+| `regex-extract` | `selectors` + `action=regex-extract` | Regex capture groups → structured JSON |
+| `cosine` | `query` + `action=cosine` | TF-IDF cosine relevance scoring of text blocks |
 | `adhoc` | `prompt` or `schema` | LLM-backed extraction |
 | `list` | no other params | List available extractors |
 
@@ -19,11 +23,16 @@ Extract structured data from URLs or content — verticals, patterns, selectors,
 |-----------|------|-------------|
 | `url` | string | Target URL |
 | `content` | string | Inline content (when no URL) |
-| `action` | string | `vertical`, `pattern`, `selector`, `adhoc`, `list` |
+| `action` | string | `vertical`, `pattern`, `selector`, `adhoc`, `list`, `css-extract`, `xpath-extract`, `regex-extract`, `cosine` |
 | `extractor` | string | Vertical name (e.g. `github_repo`) |
 | `prompt` | string | Adhoc extraction prompt |
 | `schema` | object | JSON Schema for adhoc |
 | `selector` | string | CSS/XPath selector |
+| `selectors` | object | Field → selector map for css-extract/xpath-extract/regex-extract |
+| `query` | string | Relevance query for cosine scoring |
+| `topN` | number | Top-N results for cosine (default 5) |
+| `minScore` | number | Minimum cosine score (0–1, default 0) |
+| `flags` | string | Regex flags for regex-extract (default `g`) |
 | `selectorType` | string | `css` or `xpath` |
 | `attribute` | string | Extract attribute value from selected elements |
 | `sections` | array | Heading ranges `{name,start,end,includeStart,includeEnd,maxChars}` |
@@ -67,6 +76,18 @@ web_extract action=pattern url=https://raw.githubusercontent.com/vitejs/vite/mai
 # Selector — CSS extraction
 web_extract action=selector selector=".product-card" selectorType="css" url="https://example.com/products"
 
+# CSS-extract — structured field mapping
+web_extract action=css-extract url="https://example.com/product/1" selectors={title:"h1",price:".price",description:".desc"}
+
+# XPath-extract — structured field mapping
+web_extract action=xpath-extract url="https://example.com" selectors={title:"//h1[@class='article-title']",author:"//p[@class='byline']"}
+
+# Regex-extract — structured capture groups
+web_extract action=regex-extract content="some text" selectors={email:"(\\S+@\\S+)",phone:"(\\d{3}-\\d{3}-\\d{4})"}
+
+# Cosine — relevance scoring
+web_extract action=cosine url="https://example.com/docs" query="Node.js V8 engine" topN=3 minScore=0.05
+
 # Adhoc — LLM-backed
 web_extract action=adhoc url="https://example.com" prompt="Extract all pricing tiers" schema={type:"object",properties:{tiers:{type:"array"}}}
 
@@ -86,9 +107,21 @@ web_extract action=pattern url="https://example.com" extract=api-surface
 web_extract action=list
 ```
 
+## Fallback Model Adapter (`@earendil-works/pi-ai`)
+
+For summarizing or extracting unstructured text (`web_extract action=summarize` or `action=adhoc`), the scraper employs a tiered fallback adapter system:
+- **Primary**: Pi's host model (`ctx.model`).
+- **Secondary**: Peer-optional `@earendil-works/pi-ai` adapter (lazy-loaded and auto-registered with priority 30) using custom configs (`piAiProvider`/`piAiModel`).
+- **Fallback**: The cross-extension `pi:model-adapter/*` event-bus registry.
+
+This peer-optional design ensures users without custom LLM setups do not need to install heavy AI dependencies.
+
 ## Rules
 
-- **Prefer vertical > pattern > selector > adhoc LLM.** Use the cheapest extraction that works.
+- **Prefer vertical > pattern > css-extract > selector > adhoc LLM.** Use the cheapest extraction that works.
+- For structured data from known layouts, use `css-extract` or `xpath-extract` with a `selectors` map.
+- For text with predictable patterns (emails, phone numbers, IDs), use `regex-extract`.
+- For open-ended content relevance, use `cosine` with a natural language query (pure TS, no LLM needed).
 - Vertical extractors default to API/direct HTTP paths because they are faster and more reliable. Use `mode=browser` only as an explicit CloakBrowser fallback; it pre-renders the page, then supplies that rendered page to extractors that call `fetchPage`.
 - Pattern mode is deterministic and works offline (no LLM needed).
 - Selector mode can target CSS classes (`.card`), IDs (`#price`), tags/attributes (`img[src]`, `a[href]`), or XPath; use pattern/excerpts when matching actual visible text.

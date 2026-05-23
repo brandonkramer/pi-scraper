@@ -50,12 +50,12 @@ Ask naturally; Pi can choose the right web tool automatically:
 
 | Tool | Capability | Best For... | Contract ≈ |
 | :--- | :--- | :--- | :---: |
-| `web_scrape` | 🏠 Local | Reading a single URL as Markdown, Text, or HTML. | 308 tokens |
-| `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 158 tokens |
+| `web_scrape` | 🏠 Local | Reading a single URL as Markdown, Text, or HTML. | 426 tokens |
+| `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 322 tokens |
 | `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 58 tokens |
-| `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 195 tokens |
-| `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 337 tokens |
-| `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 56 tokens |
+| `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 224 tokens |
+| `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 852 tokens |
+| `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 120 tokens |
 
 > [!NOTE]
 > **Contract** is the total tokens for the tool declaration.
@@ -69,12 +69,15 @@ Ask naturally; Pi can choose the right web tool automatically:
 | **Shared** | `sessionId`, `saveSession`, `clearSession`, `stealth`, `autoWait`, `browserBackend`, `proxy`, `headers`, `provider` | Sessions, browser controls, and LLM provider selection. |
 | **Scrape** | `url`, `urls`, `content`, `task`, `mode`, `format`, `refresh`, `respectRobots`, `timeoutSeconds` | Targets, tasks (`read`/`summarize`), and fetch behavior. |
 | **Limits** | `maxBytes`, `maxChars`, `onlyMainContent` | Size limits and content cleaning. |
+| **RAG chunks** | `chunks`, `maxTokens`, `overlapTokens` | `chunks=true` returns paragraph-bounded `chunks[]` alongside full markdown. |
 | **Filtering** | `include`, `exclude`, `linesMatching`, `contextLines`, `caseSensitive` | Glob patterns and line-based content filtering. |
 | **Redirection**| `followAlternates`, `followMetaRefresh` | Controls for non-standard redirects. |
 | **Snapshots** | `snapshotName`, `snapshotTag`, `diff`, `compareTag`, `maxSnapshotAgeSeconds` | Versioning and diffing baselines. |
-| **Crawl** | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `concurrency`, `resume`, `crawlId`, `compile`, `seed`, `seedSitemap`, `status`, `limit`, `extract` | BFS discovery, limits, and state management. |
+| **Crawl** | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `concurrency`, `resume`, `crawlId`, `compile`, `seed`, `seedSitemap`, `status`, `limit`, `extract`, `strategy` | BFS/DFS/best-first discovery, limits, and state management. Strategy shown in progress output. |
 | **Extract** | `action`, `extractor`, `prompt`, `schema`, `selector`, `selectorType`, `attribute`, `adaptive`, `bullets`, `sentences`, `identifier`, `autoSave`, `threshold`, `extractSchema` | Vertical, ad-hoc, and selector extraction. |
 | **Patterns** | `markers`, `contains`, `excerpts`, `regexes`, `sections`, `jsonPaths`, `sourceFormat`, `length` | Deterministic inspection: strings, regex, and ranges. |
+| **Strategy Extraction** | `selectors` (field→selector map), `query`, `topN`, `minScore`, `flags` | New: css-extract, xpath-extract, regex-extract, cosine |
+| **Proxy** | `proxy` | String (single) or string[] (round-robin rotation) |
 | **Map** | `url`, `maxSitemaps` | Site-wide discovery of robots.txt and sitemaps. |
 | **Storage** | `saveToFile` | `true` or `{dir, filename, maxBytes}` for disk storage. |
 | **Retrieval** | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag` | Retrieve stored payloads and job manifests. |
@@ -94,6 +97,29 @@ Ask naturally; Pi can choose the right web tool automatically:
 // Example: Log in and then scrape a protected page
 web_scrape({ url: "https://example.com/login", sessionId: "user-1", saveSession: true })
 web_scrape({ url: "https://example.com/dashboard", sessionId: "user-1" })
+```
+
+---
+
+## 🛡️ Proxy Pools & Health Tracking
+
+To bypass rate limits, geographic restrictions, and target blocks, `pi-scraper` features a built-in proxy pool engine that manages rotating request routing across both `web_scrape` and `web_crawl`:
+
+- **Array-Based Rotation**: Pass a single proxy string or an array of multiple proxy strings: `proxy=["http://proxy1:8080", "http://proxy2:8080"]`. Requests are automatically distributed round-robin.
+- **Failover Cooldowns**: When a proxy encounter a network error or block, the engine immediately initiates a **60-second cooldown** for that proxy, preventing it from being used and letting other proxies take over.
+- **Unhealthy Pruning**: If a proxy experiences **3 consecutive failures**, it is flagged as unhealthy and removed from the active rotation entirely.
+- **TLS Fingerprint Compatibility**: Rotating proxies work seamlessly with TLS fingerprinting (`mode="fingerprint"`) for robust, light-weight anti-bot bypasses.
+
+```text
+// Example: Scrape using rotating proxies with built-in health tracking
+web_scrape({
+  url: "https://example.com",
+  proxy: [
+    "http://proxy-us.example:8080",
+    "http://proxy-eu.example:8080",
+    "http://proxy-as.example:8080"
+  ]
+})
 ```
 
 ---
@@ -119,6 +145,28 @@ Extract structured data using CSS selectors, XPath, or plain text search.
   "limit": 5
 }
 ```
+
+
+---
+
+## 🕷️ Resumable & Deep Web Crawling
+
+`web_crawl` is an high-concurrency crawler that supports pausing, resuming, and multiple path traversal strategies to build local datasets or context packages.
+
+### 🧭 Crawl Strategies
+Configure how the crawler discovers and explores links using the `strategy` parameter:
+- **`bfs` (Breadth-First Search - Default)**: Explores level-by-level (all links at depth 1, then depth 2, etc.). Best for general site scanning and sitemap building.
+- **`dfs` (Depth-First Search)**: Explores deep into a single branch (e.g., following nested subdirectories or article links) before backtracking. Perfect for systematically drilling down nested document files.
+- **`best-first`**: Sorts and prioritizes links dynamically based on structural indicators (giving priority to documentation indexes, category pages, and main article hubs).
+- **TUI Progress Feedback**: The live crawler progress bar and terminal TUI cards dynamically render the active strategy so you can monitor traversals.
+
+### 🛡️ Proxy Pools & Health Tracking
+Both `web_scrape` and `web_crawl` support rotating requests through the built-in [Proxy Pools](#-proxy-pools--health-tracking) engine, automatically handling round-robin rotation, concurrent connection limits, cooldowns, and unhealthy proxy pruning.
+
+### 🤖 Peer-Optional Fallback Model Adapter
+For summarize or ad-hoc extraction tasks (`web_extract action=summarize` or `action=adhoc`):
+- Seamlessly falls back to the user's locally-configured Pi model (OpenAI, Anthropic, Gemini, Bedrock, etc.) if no explicit adapter is registered.
+- Uses lazy dynamic imports of `@earendil-works/pi-ai` to ensure a **zero install footprint** for users who only use deterministic scraping and crawling.
 
 ---
 
