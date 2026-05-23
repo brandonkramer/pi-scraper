@@ -15,6 +15,8 @@ import { emitProgress } from "./infra/progress.ts";
 import { inputErrorResult, toolResult } from "./infra/result.ts";
 import type { WebExtractToolOptions } from "./web-extract.ts";
 
+const DATA_PREVIEW_LIMIT = 10;
+
 export interface SelectorParams {
 	action?: string;
 	selector?: string;
@@ -57,9 +59,10 @@ export async function runSelectorExtractionTool(
 			signal,
 		);
 		const summary = buildSummary(result.selectorResult, result.extractResult);
+		const data = limitSelectorData(result.extractResult);
 		return toolResult({
 			text: result.extractResult.text || summary,
-			data: result.extractResult,
+			data,
 			url: result.url,
 			format: "json",
 			summary,
@@ -120,4 +123,20 @@ function buildGuidance(selectorResult: {
 	if (selectorResult.directMatches > 0 && !selectorResult.saved) {
 		return "Consider enabling autoSave to make this extraction robust against future layout changes.";
 	}
+}
+
+/**
+ * Limit matches in the data payload to a preview size so the Pi TUI tree renderer doesn't produce
+ * hundreds of blank lines from large match sets.
+ */
+function limitSelectorData(
+	result: SelectorExtractionResult,
+): SelectorExtractionResult & { totalMatches?: number; matchesPreview?: boolean } {
+	if (result.matches.length <= DATA_PREVIEW_LIMIT) return result;
+	return {
+		...result,
+		matches: result.matches.slice(0, DATA_PREVIEW_LIMIT),
+		totalMatches: result.matches.length,
+		matchesPreview: true,
+	};
 }
