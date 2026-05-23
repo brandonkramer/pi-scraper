@@ -88,7 +88,7 @@ web_extract action=regex-extract content="some text" selectors={email:"(\\S+@\\S
 # Cosine — relevance scoring
 web_extract action=cosine url="https://example.com/docs" query="Node.js V8 engine" topN=3 minScore=0.05
 
-# Adhoc — LLM-backed
+# Adhoc — LLM-backed (returns grounded[] with sourceSpan offsets)
 web_extract action=adhoc url="https://example.com" prompt="Extract all pricing tiers" schema={type:"object",properties:{tiers:{type:"array"}}}
 
 # Marker boundaries

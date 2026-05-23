@@ -74,7 +74,7 @@ Ask naturally; Pi can choose the right web tool automatically:
 | **Redirection**| `followAlternates`, `followMetaRefresh` | Controls for non-standard redirects. |
 | **Snapshots** | `snapshotName`, `snapshotTag`, `diff`, `compareTag`, `maxSnapshotAgeSeconds` | Versioning and diffing baselines. |
 | **Crawl** | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `concurrency`, `resume`, `crawlId`, `compile`, `seed`, `seedSitemap`, `status`, `limit`, `extract`, `strategy` | BFS/DFS/best-first discovery, limits, and state management. Strategy shown in progress output. |
-| **Extract** | `action`, `extractor`, `prompt`, `schema`, `selector`, `selectorType`, `attribute`, `adaptive`, `bullets`, `sentences`, `identifier`, `autoSave`, `threshold`, `extractSchema` | Vertical, ad-hoc, and selector extraction. |
+| **Extract** | `action`, `extractor`, `prompt`, `schema`, `selector`, `selectorType`, `attribute`, `adaptive`, `bullets`, `sentences`, `identifier`, `autoSave`, `threshold`, `extractSchema` | Vertical, ad-hoc (with `grounded[]` source spans), and selector extraction. |
 | **Patterns** | `markers`, `contains`, `excerpts`, `regexes`, `sections`, `jsonPaths`, `sourceFormat`, `length` | Deterministic inspection: strings, regex, and ranges. |
 | **Strategy Extraction** | `selectors` (field→selector map), `query`, `topN`, `minScore`, `flags` | New: css-extract, xpath-extract, regex-extract, cosine |
 | **Proxy** | `proxy` | String (single) or string[] (round-robin rotation) |
@@ -146,6 +146,26 @@ Extract structured data using CSS selectors, XPath, or plain text search.
 }
 ```
 
+---
+
+## 🤖 Adhoc LLM Extraction (Source-Grounded)
+
+`web_extract action=adhoc` uses a model adapter to extract structured data from page text. After the LLM responds, pi-scraper post-processes the output to locate each extracted string in the cleaned source text.
+
+**Result shape:**
+```json
+{
+  "data": { "title": "Super Widget", "price": "$19.99" },
+  "grounded": [
+    { "field": "title", "value": "Super Widget", "sourceSpan": { "start": 23, "end": 35 } },
+    { "field": "price", "value": "$19.99", "sourceSpan": { "start": 43, "end": 49 } }
+  ]
+}
+```
+
+- **`sourceSpan`** — character offsets into the cleaned text the LLM consumed (exact, case-insensitive, or whitespace-collapsed match).
+- **`sourceSpan: null`** — value could not be verified in source (not a failure; field is still returned).
+- Tool summary shows `(verified/total fields source-grounded)`.
 
 ---
 

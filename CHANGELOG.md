@@ -21,6 +21,8 @@ All notable changes to `pi-scraper` are summarized from the git history and rele
   - Dynamic imports ensure a zero-dependency install footprint for users who only use deterministic tools.
 - **"Instead of" Guides in Vertical Skill Docs** — Added "Instead of" sections across all 12 vertical extraction reference files. Helps agents avoid anti-patterns like custom `curl | jq | base64` shell pipelines, pointing them to single-call `web_extract` verticals instead.
 - **Markdown semantic chunks** (`web_scrape`) — `chunks=true` returns paragraph-bounded, token-budgeted `chunks[]` alongside full markdown for RAG workflows (`maxTokens` default 500, `overlapTokens` default 50).
+- **Selector self-healing** (`web_extract action=selector`) — third-tier text-anchor fallback when direct match and fingerprint relocation both fail; parses selector signals (tag/class/id) to find semantic neighbors.
+- **Source-grounded adhoc extraction** (`web_extract action=adhoc`) — post-processes LLM output to locate each extracted value in cleaned source text; returns `grounded[]` with `{field, value, sourceSpan: {start, end}}` or `sourceSpan: null` when unverifiable.
 
 ## [0.8.3] - 2026-05-21
 
