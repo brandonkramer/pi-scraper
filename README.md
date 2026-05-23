@@ -167,6 +167,12 @@ Extract structured data using CSS selectors, XPath, or plain text search.
 - **`sourceSpan: null`** — value could not be verified in source (not a failure; field is still returned).
 - Tool summary shows `(verified/total fields source-grounded)`.
 
+### 🤖 Peer-Optional Fallback Model Adapter
+For `web_extract action=summarize` or `action=adhoc` when no explicit adapter is provided:
+- Seamlessly falls back to the user's locally-configured Pi model (OpenAI, Anthropic, Gemini, Bedrock, etc.) if no registered adapter is available.
+- Uses lazy dynamic imports of `@earendil-works/pi-ai` for a **zero install footprint** for users who only use deterministic scraping and crawling.
+- Also participates in the cross-extension `pi:model-adapter/*` event protocol so provider extensions can lend their LLM transport.
+
 ---
 
 ## 🕷️ Resumable & Deep Web Crawling
@@ -179,14 +185,6 @@ Configure how the crawler discovers and explores links using the `strategy` para
 - **`dfs` (Depth-First Search)**: Explores deep into a single branch (e.g., following nested subdirectories or article links) before backtracking. Perfect for systematically drilling down nested document files.
 - **`best-first`**: Sorts and prioritizes links dynamically based on structural indicators (giving priority to documentation indexes, category pages, and main article hubs).
 - **TUI Progress Feedback**: The live crawler progress bar and terminal TUI cards dynamically render the active strategy so you can monitor traversals.
-
-### 🛡️ Proxy Pools & Health Tracking
-Both `web_scrape` and `web_crawl` support rotating requests through the built-in [Proxy Pools](#-proxy-pools--health-tracking) engine, automatically handling round-robin rotation, concurrent connection limits, cooldowns, and unhealthy proxy pruning.
-
-### 🤖 Peer-Optional Fallback Model Adapter
-For summarize or ad-hoc extraction tasks (`web_extract action=summarize` or `action=adhoc`):
-- Seamlessly falls back to the user's locally-configured Pi model (OpenAI, Anthropic, Gemini, Bedrock, etc.) if no explicit adapter is registered.
-- Uses lazy dynamic imports of `@earendil-works/pi-ai` to ensure a **zero install footprint** for users who only use deterministic scraping and crawling.
 
 ---
 
