@@ -132,7 +132,7 @@ Extract structured data using CSS selectors, XPath, or plain text search.
 | :--- | :--- |
 | **`selector`** | The CSS/XPath/Text to find. |
 | **`attribute`** | Extract a specific attribute (e.g., `href`) instead of text. |
-| **`adaptive`** | Enable relocation if the page layout changes. |
+| **`adaptive`** | Enable relocation if the page layout changes. Fingerprint-based first, then text-anchor healing. |
 | **`limit`** | Maximum elements to return. |
 
 ### Example:

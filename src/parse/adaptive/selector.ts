@@ -10,6 +10,7 @@ import { ElementType } from "domelementtype";
 import type { Document, Element } from "domhandler";
 import { getElementsByTagType, isTag, textContent } from "domutils";
 
+import { healSelectorMatch } from "../../extract/selector/healing.ts";
 import { fingerprintElement, type ElementFingerprint } from "./fingerprint.ts";
 import { compareFingerprints } from "./similarity.ts";
 
@@ -41,7 +42,7 @@ export interface AdaptiveSelectorResult {
 	elements: Element[];
 
 	/** How the match was produced. */
-	strategy: "direct" | "adaptive" | "none";
+	strategy: "direct" | "adaptive" | "healed" | "none";
 
 	/** Number of direct matches (before adaptive fallback). */
 	directMatches: number;
@@ -49,7 +50,7 @@ export interface AdaptiveSelectorResult {
 	/** Number of adaptive candidates found. */
 	adaptiveMatches: number;
 
-	/** Best candidate score when strategy === "adaptive". */
+	/** Best candidate score when strategy === "adaptive" or "healed". */
 	score?: number;
 
 	/** Whether a fingerprint was saved during this call. */
@@ -90,9 +91,11 @@ export async function runAdaptiveSelector(
 		};
 	}
 
-	// 2. Direct miss — try adaptive relocation
+	// 2. Direct miss — try adaptive relocation, then healing
 	if (adaptive) {
 		const stored = await loadFingerprint(identifier);
+
+		// 2a. Fingerprint-based relocation
 		if (stored) {
 			const candidates = relocateByFingerprint(document, stored, threshold);
 			if (candidates.length > 0) {
@@ -111,9 +114,30 @@ export async function runAdaptiveSelector(
 				};
 			}
 		}
+
+		// 2b. Text-anchor healing (selector-based semantic neighbor search)
+		const healed = healSelectorMatch(document, selector, threshold, stored);
+		if (healed.length > 0) {
+			const best = healed[0];
+			const elements = healed.map((c) => c.element).slice(0, limit);
+			if (autoSave && stored) {
+				await saveFingerprint(
+					identifier,
+					best.score >= threshold ? fingerprintElement(best.element) : stored,
+				);
+			}
+			return {
+				elements,
+				strategy: "healed",
+				directMatches: 0,
+				adaptiveMatches: healed.length,
+				score: best.score,
+				saved: autoSave,
+			};
+		}
 	}
 
-	// 3. No match at all
+	// 4. No match at all
 	return {
 		elements: [],
 		strategy: "none",

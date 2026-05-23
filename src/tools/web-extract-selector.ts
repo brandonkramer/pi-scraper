@@ -99,7 +99,10 @@ function buildSummary(
 	if (selectorResult.strategy === "adaptive") {
 		return `Selector did not match directly; adaptive fallback found ${selectorResult.adaptiveMatches} candidate(s) with score ${selectorResult.score?.toFixed(2) ?? "?"}.`;
 	}
-	return "Selector did not match and no adaptive candidate met the threshold.";
+	if (selectorResult.strategy === "healed") {
+		return `Selector did not match directly; text-anchor healing found ${selectorResult.adaptiveMatches} candidate(s) with score ${selectorResult.score?.toFixed(2) ?? "?"}.`;
+	}
+	return "Selector did not match and no adaptive or healed candidate met the threshold.";
 }
 
 function buildGuidance(selectorResult: {
@@ -111,8 +114,8 @@ function buildGuidance(selectorResult: {
 	if (selectorResult.strategy === "none") {
 		return "Try a broader selector, enable adaptive mode with a lower threshold, or use the browser mode if the content is JavaScript-rendered.";
 	}
-	if (selectorResult.strategy === "adaptive") {
-		return "The selector was repaired using a stored fingerprint. Consider updating the identifier with autoSave for future stability.";
+	if (selectorResult.strategy === "adaptive" || selectorResult.strategy === "healed") {
+		return "The selector was repaired using a stored fingerprint or text-anchor heuristic. Consider updating the identifier with autoSave for future stability.";
 	}
 	if (selectorResult.directMatches > 0 && !selectorResult.saved) {
 		return "Consider enabling autoSave to make this extraction robust against future layout changes.";

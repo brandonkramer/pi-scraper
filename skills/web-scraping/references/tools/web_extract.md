@@ -125,6 +125,6 @@ This peer-optional design ensures users without custom LLM setups do not need to
 - Vertical extractors default to API/direct HTTP paths because they are faster and more reliable. Use `mode=browser` only as an explicit CloakBrowser fallback; it pre-renders the page, then supplies that rendered page to extractors that call `fetchPage`.
 - Pattern mode is deterministic and works offline (no LLM needed).
 - Selector mode can target CSS classes (`.card`), IDs (`#price`), tags/attributes (`img[src]`, `a[href]`), or XPath; use pattern/excerpts when matching actual visible text.
-- Selector mode supports adaptive fallback: if a saved selector fails, it tries to relocate it.
+- Selector mode supports adaptive fallback: if a saved selector fails, it tries fingerprint-based relocation; if that also fails, it falls back to text-anchor healing (parsing the selector for tag/class/id signals and matching semantic neighbors).
 - For images/files, first extract the URL with selector/pattern, then call `web_scrape saveToFile=true` to download.
 - Adhoc mode requires a model adapter (Pi host model or registered adapter).

@@ -1,6 +1,4 @@
-/**
- * @fileoverview Selector extraction types.
- */
+/** @file Selector extraction types. */
 export interface SelectorExtractionOptions {
 	/** Output shape. */
 	format: "text" | "html" | "markdown" | "attribute";
@@ -22,7 +20,7 @@ export interface SelectorExtractionMatch {
 
 export interface SelectorExtractionResult {
 	/** Strategy that produced the match. */
-	strategy: "direct" | "adaptive" | "none";
+	strategy: "direct" | "adaptive" | "healed" | "none";
 
 	/** Number of elements that matched directly. */
 	directMatches: number;
