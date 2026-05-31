@@ -7,7 +7,6 @@ import { renderText } from "./tool-call.ts";
 import { formatChecklistText } from "./tool-labels.ts";
 import { toolProcess, withSpinnerFooter } from "./tool-process.ts";
 import { toolResourceStatus, formatBytes } from "./tool-resource.ts";
-import { toolResultId } from "./tool-result.ts";
 import {
 	type StatusPillState,
 	renderStatusGlyph,
@@ -283,10 +282,7 @@ export function toolStackedCard(
 				for (const section of sections) {
 					if (section) lines.push("", section);
 				}
-				if (options.responseId) {
-					const ids = toolResultId([{ label: "responseId", id: options.responseId }], theme);
-					if (ids.length > 0) lines.push("", ...ids);
-				}
+				if (options.responseId) lines.push("", muted(`responseId: ${options.responseId}`, theme));
 			}
 			return lines.join("\n");
 		},
