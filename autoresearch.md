@@ -72,34 +72,44 @@ Focus on descriptions that are:
 
 ## Final Results
 
-**Baseline**: 2068 tokens → **Final**: 1394 tokens — **674 tokens saved (32.6%)**
+**Baseline**: 2068 tokens → **Final**: 1302 tokens — **766 tokens saved (37.0%)**
 
 | Tool | Before | After | Saved | Slack |
 |------|-------:|------:|:----:|:----:|
-| web_scrape | 492 | 369 | 123 (25.0%) | 131 |
-| web_crawl | 322 | 258 | 64 (19.9%) | 72 |
-| web_map | 58 | 57 | 1 (1.7%) | 123 |
-| web_batch | 224 | 191 | 33 (14.7%) | 39 |
-| web_extract | 852 | 449 | 403 (47.3%) | 411 |
+| web_scrape | 492 | 327 | 165 (33.5%) | 173 |
+| web_crawl | 322 | 234 | 88 (27.3%) | 96 |
+| web_map | 58 | 50 | 8 (13.8%) | 130 |
+| web_batch | 224 | 181 | 43 (19.2%) | 49 |
+| web_extract | 852 | 440 | 412 (48.4%) | 420 |
 | web_get_result | 120 | 70 | 50 (41.7%) | 90 |
-| **Total** | **2068** | **1394** | **674 (32.6%)** | **826** |
+| **Total** | **2068** | **1302** | **766 (37.0%)** | **918** |
 
-### What was changed (20 experiments)
+### All strategies used (24 experiments)
 
-1. **Removed 25+ redundant** param descriptions across all tools
-2. **Shortened 15+ essential** format docs to minimum viable length
-3. **Type.Union→Type.Unsafe enum**: 6 literal unions converted — saves ~130 tokens
-4. **Removed `type:string` from enums**: JSON enum values already imply string type — saves ~90 tokens
-5. **Removed `type:array/object` from Type.Unsafe**: description implies structure — saves ~48 tokens
+| Strategy | Token savings | Impact |
+|----------|:------------:|:------|
+| Remove redundant/obvious descriptions | ~250t | 25+ param desc removed (key names were self-explanatory)
+| Type.Union→Type.Unsafe enum | ~130t | `anyOf:[{const:X}]` → `enum:[X]` — 2× shorter for literal unions
+| Remove `type:string` from enums | ~90t | JSON enum values already imply string type
+| Convert `Type.Array` → `Type.Unsafe(string[])` | ~75t | Removed `"items":{}` overhead from include/exclude/linesMatching/urls
+| Convert multi-type `Type.Union` → `type:[X,Y]` | ~50t | `anyOf:[{type:X},{type:Y}]` → `type:[X,Y]` for proxy/length/compile
+| Remove `type:array/object` from Type.Unsafe | ~48t | Format docs already describe structure
+| Remove min/max constraints | ~28t | Removed from maxSitemaps (key name implies positive number)
+| Convert `Type.Record`/`Type.String` → `Type.Unsafe` | ~45t | Removed redundant type info from headers/provider
+| Shorten remaining descriptions & format docs | ~50t | All trimmed to minimum viable length
 
 ### Everything passes
-- ✅ 666 tests, 91 files — all passing
-- ✅ TypeScript compilation — clean
-- ✅ All tool-level description discriminators
-- ✅ All token ceilings well within budget
+- ✅ **666 tests, 91 files** — all passing
+- ✅ **TypeScript compilation** — clean
+- ✅ **All tool-level description discriminators** — regex checks pass
+- ✅ **All token ceilings** — well within budget (918 slack across all tools)
 
-### Remaining (16 essential descriptions)
-Format docs (4), tool descriptions (6, discriminator-required), type/value hints (6) — all genuinely essential for LLM to correctly use the tools.
+### Remaining (16 essential descriptions = 292 chars total)
+- **6 format docs** (diff, saveToFile, regexes, sections, excerpts) — only way LLM knows element shapes
+- **6 tool descriptions** (discriminator-required by tests)
+- **4 type/value hints** (browserBackend, provider, selector, selectors) — tell LLM valid values
+
+All remaining content is genuinely essential. The JSON Schema structural overhead (type markers, enum arrays, property names, object wrappers) cannot be further reduced without dropping tool support or violating the JSON Schema spec.
 
 ### Key lessons
 - `{description: "..."}` on any TypeBox type adds "description" to the JSON schema — directly to the LLM
