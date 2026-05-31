@@ -16,25 +16,23 @@ function paintAccentUrl(url: string, width: number, theme?: RenderTheme): string
 	return inlineThemeText("accent", t, theme) ?? t;
 }
 
-export interface FetchedResourceFields {
-	status?: number | string;
-	mode?: string;
-	format?: string;
-	contentType?: string;
-	downloadedBytes?: number;
-	durationMs?: number;
-	cached?: boolean;
-	staleness?: string;
-	truncated?: boolean;
-}
-
 export interface ResourceListItem {
 	readonly ok: boolean;
 	readonly url: string;
 	readonly finalUrl?: string;
 	readonly title?: string;
 	readonly excerpt?: string;
-	readonly fields: FetchedResourceFields;
+	readonly fields: {
+		status?: number | string;
+		mode?: string;
+		format?: string;
+		contentType?: string;
+		downloadedBytes?: number;
+		durationMs?: number;
+		cached?: boolean;
+		staleness?: string;
+		truncated?: boolean;
+	};
 	readonly error?: { code?: string; phase?: string; message?: string };
 }
 
