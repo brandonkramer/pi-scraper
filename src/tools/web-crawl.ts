@@ -30,8 +30,8 @@ export const webCrawlSchema = Type.Object({
 	concurrency: Type.Optional(Type.Unsafe<number>({})),
 	perHostConcurrency: Type.Optional(Type.Unsafe<number>({})),
 	...scrapeModeOptionSchema,
-	include: Type.Optional(Type.Unsafe<string[]>({ type: "array" })),
-	exclude: Type.Optional(Type.Unsafe<string[]>({ type: "array" })),
+	include: Type.Optional(Type.Unsafe<string[]>({})),
+	exclude: Type.Optional(Type.Unsafe<string[]>({})),
 	extract: Type.Optional(Type.Unsafe<string>({})),
 	compile: Type.Optional(Type.Unsafe<boolean>({})),
 
