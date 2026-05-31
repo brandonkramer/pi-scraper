@@ -33,20 +33,6 @@ export interface FetchedResourceFields {
 	truncated?: boolean;
 }
 
-export function formatResourceFields(fields: FetchedResourceFields): string {
-	const parts = [
-		fields.status ? `status ${fields.status}` : undefined,
-		fields.mode,
-		fields.format,
-		fields.contentType,
-		formatBytes(fields.downloadedBytes),
-		formatDuration(fields.durationMs),
-		fields.cached ? `cache hit${fields.staleness ? ` ${fields.staleness}` : ""}` : undefined,
-		fields.truncated ? "truncated" : undefined,
-	].filter(Boolean);
-	return parts.join(" · ") || "fetched";
-}
-
 export interface ResourceListItem {
 	readonly ok: boolean;
 	readonly url: string;
@@ -91,7 +77,22 @@ function renderResourceItemLines(item: ResourceListItem): string[] {
 			`  ${[item.error?.code, item.error?.phase, item.error?.message ?? "failed"].filter(Boolean).join(" · ")}`,
 		];
 	}
-	const lines = [`✓ ${item.url}`, `  ${formatResourceFields(item.fields)}`];
+	const fieldsStr =
+		[
+			item.fields.status ? `status ${item.fields.status}` : undefined,
+			item.fields.mode,
+			item.fields.format,
+			item.fields.contentType,
+			formatBytes(item.fields.downloadedBytes),
+			formatDuration(item.fields.durationMs),
+			item.fields.cached
+				? `cache hit${item.fields.staleness ? ` ${item.fields.staleness}` : ""}`
+				: undefined,
+			item.fields.truncated ? "truncated" : undefined,
+		]
+			.filter(Boolean)
+			.join(" · ") || "fetched";
+	const lines = [`✓ ${item.url}`, `  ${fieldsStr}`];
 	if (item.finalUrl && item.finalUrl !== item.url) lines.push(`  final: ${item.finalUrl}`);
 	if (item.title) lines.push(`  title: ${item.title}`);
 	if (item.excerpt) lines.push(`  excerpt: ${item.excerpt}`);
