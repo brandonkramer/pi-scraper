@@ -19,9 +19,7 @@ export const sessionOptionSchema = {
 
 export const modelProviderOptionSchema = {
 	provider: Type.Optional(
-		Type.String({
-			description: "Model/auto/off",
-		}),
+		Type.Unsafe<string>({ description: "Model/auto/off" }),
 	),
 } as const;
 

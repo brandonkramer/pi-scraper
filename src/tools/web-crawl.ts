@@ -26,7 +26,7 @@ export const webCrawlSchema = Type.Object({
 	strategy: Type.Optional(
 		Type.Unsafe<"bfs" | "dfs" | "best-first">({ enum: ["bfs", "dfs", "best-first"] }),
 	),
-	proxy: Type.Optional(Type.Unsafe<string | string[]>({ anyOf: [{ type: "string" }, { type: "array" }] })),
+	proxy: Type.Optional(Type.Unsafe<string | string[]>({ type: ["string", "array"] })),
 	concurrency: Type.Optional(Type.Integer()),
 	perHostConcurrency: Type.Optional(Type.Integer()),
 	...scrapeModeOptionSchema,

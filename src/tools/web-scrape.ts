@@ -60,7 +60,7 @@ export const webScrapeSchema = Type.Object({
 	headers: Type.Optional(
 		Type.Unsafe<Record<string, string>>({}),
 	),
-	proxy: Type.Optional(Type.Unsafe<string | string[]>({ anyOf: [{ type: "string" }, { type: "array" }] })),
+	proxy: Type.Optional(Type.Unsafe<string | string[]>({ type: ["string", "array"] })),
 	respectRobots: Type.Optional(Type.Boolean()),
 	refresh: Type.Optional(Type.Boolean()),
 	followAlternates: Type.Optional(Type.Unsafe<boolean>({})),
