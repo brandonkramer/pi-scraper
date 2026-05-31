@@ -5,11 +5,12 @@ import {
 	type ProgressDetails,
 	type ToolContext,
 } from "../../types.ts";
+import { muted as toolMuted } from "../theme.ts";
+import { renderText as toolText } from "../tool-call.ts";
 import { toolProgressCard, toolResultCard } from "../tool-card.ts";
 import { toolProcess } from "../tool-process.ts";
 import { toolResource } from "../tool-resource.ts";
 import { toolResultId } from "../tool-result.ts";
-import { toolMuted, toolText } from "../tool-text.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export interface MapUrlEntryView {
 	url: string;

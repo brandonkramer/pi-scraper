@@ -9,6 +9,14 @@ import {
 	type ToolContext,
 } from "../../types.ts";
 import {
+	activity as toolActivity,
+	failure as toolFailure,
+	getMarkdownTheme as toolMarkdownTheme,
+	muted as toolMuted,
+	separator as toolSeparator,
+	success as toolSuccess,
+} from "../theme.ts";
+import {
 	toolFileResultCard,
 	toolIsFileResult,
 	toolResultCard,
@@ -35,14 +43,6 @@ import {
 	toolStatus,
 	currentSpinnerFrame as toolCurrentSpinnerFrame,
 } from "../tool-status.ts";
-import {
-	toolActivity,
-	toolFailure,
-	toolMarkdownTheme,
-	toolMuted,
-	toolSeparator,
-	toolSuccess,
-} from "../tool-text.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 export function renderWebScrapeResult(

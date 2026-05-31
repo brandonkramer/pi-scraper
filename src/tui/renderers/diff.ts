@@ -5,13 +5,18 @@ import {
 	type ToolContext,
 	type ProgressDetails,
 } from "../../types.ts";
+import {
+	joinSegments as toolJoinSegments,
+	muted as toolMuted,
+	separator as toolSeparator,
+} from "../theme.ts";
+import { renderText as toolText } from "../tool-call.ts";
 import { toolProgressCard } from "../tool-card.ts";
 import {
 	toolErrorLabel,
 	toolFreshnessLabel,
 	formatChecklistText as toolChecklistText,
 } from "../tool-labels.ts";
-import { toolJoinSegments, toolMuted, toolSeparator, toolText } from "../tool-text.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export interface DiffData {
 	previous?: unknown;

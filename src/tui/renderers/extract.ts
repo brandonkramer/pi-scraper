@@ -2,12 +2,12 @@
 import { Markdown } from "@earendil-works/pi-tui";
 
 import type { PiToolShell, ToolContext } from "../../types.ts";
+import { getMarkdownTheme as toolMarkdownTheme } from "../theme.ts";
 import { toolResultCard } from "../tool-card.ts";
 import { toolResourceStatus } from "../tool-resource.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
 import { buildExpandedResultDetails, toolResultId } from "../tool-result.ts";
 import { toolStatusDot, toolStatus } from "../tool-status.ts";
-import { toolMarkdownTheme } from "../tool-text.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 export function renderWebExtractResult(

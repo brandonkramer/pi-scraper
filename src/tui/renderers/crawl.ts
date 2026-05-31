@@ -11,6 +11,7 @@ import {
 	type ProgressDetails,
 	type ToolContext,
 } from "../../types.ts";
+import { neutral as toolNeutral } from "../theme.ts";
 import {
 	toolBatchProgressCard,
 	toolBatchResultCard,
@@ -30,7 +31,6 @@ import {
 	toolStatus,
 	activityCountSegment as toolActivityCount,
 } from "../tool-status.ts";
-import { toolNeutral } from "../tool-text.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export interface CrawlMeta {
 	succeededCount: number;
