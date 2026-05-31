@@ -3,8 +3,9 @@ import {
 	isBatchProgress,
 	isBatchProgressView,
 } from "../../batch/progress-state.ts";
-import { formatCrawlStrategyLabel } from "../../crawl/state.ts";
+import { formatCrawlStrategyLabel, type CrawlMetadata } from "../../crawl/state.ts";
 /** @file Pi web_crawl renderer — top-level result/progress card and per-page expanded details. */
+import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import {
 	isProgress,
 	type PiToolShell,
@@ -28,34 +29,11 @@ import {
 	activityCountSegment as toolActivityCount,
 } from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
-export interface CrawlMeta {
-	succeededCount: number;
-	failedCount: number;
-	visitedCount: number;
-	frontierCount: number;
-	strategy?: string;
-}
-
-export interface CrawlPageView {
-	ok?: boolean;
-	url?: string;
-	finalUrl?: string;
-	status?: number;
-	mode?: string;
-	format?: string;
-	contentType?: string;
-	downloadedBytes?: number;
-	truncated?: boolean;
-	timing?: { durationMs?: number };
-	cache?: { cached?: boolean; staleness?: string };
-	data?: {
-		title?: string;
-		description?: string;
-		markdown?: string;
-		text?: string;
-	};
-	error?: { code?: string; phase?: string; message?: string };
-}
+export type CrawlMeta = Pick<
+	CrawlMetadata,
+	"succeededCount" | "failedCount" | "visitedCount" | "frontierCount" | "strategy"
+>;
+export type CrawlPageView = Partial<ScrapeResult>;
 
 export function crawlExpandedDetails(
 	pages: readonly CrawlPageView[],
