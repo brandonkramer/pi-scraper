@@ -23,11 +23,11 @@ import { scrapeOutputOptionSchema } from "./infra/schemas.ts";
 import { sessionLifecycle } from "./infra/session-lifecycle.ts";
 
 export const webBatchSchema = Type.Object({
-	urls: Type.Array(Type.Unsafe<string>({}), { minItems: 1 }),
+	urls: Type.Unsafe<string[]>({ type: "array", minItems: 1 }),
 	concurrency: Type.Optional(Type.Number()),
 	perHostConcurrency: Type.Optional(Type.Number()),
 	...scrapeOutputOptionSchema,
-	linesMatching: Type.Optional(Type.Array(Type.Unsafe<string>({}))),
+	linesMatching: Type.Optional(Type.Unsafe<string[]>({ type: "array" })),
 	contextLines: Type.Optional(Type.Unsafe<number>({})),
 	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
 	compile: Type.Optional(
