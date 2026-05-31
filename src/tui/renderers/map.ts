@@ -12,12 +12,6 @@ import { toolProcess } from "../tool-process.ts";
 import { toolResource } from "../tool-resource.ts";
 import { toolResultId } from "../tool-result.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
-export interface MapUrlEntryView {
-	url: string;
-	source?: string;
-	title?: string;
-}
-
 export function renderWebMapResult(
 	result: PiToolShell,
 	expanded = false,
