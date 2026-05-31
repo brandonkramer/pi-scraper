@@ -35,15 +35,14 @@ export type BatchItem = Partial<Omit<BatchItemResult, "result" | "error">> & {
 
 export function batchExpandedSections(
 	items: readonly BatchItem[],
-	metadata: { jobId?: unknown; packageResponseId?: unknown },
+	m: { jobId?: unknown; packageResponseId?: unknown },
 	width: number,
 	theme?: RenderTheme,
 ): string[] {
 	const groups = items.map((item) => batchItemGroup(item));
 	const result = [toolResultTree(buildToolResultTree(groups), width, theme)];
-	const jobId = typeof metadata.jobId === "string" ? metadata.jobId : undefined;
-	const pkg =
-		typeof metadata.packageResponseId === "string" ? metadata.packageResponseId : undefined;
+	const jobId = typeof m.jobId === "string" ? m.jobId : undefined;
+	const pkg = typeof m.packageResponseId === "string" ? m.packageResponseId : undefined;
 	const ids = toolResultId(
 		[
 			{ label: "jobId", id: jobId ?? "" },
