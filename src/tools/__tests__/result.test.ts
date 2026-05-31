@@ -1,7 +1,6 @@
-/**
- * @fileoverview tools __tests__ result.test module.
- */
+/** @file Tools **tests** result.test module. */
 import { describe, expect, it } from "vitest";
+
 import { progressShell } from "../infra/progress.ts";
 import { errorResult, toolResult } from "../infra/result.ts";
 
@@ -26,9 +25,7 @@ describe("tool result helpers", () => {
 			data: { value: 1 },
 			summary: "Found a reusable scrape.",
 			answerContext: "Use the stored content when freshness is acceptable.",
-			sourceNotes: [
-				{ id: "s1", uri: "https://example.com", excerpt: "Example" },
-			],
+			sourceNotes: [{ id: "s1", uri: "https://example.com", excerpt: "Example" }],
 			qualitySignals: { confidence: "high", freshness: "current" },
 			nextActions: [
 				{

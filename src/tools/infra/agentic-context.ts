@@ -1,13 +1,11 @@
-/**
- * @fileoverview tools agentic-context module.
- */
+import { formatAge } from "../../scrape/describe.ts";
+/** @file Tools agentic-context module. */
 import type {
 	AgenticNextAction,
 	AgenticQualitySignals,
 	AgenticSourceNote,
 	CacheMetadata,
 } from "../../types.ts";
-import { formatAge } from "../../scrape/describe.ts";
 
 export function retrieveResultAction(
 	responseId: string,
@@ -72,22 +70,15 @@ export function storedTraceContext(options: {
 	};
 }
 
-export function qualityFromCache(
-	cache: CacheMetadata | undefined,
-): AgenticQualitySignals {
+export function qualityFromCache(cache: CacheMetadata | undefined): AgenticQualitySignals {
 	if (!cache) return { confidence: "high", freshness: "unknown" };
 	return {
 		confidence: "high",
 		freshness:
-			cache.cached &&
-			(cache.stale ||
-				cache.staleness === "stale" ||
-				cache.staleness === "expired")
+			cache.cached && (cache.stale || cache.staleness === "stale" || cache.staleness === "expired")
 				? "stale_possible"
 				: "current",
-		knownGaps: cache.cached
-			? [`Cached fetch age: ${formatAge(cache.ageSeconds)}.`]
-			: undefined,
+		knownGaps: cache.cached ? [`Cached fetch age: ${formatAge(cache.ageSeconds)}.`] : undefined,
 	};
 }
 

@@ -16,7 +16,7 @@ import {
 	adapterIncompatibleError,
 	toolErrorResult,
 } from "./infra/result.ts";
-import { scrapeInputSummary, scrapeInputToolResult } from "./infra/scrape-input-result.ts";
+import { scrapeInputSummary, scrapeInputToolContext } from "./infra/scrape-input-result.ts";
 import type { Params, WebExtractToolOptions } from "./web-extract.ts";
 
 export async function runAdHocExtraction(
@@ -86,7 +86,7 @@ export async function runAdHocExtraction(
 			" using fresh scrape input",
 			" using cached scrape input",
 		);
-		return scrapeInputToolResult({
+		return scrapeInputToolContext({
 			text: summarizeExtraction(result.data, result.grounded),
 			data: result,
 			input: result.input,

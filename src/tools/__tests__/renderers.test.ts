@@ -1,8 +1,8 @@
 /** @file Renderer contract tests for Pi web tool cards. */
 import { describe, expect, it } from "vitest";
 
-import { renderEnvelopeResult } from "../../tui/envelope.ts";
-import type { RenderComponent } from "../../tui/types.ts";
+import type { RenderComponent } from "../../tui/index.ts";
+import { renderWebExtractResult } from "../../tui/renderers/extract.ts";
 import type { ToolRenderContext } from "../infra/define.ts";
 import { progressShell } from "../infra/progress.ts";
 import { toolResult } from "../infra/result.ts";
@@ -253,7 +253,7 @@ describe("web tool renderers", () => {
 		expect(collapsed).toContain("↻ 0 cache hits");
 	});
 
-	it("omits success icons when batch and crawl succeeded counts are zero", () => {
+	it("omits toolSuccess icons when batch and crawl succeeded counts are zero", () => {
 		const batch = toolResult({
 			text: "Batch scrape failed",
 			data: [{ ok: false, url: "https://b.test" }],
@@ -313,15 +313,15 @@ describe("web tool renderers", () => {
 		);
 	});
 
-	it("keeps generic done descriptions icon-free", () => {
+	it("keeps extract done descriptions icon-free", () => {
 		const result = toolResult({
 			text: "ok",
 			data: {},
 			url: "https://example.com",
 		});
 
-		expect(text(renderEnvelopeResult(result, false))).toContain("done · https://example.com");
-		expect(text(renderEnvelopeResult(result, false))).not.toContain("✓ done");
+		expect(text(renderWebExtractResult(result, false))).toContain("done · https://example.com");
+		expect(text(renderWebExtractResult(result, false))).not.toContain("✓ done");
 	});
 });
 

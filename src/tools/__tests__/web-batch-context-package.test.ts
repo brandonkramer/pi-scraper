@@ -10,7 +10,7 @@ import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { closeStorageDbs } from "../../storage/db/open.ts";
 import { getJobManifest } from "../../storage/jobs/manifest.ts";
 import { readResponse } from "../../storage/responses/read.ts";
-import type { ResultEnvelope } from "../../types.ts";
+import type { ToolContext } from "../../types.ts";
 import { webBatchTool } from "../web-batch.ts";
 import { webGetResultTool } from "../web-get-result.ts";
 
@@ -71,7 +71,7 @@ describe("web_batch context", () => {
 			{ urls: ["https://docs.example.com/guide"], compile: true },
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<unknown[]>;
+		const envelope = result.details as ToolContext<unknown[]>;
 		const diagnostics = envelope.diagnostics as {
 			contextPackage?: {
 				responseId: string;
@@ -98,7 +98,7 @@ describe("web_batch context", () => {
 			{ responseId: packageResponseId },
 			signal,
 		);
-		expect((fetched.details as ResultEnvelope).data).toMatchObject({
+		expect((fetched.details as ToolContext).data).toMatchObject({
 			package: { source: "batch" },
 		});
 
@@ -117,7 +117,7 @@ describe("web_batch context", () => {
 			},
 			signal,
 		);
-		const diagnostics = (result.details as ResultEnvelope).diagnostics as {
+		const diagnostics = (result.details as ToolContext).diagnostics as {
 			contextPackage?: { responseId: string };
 		};
 		const packageResponseId = diagnostics.contextPackage!.responseId;

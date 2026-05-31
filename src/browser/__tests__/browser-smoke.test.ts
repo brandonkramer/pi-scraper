@@ -1,12 +1,12 @@
-/**
- * @fileoverview browser __tests__ browser-smoke.test module.
- */
+/** @file Browser **tests** browser-smoke.test module. */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { webScrapeTool } from "../../tools/web-scrape.ts";
-import type { ResultEnvelope } from "../../types.ts";
+import type { ToolContext } from "../../types.ts";
 
 const browserEnabled = process.env.PI_SCRAPER_BROWSER === "1";
 let homeDir: string;
@@ -36,13 +36,11 @@ describe.skipIf(!browserEnabled)("opt-in browser-mode smoke", () => {
 			},
 			new AbortController().signal,
 		);
-		const envelope = result.details as ResultEnvelope;
+		const envelope = result.details as ToolContext;
 
 		expect(envelope.error).toBeUndefined();
 		expect(envelope.mode).toBe("browser");
-		expect(JSON.stringify(envelope.data).toLowerCase()).toContain(
-			"example domain",
-		);
+		expect(JSON.stringify(envelope.data).toLowerCase()).toContain("example domain");
 	});
 });
 

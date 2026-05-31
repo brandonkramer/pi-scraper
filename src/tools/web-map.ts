@@ -4,12 +4,12 @@ import { Type, type Static } from "typebox";
 import { loadEffectiveConfig } from "../config.ts";
 import { discoverSiteUrls } from "../map/discover.ts";
 import { storeResponse } from "../storage/responses/store.ts";
-import { renderSimpleCall } from "../tui/call.ts";
+import { toolCall } from "../tui/index.ts";
+import { renderWebMapResult } from "../tui/renderers/map.ts";
 import { defineWebTool } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
 import { toolResult } from "./infra/result.ts";
 import { urlProperty } from "./infra/schemas.ts";
-import { renderWebMapResult } from "./renderers/map.ts";
 
 export const webMapSchema = Type.Object({
 	url: urlProperty(),
@@ -57,6 +57,6 @@ export const webMapTool = defineWebTool({
 			truncated: map.urls.length > 50,
 		});
 	},
-	renderCall: (args, theme) => renderSimpleCall("web_map", [args.url], theme),
+	renderCall: (args, theme) => toolCall("web_map", [args.url], theme),
 	renderResult: (result, { expanded }, theme) => renderWebMapResult(result, expanded, theme),
 });

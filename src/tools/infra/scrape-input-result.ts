@@ -1,8 +1,6 @@
-/**
- * @fileoverview Shared result shaping for model-backed scrape-input tools.
- */
-import type { OutputFormat, ResultEnvelope, TimingInfo } from "../../types.ts";
 import type { ModelUsage } from "../../extract/adhoc/model.ts";
+/** @file Shared result shaping for model-backed scrape-input tools. */
+import type { OutputFormat, ToolContext, TimingInfo } from "../../types.ts";
 import { qualityFromCache, storedResultGuidance } from "./agentic-context.ts";
 import { toolResult } from "./result.ts";
 
@@ -21,10 +19,10 @@ interface ScrapeInputResult {
 	truncated?: boolean;
 	contentType?: string;
 	downloadedBytes?: number;
-	cache?: ResultEnvelope<unknown>["cache"];
+	cache?: ToolContext<unknown>["cache"];
 }
 
-export interface ScrapeInputToolResultOptions<TData> {
+export interface ScrapeInputToolContextOptions<TData> {
 	text: string;
 	data: TData;
 	input: ScrapeInputSource;
@@ -35,7 +33,7 @@ export interface ScrapeInputToolResultOptions<TData> {
 	modelUsage?: ModelUsage;
 }
 
-export function scrapeInputToolResult<TData>({
+export function scrapeInputToolContext<TData>({
 	text,
 	data,
 	input,
@@ -44,7 +42,7 @@ export function scrapeInputToolResult<TData>({
 	answerContext,
 	formatFallback,
 	modelUsage,
-}: ScrapeInputToolResultOptions<TData>) {
+}: ScrapeInputToolContextOptions<TData>) {
 	const scrape = input.scrape;
 	return toolResult({
 		text,
@@ -77,7 +75,7 @@ export function scrapeInputSummary(
 	return `${verb} ${input.source}${scrape?.cache?.cached ? cachedPhrase : scrape ? freshPhrase : " input"}.`;
 }
 
-export function buildSummarizeToolResult(
+export function buildSummarizeToolContext(
 	result: {
 		input: ScrapeInputSource;
 		summary: string;
@@ -92,14 +90,13 @@ export function buildSummarizeToolResult(
 		" from fresh scrape input",
 		" from cached scrape input",
 	);
-	return scrapeInputToolResult({
+	return scrapeInputToolContext({
 		text: result.summary,
 		data: result,
 		input: result.input,
 		fallbackUrl,
 		summary,
-		answerContext:
-			"Refresh the source page before summarizing time-sensitive facts.",
+		answerContext: "Refresh the source page before summarizing time-sensitive facts.",
 		formatFallback: "markdown",
 		modelUsage: result.usage,
 	});

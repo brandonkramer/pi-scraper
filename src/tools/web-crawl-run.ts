@@ -100,7 +100,7 @@ export async function crawlRun(params: Params, signal: AbortSignal, onUpdate?: T
 	const strategyLabel = formatCrawlStrategyLabel(crawl.metadata.strategy);
 	const strategyText = strategyLabel ? ` strategy=${strategyLabel},` : "";
 	const text = `Crawl ${crawl.crawlId}:${strategyText} ${crawl.metadata.succeededCount} succeeded, ${crawl.metadata.failedCount} failed, ${crawl.metadata.visitedCount} visited, frontier ${crawl.metadata.frontierCount}.${surfaceText}${packageText} responseId: ${finalStored.responseId}`;
-	const { notice: sessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
+	const { notice: toolSessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
 	return toolResult({
 		text: text + sessionSuffix,
 		data: {
@@ -118,7 +118,7 @@ export async function crawlRun(params: Params, signal: AbortSignal, onUpdate?: T
 		truncated: true,
 		freshness,
 		diagnostics: {
-			sessionNotice: sessionNotice ?? undefined,
+			toolSessionNotice: toolSessionNotice ?? undefined,
 			batchProgress: batchProgressFromCrawlPages(crawl.pages),
 			jobId: crawl.crawlId,
 			jobManifestPath: manifest.path,

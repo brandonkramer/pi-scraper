@@ -13,14 +13,14 @@ import { DEFAULT_CONCURRENCY } from "../defaults.ts";
 import { filterLines } from "../scrape/line-filter.ts";
 import { formatLabeledLineMatchPreview } from "../scrape/line-preview.ts";
 import { aggregateFreshness, freshnessFromCache } from "../storage/cache/freshness.ts";
-import { renderSimpleCall } from "../tui/call.ts";
+import { toolCall } from "../tui/index.ts";
+import { renderWebBatchResult } from "../tui/renderers/batch.ts";
 import { retrieveResultAction, storedResultGuidance } from "./infra/agentic-context.ts";
 import { defineWebTool } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
 import { toolResult } from "./infra/result.ts";
 import { scrapeOutputOptionSchema } from "./infra/schemas.ts";
 import { sessionLifecycle } from "./infra/session-lifecycle.ts";
-import { renderWebBatchResult } from "./renderers/batch.ts";
 
 export const webBatchSchema = Type.Object({
 	urls: Type.Array(Type.Unsafe<string>({}), { minItems: 1 }),
@@ -111,7 +111,7 @@ export const webBatchTool = defineWebTool({
 			? ` Context: ${contextPackage.value.package.urlCount} page(s), responseId: ${contextPackage.responseId}.`
 			: "";
 		const text = `${result.summary}${contextText}${matchPreview ? `\n${matchPreview}` : ""}`;
-		const { notice: sessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
+		const { notice: toolSessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
 		const completedProgress = cloneBatchProgress(batchProgress);
 		return toolResult({
 			text: text + sessionSuffix,
@@ -121,7 +121,7 @@ export const webBatchTool = defineWebTool({
 			truncated: result.truncated,
 			freshness,
 			diagnostics: {
-				sessionNotice: sessionNotice ?? undefined,
+				toolSessionNotice: toolSessionNotice ?? undefined,
 				batchProgress: completedProgress,
 				jobId: result.jobId,
 				jobManifestPath: result.jobManifestPath,
@@ -134,7 +134,7 @@ export const webBatchTool = defineWebTool({
 			mode: params.mode ?? "auto",
 			format: params.format ?? "markdown",
 			summary: `${succeeded} succeeded, ${failed} failed, ${cacheHits} cache hit(s) across ${result.items.length} URL(s).`,
-			answerContext: `Batch scrape completed with ${succeeded} succeeded and ${failed} failed out of ${result.items.length}. ${cacheHits} successful item(s) came from cache.${matchPreview ? `\n${matchPreview}` : ""} Use responseId for full per-URL details or jobId ${result.jobId} for the structured job manifest.`,
+			answerContext: `Batch scrape completed with ${succeeded} succeeded and ${failed} failed out of ${result.items.length}. ${cacheHits} toolSuccessful item(s) came from cache.${matchPreview ? `\n${matchPreview}` : ""} Use responseId for full per-URL details or jobId ${result.jobId} for the structured job manifest.`,
 			qualitySignals: {
 				confidence: failed || freshness?.stale ? "medium" : "high",
 				freshness: freshness?.stale ? "stale_possible" : "current",
@@ -156,7 +156,7 @@ export const webBatchTool = defineWebTool({
 		});
 	},
 	renderCall: (args, theme, _context) =>
-		renderSimpleCall("web_batch", [`${args.urls.length} urls`, `(${args.mode ?? "auto"})`], theme),
+		toolCall("web_batch", [`${args.urls.length} urls`, `(${args.mode ?? "auto"})`], theme),
 	renderResult: (result, { expanded }, theme) => renderWebBatchResult(result, expanded, theme),
 });
 

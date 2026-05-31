@@ -4,15 +4,10 @@ import type {
 	VerticalExtractorPage,
 } from "../extract/vertical/capabilities.ts";
 import { scrapeUrl, type ScrapePipelineDeps } from "../scrape/pipeline.ts";
-import { renderText } from "../tui/text.ts";
-import { failure, muted, success } from "../tui/theme.ts";
-import { renderTreeSections, type TreeSection } from "../tui/tree.ts";
-import type { RenderComponent, RenderTheme } from "../tui/types.ts";
 /**
  * @file Web_extract action="vertical" and action="list" handlers — deterministic extractor
  *   capabilities and vertical extraction.
  */
-import type { PiToolShell } from "../types.ts";
 import type { ToolUpdate } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
 import { inputErrorResult, toolResult } from "./infra/result.ts";
@@ -155,146 +150,10 @@ async function maybePrerenderVerticalPage(
 	};
 }
 
-/**
- * Theme-aware renderer for vertical extractor results. Called from web_extract's renderResult when
- * the result is from action="vertical".
- */
-export function renderVerticalResult(
-	result: PiToolShell,
-	expanded: boolean | undefined,
-	theme?: RenderTheme,
-): RenderComponent {
-	const details = result.details as Record<string, unknown> | undefined;
-	const wrapper = details?.data as Record<string, unknown> | undefined;
-	const name = typeof wrapper?.extractor === "string" ? wrapper.extractor : "extractor";
-	const isError = Boolean(wrapper?.error ?? details?.error);
-
-	if (isError) {
-		const error = (wrapper?.error ?? details?.error) as
-			| { code?: string; message?: string }
-			| undefined;
-		const code = error?.code ?? "FAILED";
-		const treeLine = `\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${code}`, theme)}`;
-		return renderText(treeLine, { padToWidth: true });
-	}
-
-	const data = wrapper?.data as Record<string, unknown> | undefined;
-	const browserFallback = browserFallbackMetadata(wrapper);
-	const [metaLine] = extractorPreview(data);
-	const check = success("\u2713", theme);
-	const summaryDetails = [metaLine, browserFallbackLabel(browserFallback)]
-		.filter(Boolean)
-		.join(" \u00B7 ");
-	const treeLine = `\u2514\u2500 ${check} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
-
-	if (!expanded || !data) {
-		return renderText(treeLine, { padToWidth: true });
-	}
-
-	// Build expanded sections: transcript as plain text, everything else as tree
-	const sections = buildVerticalSections(data, browserFallback);
-	const body = renderTreeSections(sections, 80, theme);
-
-	const transcript = data.transcript as
-		| {
-				languageCode?: string;
-				segments?: Array<{ text: string; start: number; duration: number }>;
-				text?: string;
-		  }
-		| undefined;
-	if (!transcript?.text) {
-		return renderText(`${treeLine}\n${body}`, { padToWidth: true });
-	}
-
-	// Render transcript as flowing text with │ continuation, not tree connectors
-	const segCount = transcript.segments?.length ?? 0;
-	const firstSegments = transcript.segments?.slice(0, 20) ?? [];
-	const transcriptLines = firstSegments.map((seg) => {
-		const m = Math.floor(seg.start / 60);
-		const s = (seg.start % 60).toFixed(0).padStart(2, "0");
-		return `[${m}:${s}] ${seg.text}`;
-	});
-	if (segCount > firstSegments.length) {
-		transcriptLines.push(`… ${segCount - firstSegments.length} more segments`);
-	}
-	const wrappedLines = transcriptLines.flatMap((line) => wrapTranscriptLine(line, 80));
-	const transcriptBlock = wrappedLines.map((l) => `${muted("\u2502 ", theme)}${l}`).join("\n");
-
-	const header = `${treeLine}\n${transcriptBlock}`;
-	if (!body) return renderText(header, { padToWidth: true });
-	return renderText(`${header}\n\n${body}`, { padToWidth: true });
-}
-
-function browserFallbackMetadata(
-	wrapper: Record<string, unknown> | undefined,
-): VerticalBrowserFallbackMetadata["browserFallback"] | undefined {
-	const fallback = wrapper?.browserFallback as
-		| VerticalBrowserFallbackMetadata["browserFallback"]
-		| undefined;
-	return fallback?.used ? fallback : undefined;
-}
-
 function browserFallbackLabel(
 	fallback: VerticalBrowserFallbackMetadata["browserFallback"] | undefined,
 ): string | undefined {
 	return fallback?.used ? `browser fallback · ${fallback.backend}` : undefined;
-}
-
-function buildVerticalSections(
-	data: Record<string, unknown>,
-	browserFallback?: VerticalBrowserFallbackMetadata["browserFallback"],
-): TreeSection[] {
-	const sections: TreeSection[] = [];
-	if (browserFallback?.used) {
-		sections.push({
-			name: "extraction",
-			rows: [
-				{ key: "path", value: "browser-prerender \u2192 vertical" },
-				{ key: "browserBackend", value: browserFallback.backend },
-			],
-		});
-	}
-
-	// Video info
-	const videoRows: TreeSection["rows"] = [];
-	if (typeof data.title === "string" && data.title)
-		videoRows.push({ key: "title", value: data.title });
-	if (typeof data.channel === "string" && data.channel)
-		videoRows.push({ key: "channel", value: data.channel });
-	if (typeof data.views === "number" && data.views > 0)
-		videoRows.push({ key: "views", value: data.views.toLocaleString() });
-	if (typeof data.lengthSeconds === "number") {
-		const m = Math.floor(data.lengthSeconds / 60);
-		const s = data.lengthSeconds % 60;
-		videoRows.push({ key: "duration", value: `${m}:${s.toString().padStart(2, "0")}` });
-	}
-	if (videoRows.length > 0) sections.push({ name: "video", rows: videoRows });
-
-	// Comments
-	const comments = data.comments as
-		| Array<{ author?: string; text: string; likeCount?: string }>
-		| undefined;
-	if (comments && comments.length > 0) {
-		const commentRows = comments.slice(0, 5).map((c, i) => ({
-			key: `${i + 1}`,
-			value: `${c.author ? `${c.author}: ` : ""}${c.text.slice(0, 80)}${c.text.length > 80 ? "…" : ""}`,
-		}));
-		if (comments.length > 5) {
-			commentRows.push({ key: "…", value: `${comments.length - 5} more comments` });
-		}
-		sections.push({ name: "comments", rows: commentRows });
-	}
-
-	// Source
-	const source = data.source as { provider?: string; videoUrl?: string } | undefined;
-	if (source) {
-		const sourceRows: TreeSection["rows"] = [];
-		if (source.provider) sourceRows.push({ key: "provider", value: source.provider });
-		if (source.videoUrl) sourceRows.push({ key: "url", value: source.videoUrl });
-		if (sourceRows.length > 0) sections.push({ name: "source", rows: sourceRows });
-	}
-
-	return sections;
 }
 
 /** Plain-text summary for the call result line (theme applied by renderResult). */
@@ -428,22 +287,4 @@ function blockedSource(
 		attemptedEndpoints?: string[];
 	};
 	return typed.blocked ? typed : undefined;
-}
-
-/** Wrap a transcript line at word boundaries for terminal width. */
-function wrapTranscriptLine(line: string, maxChars: number): string[] {
-	if (line.length <= maxChars) return [line];
-	const lines: string[] = [];
-	let remaining = line;
-	while (remaining.length > 0) {
-		if (remaining.length <= maxChars) {
-			lines.push(remaining);
-			break;
-		}
-		let breakAt = remaining.lastIndexOf(" ", maxChars);
-		if (breakAt <= 0) breakAt = maxChars;
-		lines.push(remaining.slice(0, breakAt));
-		remaining = remaining.slice(breakAt).trimStart();
-	}
-	return lines;
 }

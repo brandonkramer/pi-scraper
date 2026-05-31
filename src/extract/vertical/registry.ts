@@ -175,10 +175,10 @@ function httpContext(
 			const response = await client.fetchUrl(
 				url,
 				{
+					...requestOptions,
 					forceText: true,
 					respectRobots: false,
 					headers: { accept: "application/json" },
-					...requestOptions,
 				},
 				signal,
 			);
@@ -189,6 +189,7 @@ function httpContext(
 			const response = await client.fetchUrl(
 				url,
 				{
+					...requestOptions,
 					method: "POST",
 					body: JSON.stringify(body),
 					forceText: true,
@@ -197,7 +198,6 @@ function httpContext(
 						accept: "application/json",
 						"content-type": "application/json",
 					},
-					...requestOptions,
 				},
 				signal,
 			);
@@ -207,7 +207,7 @@ function httpContext(
 			recordVerticalSource(sources, url, "feed");
 			const response = await client.fetchUrl(
 				url,
-				{ forceText: true, respectRobots: false, ...requestOptions },
+				{ ...requestOptions, forceText: true, respectRobots: false },
 				signal,
 			);
 			return response.text ?? "";
@@ -220,7 +220,7 @@ function httpContext(
 			recordVerticalSource(sources, url, "page");
 			const response = await client.fetchUrl(
 				url,
-				{ forceText: true, respectRobots: requestOptions.respectRobots ?? true, ...requestOptions },
+				{ ...requestOptions, forceText: true, respectRobots: requestOptions.respectRobots ?? true },
 				signal,
 			);
 			return {

@@ -4,14 +4,9 @@ import { type Static, Type } from "typebox";
 import { listSnapshots } from "../diff/snapshots.ts";
 import { getJobManifest } from "../storage/jobs/manifest.ts";
 import { readResponse } from "../storage/responses/read.ts";
-import { renderSimpleCall } from "../tui/call.ts";
-import { buildEnvelopeRows } from "../tui/envelope.ts";
-import { paintFirstLineBg } from "../tui/pill.ts";
-import { defineResultRenderer } from "../tui/result-renderer.ts";
-import { paintFg } from "../tui/theme.ts";
-import { renderTreeSections } from "../tui/tree.ts";
-import type { RenderComponent, RenderTheme } from "../tui/types.ts";
-import type { PiToolShell, ResultEnvelope, StructuredError } from "../types.ts";
+import { toolCall } from "../tui/index.ts";
+import { renderGetResult } from "../tui/renderers/get-result.ts";
+import type { PiToolShell, ToolContext, StructuredError } from "../types.ts";
 import { defineWebTool } from "./infra/define.ts";
 import { errorResult, structuredToolError, toolResult } from "./infra/result.ts";
 
@@ -43,7 +38,7 @@ export const webGetResultTool = defineWebTool({
 		});
 	},
 	renderCall: (args, theme) =>
-		renderSimpleCall(
+		toolCall(
 			"web_get_result",
 			[
 				args.jobId ? `job:${args.jobId}` : args.responseId,
@@ -107,7 +102,7 @@ async function getResponse(responseId: string) {
 	}
 }
 
-function getResultError(error: StructuredError): PiToolShell<ResultEnvelope<undefined>> {
+function getResultError(error: StructuredError): PiToolShell<ToolContext<undefined>> {
 	return { ...errorResult(error), isError: true };
 }
 
@@ -121,31 +116,4 @@ function summarizeData(value: unknown): string {
 	if (typeof value === "string") return value;
 	if (typeof value === "number" || typeof value === "boolean") return String(value);
 	return JSON.stringify(value);
-}
-
-/** Render web_get_result with a summary header and a field tree in expanded view. */
-function renderGetResult(
-	result: PiToolShell,
-	expanded: boolean,
-	theme?: RenderTheme,
-): RenderComponent {
-	const envelope = result.details as Record<string, unknown> | undefined;
-	const hasError = !!envelope?.error;
-	const statusLine = paintFg(
-		theme,
-		hasError ? "error" : "accent",
-		hasError ? "✕ no result" : "✓ result found",
-	);
-	const sections = buildEnvelopeRows(envelope);
-	return defineResultRenderer({
-		renderContent(width) {
-			const lines = [`└─ ${statusLine}`];
-			if (expanded && sections.length > 0) {
-				const tree = renderTreeSections(sections, width, theme);
-				if (tree) lines.push("", ...tree.split("\n"));
-			}
-			return lines.join("\n");
-		},
-		mapLines: hasError ? (lines) => paintFirstLineBg(lines, "toolErrorBg", theme) : undefined,
-	});
 }

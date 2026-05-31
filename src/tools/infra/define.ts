@@ -2,7 +2,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 /** @file Shared Pi tool adapter contracts for web tools. */
 import type { Static, TSchema } from "typebox";
 
-import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
+import type { RenderComponent, RenderTheme } from "../../tui/index.ts";
 import type { PiToolShell } from "../../types.ts";
 
 export type ToolUpdate = (result: PiToolShell) => void | Promise<void>;

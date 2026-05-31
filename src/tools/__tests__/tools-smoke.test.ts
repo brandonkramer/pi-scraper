@@ -5,8 +5,8 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import type { RenderComponent } from "../../tui/types.ts";
-import type { PiToolShell, ResultEnvelope } from "../../types.ts";
+import type { RenderComponent } from "../../tui/index.ts";
+import type { PiToolShell, ToolContext } from "../../types.ts";
 import { webTools } from "../infra/register.ts";
 
 let homeDir: string;
@@ -24,11 +24,11 @@ afterEach(async () => {
 	await rm(homeDir, { recursive: true, force: true });
 });
 
-function formatSmokeStatus(envelope: ResultEnvelope): string {
+function formatSmokeStatus(envelope: ToolContext): string {
 	return envelope.error ? `error:${envelope.error.code}` : `status:${envelope.status ?? "ok"}`;
 }
 
-function formatSmokeDuration(envelope: ResultEnvelope): string {
+function formatSmokeDuration(envelope: ToolContext): string {
 	return typeof envelope.timing?.durationMs === "number"
 		? `${envelope.timing.durationMs.toFixed(0)}ms`
 		: "-";
@@ -62,7 +62,7 @@ describe("registered web tools smoke test", () => {
 				renderComponentText(tool.renderResult?.(result, { expanded: false }, undefined)),
 			).toBeTruthy();
 
-			const envelope = result.details as ResultEnvelope;
+			const envelope = result.details as ToolContext;
 			const text = firstText(result);
 			const preview = text.replaceAll(/\s+/gu, " ").trim().slice(0, 80);
 			console.info(

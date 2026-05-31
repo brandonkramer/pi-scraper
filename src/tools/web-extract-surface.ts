@@ -1,22 +1,18 @@
-/** @fileoverview API-surface execution path for web_extract kept outside the thin tool adapter. */
+import type { ApiSurfaceTree } from "../extract/api-surface/index.ts";
+import { runApiSurfaceFromInput, type ApiSurfaceInput } from "../extract/api-surface/runner.ts";
+import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
+import type { CommonScrapeOptions } from "../types.ts";
+import { storedResultGuidance } from "./infra/agentic-context.ts";
+/** @file API-surface execution path for web_extract kept outside the thin tool adapter. */
 import type { ToolUpdate } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
 import { inputErrorResult, toolResult } from "./infra/result.ts";
-import { storedResultGuidance } from "./infra/agentic-context.ts";
-import {
-	runApiSurfaceFromInput,
-	type ApiSurfaceInput,
-} from "../extract/api-surface/runner.ts";
-import type { ApiSurfaceTree } from "../extract/api-surface/index.ts";
-import type { CommonScrapeOptions } from "../types.ts";
-import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 
 export interface WebExtractSurfaceOptions {
 	scrapeDeps?: ScrapePipelineDeps;
 }
 
-export interface WebExtractSurfaceParams
-	extends Omit<CommonScrapeOptions, "include"> {
+export interface WebExtractSurfaceParams extends Omit<CommonScrapeOptions, "include"> {
 	url?: string;
 	content?: string;
 	sourceFormat?: string;
@@ -56,14 +52,9 @@ export async function runApiSurfaceExtraction(
 	return apiSurfaceResult(tree, url, source);
 }
 
-function apiSurfaceResult(
-	tree: ApiSurfaceTree,
-	url: string | undefined,
-	source: string,
-) {
+function apiSurfaceResult(tree: ApiSurfaceTree, url: string | undefined, source: string) {
 	const symbolCount = tree.modules.reduce(
-		(total, item) =>
-			total + item.functions.length + (item.classes?.length ?? 0),
+		(total, item) => total + item.functions.length + (item.classes?.length ?? 0),
 		0,
 	);
 	return toolResult({

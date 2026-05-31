@@ -141,7 +141,7 @@ export interface AgenticNextAction {
 	description: string;
 }
 
-export interface ResultEnvelope<TData = unknown> {
+export interface ToolContext<TData = unknown> {
 	/** Normalized original request URL after URL policy canonicalization, not the verbatim user input. */
 	url?: string;
 	/** Final normalized URL after redirects or provider canonicalization, when it differs or is known. */

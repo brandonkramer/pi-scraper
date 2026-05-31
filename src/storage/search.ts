@@ -1,5 +1,5 @@
 /** @file Storage search module. */
-import type { ResultEnvelope } from "../types.ts";
+import type { ToolContext } from "../types.ts";
 import { openStorageDb } from "./db/open.ts";
 import { stringField } from "./db/row-fields.ts";
 import type { ResolveStorageOptions } from "./paths.ts";
@@ -50,7 +50,7 @@ export async function indexSearchText(
 	const db = await openStorageDb(options);
 	ensureFtsTable(db.db, cacheKey(options));
 	const envelope =
-		typeof value === "object" && value !== null ? (value as Partial<ResultEnvelope>) : {};
+		typeof value === "object" && value !== null ? (value as Partial<ToolContext>) : {};
 	db.prepare(
 		`INSERT OR REPLACE INTO responses_fts (response_id, url, title, text) VALUES (?, ?, ?, ?)`,
 	).run(responseId, stringField(envelope.url) ?? "", titleFrom(value) ?? null, text);
@@ -100,7 +100,7 @@ function ensureFtsTable(db: { exec(sql: string): void }, key: string): void {
 function searchableJobText(value: unknown): string | undefined {
 	if (typeof value === "string") return value;
 	if (typeof value !== "object" || value === null) return;
-	const source = value as Partial<ResultEnvelope<Record<string, unknown>>>;
+	const source = value as Partial<ToolContext<Record<string, unknown>>>;
 	const data = source.data;
 	return firstString(
 		data?.text,
@@ -113,7 +113,7 @@ function searchableJobText(value: unknown): string | undefined {
 
 function titleFrom(value: unknown): string | undefined {
 	if (typeof value !== "object" || value === null) return;
-	const source = value as Partial<ResultEnvelope<Record<string, unknown>>>;
+	const source = value as Partial<ToolContext<Record<string, unknown>>>;
 	return firstString(source.data?.title, stringField((value as Record<string, unknown>).title));
 }
 

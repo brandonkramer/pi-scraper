@@ -5,7 +5,7 @@ import { freshnessFromCache, guidanceWithFreshness } from "../../storage/cache/f
 import type {
 	OutputFormat,
 	PiToolShell,
-	ResultEnvelope,
+	ToolContext,
 	StructuredError,
 	TimingInfo,
 } from "../../types.ts";
@@ -21,19 +21,19 @@ export interface ResultShellOptions<TData> {
 	contentType?: string;
 	headers?: Record<string, string>;
 	downloadedBytes?: number;
-	cache?: ResultEnvelope<TData>["cache"];
-	freshness?: ResultEnvelope<TData>["freshness"];
+	cache?: ToolContext<TData>["cache"];
+	freshness?: ToolContext<TData>["freshness"];
 	responseId?: string;
 	fullOutputPath?: string;
 	truncated?: boolean;
-	sources?: ResultEnvelope<TData>["sources"];
-	citations?: ResultEnvelope<TData>["citations"];
+	sources?: ToolContext<TData>["sources"];
+	citations?: ToolContext<TData>["citations"];
 	summary?: string;
 	answerContext?: string;
 	modelUsage?: ModelUsage;
-	sourceNotes?: ResultEnvelope<TData>["sourceNotes"];
-	qualitySignals?: ResultEnvelope<TData>["qualitySignals"];
-	nextActions?: ResultEnvelope<TData>["nextActions"];
+	sourceNotes?: ToolContext<TData>["sourceNotes"];
+	qualitySignals?: ToolContext<TData>["qualitySignals"];
+	nextActions?: ToolContext<TData>["nextActions"];
 	assistantGuidance?: string;
 	kind?: "scrape" | "diff";
 	snapshotSaved?: { name: string; tag?: string; path: string };
@@ -45,7 +45,7 @@ export interface ResultShellOptions<TData> {
 
 export function toolResult<TData>(
 	options: ResultShellOptions<TData>,
-): PiToolShell<ResultEnvelope<TData>> {
+): PiToolShell<ToolContext<TData>> {
 	const freshness = options.freshness ?? freshnessFromCache(options.cache);
 	return {
 		content: [{ type: "text", text: options.text }],
@@ -85,7 +85,7 @@ export function toolResult<TData>(
 export function errorResult(
 	error: StructuredError,
 	text = error.message,
-): PiToolShell<ResultEnvelope<undefined>> {
+): PiToolShell<ToolContext<undefined>> {
 	return toolResult({
 		text,
 		data: undefined,
@@ -116,7 +116,7 @@ export function inputErrorResult(
 	phase: string,
 	message: string,
 	text = message,
-): PiToolShell<ResultEnvelope<undefined>> {
+): PiToolShell<ToolContext<undefined>> {
 	return toolResult({
 		text,
 		data: undefined,
@@ -129,7 +129,7 @@ export function missingModelResult(
 	task: "extract" | "summarize",
 	url: string | undefined,
 	text: string,
-): PiToolShell<ResultEnvelope<undefined>> {
+): PiToolShell<ToolContext<undefined>> {
 	return errorResult(missingModelError(task, url), text);
 }
 
@@ -138,7 +138,7 @@ export function toolErrorResult(
 	fallbackCode: string,
 	phase: string,
 	url?: string,
-): PiToolShell<ResultEnvelope<undefined>> {
+): PiToolShell<ToolContext<undefined>> {
 	return errorResult(structuredToolError(error, fallbackCode, phase, url));
 }
 

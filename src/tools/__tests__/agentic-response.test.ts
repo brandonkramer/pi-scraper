@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createCrawlState, saveCrawlState } from "../../crawl/state.ts";
 import { closeStorageDbs } from "../../storage/db/open.ts";
 import { storeResponse } from "../../storage/responses/store.ts";
-import type { ResultEnvelope } from "../../types.ts";
+import type { ToolContext } from "../../types.ts";
 import { webCrawlTool } from "../web-crawl.ts";
 import { diffInterpretation } from "../web-scrape.ts";
 
@@ -50,7 +50,7 @@ describe("agentic response shaping", () => {
 			{ action: "list", seed: "https://example.com", limit: 5 },
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope;
+		const envelope = result.details as ToolContext;
 
 		expect(result.content[0]?.text).toContain("recommended action");
 		expect(envelope.answerContext).toContain("crawl-agentic");
@@ -71,7 +71,7 @@ describe("agentic response shaping", () => {
 			{ action: "status", crawlId: "crawl-status" },
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope;
+		const envelope = result.details as ToolContext;
 
 		expect(result.content[0]?.text).toContain("Crawl crawl-status");
 		expect(envelope.data).toMatchObject({ crawlId: "crawl-status" });

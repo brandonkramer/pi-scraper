@@ -11,7 +11,7 @@ import type {
 	Chunk,
 	CommonScrapeOptions,
 	OutputFormat,
-	ResultEnvelope,
+	ToolContext,
 	ScrapeMode,
 } from "../types.ts";
 import { normalizeGitHubBlobUrl } from "../url/github-raw.ts";
@@ -52,7 +52,7 @@ export interface ScrapeData {
 	chunks?: Chunk[];
 }
 
-export type ScrapeResult = ResultEnvelope<ScrapeData>;
+export type ScrapeResult = ToolContext<ScrapeData>;
 
 export interface ScrapePipelineDeps {
 	httpClient?: Pick<HttpClient, "fetchUrl">;

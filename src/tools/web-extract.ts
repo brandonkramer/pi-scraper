@@ -5,8 +5,11 @@ import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import type { PatternSectionRequest } from "../extract/pattern/index.ts";
 import type { PatternExcerptRequest, PatternRegexRequest } from "../extract/pattern/types.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
-import { renderSimpleCall } from "../tui/call.ts";
-import { renderEnvelopeResult } from "../tui/envelope.ts";
+import { toolCall } from "../tui/index.ts";
+import { renderWebExtractSelectorResult } from "../tui/renderers/extract-selector.ts";
+import { renderWebExtractResult } from "../tui/renderers/extract.ts";
+import { renderVerticalResult } from "../tui/renderers/vertical.ts";
+import type { PiToolShell, ToolContext } from "../types.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
 import {
 	modelProviderOptionSchema,
@@ -24,11 +27,7 @@ import {
 } from "./web-extract-strategies.ts";
 import { runSummarize } from "./web-extract-summarize.ts";
 import { runApiSurfaceExtraction } from "./web-extract-surface.ts";
-import {
-	listDeterministicExtractors,
-	renderVerticalResult,
-	runDeterministicExtractor,
-} from "./web-extract-vertical.ts";
+import { listDeterministicExtractors, runDeterministicExtractor } from "./web-extract-vertical.ts";
 
 const extractActions = [
 	"list",
@@ -75,7 +74,7 @@ export const webExtractSchema = Type.Object({
 	content: Type.Optional(Type.String({ description: "Inline content (when no URL)." })),
 	prompt: Type.Optional(Type.String({ description: "Adhoc extraction prompt." })),
 	schema: Type.Optional(
-		Type.Any({ description: "JSON schema or shape for structured extraction." }),
+		Type.Any({ description: "JSON schema for structured extraction." }),
 	),
 	sentences: Type.Optional(Type.Number()),
 	bullets: Type.Optional(Type.Number()),
@@ -111,7 +110,7 @@ export const webExtractSchema = Type.Object({
 	),
 	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
 	extract: Type.Optional(
-		Type.String({ description: "Specific extraction target, e.g. 'api-surface'." }),
+		Type.String({ description: "Extraction target, e.g. api-surface." }),
 	),
 	// Selector extraction (Task 27)
 	selector: Type.Optional(Type.String({ description: "CSS/XPath selector." })),
@@ -127,7 +126,7 @@ export const webExtractSchema = Type.Object({
 	selectors: Type.Optional(
 		Type.Unsafe<Record<string, string>>({
 			type: "object",
-			description: "Field-to-selector mapping for css-extract/xpath-extract/regex-extract",
+			description: "Field-to-selector map for css/xpath/regex",
 		}),
 	),
 	query: Type.Optional(Type.String({ description: "Search query for cosine relevance scoring." })),
@@ -174,12 +173,12 @@ export function createWebExtractTool(
 			if (action === "cosine") return await runCosine(params, options, signal, onUpdate);
 			return await runAdHocExtraction(params, options, signal, context);
 		},
-		renderCall: (args, theme) =>
-			renderSimpleCall("web_extract", renderExtractCallParts(args), theme),
+		renderCall: (args, theme) => toolCall("web_extract", renderExtractCallParts(args), theme),
 		renderResult: (result, { expanded }, theme) => {
 			const text = result.content[0]?.text ?? "";
 			if (text.startsWith("\u2514\u2500")) return renderVerticalResult(result, expanded, theme);
-			return renderEnvelopeResult(result, expanded, theme);
+			if (isSelectorResult(result)) return renderWebExtractSelectorResult(result, expanded, theme);
+			return renderWebExtractResult(result, expanded, theme);
 		},
 	});
 }
@@ -215,4 +214,10 @@ function renderExtractCallParts(params: Params): string[] {
 		return ["regex-extract", params.url ?? "inline content"].filter(Boolean);
 	if (action === "cosine") return ["cosine", params.url ?? "inline content"].filter(Boolean);
 	return [action, params.extractor, params.url ?? "provided content"].filter(Boolean) as string[];
+}
+
+function isSelectorResult(result: PiToolShell): boolean {
+	const env = result.details as Partial<ToolContext<{ strategy?: string }>> | undefined;
+	const s = env?.data?.strategy;
+	return s === "direct" || s === "adaptive" || s === "healed" || s === "none";
 }

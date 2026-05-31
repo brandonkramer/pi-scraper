@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { closeStorageDbs } from "../../storage/db/open.ts";
 import { setFtsAvailabilityForTests } from "../../storage/search.ts";
-import type { ResultEnvelope } from "../../types.ts";
+import type { ToolContext } from "../../types.ts";
 
 const scrapePipelineMock = vi.hoisted(() => ({
 	scrapeUrl: vi.fn(),
@@ -70,7 +70,7 @@ describe("web_scrape snapshot writing", () => {
 			{ url: "https://example.com/snap-1", snapshotName: "test-snap" },
 			signal,
 		);
-		const details = result.details as ResultEnvelope;
+		const details = result.details as ToolContext;
 
 		expect(details.snapshotSaved).toBeDefined();
 		expect(details.snapshotSaved?.name).toBe("test-snap");
@@ -95,7 +95,7 @@ describe("web_scrape snapshot writing", () => {
 			{ url: "https://example.com/snap-2", snapshotName: "tagged", snapshotTag: "v1" },
 			signal,
 		);
-		const details = result.details as ResultEnvelope;
+		const details = result.details as ToolContext;
 
 		expect(details.snapshotSaved).toBeDefined();
 		expect(details.snapshotSaved?.name).toBe("tagged");
@@ -120,7 +120,7 @@ describe("web_scrape snapshot writing", () => {
 			{ url: "https://example.com/overwrite", snapshotName: "overwrite-me" },
 			signal,
 		);
-		const firstDetails = first.details as ResultEnvelope;
+		const firstDetails = first.details as ToolContext;
 		const path1 = firstDetails.snapshotSaved!.path;
 
 		const second = await createWebScrapeTool().execute(
@@ -128,7 +128,7 @@ describe("web_scrape snapshot writing", () => {
 			{ url: "https://example.com/overwrite", snapshotName: "overwrite-me" },
 			signal,
 		);
-		const secondDetails = second.details as ResultEnvelope;
+		const secondDetails = second.details as ToolContext;
 		const path2 = secondDetails.snapshotSaved!.path;
 
 		expect(path1).toBe(path2);
@@ -148,7 +148,7 @@ describe("web_scrape snapshot writing", () => {
 			{ url: "https://example.com/no-snap" },
 			signal,
 		);
-		const details = result.details as ResultEnvelope;
+		const details = result.details as ToolContext;
 
 		expect(details.snapshotSaved).toBeUndefined();
 	});
@@ -171,7 +171,7 @@ describe("web_scrape snapshot writing", () => {
 			{ url: "https://example.com/error", snapshotName: "fail-test" },
 			signal,
 		);
-		const details = result.details as ResultEnvelope;
+		const details = result.details as ToolContext;
 
 		expect(details.snapshotSaved).toBeUndefined();
 	});
@@ -186,7 +186,7 @@ describe("web_scrape snapshot writing", () => {
 			{ url: "https://example.com/snap-response", snapshotName: "response-compat" },
 			signal,
 		);
-		const details = result.details as ResultEnvelope;
+		const details = result.details as ToolContext;
 
 		const snapPath = details.snapshotSaved!.path;
 		const snapshotData = JSON.parse(await readFile(snapPath, "utf8"));

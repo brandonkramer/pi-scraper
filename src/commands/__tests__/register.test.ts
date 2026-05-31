@@ -7,7 +7,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { loadEffectiveConfig } from "../../config.ts";
-import type { ResultEnvelope } from "../../types.ts";
+import type { ToolContext } from "../../types.ts";
 import type { RegisteredCommandOptions } from "../define.ts";
 import { registerWebCommands, webCommands } from "../register.ts";
 import { persistScrapeDefaults } from "../scrape-config-scrape-mode.ts";
@@ -40,7 +40,7 @@ describe("web command registration", () => {
 	it("persists scrape mode defaults", async () => {
 		const modeResult = await persistScrapeDefaults({ mode: "fast" }, { rootDir });
 		const config = await loadEffectiveConfig({ rootDir });
-		expect((modeResult.details as ResultEnvelope).data).toBeTruthy();
+		expect((modeResult.details as ToolContext).data).toBeTruthy();
 		expect(config.scrapeMode).toBe("fast");
 	});
 

@@ -5,9 +5,8 @@ import { describe, expect, it } from "vitest";
 
 import type { ModelAdapter, ModelRequest, ModelResponse } from "../../extract/adhoc/model.ts";
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
-import { renderText } from "../../tui/text.ts";
-import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
-import type { ResultEnvelope } from "../../types.ts";
+import { toolCall, type RenderComponent, type RenderTheme } from "../../tui/index.ts";
+import type { ToolContext } from "../../types.ts";
 import type { PiToolRegistrar, WebTool } from "../infra/define.ts";
 import { registerWebTools } from "../infra/register.ts";
 import { createWebExtractTool, webExtractTool } from "../web-extract.ts";
@@ -30,7 +29,7 @@ describe("selected web tool handlers", () => {
 	it("lists vertical extractor capabilities through web_extract", async () => {
 		const result = await webExtractTool.execute("call", { action: "list" }, signal);
 		expect(result.content[0]?.text).toContain("extractor");
-		expect(Array.isArray((result.details as ResultEnvelope).data)).toBe(true);
+		expect(Array.isArray((result.details as ToolContext).data)).toBe(true);
 	});
 
 	it("runs deterministic vertical extraction through web_extract without a model", async () => {
@@ -44,7 +43,7 @@ describe("selected web tool handlers", () => {
 			signal,
 		);
 		expect(result.content[0]?.text).toContain("npm");
-		expect((result.details as ResultEnvelope).format).toBe("json");
+		expect((result.details as ToolContext).format).toBe("json");
 	});
 
 	it("pre-renders vertical fetchPage input when mode=browser", async () => {
@@ -70,7 +69,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const data = ((result.details as ResultEnvelope).data as { data?: { title?: string } }).data;
+		const data = ((result.details as ToolContext).data as { data?: { title?: string } }).data;
 		expect(data?.title).toBe("Rendered Docs");
 		expect(result.content[0]?.text).toContain("browser fallback · cloak");
 	});
@@ -84,7 +83,7 @@ describe("selected web tool handlers", () => {
 
 	it("returns structured missing-model errors for ad hoc extraction", async () => {
 		const result = await webExtractTool.execute("call", { url: "https://example.com" }, signal);
-		expect((result.details as ResultEnvelope).error?.code).toBe("MODEL_ADAPTER_MISSING");
+		expect((result.details as ToolContext).error?.code).toBe("MODEL_ADAPTER_MISSING");
 		expect(result.content[0]?.text).toContain("model-backed");
 	});
 
@@ -109,7 +108,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<{
+		const envelope = result.details as ToolContext<{
 			source: { source: string; length: number };
 			markers: Array<{ found: boolean; index: number }>;
 			contains: Array<{ found: boolean }>;
@@ -140,7 +139,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<{
+		const envelope = result.details as ToolContext<{
 			selection?: { symbols: Array<{ name: string; description?: string }> };
 		}>;
 
@@ -163,7 +162,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<{
+		const envelope = result.details as ToolContext<{
 			selection?: {
 				extractSchema?: string;
 				sections: unknown[];
@@ -191,7 +190,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<{
+		const envelope = result.details as ToolContext<{
 			selection?: {
 				symbols: unknown[];
 				unmatched: Array<{ type: string; pattern?: string }>;
@@ -217,7 +216,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<{
+		const envelope = result.details as ToolContext<{
 			source: { source: string; status?: number };
 			contains: Array<{ found: boolean }>;
 		}>;
@@ -237,7 +236,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<{
+		const envelope = result.details as ToolContext<{
 			modules: Array<{ functions: Array<{ name: string }> }>;
 		}>;
 
@@ -252,7 +251,7 @@ describe("selected web tool handlers", () => {
 			{ action: "pattern", content: "abc", regexes: [{ pattern: "[" }] },
 			signal,
 		);
-		expect((result.details as ResultEnvelope).error?.code).toBe("PATTERN_INPUT_INVALID");
+		expect((result.details as ToolContext).error?.code).toBe("PATTERN_INPUT_INVALID");
 	});
 
 	it("runs provided-content extraction with an injected model adapter", async () => {
@@ -269,7 +268,7 @@ describe("selected web tool handlers", () => {
 			{ content: "# Local title\nBody", prompt: "Extract title." },
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<{
+		const envelope = result.details as ToolContext<{
 			data: { title: string; kind: string };
 			input: { source: string };
 		}>;
@@ -301,7 +300,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<{
+		const envelope = result.details as ToolContext<{
 			data: { headingFound: boolean };
 			input: { source: string };
 		}>;
@@ -330,7 +329,7 @@ describe("selected web tool handlers", () => {
 			{ content: "content", prompt: "extract" },
 			signal,
 		);
-		expect((extracted.details as ResultEnvelope<{ data: { ok: boolean } }>)?.data?.data?.ok).toBe(
+		expect((extracted.details as ToolContext<{ data: { ok: boolean } }>)?.data?.data?.ok).toBe(
 			true,
 		);
 
@@ -372,7 +371,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const envelope = scraped.details as ResultEnvelope<{
+		const envelope = scraped.details as ToolContext<{
 			summary: string;
 			input: { source: string };
 		}>;
@@ -404,7 +403,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const envelope = scraped.details as ResultEnvelope<{
+		const envelope = scraped.details as ToolContext<{
 			summary: string;
 			input: { source: string };
 		}>;
@@ -466,7 +465,7 @@ describe("selected web tool handlers", () => {
 	});
 
 	it("wraps long custom renderer lines to the requested terminal width", () => {
-		const lines = renderText("x".repeat(150)).render(40);
+		const lines = toolCall("x".repeat(150), []).render(40);
 		expect(lines.length).toBeGreaterThan(1);
 		expect(lines.every((line) => line.length <= 40)).toBe(true);
 	});
@@ -490,7 +489,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<{
+		const envelope = result.details as ToolContext<{
 			source: {
 				sourceFormat: string;
 				json?: {
@@ -522,7 +521,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		expect((result.details as ResultEnvelope).error?.code).toBe("JSON_PARSE_FAILED");
+		expect((result.details as ToolContext).error?.code).toBe("JSON_PARSE_FAILED");
 	});
 
 	it("reports structured errors for unsupported JSONPath syntax", async () => {
@@ -536,7 +535,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		expect((result.details as ResultEnvelope).error?.code).toBe("JSON_PATH_UNSUPPORTED");
+		expect((result.details as ToolContext).error?.code).toBe("JSON_PATH_UNSUPPORTED");
 	});
 
 	it("reports no-match error when all JSONPaths miss", async () => {
@@ -550,7 +549,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		expect((result.details as ResultEnvelope).error?.code).toBe("JSON_PATH_NO_MATCH");
+		expect((result.details as ToolContext).error?.code).toBe("JSON_PATH_NO_MATCH");
 	});
 
 	it("runs JSON pattern inspection from scraped URL", async () => {
@@ -583,7 +582,7 @@ describe("selected web tool handlers", () => {
 			},
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<{
+		const envelope = result.details as ToolContext<{
 			source: { source: string; sourceFormat: string };
 			contains: Array<{ found: boolean }>;
 		}>;

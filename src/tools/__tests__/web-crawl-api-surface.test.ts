@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { closeStorageDbs } from "../../storage/db/open.ts";
 import { readResponse } from "../../storage/responses/read.ts";
-import type { ResultEnvelope } from "../../types.ts";
+import type { ToolContext } from "../../types.ts";
 import { webCrawlTool } from "../web-crawl.ts";
 import { webGetResultTool } from "../web-get-result.ts";
 
@@ -77,7 +77,7 @@ describe("web_crawl api-surface extraction", () => {
 			},
 			signal,
 		);
-		const envelope = result.details as ResultEnvelope<{
+		const envelope = result.details as ToolContext<{
 			contextPackage?: {
 				package: { source: string; crawlId?: string; urlCount: number };
 				tree: Array<{ url: string; breadcrumbs?: string[]; excerpt?: string }>;
@@ -105,7 +105,7 @@ describe("web_crawl api-surface extraction", () => {
 			{ responseId: diagnostics.contextPackage!.responseId },
 			signal,
 		);
-		expect((fetched.details as ResultEnvelope).data).toMatchObject({
+		expect((fetched.details as ToolContext).data).toMatchObject({
 			package: { source: "crawl" },
 		});
 
@@ -125,7 +125,7 @@ describe("web_crawl api-surface extraction", () => {
 			},
 			signal,
 		);
-		const requestedEnvelope = requested.details as ResultEnvelope<{
+		const requestedEnvelope = requested.details as ToolContext<{
 			apiSurface?: { modules: Array<{ functions: Array<{ name: string }> }> };
 		}>;
 		const requestedSurface = requestedEnvelope.data.apiSurface;
@@ -143,7 +143,7 @@ describe("web_crawl api-surface extraction", () => {
 			{ action: "run", url: "https://docs.example.com/api/client" },
 			signal,
 		);
-		const plainEnvelope = plain.details as ResultEnvelope<{
+		const plainEnvelope = plain.details as ToolContext<{
 			apiSurface?: unknown;
 		}>;
 		expect(plainEnvelope.data.apiSurface).toBeUndefined();

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BatchScrapeResult } from "../../batch/run.ts";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { closeStorageDbs } from "../../storage/db/open.ts";
-import type { ResultEnvelope } from "../../types.ts";
+import type { ToolContext } from "../../types.ts";
 
 const scrapePipelineMock = vi.hoisted(() => ({
 	scrapeUrl: vi.fn(),
@@ -70,7 +70,7 @@ describe("raw line-match previews", () => {
 			signal,
 		);
 		const text = result.content[0]?.text ?? "";
-		const envelope = result.details as ResultEnvelope<{ matches?: unknown[] }>;
+		const envelope = result.details as ToolContext<{ matches?: unknown[] }>;
 
 		expect(text).toContain("Matching line snippets (1 match):");
 		expect(text).toContain('needle "targetNeedle" at line 3');
@@ -109,7 +109,7 @@ describe("raw line-match previews", () => {
 			signal,
 		);
 		const text = result.content[0]?.text ?? "";
-		const envelope = result.details as ResultEnvelope<
+		const envelope = result.details as ToolContext<
 			Array<{ ok: boolean; result?: { data?: { matches?: unknown[] } } }>
 		>;
 		const expanded =

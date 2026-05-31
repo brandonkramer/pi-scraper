@@ -19,8 +19,9 @@ import { resolveScrapeOptions } from "../scrape/options.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.ts";
 import { freshnessFromTimestamp } from "../storage/cache/freshness.ts";
 import { storeResponseWithId } from "../storage/responses/store.ts";
-import { renderSimpleCall } from "../tui/call.ts";
-import { failure } from "../tui/theme.ts";
+import { toolCall } from "../tui/index.ts";
+import { renderWebDiffResult } from "../tui/renderers/diff.ts";
+import { renderWebScrapeResult } from "../tui/renderers/scrape.ts";
 import { qualityFromCache, refreshUrlAction, storedTraceContext } from "./infra/agentic-context.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
@@ -36,10 +37,8 @@ import {
 	sessionOptionSchema,
 	urlProperty,
 } from "./infra/schemas.ts";
-import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
+import { buildSummarizeToolContext } from "./infra/scrape-input-result.ts";
 import { sessionLifecycle } from "./infra/session-lifecycle.ts";
-import { renderWebDiffResult } from "./renderers/diff.ts";
-import { renderWebScrapeResult } from "./renderers/scrape.ts";
 
 const scrapeTasks = ["read", "summarize"] as const;
 const scrapeTaskSchema = Type.Union([Type.Literal("read"), Type.Literal("summarize")]);
@@ -56,7 +55,7 @@ export const webScrapeSchema = Type.Object({
 	exclude: Type.Optional(Type.Array(Type.String())),
 	onlyMainContent: Type.Optional(Type.Boolean()),
 	timeoutSeconds: Type.Optional(Type.Integer()),
-	maxBytes: Type.Optional(Type.Integer({ description: "Max bytes." })),
+	maxBytes: Type.Optional(Type.Integer()),
 	maxChars: Type.Optional(Type.Integer()),
 	headers: Type.Optional(
 		Type.Record(Type.String(), Type.String(), {
@@ -73,8 +72,8 @@ export const webScrapeSchema = Type.Object({
 			description: "true or {dir,filename,maxBytes}",
 		}),
 	),
-	snapshotName: Type.Optional(Type.String({ description: "Name." })),
-	snapshotTag: Type.Optional(Type.String({ description: "Tag." })),
+	snapshotName: Type.Optional(Type.String()),
+	snapshotTag: Type.Optional(Type.String()),
 	diff: Type.Optional(
 		Type.Unsafe<
 			| boolean
@@ -134,7 +133,7 @@ export function createWebScrapeTool(
 			return await readScrape(params, signal, onUpdate);
 		},
 		renderCall: (args, theme, _context) =>
-			renderSimpleCall("web_scrape", renderScrapeCallParts(args), theme),
+			toolCall("web_scrape", renderScrapeCallParts(args), theme),
 		renderResult: (result, { expanded }, theme) => {
 			const details = result.details as Partial<{ kind: string }>;
 			if (details.kind === "diff") return renderWebDiffResult(result, expanded, theme);
@@ -273,7 +272,7 @@ async function readScrape(
 			};
 			await updateSnapshotReference(result.url, stored, snapOptions);
 		} catch {
-			// Soft failure — snapshot write failed but scrape succeeded; return with warning
+			// Soft toolFailure — snapshot write failed but scrape succeeded; return with warning
 		}
 	}
 
@@ -304,7 +303,7 @@ async function readScrape(
 				},
 			};
 		} catch {
-			// Soft failure
+			// Soft toolFailure
 		}
 	}
 
@@ -312,7 +311,7 @@ async function readScrape(
 		? formatLineMatchPreview(result.data.matches, { maxChars: 4_000 })
 		: undefined;
 	const shaped = shapeScrapeResult(result, stored.responseId, matchPreview);
-	const { notice: sessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
+	const { notice: toolSessionNotice, suffix: sessionSuffix } = await sessionLifecycle(params);
 	const description = describeScrapeResult(result, { displayMode });
 	const scrapeText = matchPreview
 		? `${description.split("\n", 1)[0]}\n${matchPreview}`
@@ -342,7 +341,7 @@ async function readScrape(
 		snapshotSaved,
 		savedFilePath,
 		error: result.error,
-		diagnostics: sessionNotice ? { sessionNotice } : undefined,
+		diagnostics: toolSessionNotice ? { toolSessionNotice } : undefined,
 		...shaped,
 	});
 }
@@ -372,7 +371,7 @@ async function summarizeScrape(params: Params, options: WebScrapeToolOptions, si
 			signal,
 		);
 		await sessionLifecycle(params);
-		return buildSummarizeToolResult(result, params.url);
+		return buildSummarizeToolContext(result, params.url);
 	} catch (error) {
 		return toolErrorResult(error, "SUMMARIZE_FAILED", "summarize", params.url);
 	}
@@ -482,7 +481,7 @@ function shapeScrapeResult(result: ScrapeResult, responseId: string, matchPrevie
 	return {
 		summary,
 		answerContext: result.error
-			? failure(`The scrape failed during ${result.error.phase}: ${result.error.message}`)
+			? `The scrape failed during ${result.error.phase}: ${result.error.message}`
 			: (matchPreview ?? ""),
 		...storedTraceContext({
 			responseId,

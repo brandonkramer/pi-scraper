@@ -1,11 +1,11 @@
-/**
- * @fileoverview tools __tests__ tools-smoke.live.test module.
- */
+/** @file Tools **tests** tools-smoke.live.test module. */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { ResultEnvelope } from "../../types.ts";
+
+import type { ToolContext } from "../../types.ts";
 import { webMapTool } from "../web-map.ts";
 import { webScrapeTool } from "../web-scrape.ts";
 
@@ -37,14 +37,12 @@ describe.skipIf(!liveEnabled)("opt-in live network smoke", () => {
 			},
 			new AbortController().signal,
 		);
-		const envelope = result.details as ResultEnvelope;
+		const envelope = result.details as ToolContext;
 
 		expect(envelope.error).toBeUndefined();
 		expect(envelope.status).toBeGreaterThanOrEqual(200);
 		expect(envelope.status).toBeLessThan(400);
-		expect(JSON.stringify(envelope.data).toLowerCase()).toContain(
-			"example domain",
-		);
+		expect(JSON.stringify(envelope.data).toLowerCase()).toContain("example domain");
 	});
 
 	it("runs discovery mapping through real robots/sitemap probes", async () => {
@@ -53,13 +51,11 @@ describe.skipIf(!liveEnabled)("opt-in live network smoke", () => {
 			{ url: "https://example.com/", maxSitemaps: 2 },
 			new AbortController().signal,
 		);
-		const envelope = result.details as ResultEnvelope;
+		const envelope = result.details as ToolContext;
 
 		expect(envelope.error).toBeUndefined();
 		expect(envelope.responseId).toBeTruthy();
-		expect(envelope.fullOutputPath).toContain(
-			path.join(homeDir, ".pi", "results"),
-		);
+		expect(envelope.fullOutputPath).toContain(path.join(homeDir, ".pi", "results"));
 	});
 });
 

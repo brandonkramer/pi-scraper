@@ -19,7 +19,7 @@ import {
 	missingModelResult,
 	toolErrorResult,
 } from "./infra/result.ts";
-import { buildSummarizeToolResult } from "./infra/scrape-input-result.ts";
+import { buildSummarizeToolContext } from "./infra/scrape-input-result.ts";
 import type { Params, WebExtractToolOptions } from "./web-extract.ts";
 
 /** Tracks which capabilities have already triggered a lazy discover this session. */
@@ -88,7 +88,7 @@ export async function runSummarize(
 			options.scrapeDeps ?? {},
 			signal,
 		);
-		return buildSummarizeToolResult(result, params.url);
+		return buildSummarizeToolContext(result, params.url);
 	} catch (error) {
 		return toolErrorResult(error, "SUMMARIZE_FAILED", "summarize", params.url);
 	}

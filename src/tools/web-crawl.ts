@@ -1,11 +1,10 @@
 /** @file Pi tool adapter for crawling, crawl state, and context. */
 import { type Static, Type } from "typebox";
 
-import { renderSimpleCall } from "../tui/call.ts";
-import { renderEnvelopeResult } from "../tui/envelope.ts";
+import { toolCall } from "../tui/index.ts";
+import { renderWebCrawlLookupResult, renderWebCrawlResult } from "../tui/renderers/crawl.ts";
 import { defineWebTool } from "./infra/define.ts";
 import { scrapeModeOptionSchema, sessionOptionSchema, urlProperty } from "./infra/schemas.ts";
-import { renderWebCrawlResult } from "./renderers/crawl.ts";
 import { crawlRun } from "./web-crawl-run.ts";
 import { crawlStatus, crawlList } from "./web-crawl-status.ts";
 
@@ -59,7 +58,7 @@ export const webCrawlTool = defineWebTool({
 		return await crawlRun(params, signal, onUpdate);
 	},
 	renderCall: (args, theme, _context) =>
-		renderSimpleCall(
+		toolCall(
 			"web_crawl",
 			[
 				args.action,
@@ -71,7 +70,7 @@ export const webCrawlTool = defineWebTool({
 	renderResult: (result, { expanded }, theme) =>
 		isRunCrawlResult(result.details)
 			? renderWebCrawlResult(result, expanded, theme)
-			: renderEnvelopeResult(result, expanded, theme),
+			: renderWebCrawlLookupResult(result, expanded, theme),
 });
 
 function inferCrawlAction(params: Params): CrawlAction {

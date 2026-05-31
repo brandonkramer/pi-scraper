@@ -1,6 +1,4 @@
-/**
- * @fileoverview Shared session lifecycle helpers for Pi web tools.
- */
+/** @file Shared session lifecycle helpers for Pi web tools. */
 import {
 	buildSessionNotice,
 	buildSessionText,
@@ -19,9 +17,7 @@ export interface SessionLifecycleResult {
 	suffix: string;
 }
 
-/**
- * Apply save/clear session side effects and return notice + suffix text.
- */
+/** Apply save/clear session side effects and return notice + suffix text. */
 export async function sessionLifecycle(
 	params: SessionLifecycleParams,
 ): Promise<SessionLifecycleResult> {
