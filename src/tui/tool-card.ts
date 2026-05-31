@@ -20,17 +20,10 @@ import type { RenderComponent, RenderTheme } from "./types.ts";
 
 /** @file Generic file/binary content-type detection and result cards. */
 
-const FILE_TYPE_PREFIXES = [
-	"application/octet-stream",
-	"application/pdf",
-	"image/",
-	"audio/",
-	"video/",
-];
-
 export function toolIsFileResult(envelope: Partial<ToolContext<unknown>>): boolean {
 	const ct = envelope.contentType ?? "";
-	if (FILE_TYPE_PREFIXES.some((p) => ct === p || ct.startsWith(p))) return true;
+	if (/^(?:application\/octet-stream|application\/pdf|image\/|audio\/|video\/)/u.test(ct))
+		return true;
 	return !!(envelope.data && typeof envelope.data === "object" && "fileSize" in envelope.data);
 }
 
