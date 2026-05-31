@@ -12,7 +12,7 @@ export const scrapeModeOptionSchema = {
 } as const;
 
 export const sessionOptionSchema = {
-	sessionId: Type.Optional(Type.String()),
+	sessionId: Type.Optional(Type.Unsafe<string>({})),
 	saveSession: Type.Optional(Type.Boolean()),
 	clearSession: Type.Optional(Type.Boolean()),
 } as const;
@@ -36,6 +36,6 @@ export const scrapeOutputOptionSchema = {
 	),
 } as const;
 
-export function urlProperty(description?: string): ReturnType<typeof Type.String> {
-	return description ? Type.String({ description }) : Type.String();
+export function urlProperty(): ReturnType<typeof Type.Unsafe<string>> {
+	return Type.Unsafe<string>({});
 }
