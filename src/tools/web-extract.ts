@@ -72,7 +72,7 @@ export const webExtractSchema = Type.Object({
 	extractor: Type.Optional(Type.String({ description: "Vertical extractor." })),
 	url: Type.Optional(urlProperty()),
 	content: Type.Optional(Type.String({ description: "Inline when no URL." })),
-	prompt: Type.Optional(Type.String({ description: "Adhoc extraction prompt." })),
+	prompt: Type.Optional(Type.String({ description: "Adhoc prompt." })),
 	schema: Type.Optional(
 		Type.Any({ description: "JSON schema for structured extraction." }),
 	),
@@ -93,19 +93,19 @@ export const webExtractSchema = Type.Object({
 	excerpts: Type.Optional(
 		Type.Unsafe<PatternExcerptRequest[]>({
 			type: "array",
-			description: "{needle,before,after,maxOccurrences}",
+			description: "{needle,before,after,maxOcc}",
 		}),
 	),
 	regexes: Type.Optional(
 		Type.Unsafe<PatternRegexRequest[]>({
 			type: "array",
-			description: "{name,pattern,flags,captureGroup,maxMatches,contextBefore,contextAfter}",
+			description: "{name,pattern,flags,captureGroup,max,contextBefore,contextAfter}",
 		}),
 	),
 	sections: Type.Optional(
 		Type.Unsafe<PatternSectionRequest[]>({
 			type: "array",
-			description: "{name,start,end,includeStart,includeEnd,maxChars}",
+			description: "{name,start,end,incStart,incEnd,maxChar}",
 		}),
 	),
 	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
