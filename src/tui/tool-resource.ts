@@ -7,16 +7,13 @@ import type { RenderTheme } from "./types.ts";
  */
 
 function paintAccentUrl(url: string, width: number, theme?: RenderTheme): string {
-	const t = truncateMiddle(url, width);
+	const t =
+		url.length <= width
+			? url.padEnd(width, " ")
+			: width <= 1
+				? "…"
+				: `${url.slice(0, Math.ceil((width - 1) / 2))}…${url.slice(url.length - Math.floor((width - 1) / 2))}`;
 	return inlineThemeText("accent", t, theme) ?? t;
-}
-
-function truncateMiddle(value: string, width: number): string {
-	if (value.length <= width) return value.padEnd(width, " ");
-	if (width <= 1) return "…";
-	const left = Math.ceil((width - 1) / 2);
-	const right = Math.floor((width - 1) / 2);
-	return `${value.slice(0, left)}…${value.slice(value.length - right)}`;
 }
 
 /**
