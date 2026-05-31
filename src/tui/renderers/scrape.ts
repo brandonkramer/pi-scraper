@@ -245,12 +245,11 @@ function addHeaderSections(
 	if (headers["last-modified"]) {
 		const now = new Date(headers["date"] ?? Date.now()).getTime();
 		const diffSec = Math.floor((now - new Date(headers["last-modified"]).getTime()) / 1000);
-		const suffix = diffSec > 0 ? `  (${formatSeconds(diffSec)} ago)` : "";
 		addScrapeRow(
 			groups,
 			"time",
 			"modified",
-			`${formatHttpTime(headers["last-modified"])}${suffix}`,
+			`${formatHttpTime(headers["last-modified"])}${diffSec > 0 ? `  (${formatSeconds(diffSec)} ago)` : ""}`,
 		);
 	}
 
