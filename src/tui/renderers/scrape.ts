@@ -115,7 +115,16 @@ export function renderWebScrapeResult(
 			summary,
 			expanded,
 			notice: toolSessionNotice(envelope),
-			expandedSections: (width) => scrapeExpandedSections(envelope, { preview }, width, theme),
+			expandedSections: (width) => {
+				if (toolIsFileResult(envelope)) {
+					return [toolFileResultCard(envelope, theme).render(width).join("\n")];
+				}
+				const allSections = buildScrapeSections(envelope, theme);
+				const out = [toolResultTree(allSections, width, theme)];
+				if (preview && !markdownPreviewComponent(envelope.format, preview, theme))
+					out.push(toolFormatPreview(envelope.format, preview).slice(0, 1200));
+				return out;
+			},
 			markdownPreview: () => markdownPreviewComponent(envelope.format, preview, theme),
 			responseId: envelope.responseId,
 			hasError: !!envelope.error,
@@ -130,22 +139,6 @@ function markdownPreviewComponent(
 ): RenderComponent | undefined {
 	if (format !== "markdown" || !preview || preview.length <= 100) return;
 	return new Markdown(preview.slice(0, 1200), 0, 0, toolMarkdownTheme(theme));
-}
-
-function scrapeExpandedSections(
-	envelope: Partial<ToolContext<Record<string, unknown>>>,
-	options: { preview?: string },
-	width: number,
-	theme?: RenderTheme,
-): string[] {
-	if (toolIsFileResult(envelope)) {
-		return [toolFileResultCard(envelope, theme).render(width).join("\n")];
-	}
-	const allSections = buildScrapeSections(envelope, theme);
-	const out = [toolResultTree(allSections, width, theme)];
-	if (options.preview && !markdownPreviewComponent(envelope.format, options.preview, theme))
-		out.push(toolFormatPreview(envelope.format, options.preview).slice(0, 1200));
-	return out;
 }
 
 function buildScrapeSections(
