@@ -127,7 +127,6 @@ export interface ToolResourceOptions {
 	statusBox?: string;
 }
 
-/** Per-resource loader row with status pill. */
 export function toolResourceStatus(row: ToolResourceStatusRow): string {
 	const statusWidth = Math.max(12, Math.min(18, Math.floor(row.width * 0.22)));
 	const urlWidth = Math.max(12, row.width - statusWidth - 3);

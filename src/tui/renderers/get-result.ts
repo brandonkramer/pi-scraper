@@ -7,7 +7,6 @@ import { buildExpandedResultDetails } from "../tool-result.ts";
 import { paintFirstLineBg } from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
-/** Render web_get_result with a summary header and a field tree in expanded view. */
 export function renderGetResult(
 	result: PiToolShell,
 	expanded: boolean,

@@ -4,7 +4,6 @@ import type { ToolResultTreeSection } from "./tool-result-tree.ts";
 import type { RenderTheme } from "./types.ts";
 /** @file Pi terminal UI preview and metadata formatting primitives. */
 
-/** First non-empty candidate, whitespace-collapsed. Final number arg overrides 180-char cap. */
 export function previewText(
 	result: PiToolShell,
 	envelope: Partial<ToolContext<Record<string, unknown>>>,

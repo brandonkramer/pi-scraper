@@ -299,7 +299,6 @@ export function toolStackedCard(
 	});
 }
 
-/** ToolResultCard — adapter mapping renderContent/body to a stacked card. */
 export function toolResultCard(
 	options: {
 		renderContent?: (width: number) => string;

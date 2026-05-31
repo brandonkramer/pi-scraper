@@ -12,7 +12,6 @@ import type { RenderComponent, RenderTheme } from "../types.ts";
 
 type BrowserFallback = { used: boolean; backend: string };
 
-/** Theme-aware renderer for vertical extractor results. */
 export function renderVerticalResult(
 	result: PiToolShell,
 	expanded: boolean | undefined,
