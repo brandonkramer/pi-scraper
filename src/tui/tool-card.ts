@@ -126,8 +126,7 @@ function renderBatchProgressText(
 		const statusBox =
 			item.status === "processing" && typeof item.progress === "number"
 				? (() => {
-						const clamped = Math.max(0, Math.min(1, item.progress));
-						const filled = Math.round(clamped * (sbWidth - 2));
+						const filled = Math.round(Math.max(0, Math.min(1, item.progress)) * (sbWidth - 2));
 						const empty = sbWidth - 2 - filled;
 						return `[${"=".repeat(Math.max(0, filled - 1))}${filled > 0 ? ">" : ""}${" ".repeat(Math.max(0, empty))}]`;
 					})()
