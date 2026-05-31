@@ -19,10 +19,7 @@ import {
 	toolFreshnessLabel,
 	toolSessionNotice,
 } from "../tool-labels.ts";
-import {
-	formatBytes as toolFormatBytes,
-	formatDuration as toolFormatDuration,
-} from "../tool-resource.ts";
+import { formatBytes as fmtBytes, formatDuration as fmtDuration } from "../tool-resource.ts";
 import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
 import { toolResultId } from "../tool-result.ts";
 import { countSegments as count, toolStatus } from "../tool-status.ts";
@@ -62,10 +59,9 @@ function batchItemGroup(item: BatchItem): ToolResultGroup {
 		rows.push(["status", r?.status ? String(r.status) : undefined]);
 		rows.push(["mode", r?.mode]);
 		rows.push(["format", r?.format]);
-		if (r?.downloadedBytes !== undefined)
-			rows.push(["size", toolFormatBytes(r.downloadedBytes) ?? ""]);
+		if (r?.downloadedBytes !== undefined) rows.push(["size", fmtBytes(r.downloadedBytes) ?? ""]);
 		if (r?.timing?.durationMs !== undefined)
-			rows.push(["duration", toolFormatDuration(r.timing.durationMs) ?? ""]);
+			rows.push(["duration", fmtDuration(r.timing.durationMs) ?? ""]);
 		rows.push(["title", r?.data?.title]);
 		if (r?.data?.matches?.length)
 			rows.push([
