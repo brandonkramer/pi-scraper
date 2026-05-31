@@ -1,6 +1,5 @@
-/** @file Pi web_extract vertical result renderer component. */
 import type { PiToolShell } from "../../types.ts";
-import { failure, muted, success } from "../theme.ts";
+import { activity, failure, muted, success } from "../theme.ts";
 import { renderText } from "../tool-call.ts";
 import {
 	buildToolResultTree,
@@ -12,6 +11,10 @@ import { buildExpandedResultDetails } from "../tool-result.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 type BrowserFallback = { used: boolean; backend: string };
+type VerticalComment = { author?: string; text?: string };
+type TranscriptSegment = { text: string; start: number; duration?: number };
+type TranscriptPreview = { segments?: TranscriptSegment[]; text?: string };
+type BlockedSource = { reason?: string; attemptedEndpoints?: string[] };
 
 export function renderVerticalResult(
 	result: PiToolShell,
@@ -29,6 +32,8 @@ export function renderVerticalResult(
 	}
 
 	const data = wrapper?.data as Record<string, unknown> | undefined;
+	const blocked = blockedSource(data);
+	if (blocked) return renderBlockedVerticalResult(name, data, blocked, expanded, theme);
 	const bfFallback = wrapper?.browserFallback as BrowserFallback | undefined;
 	const browserFallback = bfFallback?.used ? bfFallback : undefined;
 	const summaryDetails = [
@@ -37,38 +42,36 @@ export function renderVerticalResult(
 	]
 		.filter(Boolean)
 		.join(" \u00B7 ");
-	const treeLine = `\u2514\u2500 ${success("\u2713", theme)} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
+	const treeLine = `${success("\u2713", theme)} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
 
 	if (!expanded || !data) return renderText(treeLine, { padToWidth: true });
 
 	const sections = buildToolResultTree(buildVerticalSections(data, browserFallback));
-	if (sections.every((section) => section.name === "extraction"))
+	const transcriptBlock = formatTranscriptBlock(
+		data.transcript as TranscriptPreview | undefined,
+		80,
+		theme,
+	);
+	const commentsBlock = formatCommentsBlock(
+		data.comments as VerticalComment[] | undefined,
+		80,
+		theme,
+	);
+	const sourceSections = buildToolResultTree(buildSourceSections(data));
+	const hasVerticalBlocks = Boolean(transcriptBlock || commentsBlock || sourceSections.length > 0);
+	if (sections.every((section) => section.name === "extraction") && !hasVerticalBlocks)
 		sections.push(
-			...buildExpandedResultDetails(data, { hide: new Set<string>(), sectionName: "data" }),
+			...buildExpandedResultDetails(data, {
+				hide: new Set<string>(),
+				sectionName: "data",
+			}),
 		);
 	const body = toolResultTree(sections, 80, theme);
-
-	const transcript = data.transcript as
-		| { segments?: { text: string; start: number; duration: number }[]; text?: string }
-		| undefined;
-	if (!transcript?.text) return renderText(`${treeLine}\n${body}`, { padToWidth: true });
-
-	const segCount = transcript.segments?.length ?? 0;
-	const firstSegments = transcript.segments?.slice(0, 20) ?? [];
-	const transcriptLines = firstSegments.map((seg) => {
-		const m = Math.floor(seg.start / 60);
-		return `[${m}:${(seg.start % 60).toFixed(0).padStart(2, "0")}] ${seg.text}`;
-	});
-	if (segCount > firstSegments.length)
-		transcriptLines.push(`… ${segCount - firstSegments.length} more segments`);
-	const wrappedLines = transcriptLines.flatMap((line) => splitValueByWidth(line, 80));
-	const transcriptBlock = wrappedLines
-		.map((line) => `${muted("\u2502 ", theme)}${line}`)
-		.join("\n");
-
-	const header = `${treeLine}\n${transcriptBlock}`;
-	if (!body) return renderText(header, { padToWidth: true });
-	return renderText(`${header}\n\n${body}`, { padToWidth: true });
+	const sourceBlock = toolResultTree(sourceSections, 80, theme);
+	return renderText(
+		[treeLine, transcriptBlock, body, commentsBlock, sourceBlock].filter(Boolean).join("\n\n"),
+		{ padToWidth: true },
+	);
 }
 
 function buildVerticalSections(
@@ -98,27 +101,154 @@ function buildVerticalSections(
 	}
 	if (videoRows.length > 0) sections.push({ name: "video", rows: videoRows });
 
-	const comments = data.comments as { author?: string; text: string }[] | undefined;
-	if (comments && comments.length > 0) {
-		const commentRows = comments
-			.slice(0, 5)
-			.map((comment, index): [string, string] => [
-				`${index + 1}`,
-				`${comment.author ? `${comment.author}: ` : ""}${comment.text.slice(0, 80)}${comment.text.length > 80 ? "…" : ""}`,
-			]);
-		if (comments.length > 5) commentRows.push(["…", `${comments.length - 5} more comments`]);
-		sections.push({ name: "comments", rows: commentRows });
-	}
-
-	const source = data.source as { provider?: string; videoUrl?: string } | undefined;
-	if (source) {
-		const sourceRows: ToolResultGroup["rows"] = [];
-		if (source.provider) sourceRows.push(["provider", source.provider]);
-		if (source.videoUrl) sourceRows.push(["url", source.videoUrl]);
-		if (sourceRows.length > 0) sections.push({ name: "source", rows: sourceRows });
-	}
-
 	return sections;
+}
+
+function buildSourceSections(
+	data: Record<string, unknown>,
+	options: { includeEndpoint?: boolean } = {},
+): ToolResultGroup[] {
+	const source = data.source as
+		| { provider?: string; videoUrl?: string; endpoint?: string }
+		| undefined;
+	const sourceRows: ToolResultGroup["rows"] = [];
+	if (source?.provider) sourceRows.push(["provider", source.provider]);
+	if (source?.videoUrl) sourceRows.push(["url", source.videoUrl]);
+	if (options.includeEndpoint !== false && source?.endpoint)
+		sourceRows.push(["endpoint", source.endpoint]);
+	if (typeof data.permalink === "string") sourceRows.push(["url", data.permalink]);
+	return sourceRows.length > 0 ? [{ name: "source", rows: sourceRows }] : [];
+}
+
+function renderBlockedVerticalResult(
+	name: string,
+	data: Record<string, unknown> | undefined,
+	blocked: BlockedSource,
+	expanded: boolean | undefined,
+	theme?: RenderTheme,
+): RenderComponent {
+	const reason = blocked.reason ?? "structured endpoint unavailable";
+	const treeLine = `${activity("!", theme)} ${name} metadata only${muted(` \u00B7 ${summarizeBlockedReason(reason)}`, theme)}`;
+	if (!expanded) return renderText(treeLine, { padToWidth: true });
+	const attemptedBlock = formatListBlock(
+		"attempted endpoints",
+		[...new Set(blocked.attemptedEndpoints ?? [])],
+		80,
+		theme,
+	);
+	const sourceBlock = data
+		? toolResultTree(
+				buildToolResultTree(buildSourceSections(data, { includeEndpoint: false })),
+				80,
+				theme,
+			)
+		: "";
+	return renderText([treeLine, attemptedBlock, sourceBlock].filter(Boolean).join("\n\n"), {
+		padToWidth: true,
+	});
+}
+
+function summarizeBlockedReason(reason: string): string {
+	if (/robots\.txt|robots/iu.test(reason)) return "blocked by robots.txt";
+	return reason.length > 80 ? `${reason.slice(0, 77)}…` : reason;
+}
+
+function formatTranscriptBlock(
+	transcript: TranscriptPreview | undefined,
+	width: number,
+	theme?: RenderTheme,
+): string {
+	const segments = transcript?.segments ?? [];
+	if (segments.length === 0) return "";
+	const preview = segments.slice(0, 20);
+	const timestamps = preview.map((segment) => formatTimestamp(segment.start));
+	const timeWidth = Math.max(4, ...timestamps.map((time) => time.length));
+	const availableWidth = Math.max(20, width - 2 - 3 - timeWidth - 2);
+	const lines = ["  transcript"];
+	const hasMore = segments.length > preview.length;
+	for (let i = 0; i < preview.length; i++) {
+		const isLast = !hasMore && i === preview.length - 1;
+		const connector = isLast ? "\u2514\u2500 " : "\u251C\u2500 ";
+		const time = timestamps[i]?.padStart(timeWidth) ?? "".padStart(timeWidth);
+		const textLines = splitValueByWidth(normalizePreviewText(preview[i]?.text), availableWidth);
+		lines.push(`  ${muted(`${connector}${time}  `, theme)}${textLines[0] ?? ""}`);
+		const continuationPrefix = (isLast ? "  " : "\u2502 ").padEnd(3 + timeWidth + 2);
+		for (const line of textLines.slice(1))
+			lines.push(`  ${muted(continuationPrefix, theme)}${line}`);
+	}
+	if (hasMore) {
+		const remaining = segments.length - preview.length;
+		lines.push(
+			`  ${muted(`\u2514\u2500 ${"…".padStart(timeWidth)}  `, theme)}${remaining} more segments`,
+		);
+	}
+	return lines.join("\n");
+}
+
+function formatCommentsBlock(
+	comments: VerticalComment[] | undefined,
+	width: number,
+	theme?: RenderTheme,
+): string {
+	if (!comments?.length) return "";
+	const preview = comments.slice(0, 5);
+	const lines = ["  comments"];
+	const hasMore = comments.length > preview.length;
+	for (const [i, comment] of preview.entries()) {
+		const isLast = !hasMore && i === preview.length - 1;
+		const connector = isLast ? "\u2514\u2500 " : "\u251C\u2500 ";
+		const label = comment.author ? `${comment.author}: ` : `${i + 1}. `;
+		const value = `${label}${truncateComment(normalizePreviewText(comment.text))}`;
+		const valueLines = splitValueByWidth(value, Math.max(20, width - 2 - 3));
+		lines.push(`  ${muted(connector, theme)}${valueLines[0] ?? ""}`);
+		const continuationPrefix = isLast ? "   " : "\u2502  ";
+		for (const line of valueLines.slice(1))
+			lines.push(`  ${muted(continuationPrefix, theme)}${line}`);
+	}
+	if (hasMore)
+		lines.push(
+			`  ${muted("\u2514\u2500 … ", theme)}${comments.length - preview.length} more comments`,
+		);
+	return lines.join("\n");
+}
+
+function formatListBlock(
+	name: string,
+	items: string[],
+	width: number,
+	theme?: RenderTheme,
+): string {
+	if (items.length === 0) return "";
+	const lines = [`  ${name}`];
+	for (let i = 0; i < items.length; i++) {
+		const connector = i === items.length - 1 ? "\u2514\u2500 " : "\u251C\u2500 ";
+		const valueLines = splitValueByWidth(items[i] ?? "", Math.max(20, width - 2 - 3));
+		lines.push(`  ${muted(connector, theme)}${valueLines[0] ?? ""}`);
+		const continuationPrefix = i === items.length - 1 ? "   " : "\u2502  ";
+		for (const line of valueLines.slice(1))
+			lines.push(`  ${muted(continuationPrefix, theme)}${line}`);
+	}
+	return lines.join("\n");
+}
+
+function formatTimestamp(seconds: number): string {
+	const totalSeconds = Math.max(0, Math.floor(seconds));
+	return `${Math.floor(totalSeconds / 60)}:${(totalSeconds % 60).toString().padStart(2, "0")}`;
+}
+
+function normalizePreviewText(value: string | undefined): string {
+	return (value ?? "").replaceAll(/\s+/gu, " ").trim();
+}
+
+function truncateComment(value: string): string {
+	return value.length > 180 ? `${value.slice(0, 180)}…` : value;
+}
+
+function blockedSource(data: unknown): BlockedSource | undefined {
+	const source = (data as { source?: unknown } | undefined)?.source;
+	if (!source || typeof source !== "object") return;
+	const typed = source as BlockedSource & { blocked?: boolean };
+	return typed.blocked ? typed : undefined;
 }
 
 function extractorPreview(data: unknown): string {

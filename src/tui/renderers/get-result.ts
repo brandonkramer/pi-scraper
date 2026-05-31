@@ -1,4 +1,3 @@
-/** @file Pi web_get_result renderer component. */
 import type { PiToolShell } from "../../types.ts";
 import { paintFg } from "../theme.ts";
 import { defineResultRenderer } from "../tool-card.ts";

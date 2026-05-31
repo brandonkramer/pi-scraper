@@ -1,0 +1,36 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 12
+name: hackernews
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: Hacker News story metadata, score, and comments.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://news.ycombinator.com/item?id=:id
+  - https://hacker-news.firebaseio.com/v0/item/:id
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - story_metadata
+  - score
+  - comments
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://hacker-news.firebaseio.com/v0/item/{{id|encodeURIComponent}}.json
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  id: $.id
+  type: $.type
+  title: $.title
+  url: $.url
+  by: $.by
+  score: $.score
+  comments: $.descendants
+  time: $.time
+  text: $.text

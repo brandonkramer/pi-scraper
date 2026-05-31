@@ -1,0 +1,41 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 9
+name: docker_hub
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: Docker Hub image metadata, pulls, and stars.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://hub.docker.com/r/:namespace/:repo
+  - https://hub.docker.com/_/:repo
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - image_metadata
+  - pulls
+  - stars
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://hub.docker.com/v2/repositories/{{namespace|encodeURIComponent}}/{{repo|encodeURIComponent}}/
+# Match-time defaults, query captures, and URL exclusions.
+matchOptions:
+  defaults:
+    namespace: library
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  namespace: $.namespace
+  name: $.name
+  type: $.repository_type
+  description: $.description
+  stars: $.star_count
+  pulls: $.pull_count
+  private: $.is_private
+  owner: $.user
+  createdAt: $.date_registered
+  updatedAt: $.last_updated

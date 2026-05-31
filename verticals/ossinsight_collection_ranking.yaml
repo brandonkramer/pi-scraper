@@ -1,0 +1,63 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 20
+name: ossinsight_collection_ranking
+# api-json-chain: sequential API steps (steps[]) → extract from accumulated scope.
+kind: api-json-chain
+description: OSSInsight collection repository ranking.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://ossinsight.io/collections/:slug
+# Match-time defaults, query captures, and URL exclusions.
+matchOptions:
+  query:
+    metric:
+      default: stars
+      enum:
+        - stars
+        - pull-requests
+        - issues
+    period:
+      default: past_28_days
+      enum:
+        - past_24_hours
+        - past_28_days
+        - past_month
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - ranking
+source: builtin
+# Sequential JSON API steps; `as` stores each step result in scope.
+steps:
+  # Resolve collection slug → id from collections list.
+  - request:
+      urlTemplate: https://api.ossinsight.io/v1/collections/
+    select: $.data.rows
+    as: collection
+    find:
+      where: $.name
+      include: $.id
+      equals: "{{slug}}"
+      transform: slugVariants
+      errorMessage: "Unknown OSSInsight collection slug: {{slug}}"
+  # Fetch ranking rows for collection id, metric, and period.
+  - request:
+      urlTemplate: https://api.ossinsight.io/v1/collections/{{collection.id|encodeURIComponent}}/{{metric|switch:pull-requests=ranking_by_prs,stars=ranking_by_stars,issues=ranking_by_issues}}/
+      queryParams:
+        period: "{{period}}"
+    select: $.data.rows
+    as: rows
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  collection:
+    id: "@.collection.id"
+    name: "@.collection.name"
+    slug: "{{slug}}"
+  metric: "{{metric}}"
+  period: "{{period}}"
+  rows: "@.rows|pick:repo_name,stars,forks,pull_requests,issues,total_score"

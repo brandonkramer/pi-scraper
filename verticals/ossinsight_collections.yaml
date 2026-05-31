@@ -1,0 +1,33 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 19
+name: ossinsight_collections
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: OSSInsight repository collections.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://ossinsight.io/collections
+  - https://ossinsight.io/collections/
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - collections
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://api.ossinsight.io/v1/collections/
+# Array at JSONPath `path`; per-item field map in `fields`.
+extractList:
+  as: collections
+  path: $.data.rows
+  fields:
+    id: $.id
+    name: $.name
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  {}

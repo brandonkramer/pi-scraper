@@ -1,4 +1,3 @@
-/** @file Pi web_batch renderer — result/progress card and per-URL expanded details. */
 import {
 	batchProgressFromItems,
 	isBatchProgress,
@@ -16,6 +15,7 @@ import { toolBatchProgressCard, toolBatchResultCard, toolProgressCard } from "..
 import {
 	toolContextPackageResponseId,
 	toolErrorLabel,
+	toolExpandHint,
 	toolFreshnessLabel,
 	toolSessionNotice,
 } from "../tool-labels.ts";
@@ -98,7 +98,7 @@ export function renderWebBatchResult(
 					count.failure(failed, "failed", theme),
 					count.activity(cacheHits, "cache hits", "\u21BB", theme),
 					toolFreshnessLabel(envelope),
-					!expanded && { text: "(ctrl+o to expand)", tone: "muted" as const },
+					!expanded && toolExpandHint,
 				],
 				theme,
 			);

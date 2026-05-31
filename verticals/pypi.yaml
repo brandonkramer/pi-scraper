@@ -1,0 +1,33 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 7
+name: pypi
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: PyPI package metadata, version, and project URLs.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://pypi.org/project/:project
+  - https://pypi.org/project/:project/:version
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - package_metadata
+  - version
+  - project_urls
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://pypi.org/pypi/{{name|encodeURIComponent}}/json
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  name: $.info.name
+  version: $.info.version
+  summary: $.info.summary
+  homepage: $.info.home_page
+  license: $.info.license
+  projectUrls: $.info.project_urls

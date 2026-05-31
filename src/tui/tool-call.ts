@@ -1,4 +1,3 @@
-/** @file ToolCall — header line: `toolName parts[0] · parts[1] · ...` */
 import { type Component, Text, truncateToWidth } from "@earendil-works/pi-tui";
 
 import { paintFg } from "./theme.ts";
@@ -13,7 +12,6 @@ export function toolCall(
 	return renderText(paintFg(theme, "accent", label));
 }
 
-/** Width-safe text render component. */
 export function renderText(text: string, options: { padToWidth?: boolean } = {}): Component {
 	const component = new Text(text, 0, 0);
 	return {

@@ -51,6 +51,7 @@ export function renderFormat(
 	if (format === "raw") return { text: input.html ?? input.text ?? "" };
 	if (format === "html") return { html: input.html };
 	if (format === "json") return { json: input.json ?? input.metadata ?? { text: input.text } };
+	if (format === "ax-tree") return { text: input.text ?? "" };
 	if (format === "llm") return { text: toLlmText(input) };
 	if (format === "text") return { text: normalizeWhitespace(input.text ?? "") };
 	return { markdown: input.markdown ?? input.text ?? "", text: input.text };

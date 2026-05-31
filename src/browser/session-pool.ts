@@ -9,6 +9,7 @@ import type { Browser, BrowserContext, Page } from "playwright";
 
 import { createBrowserRouteGuard } from "./route-guard.ts";
 import type { BrowserRouteGuard, BrowserSafetyCheck } from "./route-guard.ts";
+import { cleanupExpiredBrowserSessions } from "./session.ts";
 
 export interface BrowserSession {
 	id: string;
@@ -48,6 +49,8 @@ export async function acquireBrowserSession(
 		profile?: string;
 		proxy?: string;
 		headers?: Record<string, string>;
+		/** Playwright storageState (object or path) to seed the new context. */
+		storageState?: string | Record<string, unknown>;
 	},
 ): Promise<{ page: Page; session: BrowserSession }> {
 	cleanupIdleSessions();
@@ -78,6 +81,8 @@ export async function acquireBrowserSession(
 			extraHTTPHeaders: options.headers,
 			serviceWorkers: "block",
 			proxy: options.proxy ? { server: options.proxy } : undefined,
+			// oxlint-disable-next-line typescript/no-explicit-any -- bridge local storageState type to Playwright's full type
+			storageState: options.storageState as any,
 		});
 	}
 
@@ -146,6 +151,9 @@ function cleanupIdleSessions(): void {
 			});
 		}
 	}
+	cleanupExpiredBrowserSessions().catch(() => {
+		/* no-op */
+	});
 }
 
 function evictLRUSession(): void {

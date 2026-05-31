@@ -1,0 +1,67 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 98
+name: docsite
+# html-extract: fetch matched URL as HTML → fields (selectors, rules).
+kind: html-extract
+description: Documentation site structured extraction (API ref, changelog, FAQ, compatibility).
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://:host/docs/:path*
+  - https://:host/api/:path*
+  - https://*.readthedocs.io/:path*
+  - https://*.gitbook.io/:path*
+  - https://*.gitbook.com/:path*
+  - https://gitbook.com/:path*
+  - https://developer.mozilla.org/:locale/docs/:path*
+  - https://:host/:path*
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: true
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - api_reference
+  - changelog
+  - faq
+  - compatibility_table
+source: builtin
+# HTML field rules (selectors, meta, headingSections, platform-specific kinds).
+fields:
+  platform:
+    kind: docsitePlatform
+  version:
+    kind: docsiteVersion
+  breadcrumbs:
+    kind: breadcrumbs
+    selectors:
+      - 'nav[aria-label*=breadcrumb i] a, nav[aria-label*=breadcrumb i] li, .breadcrumbs a, .breadcrumbs li, .breadcrumbs span'
+      - '.wy-breadcrumbs a, .wy-breadcrumbs li, .breadcrumb a, .breadcrumb li'
+  title:
+    selectorText:
+      - main h1
+      - article h1
+      - h1
+      - title
+  summary:
+    meta:
+      - description
+      - 'og:description'
+  sections:
+    kind: headingSections
+    contentChars: 1200
+    rootSelectors:
+      - article
+      - main
+      - .theme-doc-markdown
+      - '.rst-content .document'
+      - .markdown-section
+  apiSignature:
+    kind: mdnSignature
+  source:
+    object:
+      provider:
+        value: docsite
+      finalUrl:
+        value: "{{url}}"

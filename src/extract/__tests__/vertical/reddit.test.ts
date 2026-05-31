@@ -136,7 +136,8 @@ describe("reddit vertical extractor", () => {
 			],
 			source: {
 				provider: "reddit",
-				endpoint: "https://www.reddit.com/r/announcements/comments/14f4h6s.json?limit=5&raw_json=1",
+				endpoint:
+					"https://www.reddit.com/r/announcements/comments/14f4h6s.json?limit=50&raw_json=1",
 			},
 		});
 	});
@@ -157,7 +158,7 @@ describe("reddit vertical extractor", () => {
 			data: {
 				id: "14f4h6s",
 				source: {
-					endpoint: "https://www.reddit.com/comments/14f4h6s.json?limit=5&raw_json=1",
+					endpoint: "https://www.reddit.com/comments/14f4h6s.json?limit=50&raw_json=1",
 				},
 			},
 		});
@@ -172,13 +173,14 @@ describe("reddit vertical extractor", () => {
 		);
 
 		expect(attempted).toEqual([
-			"https://www.reddit.com/r/announcements/comments/14f4h6s.json?limit=5&raw_json=1",
-			"https://old.reddit.com/r/announcements/comments/14f4h6s.json?limit=5&raw_json=1",
+			"https://www.reddit.com/r/announcements/comments/14f4h6s.json?limit=50&raw_json=1",
+			"https://old.reddit.com/r/announcements/comments/14f4h6s.json?limit=50&raw_json=1",
 		]);
 		expect(result.data).toMatchObject({
 			id: "14f4h6s",
 			source: {
-				endpoint: "https://old.reddit.com/r/announcements/comments/14f4h6s.json?limit=5&raw_json=1",
+				endpoint:
+					"https://old.reddit.com/r/announcements/comments/14f4h6s.json?limit=50&raw_json=1",
 			},
 		});
 	});
@@ -212,6 +214,52 @@ describe("reddit vertical extractor", () => {
 		expect(
 			(result.data as { source?: { attemptedEndpoints?: string[] } }).source?.attemptedEndpoints,
 		).toHaveLength(4);
+	});
+
+	it("extracts subreddit listings through YAML workflow", async () => {
+		const listingJson = JSON.stringify({
+			data: {
+				children: [
+					{
+						data: {
+							id: "p1",
+							title: "First post",
+							author: "alice",
+							score: 42,
+							num_comments: 7,
+							url: "https://example.com",
+							permalink: "/r/test/comments/p1/first/",
+							created_utc: 1609459200,
+							link_flair_text: "Discussion",
+						},
+					},
+				],
+			},
+		});
+		const result = await runVerticalExtractor(
+			"reddit_listing",
+			"https://www.reddit.com/r/test/top",
+			{ context: contextFor(200, listingJson) },
+		);
+
+		expect(result.error).toBeUndefined();
+		expect(result.data).toMatchObject({
+			subreddit: "test",
+			sort: "top",
+			posts: [
+				{
+					id: "p1",
+					title: "First post",
+					author: "alice",
+					score: 42,
+					numComments: 7,
+					permalink: "https://www.reddit.com/r/test/comments/p1/first/",
+				},
+			],
+			source: {
+				endpoint: "https://www.reddit.com/r/test/top.json",
+			},
+		});
 	});
 
 	it("returns structured errors for blocked and rate-limited Reddit responses", async () => {

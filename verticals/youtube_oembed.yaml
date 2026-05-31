@@ -1,0 +1,47 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 24
+name: youtube_oembed
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: Lightweight YouTube oEmbed metadata fallback without transcripts or comments.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://www.youtube.com/watch
+  - https://youtube.com/watch
+  - https://m.youtube.com/watch
+  - https://youtu.be/:id
+  - https://www.youtube.com/shorts/:id
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - video_metadata
+  - oembed
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://www.youtube.com/oembed
+  queryParams:
+    url: "{{url}}"
+    format: json
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  title: $.title
+  authorName: $.author_name
+  authorUrl: $.author_url
+  providerName: $.provider_name
+  providerUrl: $.provider_url
+  type: $.type
+  html: $.html
+  thumbnailUrl: $.thumbnail_url
+  thumbnailWidth: $.thumbnail_width|number
+  thumbnailHeight: $.thumbnail_height|number
+  width: $.width|number
+  height: $.height|number
+  sourceProvider: youtube_oembed
+  sourceEndpoint: https://www.youtube.com/oembed
+  sourceVideoUrl: "{{url}}"

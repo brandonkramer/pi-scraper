@@ -1,0 +1,83 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 13
+name: reddit
+# http-workflow: multi-step pipeline (steps[]); final step is usually extract:.
+kind: http-workflow
+description: Reddit post metadata, comments, and subreddit.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://www.reddit.com/r/:subreddit/comments/:postId/:slug*
+  - https://old.reddit.com/r/:subreddit/comments/:postId/:slug*
+  - https://reddit.com/r/:subreddit/comments/:postId/:slug*
+  - https://redd.it/:postId
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - post_metadata
+  - comments
+  - subreddit
+source: builtin
+# Step pipeline: tryJson, fetchText, postJson, regex, jsonWalk, extract, …
+steps:
+    # tryJson: fetch post .json (multiple endpoints; fallback metadata when blocked).
+    - tryJson:
+        as: redditResponse
+        endpointAs: endpoint
+        finalUrlAs: finalUrl
+        fallback: redditBlockedMetadata
+        endpoints:
+          - when: subreddit
+            url: https://www.reddit.com/r/{{subreddit}}/comments/{{postId}}.json?limit=50&raw_json=1
+          - when: subreddit
+            url: https://old.reddit.com/r/{{subreddit}}/comments/{{postId}}.json?limit=50&raw_json=1
+          - url: https://www.reddit.com/comments/{{postId}}.json?limit=50&raw_json=1
+          - url: https://old.reddit.com/comments/{{postId}}.json?limit=50&raw_json=1
+    # extract: map JSON scope to post fields and top comments (terminal step).
+    - extract:
+        id: "@.redditResponse[0].data.children[0].data.id || @.redditResponse.id"
+        subreddit: "@.redditResponse[0].data.children[0].data.subreddit || @.redditResponse.subreddit"
+        title: "@.redditResponse[0].data.children[0].data.title"
+        author: "@.redditResponse[0].data.children[0].data.author"
+        createdUtc: "@.redditResponse[0].data.children[0].data.created_utc|number"
+        permalink: "@.redditResponse[0].data.children[0].data.permalink|redditUrl || @.redditResponse.permalink"
+        url: "@.redditResponse[0].data.children[0].data.url"
+        selfText: "@.redditResponse[0].data.children[0].data.selftext"
+        score: "@.redditResponse[0].data.children[0].data.score|number"
+        upvoteRatio: "@.redditResponse[0].data.children[0].data.upvote_ratio|number"
+        commentCount: "@.redditResponse[0].data.children[0].data.num_comments|number"
+        flairText: "@.redditResponse[0].data.children[0].data.link_flair_text"
+        isLocked: "@.redditResponse[0].data.children[0].data.locked|trueOnly"
+        isStickied: "@.redditResponse[0].data.children[0].data.stickied|trueOnly"
+        isArchived: "@.redditResponse[0].data.children[0].data.archived|trueOnly"
+        topComments:
+          jsonWalk:
+            from: redditResponse[1]
+            collect:
+              - walkObjects:
+                  when:
+                    has: data.body
+                  emit:
+                    id: data.id
+                    author: data.author
+                    body: data.body
+                    score: data.score
+                    createdUtc: data.created_utc
+                    permalink:
+                      path: data.permalink
+                      transform: redditUrl
+            dedupeBy:
+              - id
+            maxItems: 50
+        source:
+          object:
+            provider:
+              value: reddit
+            endpoint: "@.endpoint || @.redditResponse.source.endpoint"
+            finalUrl: "@.finalUrl"
+            blocked: "@.redditResponse.source.blocked|trueOnly"
+            attemptedEndpoints: "@.redditResponse.source.attemptedEndpoints"

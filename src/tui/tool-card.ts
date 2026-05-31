@@ -16,15 +16,6 @@ import {
 } from "./tool-status.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 
-/** @file Generic file/binary content-type detection and result cards. */
-
-export function toolIsFileResult(envelope: Partial<ToolContext<unknown>>): boolean {
-	const ct = envelope.contentType ?? "";
-	if (/^(?:application\/octet-stream|application\/pdf|image\/|audio\/|video\/)/u.test(ct))
-		return true;
-	return !!(envelope.data && typeof envelope.data === "object" && "fileSize" in envelope.data);
-}
-
 export function toolFileResultCard(
 	envelope: Partial<ToolContext<Record<string, unknown>>>,
 	theme?: RenderTheme,
@@ -163,11 +154,6 @@ export function progressPillState(state: string): StatusPillState {
 	return state === "queued" || state === "waiting" ? "waiting" : "loading";
 }
 
-export function progressPillLabel(state: string): string {
-	if (state === "queued") return "waiting";
-	return state === "processing" || state === "connecting" ? "loading" : state;
-}
-
 export function toolProgressCard(
 	toolName: `web_${string}`,
 	details: ProgressDetails,
@@ -184,7 +170,12 @@ export function toolProgressCard(
 			const url = details.url ? ` · ${details.url}` : "";
 			const glyph = renderStatusGlyph(state, theme);
 			const pill = renderStatusPill({
-				label: progressPillLabel(details.state),
+				label:
+					details.state === "queued"
+						? "waiting"
+						: details.state === "processing" || details.state === "connecting"
+							? "loading"
+							: details.state,
 				state,
 				width: statusWidth,
 				theme,
@@ -236,7 +227,7 @@ export function defineResultRenderer(options: {
 			return md ? [...lines, "", ...md.render(width)] : lines;
 		},
 		invalidate() {
-			/* Stateless adapter; child components are recreated on render. */
+			// Tool result cards are static; nothing to invalidate.
 		},
 	};
 }

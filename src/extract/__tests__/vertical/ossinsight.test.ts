@@ -1,13 +1,8 @@
-/**
- * @fileoverview extract __tests__ ossinsight.test module.
- */
+/** @file Extract **tests** ossinsight.test module. */
 import { describe, expect, it } from "vitest";
+
 import type { VerticalExtractorContext } from "../../vertical/capabilities.ts";
-import { runVerticalExtractor } from "../../vertical/registry.ts";
-import { ossInsightCollectionRankingExtractor } from "../../vertical/extractors/ossinsight-collection-ranking.ts";
-import { ossInsightCollectionsExtractor } from "../../vertical/extractors/ossinsight-collections.ts";
-import { ossInsightRepoAnalyticsExtractor } from "../../vertical/extractors/ossinsight-repo-analytics.ts";
-import { ossInsightTrendingReposExtractor } from "../../vertical/extractors/ossinsight-trending-repos.ts";
+import { buildManifestRegistry, runVerticalExtractor } from "../../vertical/registry.ts";
 
 function ossInsightContext(calls: string[] = []): VerticalExtractorContext {
 	return {
@@ -80,84 +75,63 @@ function ossInsightContext(calls: string[] = []): VerticalExtractorContext {
 }
 
 describe("OSSInsight vertical extractors", () => {
-	it("matches only documented OSSInsight URL shapes", () => {
-		expect(
-			ossInsightCollectionsExtractor.match(
-				new URL("https://ossinsight.io/collections"),
-			),
-		).toEqual({});
-		expect(
-			ossInsightCollectionsExtractor.match(
-				new URL("https://ossinsight.io/collections/"),
-			),
-		).toEqual({});
-		expect(
-			ossInsightCollectionsExtractor.match(
-				new URL("https://ossinsight.io/collections/open-source-database"),
-			),
-		).toBeUndefined();
+	it("matches only documented OSSInsight URL shapes", async () => {
+		const registry = await buildManifestRegistry(false);
+		expect(registry.get("ossinsight_collections")?.manifest.kind).toBe("api-json");
+		expect(registry.get("ossinsight_trending_repos")?.manifest.kind).toBe("api-json");
+		expect(registry.get("ossinsight_repo_analytics")?.manifest.kind).toBe("api-json");
+		expect(registry.match(new URL("https://ossinsight.io/collections"))?.captures).toEqual({});
+		expect(registry.match(new URL("https://ossinsight.io/collections/"))?.captures).toEqual({});
 
 		expect(
-			ossInsightCollectionRankingExtractor.match(
+			registry.match(
 				new URL(
 					"https://ossinsight.io/collections/open-source-database?metric=issues&period=past_month",
 				),
-			),
+			)?.captures,
 		).toEqual({
 			slug: "open-source-database",
 			metric: "issues",
 			period: "past_month",
 		});
 		expect(
-			ossInsightCollectionRankingExtractor.match(
-				new URL("https://ossinsight.io/collections/open-source-database/extra"),
-			),
-		).toBeUndefined();
+			registry.match(new URL("https://ossinsight.io/collections/open-source-database/extra"))?.entry
+				.manifest.name,
+		).not.toBe("ossinsight_collection_ranking");
 		expect(
-			ossInsightCollectionRankingExtractor.match(
-				new URL(
-					"https://ossinsight.io/collections/open-source-database?metric=forks",
-				),
-			),
-		).toBeUndefined();
+			registry.match(new URL("https://ossinsight.io/collections/open-source-database?metric=forks"))
+				?.entry.manifest.name,
+		).not.toBe("ossinsight_collection_ranking");
 
+		expect(registry.match(new URL("https://ossinsight.io/trending"))?.captures).toEqual({
+			language: "All",
+			period: "past_24_hours",
+		});
 		expect(
-			ossInsightTrendingReposExtractor.match(
-				new URL("https://ossinsight.io/trending"),
-			),
-		).toEqual({ language: "All", period: "past_24_hours" });
-		expect(
-			ossInsightTrendingReposExtractor.match(
-				new URL("https://ossinsight.io/trending/TypeScript?period=past_week"),
-			),
+			registry.match(new URL("https://ossinsight.io/trending/TypeScript?period=past_week"))
+				?.captures,
 		).toEqual({ language: "TypeScript", period: "past_week" });
 		expect(
-			ossInsightTrendingReposExtractor.match(
-				new URL("https://ossinsight.io/trending/TypeScript/extra"),
-			),
-		).toBeUndefined();
+			registry.match(new URL("https://ossinsight.io/trending/TypeScript/extra"))?.entry.manifest
+				.name,
+		).not.toBe("ossinsight_trending_repos");
 
+		expect(registry.match(new URL("https://ossinsight.io/analyze/pingcap/tidb"))?.captures).toEqual(
+			{
+				owner: "pingcap",
+				repo: "tidb",
+			},
+		);
 		expect(
-			ossInsightRepoAnalyticsExtractor.match(
-				new URL("https://ossinsight.io/analyze/pingcap/tidb"),
-			),
-		).toEqual({ owner: "pingcap", repo: "tidb" });
-		expect(
-			ossInsightRepoAnalyticsExtractor.match(
-				new URL("https://ossinsight.io/analyze/pingcap"),
-			),
-		).toBeUndefined();
+			registry.match(new URL("https://ossinsight.io/analyze/pingcap"))?.entry.manifest.name,
+		).not.toBe("ossinsight_repo_analytics");
 	});
 
 	it("extracts collections through the documented public API", async () => {
 		await expect(
-			runVerticalExtractor(
-				"ossinsight_collections",
-				"https://ossinsight.io/collections",
-				{
-					context: ossInsightContext(),
-				},
-			),
+			runVerticalExtractor("ossinsight_collections", "https://ossinsight.io/collections", {
+				context: ossInsightContext(),
+			}),
 		).resolves.toMatchObject({
 			data: {
 				collections: [
@@ -193,9 +167,7 @@ describe("OSSInsight vertical extractors", () => {
 				},
 			],
 		});
-		expect(
-			calls.filter((url) => url.endsWith("/v1/collections/")),
-		).toHaveLength(1);
+		expect(calls.filter((url) => url.endsWith("/v1/collections/"))).toHaveLength(1);
 		expect(calls[1]).toBe(
 			"https://api.ossinsight.io/v1/collections/2/ranking_by_stars/?period=past_28_days",
 		);

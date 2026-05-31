@@ -188,6 +188,71 @@ describe("createPlaywrightRenderer", () => {
 		await destroyBrowserSession("test-session");
 	});
 
+	it("loads storageState from disk when sessionId is provided", async () => {
+		const { saveBrowserSessionStorageState, deleteBrowserSessionStorageState } =
+			await import("../session.ts");
+		await saveBrowserSessionStorageState("playwright-test-ss", {
+			cookies: [{ name: "disk", value: "value" }],
+			origins: [],
+		});
+
+		const seen: Record<string, unknown> = {};
+		const renderer = makeTestRenderer(seen);
+		await renderer.fetchRendered(URL, {
+			sessionId: "playwright-test-ss",
+			saveSession: true,
+			browserBackend: "playwright",
+		});
+		expect(seen.context).toMatchObject({
+			storageState: {
+				cookies: [{ name: "disk", value: "value" }],
+				origins: [],
+			},
+		});
+
+		// Cleanup
+		const { destroyBrowserSession } = await import("../session-pool.ts");
+		await destroyBrowserSession("playwright-test-ss");
+		await deleteBrowserSessionStorageState("playwright-test-ss");
+	});
+
+	it("saves storageState to disk when sessionId + saveSession is provided", async () => {
+		const { loadBrowserSessionStorageState, deleteBrowserSessionStorageState } =
+			await import("../session.ts");
+		const seen: Record<string, unknown> = {};
+		const renderer = makeTestRenderer(seen);
+		await renderer.fetchRendered(URL, {
+			sessionId: "playwright-test-save",
+			saveSession: true,
+			browserBackend: "playwright",
+		});
+		expect(seen.storageStateCalled).toBe(true);
+
+		const loaded = await loadBrowserSessionStorageState("playwright-test-save");
+		expect(loaded).toEqual({ cookies: [{ name: "test", value: "cookie" }], origins: [] });
+
+		// Cleanup
+		const { destroyBrowserSession } = await import("../session-pool.ts");
+		await destroyBrowserSession("playwright-test-save");
+		await deleteBrowserSessionStorageState("playwright-test-save");
+	});
+
+	it("deletes storageState from disk when clearSession is provided", async () => {
+		const { saveBrowserSessionStorageState, loadBrowserSessionStorageState } =
+			await import("../session.ts");
+		await saveBrowserSessionStorageState("playwright-test-clear", {
+			cookies: [],
+			origins: [],
+		});
+
+		const seen: Record<string, unknown> = {};
+		const renderer = makeTestRenderer(seen);
+		await renderer.fetchRendered(URL, { sessionId: "playwright-test-clear", clearSession: true });
+
+		const loaded = await loadBrowserSessionStorageState("playwright-test-clear");
+		expect(loaded).toBeUndefined();
+	});
+
 	it("dedupes hostname safety checks within a render", async () => {
 		const seen: Record<string, unknown> = {};
 		const checks = new Map<string, number>();
@@ -209,6 +274,17 @@ describe("createPlaywrightRenderer", () => {
 			"93.184.216.34": 1,
 			"example.com": 1,
 		});
+	});
+
+	it("only captures axTree when format is ax-tree", async () => {
+		const seen: Record<string, unknown> = {};
+		const renderer = makeTestRenderer(seen);
+
+		const normalResult = await renderer.fetchRendered(URL);
+		expect(normalResult.axTree).toBeUndefined();
+
+		const axResult = await renderer.fetchRendered(URL, { format: "ax-tree" });
+		expect(axResult.axTree).toEqual("rootWebArea\n");
 	});
 
 	it("uses cloak backend by default", async () => {
@@ -327,6 +403,10 @@ function fakeBrowser(
 					seen.routeGlob = glob;
 					routeHandler = handler;
 				},
+				storageState: async () => {
+					seen.storageStateCalled = true;
+					return { cookies: [{ name: "test", value: "cookie" }], origins: [] };
+				},
 				close: async () => {
 					/* no-op */
 				},
@@ -347,6 +427,7 @@ function fakeBrowser(
 							seen.pageClosed = true;
 						},
 						evaluate: async () => undefined,
+						ariaSnapshot: async () => "rootWebArea\n",
 					};
 					return page;
 				},

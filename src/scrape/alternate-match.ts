@@ -11,6 +11,7 @@ export const FORMAT_TO_MIME = {
 	html: ["text/html", "application/xhtml+xml"],
 	llm: ["text/markdown", "text/plain"],
 	raw: [],
+	"ax-tree": [],
 } as const satisfies Record<AlternateOutputFormat, readonly string[]>;
 
 export type AlternateFollowOptions = CommonScrapeOptions;

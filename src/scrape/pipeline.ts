@@ -99,6 +99,11 @@ async function scrapeByMode(
 	deps: ScrapePipelineDeps,
 	signal?: AbortSignal,
 ): Promise<ScrapeResult> {
+	// Accessibility tree requires a real browser regardless of mode option
+	if (format === "ax-tree") {
+		const { browserScrape } = await import("./modes/browser.ts");
+		return await browserScrape(input, format, options, deps, signal);
+	}
 	if (mode === "browser") {
 		const { browserScrape } = await import("./modes/browser.ts");
 		return await browserScrape(input, format, options, deps, signal);

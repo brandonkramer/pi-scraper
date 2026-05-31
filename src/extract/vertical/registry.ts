@@ -1,7 +1,11 @@
 /** @file Extract registry module. */
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
+
 import { createHttpClient, type HttpClient } from "../../http/client.ts";
 import { hasStructuredError } from "../../http/errors.ts";
 import type { CommonRequestOptions, ExtractorCapability, SourceReference } from "../../types.ts";
+import { capability } from "../vertical/capabilities.ts";
 import type {
 	VerticalExtractionResult,
 	VerticalExtractor,
@@ -9,57 +13,12 @@ import type {
 	VerticalExtractorPage,
 	VerticalExtractorProgress,
 } from "../vertical/capabilities.ts";
-import { arxivExtractor } from "../vertical/extractors/arxiv.ts";
-import { cratesIoExtractor } from "../vertical/extractors/crates-io.ts";
-import { deepWikiExtractor } from "../vertical/extractors/deepwiki.ts";
-import { dockerHubExtractor } from "../vertical/extractors/docker-hub.ts";
-import { docsiteExtractor } from "../vertical/extractors/docs-site.ts";
-import { docstringsExtractor } from "../vertical/extractors/docstrings.ts";
-import { githubIssueExtractor } from "../vertical/extractors/github-issue.ts";
-import { githubPrExtractor } from "../vertical/extractors/github-pr.ts";
-import { githubReleaseExtractor } from "../vertical/extractors/github-release.ts";
-import { githubRepoExtractor } from "../vertical/extractors/github-repo.ts";
-import { gitIngestExtractor } from "../vertical/extractors/gitingest.ts";
-import { hackerNewsItemExtractor } from "../vertical/extractors/hackernews.ts";
-import {
-	huggingFaceDatasetExtractor,
-	huggingFaceModelExtractor,
-} from "../vertical/extractors/huggingface.ts";
-import { npmPackageExtractor } from "../vertical/extractors/npm.ts";
-import { ossInsightCollectionRankingExtractor } from "../vertical/extractors/ossinsight-collection-ranking.ts";
-import { ossInsightCollectionsExtractor } from "../vertical/extractors/ossinsight-collections.ts";
-import { ossInsightRepoAnalyticsExtractor } from "../vertical/extractors/ossinsight-repo-analytics.ts";
-import { ossInsightTrendingReposExtractor } from "../vertical/extractors/ossinsight-trending-repos.ts";
-import { pypiPackageExtractor } from "../vertical/extractors/pypi.ts";
-import { redditExtractor } from "../vertical/extractors/reddit/index.ts";
-import { redditListingExtractor } from "../vertical/extractors/reddit/listing.ts";
-import { youtubeExtractor } from "../vertical/extractors/youtube.ts";
+import { parseManifestText } from "./manifest/loader.ts";
+import { matchManifestUrl } from "./manifest/matcher.ts";
+import type { ManifestRegistryEntry } from "./manifest/registry.ts";
+import type { VerticalManifest } from "./manifest/types.ts";
 
-export const verticalExtractors = [
-	githubRepoExtractor,
-	githubIssueExtractor,
-	githubPrExtractor,
-	githubReleaseExtractor,
-	gitIngestExtractor,
-	npmPackageExtractor,
-	pypiPackageExtractor,
-	cratesIoExtractor,
-	dockerHubExtractor,
-	huggingFaceModelExtractor,
-	huggingFaceDatasetExtractor,
-	hackerNewsItemExtractor,
-	redditExtractor,
-	redditListingExtractor,
-	arxivExtractor,
-	deepWikiExtractor,
-	docsiteExtractor,
-	docstringsExtractor,
-	ossInsightCollectionsExtractor,
-	ossInsightCollectionRankingExtractor,
-	ossInsightTrendingReposExtractor,
-	ossInsightRepoAnalyticsExtractor,
-	youtubeExtractor,
-] as const satisfies readonly VerticalExtractor[];
+export const verticalExtractors: readonly VerticalExtractor[] = [];
 
 export interface VerticalRegistryDeps {
 	context?: VerticalExtractorContext;
@@ -73,7 +32,61 @@ export interface VerticalRegistryDeps {
 }
 
 export function listExtractorCapabilities(): ExtractorCapability[] {
-	return verticalExtractors.map((extractor) => extractor.capability);
+	const byName = new Map<string, ExtractorCapability>();
+	for (const item of listPackageManifestCapabilities()) byName.set(item.name, item);
+	for (const extractor of verticalExtractors)
+		byName.set(extractor.capability.name, extractor.capability);
+	return [...byName.values()];
+}
+
+let cachedPackageCapabilities: ExtractorCapability[] | undefined;
+
+function listPackageManifestCapabilities(): ExtractorCapability[] {
+	cachedPackageCapabilities ??= readPackageManifests().map((manifest) =>
+		capability(manifest.name, manifest.urlPatterns, manifest.outputSchema ?? { type: "object" }, {
+			requiresBrowser: manifest.requirements?.requiresBrowser ?? false,
+			requiresLLM: manifest.requirements?.requiresLLM ?? false,
+			requiresCloud: manifest.requirements?.requiresCloud ?? false,
+		}),
+	);
+	return cachedPackageCapabilities;
+}
+
+function readPackageManifests(): VerticalManifest[] {
+	const dir = path.resolve(import.meta.dirname, "../../../verticals");
+	try {
+		return readdirSync(dir)
+			.filter((file) => isPackageManifestFile(file))
+			.flatMap((file) => {
+				const parsed = parseManifestText(readFileSync(path.join(dir, file), "utf8"), file);
+				return isVerticalManifest(parsed) ? [parsed] : [];
+			})
+			.toSorted(
+				(a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER),
+			);
+	} catch {
+		// Package manifests are an optional packaged asset during tests/source checkouts.
+		return [];
+	}
+}
+
+function isPackageManifestFile(file: string): boolean {
+	return (
+		file.endsWith(".yaml") ||
+		file.endsWith(".yml") ||
+		file.endsWith(".jsonc") ||
+		file.endsWith(".json")
+	);
+}
+
+function isVerticalManifest(value: unknown): value is VerticalManifest {
+	return typeof value === "object" && value !== null && "name" in value && "urlPatterns" in value;
+}
+
+/** Build the full manifest registry including built-in + user manifests. */
+export async function buildManifestRegistry(includeProject = false) {
+	const { buildManifestRegistry: build } = await import("./manifest/registry.ts");
+	return await build(includeProject);
 }
 
 export async function runVerticalExtractor<T = unknown>(
@@ -83,8 +96,28 @@ export async function runVerticalExtractor<T = unknown>(
 	signal?: AbortSignal,
 ): Promise<VerticalExtractionResult<T>> {
 	const url = new URL(input.toString());
+
+	// Check manifest registry first — user overrides take priority
+	const manifestMod = await import("./manifest/registry.ts");
+	const registry = await manifestMod.buildManifestRegistry();
+	const entry = registry.get(name);
+	if (entry?.isDeclarative) {
+		const captures = matchManifestUrl(entry.manifest, url);
+		if (captures) {
+			return await runDeclarativeExtractor(entry, name, url, captures, deps, signal);
+		}
+	}
+
+	// Fall back to built-in TypeScript extractors
 	const extractor = verticalExtractors.find((candidate) => candidate.capability.name === name);
-	if (!extractor)
+	if (extractor) {
+		const match = extractor.match(url);
+		if (match) {
+			return await runBuiltinExtractor(extractor, name, url, match, deps, signal);
+		}
+	}
+
+	if (!extractor && !entry) {
 		return {
 			extractor: name,
 			url: url.toString(),
@@ -94,17 +127,67 @@ export async function runVerticalExtractor<T = unknown>(
 				retryable: false,
 			},
 		};
-	const match = extractor.match(url);
-	if (!match)
+	}
+	return {
+		extractor: name,
+		url: url.toString(),
+		error: {
+			code: "URL_NOT_SUPPORTED",
+			message: `${name} does not support this URL`,
+			retryable: false,
+		},
+	};
+}
+
+async function runBuiltinExtractor<T>(
+	extractor: VerticalExtractor,
+	name: string,
+	url: URL,
+	match: Record<string, string>,
+	deps: VerticalRegistryDeps,
+	signal?: AbortSignal,
+): Promise<VerticalExtractionResult<T>> {
+	const sources: SourceReference[] = [];
+	try {
+		const data = await extractor.extract(
+			url,
+			match,
+			deps.context ??
+				httpContext(
+					deps.httpClient,
+					deps.requestOptions,
+					sources,
+					deps.onProgress ? (options) => deps.onProgress!(options) : undefined,
+					deps.prerenderedPage,
+				),
+			signal,
+		);
 		return {
 			extractor: name,
 			url: url.toString(),
-			error: {
-				code: "URL_NOT_SUPPORTED",
-				message: `${name} does not support this URL`,
-				retryable: false,
-			},
+			data: data as T,
+			sources: sources.length > 0 ? sources : undefined,
 		};
+	} catch (error) {
+		return {
+			extractor: name,
+			url: url.toString(),
+			sources: sources.length > 0 ? sources : undefined,
+			error: verticalError(error),
+		};
+	}
+}
+
+async function runDeclarativeExtractor<T>(
+	entry: ManifestRegistryEntry,
+	name: string,
+	url: URL,
+	match: Record<string, string>,
+	deps: VerticalRegistryDeps,
+	signal?: AbortSignal,
+): Promise<VerticalExtractionResult<T>> {
+	const { createDeclarativeExtractor } = await import("./manifest/declarative.ts");
+	const extractor = createDeclarativeExtractor(entry.manifest);
 	const sources: SourceReference[] = [];
 	try {
 		const data = await extractor.extract(
@@ -204,6 +287,38 @@ function httpContext(
 				signal,
 			);
 			return JSON.parse(response.text ?? "null") as T;
+		},
+		fetch: async (
+			url: string,
+			opts?: {
+				method?: "GET" | "POST" | "PUT" | "DELETE";
+				headers?: Record<string, string>;
+				body?: string;
+			},
+			signal?: AbortSignal,
+		) => {
+			recordVerticalSource(sources, url, "api");
+			const headers: Record<string, string> = {
+				accept: "application/json",
+				...opts?.headers,
+			};
+			if (opts?.body) headers["content-type"] = "application/json";
+			const response = await client.fetchUrl(
+				url,
+				{
+					...requestOptions,
+					method: opts?.method ?? "GET",
+					body: opts?.body,
+					forceText: true,
+					respectRobots: false,
+					headers,
+				},
+				signal,
+			);
+			return {
+				data: JSON.parse(response.text ?? "null"),
+				status: response.status,
+			};
 		},
 		fetchText: async (url: string, signal?: AbortSignal) => {
 			recordVerticalSource(sources, url, "feed");

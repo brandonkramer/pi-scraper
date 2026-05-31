@@ -1,0 +1,38 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 11
+name: huggingface_dataset
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: Hugging Face dataset metadata, tags, and downloads.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://huggingface.co/datasets/:id+
+  - https://huggingface.co/datasets/:dataset
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - dataset_metadata
+  - tags
+  - downloads
+  - likes
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://huggingface.co/api/datasets/{{id|encodePathSegments}}
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  id: $.id
+  author: $.author
+  tags: $.tags
+  downloads: $.downloads
+  likes: $.likes
+  private: $.private
+  gated: $.gated
+  createdAt: $.createdAt
+  updatedAt: $.lastModified
+  cardData: $.cardData

@@ -7,7 +7,7 @@ export type ScrapeMode = "fast" | "fingerprint" | "readable" | "browser" | "auto
 export type BrowserBackend = "cloak" | "playwright";
 export const BROWSER_BACKEND_OPTIONS: readonly BrowserBackend[] = ["cloak", "playwright"];
 
-export type OutputFormat = "markdown" | "text" | "llm" | "html" | "json" | "raw";
+export type OutputFormat = "markdown" | "text" | "llm" | "html" | "json" | "raw" | "ax-tree";
 
 export type ProgressState =
 	| "queued"

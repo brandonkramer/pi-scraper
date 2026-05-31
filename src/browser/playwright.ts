@@ -3,7 +3,7 @@
 import { DEFAULT_BROWSER_BACKEND } from "../defaults.ts";
 import { createAbortError } from "../http/abort.ts";
 import { assertSafeFetchUrl } from "../http/url-safety.ts";
-import type { BrowserBackend } from "../types.ts";
+import type { BrowserBackend, OutputFormat } from "../types.ts";
 import {
 	assertSafeBrowserUrl,
 	BrowserRenderError,
@@ -18,7 +18,15 @@ import {
 	acquireBrowserSession,
 	destroyBrowserSession,
 	releaseBrowserSession,
+	type BrowserSession,
 } from "./session-pool.ts";
+import {
+	deleteBrowserSessionStorageState,
+	deleteCloakSessionProfile,
+	loadBrowserSessionStorageState,
+	resolveCloakSessionProfilePath,
+	saveBrowserSessionStorageState,
+} from "./session.ts";
 import { applyStealthPatches } from "./stealth.ts";
 
 export { BrowserRenderError } from "./route-guard.ts";
@@ -42,6 +50,9 @@ export interface BrowserRenderOptions {
 	/** @default "cloak" */
 	browserBackend?: BrowserBackend;
 
+	// Output format (used to decide whether to capture accessibility tree)
+	format?: OutputFormat;
+
 	// Session + stealth support
 	sessionId?: string;
 	saveSession?: boolean;
@@ -61,6 +72,8 @@ export interface BrowserRenderResult {
 	finalUrl: string;
 	status?: number;
 	html: string;
+	/** Playwright accessibility snapshot when format="ax-tree" was requested. */
+	axTree?: unknown;
 }
 
 export interface BrowserRenderer {
@@ -129,7 +142,7 @@ async function renderWithLoader(
 	let abortListener: (() => void) | undefined;
 	let page: Page | undefined;
 	let guard: BrowserRouteGuard | undefined;
-	let session: { id: string } | undefined;
+	let session: BrowserSession | undefined;
 
 	try {
 		// 1) Acquire page: pooled session or fresh browser
@@ -140,7 +153,7 @@ async function renderWithLoader(
 				// Cloak persistent context: cookies/localStorage survive across Pi restarts
 				const launchContext = async () => {
 					const cloak = await import("cloakbrowser");
-					const userDataDir = cloakUserDataDir(options.sessionId!);
+					const userDataDir = resolveCloakSessionProfilePath(options.sessionId!);
 					// oxlint-disable-next-line typescript/no-explicit-any -- bridge playwright-core ↔ playwright types
 					const pwContext: any = await cloak.launchPersistentContext({
 						userDataDir,
@@ -170,6 +183,10 @@ async function renderWithLoader(
 				guard = s.session.guard;
 				session = s.session;
 			} else {
+				const storageState = (await loadBrowserSessionStorageState(options.sessionId)) as
+					| string
+					| Record<string, unknown>
+					| undefined;
 				// oxlint-disable-next-line typescript/no-explicit-any -- bridge local Browser ↔ playwright core types
 				const launchBrowser: any = () => browserLoader(backend, options);
 				const s = await acquireBrowserSession(options.sessionId, {
@@ -178,6 +195,7 @@ async function renderWithLoader(
 					profile: options.browserProfile,
 					proxy: options.proxy,
 					headers: options.headers,
+					storageState: storageState ?? undefined,
 				});
 				page = s.page as unknown as Page;
 				browser = s.session.browser as unknown as Browser;
@@ -251,12 +269,16 @@ async function renderWithLoader(
 		/* Pierce shadow roots so downstream parsers (linkedom) can read the content */
 		await pierceShadowRoots(page);
 
-		return {
+		const result: BrowserRenderResult = {
 			url,
 			finalUrl,
 			status: response?.status(),
 			html: await page.content(),
 		};
+		if (options.format === "ax-tree") {
+			result.axTree = await page.ariaSnapshot();
+		}
+		return result;
 	} finally {
 		if (abortListener) signal?.removeEventListener("abort", abortListener);
 		if (page && session) {
@@ -265,9 +287,17 @@ async function renderWithLoader(
 			});
 		}
 		if (session) {
+			if (options.saveSession) {
+				const state = await session.context.storageState().catch(() => null);
+				if (state) {
+					await saveBrowserSessionStorageState(session.id, state);
+				}
+			}
 			releaseBrowserSession(session.id);
 			if (options.clearSession) {
 				await destroyBrowserSession(session.id);
+				await deleteBrowserSessionStorageState(session.id);
+				await deleteCloakSessionProfile(session.id);
 			}
 		} else if (browser) {
 			await browser.close().catch(() => {
@@ -286,12 +316,6 @@ async function launchBrowserBackend(
 		return await launchCloakBrowser(options);
 	}
 	return await launchPlaywrightBackend(options);
-}
-
-/** Resolve a CloakBrowser persistent profile directory for a session ID. */
-function cloakUserDataDir(sessionId: string): string {
-	const home = process.env.HOME ?? process.env.USERPROFILE ?? "/tmp";
-	return `${home}/.pi/browser-sessions/${encodeURIComponent(sessionId)}`;
 }
 
 /** Launch via CloakBrowser — patched Chromium binary, stealth at C++ level. */

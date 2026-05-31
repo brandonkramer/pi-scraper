@@ -212,6 +212,12 @@ export interface Page {
 	close(): Promise<void>;
 	context(): BrowserContext;
 	evaluate<T = unknown>(fn: string | (() => T | Promise<T>), ...args: unknown[]): Promise<T>;
+	accessibility: { snapshot(): Promise<unknown> };
+	ariaSnapshot(options?: {
+		boxes?: boolean;
+		depth?: number;
+		mode?: "ai" | "default";
+	}): Promise<string>;
 }
 
 export interface BrowserContext {

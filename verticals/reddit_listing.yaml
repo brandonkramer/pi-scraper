@@ -1,0 +1,90 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 14
+name: reddit_listing
+# http-workflow: multi-step pipeline (steps[]); final step is usually extract:.
+kind: http-workflow
+description: Reddit subreddit listing overview.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://www.reddit.com/r/:subreddit
+  - https://www.reddit.com/r/:subreddit/:sort
+  - https://old.reddit.com/r/:subreddit
+  - https://old.reddit.com/r/:subreddit/:sort
+  - https://reddit.com/r/:subreddit
+  - https://reddit.com/r/:subreddit/:sort
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - listing
+  - posts
+source: builtin
+# Step pipeline: tryJson, fetchText, postJson, regex, jsonWalk, extract, …
+steps:
+    # tryJson: fetch subreddit listing .json.
+    - tryJson:
+        as: listingResponse
+        endpointAs: endpoint
+        finalUrlAs: finalUrl
+        fallback: redditListingBlockedMetadata
+        endpoints:
+          - url: https://www.reddit.com/r/{{subreddit|encodeURIComponent}}{{sort|switch:hot=,*=/$value}}.json
+          - url: https://old.reddit.com/r/{{subreddit|encodeURIComponent}}{{sort|switch:hot=,*=/$value}}.json
+    # extract: map listing JSON to posts array (terminal step).
+    - extract:
+        subreddit: "{{subreddit}}"
+        sort: "{{sort}}"
+        posts:
+          jsonWalk:
+            from: listingResponse
+            collect:
+              - walkObjects:
+                  when:
+                    has: data.title
+                  emit:
+                    id: data.id
+                    title: data.title
+                    author: data.author
+                    score:
+                      path: data.score
+                      transform: number
+                    numComments:
+                      path: data.num_comments
+                      transform: number
+                    url: data.url
+                    permalink:
+                      path: data.permalink
+                      transform: redditUrl
+                    createdUtc:
+                      path: data.created_utc
+                      transform: number
+                    isNsfw:
+                      path: data.over_18
+                      transform: trueOnly
+                    isSpoiler:
+                      path: data.spoiler
+                      transform: trueOnly
+                    flairText: data.link_flair_text
+                    linkFlair: data.link_flair_text
+            dedupeBy:
+              - id
+            maxItems: 25
+        source:
+          object:
+            provider:
+              value: reddit
+            endpoint: "@.endpoint || @.listingResponse.source.endpoint"
+            finalUrl: "@.finalUrl"
+            blocked: "@.listingResponse.source.blocked|trueOnly"
+            attemptedEndpoints: "@.listingResponse.source.attemptedEndpoints"
+# Match-time defaults, query captures, and URL exclusions.
+matchOptions:
+  defaults:
+    sort: hot
+  exclude:
+    sort:
+      - comments

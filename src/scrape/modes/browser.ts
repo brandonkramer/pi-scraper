@@ -1,11 +1,11 @@
 /** @file Scrape modes browser module. */
-import type { BrowserRenderer } from "../../browser/playwright.ts";
+import type { BrowserRenderResult, BrowserRenderer } from "../../browser/playwright.ts";
 import { BrowserRenderError, createPlaywrightRenderer } from "../../browser/playwright.ts";
 import type { FetchUrlResult } from "../../http/client.ts";
 import type { CommonScrapeOptions, OutputFormat } from "../../types.ts";
 import type { ScrapePipelineDeps, ScrapeResult } from "../pipeline.ts";
 import { responseScrape } from "./fast.ts";
-import { scrapeErrorResult, scrapeStructuredError } from "./mode-helpers.ts";
+import { resultBase, scrapeErrorResult, scrapeStructuredError } from "./mode-helpers.ts";
 
 export async function browserScrape(
 	input: string | URL,
@@ -57,9 +57,12 @@ async function browserResponseScrape(
 ): Promise<ScrapeResult> {
 	const rendered = await (deps.browserRenderer ?? createPlaywrightRenderer()).fetchRendered(
 		input,
-		options,
+		{ ...options, format },
 		signal,
 	);
+	if (format === "ax-tree") {
+		return axTreeResult(rendered, options);
+	}
 	const response: FetchUrlResult = {
 		url: rendered.url,
 		finalUrl: rendered.finalUrl,
@@ -70,6 +73,28 @@ async function browserResponseScrape(
 		downloadedBytes: Buffer.byteLength(rendered.html),
 	};
 	return await responseScrape(response, "browser", format, options, signal);
+}
+
+function axTreeResult(rendered: BrowserRenderResult, _options: CommonScrapeOptions): ScrapeResult {
+	const snapshot =
+		typeof rendered.axTree === "string" ? rendered.axTree : JSON.stringify(rendered.axTree ?? {});
+	const base = resultBase(
+		rendered.url,
+		rendered.finalUrl,
+		rendered.status ?? 200,
+		"browser",
+		"ax-tree",
+		"text/vnd.yaml",
+		Buffer.byteLength(snapshot),
+	);
+	return {
+		...base,
+		data: {
+			route: "html",
+			extractionPath: ["browser"],
+			text: snapshot,
+		},
+	};
 }
 
 function browserStructuredError(error: unknown, url: string) {

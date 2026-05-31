@@ -145,4 +145,35 @@ describe("youtube vertical extractor", () => {
 		expect(short.data).toMatchObject({ videoId: "abc123" });
 		expect(shorts.data).toMatchObject({ videoId: "abc123" });
 	});
+
+	it("supports lightweight oEmbed fallback metadata", async () => {
+		let requested = "";
+		const result = await runVerticalExtractor(
+			"youtube_oembed",
+			"https://www.youtube.com/watch?v=abc123",
+			{
+				context: {
+					fetchJson: async <T>(url: string) => {
+						requested = url;
+						return {
+							title: "oEmbed Title",
+							author_name: "Test Channel",
+							provider_name: "YouTube",
+							thumbnail_width: 480,
+						} as T;
+					},
+				},
+			},
+		);
+
+		expect(requested).toContain("https://www.youtube.com/oembed?");
+		expect(requested).toContain("format=json");
+		expect(result.error).toBeUndefined();
+		expect(result.data).toMatchObject({
+			title: "oEmbed Title",
+			authorName: "Test Channel",
+			providerName: "YouTube",
+			thumbnailWidth: 480,
+		});
+	});
 });

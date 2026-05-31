@@ -1,18 +1,12 @@
-/** @file ToolResultTree — grouped key/value tree component for expanded tool details. */
 import { muted } from "./theme.ts";
 import type { RenderTheme } from "./types.ts";
 
-export interface ToolResultTreeSection {
-	name: string;
-	rows: Array<{ key: string; value: string }>;
-}
-
-export interface ToolResultGroup {
+export type ToolResultTreeSection = { name: string; rows: Array<{ key: string; value: string }> };
+export type ToolResultGroup = {
 	name: string;
 	rows: Array<[key: string, value: string | undefined]>;
-}
+};
 
-/** Compose sections from a flat list of groups. Empty rows dropped. */
 export function buildToolResultTree(groups: ToolResultGroup[]): ToolResultTreeSection[] {
 	const sections: ToolResultTreeSection[] = [];
 	for (const group of groups) {
@@ -24,7 +18,6 @@ export function buildToolResultTree(groups: ToolResultGroup[]): ToolResultTreeSe
 	return sections;
 }
 
-/** Render grouped tool result sections to a terminal tree. */
 export function toolResultTree(
 	sections: ToolResultTreeSection[],
 	terminalWidth: number,
@@ -34,10 +27,7 @@ export function toolResultTree(
 
 	const keyColWidth = Math.max(1, ...sections.flatMap((s) => s.rows.map((r) => r.key.length)));
 
-	const leftPad = 2;
-	const connectorLen = 3;
-	const afterKeyPad = 2;
-	const valueStart = leftPad + connectorLen + keyColWidth + afterKeyPad;
+	const valueStart = keyColWidth + 7;
 	const availableWidth = Math.max(20, terminalWidth - valueStart);
 
 	const lines: string[] = [];
@@ -58,7 +48,7 @@ export function toolResultTree(
 			lines.push(`  ${muted(prefix, theme)}${valueLines[0]}`);
 
 			for (let vi = 1; vi < valueLines.length; vi++) {
-				const contPre = "\u2502 ".padEnd(connectorLen + keyColWidth + afterKeyPad);
+				const contPre = "\u2502 ".padEnd(keyColWidth + 5);
 				lines.push(`  ${muted(contPre, theme)}${valueLines[vi]}`);
 			}
 		}

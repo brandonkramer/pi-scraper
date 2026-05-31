@@ -1,4 +1,3 @@
-/** @file Pi web_scrape/diff tool result renderer. */
 import type { SnapshotDiffResult } from "../../diff/snapshots.ts";
 import {
 	isProgress,
@@ -11,6 +10,7 @@ import { renderText as toolText } from "../tool-call.ts";
 import { toolProgressCard } from "../tool-card.ts";
 import {
 	toolErrorLabel,
+	toolExpandHint,
 	toolFreshnessLabel,
 	formatChecklistText as toolChecklistText,
 } from "../tool-labels.ts";
@@ -36,7 +36,7 @@ export function renderWebDiffResult(
 				toolFreshnessLabel(envelope),
 			]);
 	if (!expanded) {
-		return toolText(toolJoinSegments([title, toolMuted("(ctrl+o to expand)", theme)], theme), {
+		return toolText(toolJoinSegments([title, toolMuted(toolExpandHint.text, theme)], theme), {
 			padToWidth: true,
 		});
 	}

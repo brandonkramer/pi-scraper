@@ -3,11 +3,14 @@ import type {
 	VerticalExtractionResult,
 	VerticalExtractorPage,
 } from "../extract/vertical/capabilities.ts";
+import type { ManifestRegistry } from "../extract/vertical/manifest/registry.ts";
+import type { ManifestDiagnostic } from "../extract/vertical/manifest/types.ts";
 import type {
 	listExtractorCapabilities as listExtractorCapabilitiesFn,
 	runVerticalExtractor as runVerticalExtractorFn,
 } from "../extract/vertical/registry.ts";
 import { scrapeUrl, type ScrapePipelineDeps } from "../scrape/pipeline.ts";
+import type { ExtractorCapability } from "../types.ts";
 /**
  * @file Web_extract action="vertical" and action="list" handlers — deterministic extractor
  *   capabilities and vertical extraction.
@@ -28,6 +31,7 @@ type VerticalResultWithMetadata = VerticalExtractionResult & VerticalBrowserFall
 type VerticalRegistryModule = {
 	listExtractorCapabilities: typeof listExtractorCapabilitiesFn;
 	runVerticalExtractor: typeof runVerticalExtractorFn;
+	buildManifestRegistry: (includeProject?: boolean) => Promise<ManifestRegistry>;
 };
 
 let verticalRegistryPromise: Promise<VerticalRegistryModule> | undefined;
@@ -38,11 +42,27 @@ function loadVerticalRegistry(): Promise<VerticalRegistryModule> {
 }
 
 export async function listDeterministicExtractors() {
-	const { listExtractorCapabilities } = await loadVerticalRegistry();
+	const { listExtractorCapabilities, buildManifestRegistry } = await loadVerticalRegistry();
 	const capabilities = listExtractorCapabilities();
+	const registry = await buildManifestRegistry();
+	const { listManifestExtractors } = await import("../extract/vertical/manifest/registry.ts");
+	const manifestItems = listManifestExtractors(registry);
+	const merged = manifestItems.map((item) => {
+		const cap = capabilities.find((c: ExtractorCapability) => c.name === item.name);
+		return {
+			...item,
+			requiresBrowser: cap?.requiresBrowser ?? item.requirements?.requiresBrowser ?? false,
+			requiresLLM: cap?.requiresLLM ?? item.requirements?.requiresLLM ?? false,
+			requiresCloud: cap?.requiresCloud ?? item.requirements?.requiresCloud ?? false,
+		};
+	});
+	const diagnostics =
+		registry.errors.length > 0
+			? `\nDiagnostics: ${registry.errors.map((e: ManifestDiagnostic) => e.message).join("; ")}`
+			: "";
 	return toolResult({
-		text: `${capabilities.length} extractor(s): ${capabilities.map((item) => item.name).join(", ")}`,
-		data: capabilities,
+		text: `${merged.length} extractor(s):\n${merged.map((item) => `- ${item.name}`).join("\n")}${diagnostics}`,
+		data: merged,
 		format: "json",
 		summary: "Listed deterministic extractor capabilities.",
 		assistantGuidance:

@@ -1,0 +1,183 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 23
+name: youtube
+# http-workflow: multi-step pipeline (steps[]); final step is usually extract:.
+kind: http-workflow
+description: YouTube metadata, comments, transcripts, and captions.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://www.youtube.com/watch
+  - https://youtube.com/watch
+  - https://m.youtube.com/watch
+  - https://youtu.be/:id
+  - https://www.youtube.com/shorts/:id
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - video_metadata
+  - transcript_tracks
+  - timed_transcript_segments
+  - comment_preview
+source: builtin
+# Step pipeline: tryJson, fetchText, postJson, regex, jsonWalk, extract, …
+steps:
+    # Scrape watch page, then InnerTube player/next APIs for transcript and comments.
+    - fetchText:
+        as: watchPage
+        preferPage: true
+        url: https://www.youtube.com/watch?v={{id}}
+    - regex:
+        from: watchPage
+        as: apiKey
+        pattern: '"INNERTUBE_API_KEY"\s*:\s*"([A-Za-z0-9_-]+)"'
+        required: true
+    - regex:
+        from: watchPage
+        as: webClientVersion
+        pattern: '"INNERTUBE_CONTEXT_CLIENT_VERSION"\s*:\s*"([^"]+)"'
+        default: 2.20260519.01.00
+    - postJson:
+        as: player
+        url: https://www.youtube.com/youtubei/v1/player?key={{apiKey|encodeURIComponent}}
+        body:
+          context:
+            client:
+              clientName: ANDROID
+              clientVersion: 20.10.38
+          videoId: "{{id}}"
+    - select:
+        as: transcriptTrack
+        from: player.captions.playerCaptionsTracklistRenderer.captionTracks
+        transform: youtubeCaptionTrack
+    - fetchText:
+        as: rawTranscript
+        urlFrom: transcriptTrack.baseUrl
+        stripTranscriptFormat: true
+        optional: true
+    - transform:
+        as: transcript
+        from: rawTranscript
+        transform: youtubeTranscript
+        trackFrom: transcriptTrack
+    - postJson:
+        as: next
+        url: https://www.youtube.com/youtubei/v1/next?key={{apiKey|encodeURIComponent}}
+        body:
+          context:
+            client:
+              clientName: WEB
+              clientVersion: "{{webClientVersion}}"
+              hl: en
+              gl: US
+          videoId: "{{id}}"
+    - jsonWalk:
+        as: commentCount
+        from: next
+        rule:
+          walkObjects:
+            first:
+              path: commentsHeaderRenderer.countText
+              transform: youtubeRunsText
+    - jsonWalk:
+        as: continuationToken
+        from: next
+        rule:
+          walkObjects:
+            first:
+              path: continuationCommand.token
+              preferIncludes: comments-section
+    - postJson:
+        as: commentsResponse
+        when: continuationToken
+        url: https://www.youtube.com/youtubei/v1/next?key={{apiKey|encodeURIComponent}}
+        body:
+          context:
+            client:
+              clientName: WEB
+              clientVersion: "{{webClientVersion}}"
+              hl: en
+              gl: US
+          continuation: "{{continuationToken}}"
+    # extract: assemble video metadata, transcript, and comment preview (terminal step).
+    - extract:
+        videoId: "{{id}}"
+        title: "@.player.videoDetails.title"
+        description: "@.player.videoDetails.shortDescription"
+        channel: "@.player.videoDetails.author"
+        channelId: "@.player.videoDetails.channelId"
+        views: "@.player.videoDetails.viewCount|number"
+        lengthSeconds: "@.player.videoDetails.lengthSeconds|number"
+        isLiveContent: "@.player.videoDetails.isLiveContent|trueOnly"
+        transcript: "@.transcript"
+        transcriptTracks: "@.player.captions.playerCaptionsTracklistRenderer.captionTracks|map:languageCode=languageCode,languageName=name.simpleText,isGenerated=kind"
+        comments:
+          jsonWalk:
+            from: commentsResponse
+            collect:
+              - walkObjects:
+                  when:
+                    has: commentRenderer
+                  emit:
+                    author:
+                      path: commentRenderer.authorText
+                      transform: youtubeRunsText
+                    text:
+                      path: commentRenderer.contentText
+                      transform: youtubeRunsText
+                    publishedTime:
+                      path: commentRenderer.publishedTimeText
+                      transform: youtubeRunsText
+                    likeCount:
+                      path: commentRenderer.voteCount
+                      transform: youtubeRunsText
+              - walkObjects:
+                  when:
+                    has: commentEntityPayload
+                  emit:
+                    author: commentEntityPayload.author.displayName
+                    text: commentEntityPayload.properties.content.content
+                    publishedTime: commentEntityPayload.properties.publishedTime
+                    likeCount: commentEntityPayload.toolbar.likeCountNotliked
+                    replyCount: commentEntityPayload.toolbar.replyCount
+                    isPinned:
+                      exists: commentEntityPayload.properties.pinnedText
+              - walkObjects:
+                  when:
+                    has: commentViewModel
+                  emit:
+                    text:
+                      path: commentViewModel
+                      transform:
+                        firstStringByKey:
+                          - content
+                          - commentText
+                    isPinned:
+                      exists: commentViewModel.pinnedText
+            dedupeBy:
+              - author
+              - text
+            maxItems: 20
+        commentCount: "@.commentCount"
+        source:
+          object:
+            provider:
+              value: youtube
+            videoUrl:
+              value: https://www.youtube.com/watch?v={{id}}
+            transcriptStatus:
+              value: fetched
+            commentsStatus:
+              value: fetched
+# Query captures: v → id, lang → language (for transcript selection).
+matchOptions:
+  query:
+    id:
+      from: v
+    language:
+      from: lang
+      default: en

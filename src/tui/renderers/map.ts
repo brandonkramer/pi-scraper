@@ -1,4 +1,3 @@
-/** @file Pi web_map renderer — top-level result/progress card and URL badge rows. */
 import {
 	isProgress,
 	type PiToolShell,
@@ -8,6 +7,7 @@ import {
 import { muted as toolMuted } from "../theme.ts";
 import { renderText as toolText } from "../tool-call.ts";
 import { toolProgressCard, toolResultCard } from "../tool-card.ts";
+import { toolExpandHint } from "../tool-labels.ts";
 import { toolProcess } from "../tool-process.ts";
 import { toolResource } from "../tool-resource.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
@@ -23,11 +23,7 @@ export function renderWebMapResult(
 		ToolContext<{ urls?: { url: string; source?: string; title?: string }[] }>
 	>;
 	const urls = Array.isArray(envelope.data?.urls) ? envelope.data.urls : [];
-	const summary = toolProcess(
-		`${urls.length} URL(s)`,
-		[!expanded && { text: "(ctrl+o to expand)", tone: "muted" as const }],
-		theme,
-	);
+	const summary = toolProcess(`${urls.length} URL(s)`, [!expanded && toolExpandHint], theme);
 	if (urls.length === 0)
 		return toolText(`${summary}\n\n${toolMuted("No URLs discovered.", theme)}`, {
 			padToWidth: true,

@@ -17,8 +17,23 @@ export interface VerticalExtractorProgress {
 }
 
 export interface VerticalExtractorContext {
+	/** Recipe-level options supplied by a YAML/JSONC vertical manifest. */
+	recipe?: Record<string, unknown>;
 	fetchJson<T = unknown>(url: string, signal?: AbortSignal): Promise<T>;
 	fetchJsonPost?<T = unknown>(url: string, body: unknown, signal?: AbortSignal): Promise<T>;
+	/**
+	 * Generic fetch with method, headers, and body support. Used by declarative manifests with custom
+	 * HTTP method/headers/body templates.
+	 */
+	fetch?(
+		url: string,
+		opts?: {
+			method?: "GET" | "POST" | "PUT" | "DELETE";
+			headers?: Record<string, string>;
+			body?: string;
+		},
+		signal?: AbortSignal,
+	): Promise<{ data: unknown; status: number }>;
 	fetchText?(url: string, signal?: AbortSignal): Promise<string>;
 	fetchPage?(url: string, signal?: AbortSignal): Promise<VerticalExtractorPage>;
 	emitProgress?(options: VerticalExtractorProgress): void | Promise<void>;

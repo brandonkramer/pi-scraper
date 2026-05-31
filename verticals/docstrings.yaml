@@ -1,0 +1,31 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 97
+name: docstrings
+# code-extract: parse JSDoc/TSDoc from source file bytes.
+kind: code-extract
+description: Extract JSDoc/TSDoc docstrings from source files.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://:host/:path*.ts
+  - https://:host/:path*.tsx
+  - https://:host/:path*.js
+  - https://:host/:path*.jsx
+  - https://:host/:path*.py
+  - https://:host/:path*.rs
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - docstrings
+  - exports
+source: builtin
+# Source languages to parse (extension must match one of these).
+languages:
+  - typescript
+  - javascript
+  - python
+  - rust

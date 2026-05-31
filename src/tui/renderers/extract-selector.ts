@@ -1,5 +1,4 @@
 import type { PiToolShell, ToolContext } from "../../types.ts";
-/** @file Dedicated renderer for web_extract action="selector" text output. */
 import { toolResultCard } from "../tool-card.ts";
 import { toolResultId } from "../tool-result.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";

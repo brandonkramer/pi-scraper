@@ -1,4 +1,3 @@
-/** @file Pi web_scrape result, progress card, and URL result card composition. */
 import { Markdown } from "@earendil-works/pi-tui";
 
 import {
@@ -18,12 +17,12 @@ import {
 } from "../theme.ts";
 import {
 	toolFileResultCard,
-	toolIsFileResult,
 	toolResultCard,
 	toolStackedCard,
 	progressStartedAtMs as toolProgressStartedAtMs,
 } from "../tool-card.ts";
 import {
+	toolExpandHint,
 	toolFreshnessLabel,
 	toolSessionNotice,
 	formatChecklistText as toolChecklistText,
@@ -34,7 +33,6 @@ import {
 	formatDuration as fmtDuration,
 } from "../tool-resource.ts";
 import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
-import { previewText as toolPreviewText } from "../tool-result.ts";
 import {
 	toolStatusDot,
 	toolStatus,
@@ -64,7 +62,7 @@ export function renderWebScrapeResult(
 					startedAtMs,
 					restoreBg: "toolPendingBg",
 				});
-				const summary = `web_scrape ${details.state}${toolSeparator(theme)}${toolMuted("(ctrl+o to expand)", theme)}`;
+				const summary = `web_scrape ${details.state}${toolSeparator(theme)}${toolMuted(toolExpandHint.text, theme)}`;
 				const lines = [row, "", summary];
 				if (expanded && details.checklist?.length)
 					lines.push("", ...details.checklist.map(toolChecklistText));
@@ -91,11 +89,21 @@ export function renderWebScrapeResult(
 					sourceLabel,
 					{ text: fmtDuration(envelope.timing?.durationMs) ?? "", tone: "muted" },
 					toolFreshnessLabel(envelope),
-					expanded ? undefined : { text: "(ctrl+o to expand)", tone: "muted" },
+					expanded ? undefined : toolExpandHint,
 				],
 				theme,
 			);
-	const preview = toolPreviewText(result, envelope);
+	const data = envelope.data;
+	const fallbackText = result.content.at(0)?.text;
+	const field =
+		data && typeof data === "object" ? (data.markdown ?? data.text ?? data.title) : undefined;
+	const previewValue = envelope.answerContext ?? field ?? fallbackText ?? "";
+	const preview =
+		typeof previewValue === "string"
+			? previewValue
+			: typeof previewValue === "number" || typeof previewValue === "boolean"
+				? String(previewValue)
+				: JSON.stringify(previewValue);
 	const url = envelope.finalUrl ?? envelope.url ?? "unknown URL";
 	const state = envelope.error ? "error" : "done";
 	return toolStackedCard(
@@ -112,12 +120,18 @@ export function renderWebScrapeResult(
 			expanded,
 			notice: toolSessionNotice(envelope),
 			expandedSections: (width) => {
-				if (toolIsFileResult(envelope))
+				const ct = envelope.contentType ?? "";
+				if (
+					/^(?:application\/octet-stream|application\/pdf|image\/|audio\/|video\/)/u.test(ct) ||
+					!!(envelope.data && typeof envelope.data === "object" && "fileSize" in envelope.data)
+				)
 					return [toolFileResultCard(envelope, theme).render(width).join("\n")];
 				const out = [toolResultTree(buildScrapeSections(envelope, theme), width, theme)];
 				if (preview && !markdownPreviewComponent(envelope.format, preview, theme))
 					out.push(
-						(envelope.format === "json" || envelope.format === "html"
+						(envelope.format === "json" ||
+						envelope.format === "html" ||
+						envelope.format === "ax-tree"
 							? `\`\`\`${envelope.format}\n${preview}\n\`\`\``
 							: preview
 						).slice(0, 1200),
@@ -153,13 +167,11 @@ function buildScrapeSections(
 	addScrapeRow(groups, "page", "title", typeof t === "string" && t ? t : undefined);
 	if (hasHeaders) {
 		const url = envelope.finalUrl ?? envelope.url;
-		if (url) {
-			try {
-				addScrapeRow(groups, "page", "site", new URL(url).hostname.replace(/^www\./iu, ""));
-			} catch {
-				/* ignore */
-			}
-		}
+		const host =
+			typeof url === "string" && URL.canParse(url)
+				? new URL(url).hostname.replace(/^www\./iu, "")
+				: undefined;
+		addScrapeRow(groups, "page", "site", host);
 	}
 	addScrapeRow(groups, "page", "description", typeof d === "string" && d ? d : undefined);
 
@@ -297,10 +309,8 @@ function parseCacheControl(value: string | undefined) {
 	return maxAge !== undefined ? { maxAge, swr } : undefined;
 }
 
-const pad2 = (n: number) => n.toString().padStart(2, "0");
-
 function formatHttpTime(s: string): string {
 	const d = new Date(s);
 	if (Number.isNaN(d.getTime())) return s;
-	return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())} GMT`;
+	return `${d.toISOString().slice(11, 19)} GMT`;
 }

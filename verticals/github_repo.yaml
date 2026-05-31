@@ -1,0 +1,74 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 1
+name: github_repo
+# api-json-aggregate: parallel JSON requests (requests.*) → extract (@.scope, |transforms).
+kind: api-json-aggregate
+description: GitHub repository metadata, README, file tree, and stats.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://github.com/:owner/:repo
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - repo_metadata
+  - readme
+  - file_tree
+  - stats
+  - license
+options: {}
+# JSON Schema for structured output validation.
+outputSchema:
+  type: object
+  properties:
+    fullName:
+      type: string
+    stars:
+      type: number
+    forks:
+      type: number
+    openIssues:
+      type: number
+    license:
+      type: string
+source: builtin
+# Parallel JSON HTTP requests; each key is scope for extract (@.metadata, @.readme, …).
+requests:
+  # GitHub REST repo metadata (optional; fallback if rate-limited).
+  metadata:
+    optional: true
+    urlTemplate: https://api.github.com/repos/{{owner|encodeURIComponent}}/{{repo|encodeURIComponent}}
+    fallback:
+      full_name: "{{owner}}/{{repo}}"
+      html_url: "{{url}}"
+      stargazers_count: 0
+      forks_count: 0
+      open_issues_count: 0
+      default_branch: main
+  # Base64-encoded README body.
+  readme:
+    optional: true
+    urlTemplate: https://api.github.com/repos/{{owner|encodeURIComponent}}/{{repo|encodeURIComponent}}/readme
+  # Recursive git tree (filtered in extract).
+  tree:
+    optional: true
+    urlTemplate: https://api.github.com/repos/{{owner|encodeURIComponent}}/{{repo|encodeURIComponent}}/git/trees/main?recursive=1
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  fullName: "@.metadata.full_name"
+  owner: "@.metadata.owner.login || {{owner}}"
+  name: "{{repo}}"
+  description: "@.metadata.description"
+  url: "@.metadata.html_url"
+  stars: "@.metadata.stargazers_count"
+  forks: "@.metadata.forks_count"
+  openIssues: "@.metadata.open_issues_count"
+  defaultBranch: "@.metadata.default_branch"
+  license: "@.metadata.license.spdx_id || @.metadata.license.name"
+  readme: "@.readme.content|base64|truncate:10000"
+  readmeTruncated: "@.readme.content|base64|isLongerThan:10000|trueOnly"
+  fileTree: "@.tree.tree|filterDepth:2|filterType:blob,tree|pick:path,type,size"

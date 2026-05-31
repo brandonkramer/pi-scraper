@@ -1,0 +1,38 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 4
+name: github_release
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: GitHub release metadata, tag, assets, and changelog.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://github.com/:owner/:repo/releases/tag/:tag+
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - release_metadata
+  - assets
+  - changelog
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://api.github.com/repos/{{owner|encodeURIComponent}}/{{repo|encodeURIComponent}}/releases/tags/{{tag|encodeURIComponent}}
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  owner: "{{owner}}"
+  repo: "{{repo}}"
+  tag: $.tag_name
+  name: $.name
+  url: $.html_url
+  draft: $.draft
+  prerelease: $.prerelease
+  author: $.author.login
+  publishedAt: $.published_at
+  createdAt: $.created_at
+  body: $.body
+  assets: $.assets|map:name=name,size=size,downloads=download_count,url=browser_download_url

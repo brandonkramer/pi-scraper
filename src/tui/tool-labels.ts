@@ -1,9 +1,9 @@
-/** @file Pi terminal UI checklist formatting primitives. */
 import type { ToolContext, StructuredError } from "../types.ts";
 
-export function formatChecklistText(item: { label: string; detail?: string }): string {
-	return `${item.label}${item.detail ? ` — ${item.detail}` : ""}`;
-}
+export const toolExpandHint = { text: "(ctrl+o to expand)", tone: "muted" as const };
+
+export const formatChecklistText = (item: { label: string; detail?: string }): string =>
+	`${item.label}${item.detail ? ` — ${item.detail}` : ""}`;
 
 export function toolErrorLabel(
 	tool: string,

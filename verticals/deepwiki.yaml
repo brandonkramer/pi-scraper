@@ -1,0 +1,90 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 16
+name: deepwiki
+# text-extract: fetch request URL as text → clean → fields.
+kind: text-extract
+description: DeepWiki repository documentation overview.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://deepwiki.com/:owner/:repo
+  - https://deepwiki.com/:owner/:repo/:page*
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: true
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - wiki_overview
+  - sections
+  - source_files
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://deepwiki.com/{{owner|encodeURIComponent}}/{{repo|encodeURIComponent}}
+# Text cleanup applied before field rules (stripTags, collapseWhitespace, …).
+clean:
+  stripTags: true
+  collapseWhitespace: true
+# Field rules on cleaned page text (regex, tokens, jsonWalk, sectionList, …).
+fields:
+    owner:
+      value: "{{owner}}"
+    repo:
+      value: "{{repo}}"
+    lastIndexed:
+      regex: 'Last indexed:\s*([^()]+?)\s*\('
+      group: 1
+      transforms: [trim]
+    commit:
+      regex: 'Last indexed:\s*[^)]*\(\s*([a-f0-9]+)\s*\)'
+      group: 1
+    sections:
+      sectionList:
+        afterRegex: 'Last indexed:[^)]*\)\s*'
+        before: Glossary
+        minLength: 3
+        knownPhrases:
+          - Repository Structure
+          - Development Workflow
+          - System Architecture
+          - Core Components
+          - API Reference
+          - Feature Flags
+          - Key Concepts
+          - Key Features
+          - Build System
+          - Data Flow
+          - Architecture
+          - Configuration
+          - Deployment
+          - Implementation
+          - Infrastructure
+          - Authentication
+          - Components
+          - Database
+          - Examples
+          - Frontend
+          - Backend
+          - Overview
+          - Packages
+          - Testing
+        rejectPrefixes:
+          - Menu
+          - Loading
+          - Devin
+          - Edit Wiki
+          - Share
+          - Index
+          - DeepWiki
+    activeSection:
+      regex: '(?:^|\s)Menu\s+(.+?)(?=\s+Relevant source files|\s*$)'
+      group: 1
+      transforms: [cleanSection]
+    sourceFiles:
+      tokens:
+        after: Relevant source files
+        while: sourcePath
+    githubUrl:
+      value: https://github.com/{{owner}}/{{repo}}

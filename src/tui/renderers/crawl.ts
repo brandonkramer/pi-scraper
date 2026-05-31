@@ -5,7 +5,6 @@ import {
 } from "../../batch/progress-state.ts";
 import type { CrawlRunResult } from "../../crawl/runner.ts";
 import { formatCrawlStrategyLabel } from "../../crawl/state.ts";
-/** @file Pi web_crawl renderer — top-level result/progress card and per-page expanded details. */
 import {
 	isProgress,
 	type PiToolShell,
@@ -19,7 +18,12 @@ import {
 	toolProgressCard,
 	toolResultCard,
 } from "../tool-card.ts";
-import { toolContextPackageResponseId, toolErrorLabel, toolSessionNotice } from "../tool-labels.ts";
+import {
+	toolContextPackageResponseId,
+	toolErrorLabel,
+	toolExpandHint,
+	toolSessionNotice,
+} from "../tool-labels.ts";
 import { renderResourceItemList as toolResourceList } from "../tool-resource.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
 import { buildExpandedResultDetails, toolResultId } from "../tool-result.ts";
@@ -111,7 +115,7 @@ export function renderWebCrawlResult(
 					strategy
 						? toolNeutral(`· ${formatCrawlStrategyLabel(strategy) ?? strategy} crawl`, theme)
 						: undefined,
-					!expanded && { text: "(ctrl+o to expand)", tone: "muted" as const },
+					!expanded && toolExpandHint,
 				],
 				theme,
 			);

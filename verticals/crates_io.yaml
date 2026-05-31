@@ -1,0 +1,38 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 8
+name: crates_io
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: crates.io crate metadata, version, and downloads.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://crates.io/crates/:crate
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - crate_metadata
+  - version
+  - downloads
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://crates.io/api/v1/crates/{{name|encodeURIComponent}}
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  id: $.crate.id
+  name: $.crate.name
+  description: $.crate.description
+  latestVersion: $.crate.max_version
+  homepage: $.crate.homepage
+  repository: $.crate.repository
+  documentation: $.crate.documentation
+  downloads: $.crate.downloads
+  recentDownloads: $.crate.recent_downloads
+  license: $.crate.license
+  createdAt: $.crate.created_at
+  updatedAt: $.crate.updated_at

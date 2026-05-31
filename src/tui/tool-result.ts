@@ -1,31 +1,8 @@
-import type { PiToolShell, ToolContext } from "../types.ts";
 import { muted } from "./theme.ts";
 import type { ToolResultTreeSection } from "./tool-result-tree.ts";
 import type { RenderTheme } from "./types.ts";
-/** @file Pi terminal UI preview and metadata formatting primitives. */
 
-export function previewText(
-	result: PiToolShell,
-	envelope: Partial<ToolContext<Record<string, unknown>>>,
-): string {
-	const data = envelope.data;
-	const value =
-		// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
-		envelope.answerContext ??
-		data?.markdown ??
-		data?.text ??
-		data?.title ??
-		result.content[0]?.text ??
-		"";
-	if (typeof value === "string") return value;
-	if (typeof value === "number" || typeof value === "boolean") return String(value);
-	return JSON.stringify(value);
-}
-
-export interface ToolResultIdEntry {
-	label: string;
-	id: string;
-}
+export type ToolResultIdEntry = { label: string; id: string };
 
 export function toolResultId(entries: ToolResultIdEntry[], theme?: RenderTheme): string[] {
 	return entries.filter((e) => e.id).map((e) => muted(`${e.label}: ${e.id}`, theme));

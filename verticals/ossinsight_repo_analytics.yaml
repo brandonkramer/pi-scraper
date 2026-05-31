@@ -1,0 +1,42 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 22
+name: ossinsight_repo_analytics
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: OSSInsight repository analytics.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://ossinsight.io/analyze/:owner/:repo
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - analytics
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://api.ossinsight.io/v1/repos/{{owner|encodeURIComponent}}/{{repo|encodeURIComponent}}/stargazers/history/
+  queryParams:
+    per: month
+    from: 2010-01-01
+    to: 2099-01-01
+# Scalar fields copied from the response alongside the list.
+extractListWrapper:
+  owner: "{{owner}}"
+  repo: "{{repo}}"
+# Array at JSONPath `path`; per-item field map in `fields`.
+extractList:
+  as: stargazers
+  path: $.data.rows
+  omitUndefined: true
+  fields:
+    event_month: $.event_month || $.date
+    stars: $.stars|number
+    total: $.total|number || $.stargazers|number
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  {}

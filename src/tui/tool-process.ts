@@ -1,4 +1,3 @@
-/** @file Pi terminal UI spinner and spinner-footer primitives. */
 import { muted, separator } from "./theme.ts";
 import { SPINNER_FRAMES, toolStatus, type ToolStatusPart } from "./tool-status.ts";
 import type { RenderTheme } from "./types.ts";
@@ -14,6 +13,5 @@ export function toolProcess(
 	theme?: RenderTheme,
 ): string {
 	const body = toolStatus(parts, theme);
-	const head = muted("└─ ", theme);
-	return body ? `${head}${prefix}${separator(theme)}${body}` : `${head}${prefix}`;
+	return `${muted("└─ ", theme)}${prefix}${body ? `${separator(theme)}${body}` : ""}`;
 }

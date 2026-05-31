@@ -1,0 +1,58 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 21
+name: ossinsight_trending_repos
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: OSSInsight trending repositories.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://ossinsight.io/trending
+  - https://ossinsight.io/trending/:language
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - trending
+source: builtin
+# Match-time defaults, query captures, and URL exclusions.
+matchOptions:
+  defaults:
+    language: All
+  query:
+    period:
+      default: past_24_hours
+      enum:
+        - past_24_hours
+        - past_week
+        - past_month
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://api.ossinsight.io/v1/trends/repos/
+  queryParams:
+    period: "{{period}}"
+    language: "{{language}}"
+# Scalar fields copied from the response alongside the list.
+extractListWrapper:
+  period: "{{period}}"
+  language: "{{language}}"
+# Array at JSONPath `path`; per-item field map in `fields`.
+extractList:
+  as: rows
+  path: $.data.rows
+  omitUndefined: true
+  fields:
+    repo_name: $.repo_name
+    stars: $.stars
+    forks: $.forks
+    pull_requests: $.pull_requests
+    pushes: $.pushes
+    total_score: $.total_score
+    primary_language: $.primary_language
+    description: $.description
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  {}

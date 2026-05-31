@@ -11,6 +11,8 @@ export interface PiStoragePaths {
 	snapshots: string;
 	jobs: string;
 	downloads: string;
+	/** Browser session storage state root (storage.json per sessionId). */
+	sessions: string;
 }
 
 export interface ResolveStorageOptions {
@@ -33,6 +35,7 @@ export function resolvePiStoragePaths(options: ResolveStorageOptions = {}): PiSt
 		snapshots: path.join(root, "snapshots"),
 		jobs: path.join(root, "jobs"),
 		downloads: path.join(root, "downloads"),
+		sessions: path.join(root, "sessions"),
 	};
 }
 

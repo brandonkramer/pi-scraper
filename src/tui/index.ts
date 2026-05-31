@@ -1,4 +1,3 @@
-/** @file Public exports for the named tool-facing TUI component surface. */
 export { toolCall } from "./tool-call.ts";
 export { toolProcess } from "./tool-process.ts";
 export { toolResource, type ToolResourceOptions, type ToolResourceState } from "./tool-resource.ts";

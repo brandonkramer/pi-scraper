@@ -1,4 +1,3 @@
-/** @file Dedicated web_extract renderer for non-vertical, non-selector extraction results. */
 import { Markdown } from "@earendil-works/pi-tui";
 
 import { isProgress, type PiToolShell, type ToolContext } from "../../types.ts";
@@ -68,6 +67,7 @@ export function renderWebExtractResult(
 				.join("\n")
 		: summary;
 	const hasLongMarkdown = expanded && details?.format === "markdown" && preview.length > 100;
+	const hideExpandedDetails = details?.summary === "Listed deterministic extractor capabilities.";
 	return toolResultCard({
 		renderContent(width) {
 			const loaderUrl = details?.finalUrl ?? details?.url;
@@ -79,7 +79,7 @@ export function renderWebExtractResult(
 					})
 				: "";
 			let tree = "";
-			if (expanded && details) {
+			if (expanded && details && !hideExpandedDetails) {
 				const sections = buildExpandedResultDetails(details as Record<string, unknown>);
 				if (sections.length > 0) tree = toolResultTree(sections, width, theme);
 			}

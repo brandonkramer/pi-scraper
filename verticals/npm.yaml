@@ -1,0 +1,38 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 6
+name: npm
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: npm package metadata, version, license, and dependencies.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://www.npmjs.com/package/:name+/v/:version
+  - https://www.npmjs.com/package/:name+
+  - https://npmjs.com/package/:name+/v/:version
+  - https://npmjs.com/package/:name+
+  - https://npmx.dev/package/:name+/v/:version
+  - https://npmx.dev/package/:name+
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - package_metadata
+  - version
+  - license
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://registry.npmjs.org/{{name|encodePathSegments}}/{{version|default:latest|encodeURIComponent}}
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  name: $.name
+  description: $.description
+  version: $.version
+  latestVersion: $.version|unlessCapture:version
+  requestedVersion: "{{version}}|emptyToUndefined"
+  homepage: $.homepage
+  license: $.license

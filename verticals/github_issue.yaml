@@ -1,0 +1,39 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+version: 1
+order: 2
+name: github_issue
+# api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
+kind: api-json
+description: GitHub issue details, labels, comments, and state.
+# URL patterns to match; :segments become named captures for {{templates}}.
+urlPatterns:
+  - https://github.com/:owner/:repo/issues/:number
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - issue_metadata
+  - labels
+  - comments
+source: builtin
+# HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
+request:
+  urlTemplate: https://api.github.com/repos/{{owner|encodeURIComponent}}/{{repo|encodeURIComponent}}/issues/{{number|encodeURIComponent}}
+# Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
+extract:
+  owner: "{{owner}}"
+  repo: "{{repo}}"
+  number: $.number
+  title: $.title
+  state: $.state
+  url: $.html_url
+  author: $.user.login
+  labels: $.labels|pluck:name|compact
+  comments: $.comments
+  createdAt: $.created_at
+  updatedAt: $.updated_at
+  closedAt: $.closed_at
+  isPullRequest: $.pull_request|boolean

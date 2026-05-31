@@ -9,6 +9,7 @@ import { progressShell } from "../infra/progress.ts";
 import { toolResult } from "../infra/result.ts";
 import { webBatchTool } from "../web-batch.ts";
 import { webCrawlTool } from "../web-crawl.ts";
+import { webExtractTool } from "../web-extract.ts";
 import { webScrapeTool } from "../web-scrape.ts";
 
 const partialContext = {
@@ -335,6 +336,80 @@ describe("web tool renderers", () => {
 		expect(rendered).toContain("web_extract processing");
 		expect(rendered).toContain("selector h1");
 		expect(rendered).not.toContain("_progress");
+		expect(rendered).not.toContain("result");
+	});
+
+	it("renders extractor lists without expanded result metadata", () => {
+		const result = toolResult({
+			text: "2 extractor(s):\n- github_repo\n- npm",
+			data: [{ name: "github_repo" }, { name: "npm" }],
+			summary: "Listed deterministic extractor capabilities.",
+		});
+
+		const rendered = text(renderWebExtractResult(result, true));
+		expect(rendered).toContain("Listed deterministic extractor capabilities.");
+		expect(rendered).toContain("- github_repo");
+		expect(rendered).toContain("- npm");
+		expect(rendered).not.toContain("result");
+		expect(rendered).not.toContain("response payload");
+	});
+
+	it("formats YouTube transcript continuations and comments as readable lists", () => {
+		const result = toolResult({
+			text: "ok",
+			data: {
+				extractor: "youtube",
+				data: {
+					title: "Video",
+					transcript: {
+						text: "long transcript",
+						segments: [
+							{
+								start: 23,
+								text: "♪ You know the rules and so do I, this line is intentionally long enough to wrap cleanly under the timestamp ♪",
+							},
+						],
+					},
+					comments: [
+						{
+							author: "@YouTube",
+							text: "can confirm: he never gave us up",
+						},
+					],
+				},
+			},
+		});
+		const rendered = text(renderVerticalResult(result, true));
+		expect(rendered).toContain("transcript");
+		expect(rendered).toContain("0:23");
+		expect(rendered).toContain("timestamp ♪");
+		expect(rendered).toContain("comments");
+		expect(rendered).toContain("@YouTube: can confirm: he never gave us up");
+		expect(rendered).not.toContain("├─ 1");
+	});
+
+	it("renders blocked vertical metadata without generic result details", () => {
+		const result = toolResult({
+			text: "reddit returned URL metadata only",
+			data: {
+				extractor: "reddit",
+				data: {
+					permalink: "https://www.reddit.com/r/programming/comments/1/hello_world/",
+					source: {
+						provider: "reddit",
+						blocked: true,
+						reason: "robots.txt disallows fetching structured endpoint",
+						attemptedEndpoints: ["https://www.reddit.com/comments/1.json?limit=5"],
+					},
+				},
+			},
+			summary: "reddit returned URL metadata only",
+		});
+		const rendered = text(webExtractTool.renderResult?.(result, { expanded: true }));
+		expect(rendered).toContain("reddit metadata only");
+		expect(rendered).toContain("attempted endpoints");
+		expect(rendered).toContain("https://www.reddit.com/comments/1.json?limit=5");
+		expect(rendered).not.toContain("response payload");
 		expect(rendered).not.toContain("result");
 	});
 

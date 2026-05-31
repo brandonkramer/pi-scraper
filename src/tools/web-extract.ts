@@ -175,7 +175,8 @@ export function createWebExtractTool(
 		renderCall: (args, theme) => toolCall("web_extract", renderExtractCallParts(args), theme),
 		renderResult: (result, { expanded }, theme) => {
 			const text = result.content[0]?.text ?? "";
-			if (text.startsWith("\u2514\u2500")) return renderVerticalResult(result, expanded, theme);
+			if (text.startsWith("\u2514\u2500") || isVerticalResult(result))
+				return renderVerticalResult(result, expanded, theme);
 			if (isSelectorResult(result)) return renderWebExtractSelectorResult(result, expanded, theme);
 			return renderWebExtractResult(result, expanded, theme);
 		},
@@ -219,4 +220,9 @@ function isSelectorResult(result: PiToolShell): boolean {
 	const env = result.details as Partial<ToolContext<{ strategy?: string }>> | undefined;
 	const s = env?.data?.strategy;
 	return s === "direct" || s === "adaptive" || s === "healed" || s === "none";
+}
+
+function isVerticalResult(result: PiToolShell): boolean {
+	const env = result.details as Partial<ToolContext<{ extractor?: unknown }>> | undefined;
+	return typeof env?.data?.extractor === "string";
 }

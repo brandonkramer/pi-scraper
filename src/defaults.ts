@@ -18,6 +18,7 @@ export const OUTPUT_FORMATS = [
 	"html",
 	"json",
 	"raw",
+	"ax-tree",
 ] as const satisfies readonly OutputFormat[];
 
 export const DEFAULT_SCRAPE_MODE: ScrapeMode = "auto";
