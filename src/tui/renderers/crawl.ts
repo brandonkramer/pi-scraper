@@ -17,11 +17,19 @@ import {
 	toolProgressCard,
 	toolResultCard,
 } from "../tool-card.ts";
-import { toolActivityCount, toolPickExcerpt, toolResourceList } from "../tool-format.ts";
 import { toolContextPackageResponseId, toolErrorLabel, toolSessionNotice } from "../tool-labels.ts";
+import { renderResourceItemList as toolResourceList } from "../tool-resource.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
-import { buildExpandedResultDetails, toolResultId } from "../tool-result.ts";
-import { toolStatusMark, toolStatus } from "../tool-status.ts";
+import {
+	buildExpandedResultDetails,
+	toolResultId,
+	pickExcerpt as toolPickExcerpt,
+} from "../tool-result.ts";
+import {
+	toolStatusMark,
+	toolStatus,
+	activityCountSegment as toolActivityCount,
+} from "../tool-status.ts";
 import { toolNeutral } from "../tool-text.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export interface CrawlMeta {

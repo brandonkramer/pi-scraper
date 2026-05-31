@@ -6,8 +6,11 @@ import {
 	type ProgressDetails,
 } from "../../types.ts";
 import { toolProgressCard } from "../tool-card.ts";
-import { toolChecklistText } from "../tool-format.ts";
-import { toolErrorLabel, toolFreshnessLabel } from "../tool-labels.ts";
+import {
+	toolErrorLabel,
+	toolFreshnessLabel,
+	formatChecklistText as toolChecklistText,
+} from "../tool-labels.ts";
 import { toolJoinSegments, toolMuted, toolSeparator, toolText } from "../tool-text.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export interface DiffData {

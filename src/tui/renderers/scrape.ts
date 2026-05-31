@@ -13,20 +13,28 @@ import {
 	toolIsFileResult,
 	toolResultCard,
 	toolStackedCard,
+	progressStartedAtMs as toolProgressStartedAtMs,
 } from "../tool-card.ts";
 import {
-	toolChecklistText,
-	toolCurrentSpinnerFrame,
-	toolFormatBytes,
-	toolFormatDuration,
-	toolFormatPreview,
-	toolPreviewText,
-	toolProgressStartedAtMs,
-} from "../tool-format.ts";
-import { toolFreshnessLabel, toolSessionNotice } from "../tool-labels.ts";
-import { toolResourceStatus } from "../tool-resource.ts";
+	toolFreshnessLabel,
+	toolSessionNotice,
+	formatChecklistText as toolChecklistText,
+} from "../tool-labels.ts";
+import {
+	toolResourceStatus,
+	formatBytes as toolFormatBytes,
+	formatDuration as toolFormatDuration,
+} from "../tool-resource.ts";
 import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
-import { toolStatusDot, toolStatus } from "../tool-status.ts";
+import {
+	formatPreview as toolFormatPreview,
+	previewText as toolPreviewText,
+} from "../tool-result.ts";
+import {
+	toolStatusDot,
+	toolStatus,
+	currentSpinnerFrame as toolCurrentSpinnerFrame,
+} from "../tool-status.ts";
 import {
 	toolActivity,
 	toolFailure,

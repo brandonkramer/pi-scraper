@@ -17,13 +17,16 @@ import {
 	type ToolContext,
 } from "../../types.ts";
 import { toolBatchProgressCard, toolBatchResultCard, toolProgressCard } from "../tool-card.ts";
-import { toolFormatBytes, toolFormatDuration } from "../tool-format.ts";
 import {
 	toolContextPackageResponseId,
 	toolErrorLabel,
 	toolFreshnessLabel,
 	toolSessionNotice,
 } from "../tool-labels.ts";
+import {
+	formatBytes as toolFormatBytes,
+	formatDuration as toolFormatDuration,
+} from "../tool-resource.ts";
 import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
 import { toolResultId } from "../tool-result.ts";
 import { toolStatusMark, toolStatus } from "../tool-status.ts";
