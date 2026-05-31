@@ -5,8 +5,7 @@ import type { RenderTheme } from "./types.ts";
 
 export function withSpinnerFooter(lines: string[], tick?: number): string {
 	if (typeof tick !== "number") return lines.join("\n");
-	const frame = SPINNER_FRAMES[tick % SPINNER_FRAMES.length];
-	return [...lines, "", `${frame} Working...`].join("\n");
+	return [...lines, "", `${SPINNER_FRAMES[tick % SPINNER_FRAMES.length]} Working...`].join("\n");
 }
 
 export function toolProcess(
