@@ -151,7 +151,8 @@ export function toolStatus(
 		.map((p) => {
 			if (!p) return "";
 			if (typeof p === "string") return p;
-			return paintPart(p, theme);
+			const fn = p.tone && p.tone !== "accent" ? TONE_FNS[p.tone] : undefined;
+			return fn ? fn(p.text, theme) : p.text;
 		})
 		.filter(Boolean);
 	return rendered.join(separator(theme));
@@ -188,8 +189,3 @@ const TONE_FNS = {
 	muted,
 	neutral,
 } as const;
-
-function paintPart(part: ToolStatusPart, theme?: RenderTheme): string {
-	const fn = part.tone && part.tone !== "accent" ? TONE_FNS[part.tone] : undefined;
-	return fn ? fn(part.text, theme) : part.text;
-}
