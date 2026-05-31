@@ -40,15 +40,14 @@ export function toolFileResultCard(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const data = envelope.data;
-	const fileInfo = (data?.file ?? {}) as {
+	const file = (data?.file ?? {}) as {
 		path?: string;
 		downloadedBytes?: number;
 		contentType?: string;
 	};
-	const fileSize =
-		stringValue(data?.fileSize) ?? formatBytes(fileInfo.downloadedBytes) ?? "unknown";
-	const filePath = stringValue(data?.filePath) ?? fileInfo.path ?? "unknown";
-	const mimeType = stringValue(data?.mimeType) ?? fileInfo.contentType;
+	const fileSize = stringValue(data?.fileSize) ?? formatBytes(file.downloadedBytes) ?? "unknown";
+	const filePath = stringValue(data?.filePath) ?? file.path ?? "unknown";
+	const mimeType = stringValue(data?.mimeType) ?? file.contentType;
 	const lines = [
 		muted(`File size: ${fileSize}`, theme),
 		...(mimeType ? [muted(`Mime type: ${mimeType}`, theme)] : []),
