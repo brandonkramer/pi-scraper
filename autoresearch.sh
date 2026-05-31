@@ -2,7 +2,10 @@
 set -euo pipefail
 
 # Fast structural workload: count non-test src/tui TypeScript LOC and related shape metrics.
-mapfile -t files < <(find src/tui -type f -name '*.ts' ! -path '*/__tests__/*' | sort)
+files=()
+while IFS= read -r file; do
+  files+=("$file")
+done < <(find src/tui -type f -name '*.ts' ! -path '*/__tests__/*' | sort)
 if ((${#files[@]} == 0)); then
   echo "no src/tui TypeScript files found" >&2
   exit 1
@@ -19,8 +22,14 @@ count_lines() {
 tui_loc=$(count_lines "${files[@]}")
 file_count=${#files[@]}
 max_file_loc=$(wc -l "${files[@]}" | awk '$2 != "total" && $1 > max { max = $1 } END { print max + 0 }')
-mapfile -t renderer_files < <(printf '%s\n' "${files[@]}" | grep '^src/tui/renderers/' || true)
-mapfile -t helper_files < <(printf '%s\n' "${files[@]}" | grep -v '^src/tui/renderers/' || true)
+renderer_files=()
+helper_files=()
+while IFS= read -r file; do
+  case "$file" in
+    src/tui/renderers/*) renderer_files+=("$file") ;;
+    *) helper_files+=("$file") ;;
+  esac
+done < <(printf '%s\n' "${files[@]}")
 renderer_loc=$(count_lines "${renderer_files[@]}")
 helper_loc=$(count_lines "${helper_files[@]}")
 
