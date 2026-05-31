@@ -10,12 +10,7 @@ import {
 } from "../tool-result-tree.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
-interface VerticalBrowserFallbackMetadata {
-	browserFallback?: {
-		used: boolean;
-		backend: string;
-	};
-}
+type BrowserFallback = { used: boolean; backend: string };
 
 /** Theme-aware renderer for vertical extractor results. */
 export function renderVerticalResult(
@@ -38,9 +33,7 @@ export function renderVerticalResult(
 	}
 
 	const data = wrapper?.data as Record<string, unknown> | undefined;
-	const bfFallback = wrapper?.browserFallback as
-		| VerticalBrowserFallbackMetadata["browserFallback"]
-		| undefined;
+	const bfFallback = wrapper?.browserFallback as BrowserFallback | undefined;
 	const browserFallback = bfFallback?.used ? bfFallback : undefined;
 	const metaLine = extractorPreview(data);
 	const check = success("\u2713", theme);
@@ -92,7 +85,7 @@ export function renderVerticalResult(
 
 function buildVerticalSections(
 	data: Record<string, unknown>,
-	browserFallback?: VerticalBrowserFallbackMetadata["browserFallback"],
+	browserFallback?: BrowserFallback,
 ): ToolResultGroup[] {
 	const sections: ToolResultGroup[] = [];
 	if (browserFallback?.used) {
