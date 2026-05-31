@@ -43,9 +43,7 @@ export function renderResourceItemList(
 ): string {
 	const max = options.maxItems ?? 20;
 	const lines = [`\u2514\u2500 ${options.header}`];
-	for (const item of items.slice(0, max)) {
-		lines.push(...renderResourceItemLines(item));
-	}
+	for (const item of items.slice(0, max)) lines.push(...renderResourceItemLines(item));
 	if (items.length > max) lines.push(`… ${items.length - max} more item(s)`);
 	const m = options.metadata;
 	const jobId = typeof m?.jobId === "string" ? m.jobId : undefined;

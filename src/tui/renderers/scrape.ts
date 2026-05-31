@@ -112,9 +112,8 @@ export function renderWebScrapeResult(
 			expanded,
 			notice: toolSessionNotice(envelope),
 			expandedSections: (width) => {
-				if (toolIsFileResult(envelope)) {
+				if (toolIsFileResult(envelope))
 					return [toolFileResultCard(envelope, theme).render(width).join("\n")];
-				}
 				const out = [toolResultTree(buildScrapeSections(envelope, theme), width, theme)];
 				if (preview && !markdownPreviewComponent(envelope.format, preview, theme))
 					out.push(
