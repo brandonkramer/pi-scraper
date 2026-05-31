@@ -20,9 +20,8 @@ export function renderVerticalResult(
 	const details = result.details as Record<string, unknown> | undefined;
 	const wrapper = details?.data as Record<string, unknown> | undefined;
 	const name = typeof wrapper?.extractor === "string" ? wrapper.extractor : "extractor";
-	const isError = Boolean(wrapper?.error ?? details?.error);
 
-	if (isError) {
+	if (wrapper?.error ?? details?.error) {
 		const error = (wrapper?.error ?? details?.error) as { code?: string } | undefined;
 		const code = error?.code ?? "FAILED";
 		const treeLine = `\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${code}`, theme)}`;
@@ -32,10 +31,9 @@ export function renderVerticalResult(
 	const data = wrapper?.data as Record<string, unknown> | undefined;
 	const bfFallback = wrapper?.browserFallback as BrowserFallback | undefined;
 	const browserFallback = bfFallback?.used ? bfFallback : undefined;
-	const metaLine = extractorPreview(data);
 	const check = success("\u2713", theme);
 	const summaryDetails = [
-		metaLine,
+		extractorPreview(data),
 		browserFallback?.used ? `browser fallback · ${browserFallback.backend}` : undefined,
 	]
 		.filter(Boolean)
