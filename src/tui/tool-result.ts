@@ -4,10 +4,6 @@ import type { ToolResultTreeSection } from "./tool-result-tree.ts";
 import type { RenderTheme } from "./types.ts";
 /** @file Pi terminal UI preview and metadata formatting primitives. */
 
-export function formatPreview(format: string | undefined, content: string): string {
-	return format === "json" || format === "html" ? `\`\`\`${format}\n${content}\n\`\`\`` : content;
-}
-
 /** First non-empty candidate, whitespace-collapsed. Final number arg overrides 180-char cap. */
 export function pickExcerpt(
 	...args: ReadonlyArray<string | undefined | number>

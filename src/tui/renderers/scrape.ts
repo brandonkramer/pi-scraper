@@ -34,10 +34,7 @@ import {
 	formatDuration as toolFormatDuration,
 } from "../tool-resource.ts";
 import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
-import {
-	formatPreview as toolFormatPreview,
-	previewText as toolPreviewText,
-} from "../tool-result.ts";
+import { previewText as toolPreviewText } from "../tool-result.ts";
 import {
 	toolStatusDot,
 	toolStatus,
@@ -122,7 +119,12 @@ export function renderWebScrapeResult(
 				const allSections = buildScrapeSections(envelope, theme);
 				const out = [toolResultTree(allSections, width, theme)];
 				if (preview && !markdownPreviewComponent(envelope.format, preview, theme))
-					out.push(toolFormatPreview(envelope.format, preview).slice(0, 1200));
+					out.push(
+						(envelope.format === "json" || envelope.format === "html"
+							? `\`\`\`${envelope.format}\n${preview}\n\`\`\``
+							: preview
+						).slice(0, 1200),
+					);
 				return out;
 			},
 			markdownPreview: () => markdownPreviewComponent(envelope.format, preview, theme),
