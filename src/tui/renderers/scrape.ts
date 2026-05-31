@@ -298,12 +298,7 @@ function formatSeconds(s: number): string {
 	return fmtTwoUnit(Math.floor(s / 86400), "d", Math.floor((s % 86400) / 3600), "h");
 }
 
-interface CacheControlInfo {
-	maxAge: number;
-	swr: number | undefined;
-}
-
-function parseCacheControl(value: string | undefined): CacheControlInfo | undefined {
+function parseCacheControl(value: string | undefined) {
 	if (!value) return;
 	let maxAge: number | undefined;
 	let swr: number | undefined;
