@@ -1,10 +1,6 @@
 import type { Component } from "@earendil-works/pi-tui";
 
-import type {
-	BatchProgressItemView,
-	BatchProgressStatus,
-	BatchProgressView,
-} from "../batch/progress-state.ts";
+import type { BatchProgressItemView, BatchProgressView } from "../batch/progress-state.ts";
 import type { ProgressDetails, ToolContext } from "../types.ts";
 import { muted } from "./theme.ts";
 import { renderText } from "./tool-call.ts";
@@ -156,7 +152,7 @@ function renderBatchRow(
 	restoreBg?: string,
 ): string {
 	const statusWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
-	const state = statusState(item.status);
+	const state: StatusPillState = progressPillState(item.status);
 	return toolResourceStatus({
 		url: item.url,
 		label: state,
@@ -177,7 +173,7 @@ function renderStatusBox(
 ): string {
 	if (item.status === "processing" && typeof item.progress === "number")
 		return renderProgressBar(item.progress, width - 2);
-	const state = statusState(item.status);
+	const state: StatusPillState = progressPillState(item.status);
 	return renderStatusPill({
 		label: state,
 		state,
@@ -186,12 +182,6 @@ function renderStatusBox(
 		startedAtMs: item.startedAtMs,
 		restoreBg,
 	});
-}
-
-function statusState(status: BatchProgressStatus) {
-	if (status === "queued") return "waiting";
-	if (status === "processing") return "loading";
-	return status;
 }
 
 /** @file Pi terminal UI progress primitives — bar, status bridge, and fallback card. */
