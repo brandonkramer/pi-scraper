@@ -21,7 +21,7 @@ capabilities:
 source: builtin
 # HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
 request:
-  urlTemplate: https://pypi.org/pypi/{{name|encodeURIComponent}}/json
+  urlTemplate: https://pypi.org/pypi/{{project|encodeURIComponent}}/json
 # Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
 extract:
   name: $.info.name
