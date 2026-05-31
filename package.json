@@ -38,13 +38,10 @@
 		"test:selection": "vitest run src/tools/__tests__/tool-contract.test.ts src/tools/__tests__/tool-selection-fixtures.test.ts --reporter=verbose",
 		"eval:selection": "node eval/tool-selection/run-selection-eval.mjs",
 		"eval:selection:pi": "PI_TOOL_SELECTION_EVAL_COMMAND='node eval/tool-selection/pi-model-command.mjs' node eval/tool-selection/run-selection-eval.mjs",
-		"smoke:install": "npm run bench:suite -- install-smoke",
 		"smoke:live": "vitest run src/tools/__tests__/tools-smoke.live.test.ts --reporter=verbose",
 		"smoke:browser": "vitest run src/browser/__tests__/browser-smoke.test.ts --reporter=verbose",
 		"audit:strict": "npm audit --omit=dev --audit-level=high",
 		"lint:workflows": "github-actionlint .github/workflows/*.yml",
-		"bench": "node bench/bench.mjs eval/corpus.json",
-		"bench:suite": "node bench/suites/run.mjs",
 		"check": "npm run typecheck && npm test",
 		"prepublishOnly": "npm run typecheck"
 	},
