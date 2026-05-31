@@ -67,7 +67,7 @@ export const webScrapeSchema = Type.Object({
 	followMetaRefresh: Type.Optional(Type.Unsafe<boolean>({})),
 	saveToFile: Type.Optional(
 		Type.Unsafe<boolean | { dir?: string; filename?: string; maxBytes?: number }>({
-			description: "true/{dir,name,maxBytes}",
+			description: "true|{dir,name,bytes}",
 		}),
 	),
 	snapshotName: Type.Optional(Type.Unsafe<string>({})),
@@ -82,7 +82,7 @@ export const webScrapeSchema = Type.Object({
 					maxSnapshotAgeSeconds?: number;
 			  }
 		>({
-			description: "true or {name,tag,compare,maxAge}",
+			description: "true|{name,tag,compare,age}",
 		}),
 	),
 	linesMatching: Type.Optional(Type.Unsafe<string[]>({})),

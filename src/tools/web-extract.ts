@@ -74,17 +74,17 @@ export const webExtractSchema = Type.Object({
 	contains: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	excerpts: Type.Optional(
 		Type.Unsafe<PatternExcerptRequest[]>({
-			description: "{needle,before,after,maxOcc}",
+			description: "{needle,before,after,occ}",
 		}),
 	),
 	regexes: Type.Optional(
 		Type.Unsafe<PatternRegexRequest[]>({
-			description: "{name,pattern,flags,captureGroup,max,contextBefore,contextAfter}",
+			description: "{name,pattern,flags,group,max,ctxBefore,ctxAfter}",
 		}),
 	),
 	sections: Type.Optional(
 		Type.Unsafe<PatternSectionRequest[]>({
-			description: "{name,start,end,incStart,incEnd,maxChar}",
+			description: "{name,start,end,incStart,incEnd,max}",
 		}),
 	),
 	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
