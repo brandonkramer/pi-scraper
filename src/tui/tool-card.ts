@@ -86,19 +86,17 @@ export function toolBatchProgressCard(
 	});
 }
 
-export interface BatchResultCardOptions {
-	progress: BatchProgressView;
-	summary: string;
-	notice?: string;
-	preview?: string;
-	markdownPreview?: (width: number) => RenderComponent | undefined;
-	expandedSections?: (width: number) => string[];
-	responseId?: string;
-	padToWidth?: boolean;
-}
-
 export function toolBatchResultCard(
-	options: BatchResultCardOptions,
+	options: {
+		progress: BatchProgressView;
+		summary: string;
+		notice?: string;
+		preview?: string;
+		markdownPreview?: (width: number) => RenderComponent | undefined;
+		expandedSections?: (width: number) => string[];
+		responseId?: string;
+		padToWidth?: boolean;
+	},
 	expanded: boolean,
 	theme?: RenderTheme,
 ): RenderComponent {
