@@ -24,7 +24,7 @@ export function formatChecklistText(item: { label: string; detail?: string }): s
 
 // ── Label functions ───────────────────────────────────────────────
 
-export function errorLabel(
+export function toolErrorLabel(
 	tool: string,
 	error: StructuredError,
 	options?: { allowIcons?: boolean },
@@ -33,16 +33,16 @@ export function errorLabel(
 	return `${prefix}${tool} ${error.code}: ${error.message}`;
 }
 
-export function freshnessLabel(envelope: Partial<ToolContext<unknown>>): string | undefined {
+export function toolFreshnessLabel(envelope: Partial<ToolContext<unknown>>): string | undefined {
 	return envelope.freshness?.stale ? "⚠ stale" : undefined;
 }
 
-export function sessionNotice(envelope: Partial<ToolContext<unknown>>): string | undefined {
+export function toolSessionNotice(envelope: Partial<ToolContext<unknown>>): string | undefined {
 	const notice = envelope.diagnostics?.sessionNotice;
 	return typeof notice === "string" ? notice : undefined;
 }
 
-export function contextPackageResponseId(
+export function toolContextPackageResponseId(
 	envelope: Partial<ToolContext<unknown>>,
 ): string | undefined {
 	const value = envelope.diagnostics?.contextPackage as { responseId?: unknown } | undefined;
@@ -50,8 +50,3 @@ export function contextPackageResponseId(
 }
 
 // ── Tool-prefixed aliases ──────────────────────────────────────────
-
-export const toolErrorLabel = errorLabel;
-export const toolFreshnessLabel = freshnessLabel;
-export const toolSessionNotice = sessionNotice;
-export const toolContextPackageResponseId = contextPackageResponseId;
