@@ -17,19 +17,6 @@ export interface MapUrlEntryView {
 	title?: string;
 }
 
-export function renderMapResultCard(
-	urls: readonly MapUrlEntryView[],
-	expanded: boolean,
-	theme?: RenderTheme,
-): RenderComponent {
-	return toolResultCard({
-		renderContent(width) {
-			return renderMapLines(urls, expanded, width, theme);
-		},
-		padToWidth: true,
-	});
-}
-
 function renderMapLines(
 	urls: readonly MapUrlEntryView[],
 	expanded: boolean,
