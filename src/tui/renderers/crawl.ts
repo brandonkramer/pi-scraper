@@ -103,6 +103,7 @@ export function renderWebCrawlResult(
 	const envelope = details as Partial<ToolContext<Partial<CrawlRunResult>>>;
 	const data = envelope.data;
 	const metadata = data?.metadata;
+	const strategy = metadata?.strategy;
 	const failed = metadata?.failedCount ?? 0;
 	const summary = envelope.error
 		? toolErrorLabel("web_crawl", envelope.error, { allowIcons: true })
@@ -112,11 +113,8 @@ export function renderWebCrawlResult(
 					toolStatusMark("failure", failed, "failed", theme),
 					toolActivityCount(metadata?.visitedCount ?? 0, "visited", "◉", theme),
 					toolNeutral(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
-					metadata?.strategy
-						? toolNeutral(
-								`· ${formatCrawlStrategyLabel(metadata.strategy) ?? metadata.strategy} crawl`,
-								theme,
-							)
+					strategy
+						? toolNeutral(`· ${formatCrawlStrategyLabel(strategy) ?? strategy} crawl`, theme)
 						: undefined,
 					!expanded && { text: "(ctrl+o to expand)", tone: "muted" as const },
 				],
