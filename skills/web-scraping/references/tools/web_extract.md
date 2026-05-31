@@ -119,6 +119,10 @@ web_extract action=pattern url="https://example.com" extract=api-surface
 web_extract action=list
 ```
 
+## Custom vertical manifests
+
+For project/user YAML manifest additions or overrides, see [custom vertical manifest ref](../verticals/custom.md).
+
 ## Fallback Model Adapter (`@earendil-works/pi-ai`)
 
 For summarizing or extracting unstructured text (`web_extract action=summarize` or `action=adhoc`), the scraper employs a tiered fallback adapter system:

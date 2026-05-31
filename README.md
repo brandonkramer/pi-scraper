@@ -328,6 +328,10 @@ extract:
 
 Supported manifest styles include `api-json`, `api-json-aggregate`, `api-json-chain`, `http-workflow`, `api-xml`, `selector`, `pattern`, `html-extract`, `text-extract`, `code-extract`, and bounded `recipe` primitives.
 
+If you are asking an LLM/agent to create or override one, use this prompt:
+
+> Use the `pi-scraper` `web-scraping` skill's custom vertical manifest reference to create a YAML vertical for this site. Choose the right manifest style, place it in the correct project or user verticals folder, and verify it with `web_extract`.
+
 ---
 
 ## 💾 Download, Storage & History

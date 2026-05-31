@@ -61,6 +61,10 @@ Use `web_extract action=vertical extractor=<name> url=<url>` — bypasses HTML s
 | `ossinsight.io/trending[/:language]` | `ossinsight_trending_repos` | [ref](references/verticals/ossinsight.md) |
 | `ossinsight.io/analyze/:owner/:repo` | `ossinsight_repo_analytics` | [ref](references/verticals/ossinsight.md) |
 
+### Custom vertical manifests
+
+Need a missing known-site vertical or a local override? Add a project/user YAML manifest; see [custom vertical manifest ref](references/verticals/custom.md).
+
 ## Modes
 
 Set `mode=<name>` on scrape/crawl tools when fast isn't enough.
