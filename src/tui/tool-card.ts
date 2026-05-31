@@ -295,7 +295,7 @@ export function toolStackedCard(
 	return defineResultRenderer({
 		renderContent(width) {
 			const body = typeof options.body === "function" ? options.body(width) : options.body;
-			const lines = [body, "", options.summary];
+			const lines = options.summary ? [body, "", options.summary] : [body];
 			if (options.notice) lines.push("", muted(options.notice, theme));
 			if (options.expanded) {
 				const sections = options.expandedSections?.(width) ?? [];

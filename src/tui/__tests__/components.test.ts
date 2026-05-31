@@ -9,6 +9,7 @@ import {
 	toolStatus,
 	type RenderTheme,
 } from "../index.ts";
+import { toolResultCard } from "../tool-card.ts";
 import { buildToolResultTree } from "../tool-result-tree.ts";
 import { toolStatusMark } from "../tool-status.ts";
 
@@ -42,6 +43,11 @@ describe("tool TUI components", () => {
 		});
 		expect(row).toContain("<bg:toolErrorBg>");
 		expect(row.endsWith("<bg:toolSuccessBg>")).toBe(true);
+	});
+
+	it("does not add trailing blank lines to result cards without summaries", () => {
+		const rendered = toolResultCard({ renderContent: () => "done" }).render(20);
+		expect(rendered).toEqual(["done".padEnd(20)]);
 	});
 
 	it("renders result tree groups and ids", () => {
