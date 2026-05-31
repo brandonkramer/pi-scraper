@@ -10,8 +10,7 @@ export function toolErrorLabel(
 	error: StructuredError,
 	options?: { allowIcons?: boolean },
 ): string {
-	const prefix = options?.allowIcons ? "✕ " : "";
-	return `${prefix}${tool} ${error.code}: ${error.message}`;
+	return `${options?.allowIcons ? "✕ " : ""}${tool} ${error.code}: ${error.message}`;
 }
 
 export function toolFreshnessLabel(envelope: Partial<ToolContext<unknown>>): string | undefined {
