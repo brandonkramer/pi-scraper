@@ -31,16 +31,6 @@ export function paintFirstLineBg(lines: string[], bgName: string, theme?: Render
 
 export type StatusPillState = "waiting" | "loading" | "done" | "error";
 
-export interface StatusPillOptions {
-	label: string;
-	state: StatusPillState;
-	width: number;
-	theme?: RenderTheme;
-	startedAtMs?: number;
-	/** Re-open the surrounding Box background after the pill so pill bg does not bleed across the row. */
-	restoreBg?: string;
-}
-
 const STATE_BG: Record<StatusPillState, string> = {
 	done: "toolSuccessBg",
 	error: "toolErrorBg",
@@ -62,7 +52,15 @@ const GLYPHS: Record<StatusPillState, [string, string]> = {
 	waiting: ["muted", "·"],
 };
 
-export function renderStatusPill(options: StatusPillOptions): string {
+export function renderStatusPill(options: {
+	label: string;
+	state: StatusPillState;
+	width: number;
+	theme?: RenderTheme;
+	startedAtMs?: number;
+	/** Re-open the surrounding Box background after the pill so pill bg does not bleed across the row. */
+	restoreBg?: string;
+}): string {
 	const cw = Math.max(1, options.width - 2);
 	const labelBase = ` ${options.label} `;
 	const inner =
