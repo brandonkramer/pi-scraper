@@ -52,11 +52,7 @@ export function renderVerticalResult(
 	const body = toolResultTree(sections, 80, theme);
 
 	const transcript = data.transcript as
-		| {
-				languageCode?: string;
-				segments?: Array<{ text: string; start: number; duration: number }>;
-				text?: string;
-		  }
+		| { segments?: { text: string; start: number; duration: number }[]; text?: string }
 		| undefined;
 	if (!transcript?.text) {
 		return renderText(`${treeLine}\n${body}`, { padToWidth: true });
