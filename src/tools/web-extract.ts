@@ -43,26 +43,13 @@ const extractActions = [
 	"cosine",
 ] as const;
 
-const extractActionSchema = Type.Union([
-	Type.Literal("list"),
-	Type.Literal("vertical"),
-	Type.Literal("pattern"),
-	Type.Literal("surface"),
-	Type.Literal("selector"),
-	Type.Literal("summarize"),
-	Type.Literal("adhoc"),
-	Type.Literal("css-extract"),
-	Type.Literal("xpath-extract"),
-	Type.Literal("regex-extract"),
-	Type.Literal("cosine"),
-]);
+const extractActionSchema = Type.Unsafe<
+	"list" | "vertical" | "pattern" | "surface" | "selector" | "summarize" | "adhoc" | "css-extract" | "xpath-extract" | "regex-extract" | "cosine"
+>({ type: "string", enum: ["list", "vertical", "pattern", "surface", "selector", "summarize", "adhoc", "css-extract", "xpath-extract", "regex-extract", "cosine"] });
 
-const extractSchemaPresetSchema = Type.Union([
-	Type.Literal("api-reference"),
-	Type.Literal("changelog"),
-	Type.Literal("faq"),
-	Type.Literal("compatibility-table"),
-]);
+const extractSchemaPresetSchema = Type.Unsafe<
+	"api-reference" | "changelog" | "faq" | "compatibility-table"
+>({ type: "string", enum: ["api-reference", "changelog", "faq", "compatibility-table"] });
 
 export const webExtractSchema = Type.Object({
 	action: Type.Optional(extractActionSchema),
