@@ -295,7 +295,7 @@ web_extract({ action: "vertical", url: "https://www.npmjs.com/package/undici" })
 web_extract({ action: "vertical", extractor: "youtube", url: "https://www.youtube.com/watch?v=arj7oStGLkU" })
 ```
 
-### YAML manifests, overrides, and custom verticals
+### 🧰 YAML manifests, overrides, and custom verticals
 
 Most verticals are backed by declarative YAML manifests in `verticals/*.yaml`. You can extend or override them without changing the public tool API: keep calling `web_extract({ action: "vertical", ... })`.
 
