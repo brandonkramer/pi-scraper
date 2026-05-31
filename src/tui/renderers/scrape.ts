@@ -221,7 +221,8 @@ function addHeaderSections(
 	/* cache */
 	addScrapeRow(groups, "cache", "status", headers["cf-cache-status"]);
 	if (headers["age"]) {
-		const sec = parseAgeSeconds(headers["age"]);
+		const n = Number(headers["age"]);
+		const sec = Number.isFinite(n) && n >= 0 ? n : undefined;
 		addScrapeRow(groups, "cache", "age", sec !== undefined ? formatSeconds(sec) : headers["age"]);
 	}
 	const cc = parseCacheControl(headers["cache-control"]);
@@ -283,11 +284,6 @@ function addScrapeRow(
 	const rows = groups.get(group) ?? [];
 	rows.push([key, value]);
 	groups.set(group, rows);
-}
-
-function parseAgeSeconds(v: string | undefined): number | undefined {
-	const n = v === undefined ? NaN : Number(v);
-	return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
 const fmtTwoUnit = (whole: number, big: string, rem: number, small: string) =>
