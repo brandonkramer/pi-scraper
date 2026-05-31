@@ -91,29 +91,7 @@ export function renderWebScrapeResult(
 				],
 				theme,
 			);
-	return renderScrapeResultCard(
-		envelope,
-		{
-			expanded,
-			summary,
-			notice: toolSessionNotice(envelope),
-			preview: toolPreviewText(result, envelope),
-			responseId: envelope.responseId,
-		},
-		theme,
-	);
-}
-function renderScrapeResultCard(
-	envelope: Partial<ToolContext<Record<string, unknown>>>,
-	options: {
-		expanded: boolean;
-		summary: string;
-		notice?: string;
-		preview?: string;
-		responseId?: string;
-	},
-	theme?: RenderTheme,
-): RenderComponent {
+	const preview = toolPreviewText(result, envelope);
 	const url = envelope.finalUrl ?? envelope.url ?? "unknown URL";
 	const state = envelope.error ? "error" : "done";
 	return toolStackedCard(
@@ -126,18 +104,17 @@ function renderScrapeResultCard(
 					width,
 					theme,
 				}),
-			summary: options.summary,
-			expanded: options.expanded,
-			notice: options.notice,
-			expandedSections: (width) => scrapeExpandedSections(envelope, options, width, theme),
-			markdownPreview: () => markdownPreviewComponent(envelope.format, options.preview, theme),
-			responseId: options.responseId,
+			summary,
+			expanded,
+			notice: toolSessionNotice(envelope),
+			expandedSections: (width) => scrapeExpandedSections(envelope, { preview }, width, theme),
+			markdownPreview: () => markdownPreviewComponent(envelope.format, preview, theme),
+			responseId: envelope.responseId,
 			hasError: !!envelope.error,
 		},
 		theme,
 	);
 }
-
 function markdownPreviewComponent(
 	format: string | undefined,
 	preview: string | undefined,
