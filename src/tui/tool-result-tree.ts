@@ -52,7 +52,7 @@ export function toolResultTree(
 			const connector = isLast ? "\u2514\u2500 " : "\u251C\u2500 ";
 			const paddedKey = key.padEnd(keyColWidth);
 
-			const valueLines = splitValueByWidth(value, availableWidth);
+			const valueLines = splitValueByWidth(value.replaceAll(/\s+/gu, " ").trim(), availableWidth);
 
 			const prefix = `${connector}${paddedKey}  `;
 			lines.push(`  ${muted(prefix, theme)}${valueLines[0]}`);

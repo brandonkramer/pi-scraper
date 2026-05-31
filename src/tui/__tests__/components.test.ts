@@ -59,4 +59,19 @@ describe("tool TUI components", () => {
 			"responseId: r1",
 		);
 	});
+
+	it("normalizes multiline result tree values before wrapping", () => {
+		const tree = toolResultTree(
+			buildToolResultTree([
+				{
+					name: "page",
+					rows: [["description", "First line\n      second line\n\nthird line"]],
+				},
+			]),
+			80,
+			theme,
+		);
+		expect(tree).toContain("First line second line third line");
+		expect(tree).not.toContain("\n      second line");
+	});
 });
