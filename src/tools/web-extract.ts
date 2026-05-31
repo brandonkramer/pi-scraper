@@ -68,10 +68,10 @@ export const webExtractSchema = Type.Object({
 	action: Type.Optional(extractActionSchema),
 	extractor: Type.Optional(Type.String()),
 	url: Type.Optional(urlProperty()),
-	content: Type.Optional(Type.String({ description: "Inline when no URL." })),
+	content: Type.Optional(Type.String()),
 	prompt: Type.Optional(Type.String()),
 	schema: Type.Optional(
-		Type.Any({ description: "Structured extraction schema." }),
+		Type.Any({ description: "Extraction schema." }),
 	),
 	sentences: Type.Optional(Type.Number()),
 	bullets: Type.Optional(Type.Number()),
@@ -81,9 +81,7 @@ export const webExtractSchema = Type.Object({
 	include: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	extractSchema: Type.Optional(extractSchemaPresetSchema),
 	length: Type.Optional(
-		Type.Union([Type.Boolean(), Type.String()], {
-			description: "Flag/preset name.",
-		}),
+		Type.Union([Type.Boolean(), Type.String()]),
 	),
 	markers: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	contains: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
@@ -118,7 +116,7 @@ export const webExtractSchema = Type.Object({
 	autoSave: Type.Optional(Type.Boolean()),
 	threshold: Type.Optional(Type.Number()),
 	limit: Type.Optional(Type.Integer()),
-	respectRobots: Type.Optional(Type.Boolean({ description: "Default: true." })),
+	respectRobots: Type.Optional(Type.Boolean()),
 	// Strategy extraction params (css-extract, xpath-extract, regex-extract, cosine)
 	selectors: Type.Optional(
 		Type.Unsafe<Record<string, string>>({
