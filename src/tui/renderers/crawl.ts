@@ -3,9 +3,9 @@ import {
 	isBatchProgress,
 	isBatchProgressView,
 } from "../../batch/progress-state.ts";
-import { formatCrawlStrategyLabel, type CrawlMetadata } from "../../crawl/state.ts";
+import type { CrawlRunResult } from "../../crawl/runner.ts";
+import { formatCrawlStrategyLabel } from "../../crawl/state.ts";
 /** @file Pi web_crawl renderer — top-level result/progress card and per-page expanded details. */
-import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import {
 	isProgress,
 	type PiToolShell,
@@ -29,11 +29,7 @@ import {
 	activityCountSegment as toolActivityCount,
 } from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
-export type CrawlMeta = Pick<
-	CrawlMetadata,
-	"succeededCount" | "failedCount" | "visitedCount" | "frontierCount" | "strategy"
->;
-export type CrawlPageView = Partial<ScrapeResult>;
+export type CrawlPageView = Partial<CrawlRunResult["pages"][number]>;
 
 export function crawlExpandedDetails(
 	pages: readonly CrawlPageView[],
@@ -106,7 +102,7 @@ export function renderWebCrawlResult(
 		if (isBatchProgress(details)) return toolBatchProgressCard(details, expanded, theme);
 		return toolProgressCard("web_crawl", details, theme, { allowIcons: true });
 	}
-	const envelope = details as Partial<ToolContext<{ metadata?: CrawlMeta; pages?: unknown[] }>>;
+	const envelope = details as Partial<ToolContext<Partial<CrawlRunResult>>>;
 	const metadata = envelope.data?.metadata;
 	const failed = metadata?.failedCount ?? 0;
 	const summary = envelope.error
