@@ -312,7 +312,6 @@ export function StringEnum<T extends string>(
 	options?: { description?: string; default?: string },
 ) {
 	return Type.Unsafe<T>({
-		type: "string",
 		enum: values,
 		...(options?.description && { description: options.description }),
 		...(options?.default && { default: options.default }),

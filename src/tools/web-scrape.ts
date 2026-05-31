@@ -41,7 +41,7 @@ import { buildSummarizeToolContext } from "./infra/scrape-input-result.ts";
 import { sessionLifecycle } from "./infra/session-lifecycle.ts";
 
 const scrapeTasks = ["read", "summarize"] as const;
-const scrapeTaskSchema = Type.Unsafe<"read" | "summarize">({ type: "string", enum: ["read", "summarize"] });
+const scrapeTaskSchema = Type.Unsafe<"read" | "summarize">({ enum: ["read", "summarize"] });
 
 export const webScrapeSchema = Type.Object({
 	task: Type.Optional(scrapeTaskSchema),

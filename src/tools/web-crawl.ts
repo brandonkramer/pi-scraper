@@ -9,7 +9,7 @@ import { crawlRun } from "./web-crawl-run.ts";
 import { crawlStatus, crawlList } from "./web-crawl-status.ts";
 
 const crawlActions = ["run", "status", "list"] as const;
-const crawlActionSchema = Type.Unsafe<"run" | "status" | "list">({ type: "string", enum: ["run", "status", "list"] });
+const crawlActionSchema = Type.Unsafe<"run" | "status" | "list">({ enum: ["run", "status", "list"] });
 
 export const webCrawlSchema = Type.Object({
 	action: Type.Optional(crawlActionSchema),
@@ -24,7 +24,7 @@ export const webCrawlSchema = Type.Object({
 	status: Type.Optional(Type.String()),
 	limit: Type.Optional(Type.Integer()),
 	strategy: Type.Optional(
-		Type.Unsafe<"bfs" | "dfs" | "best-first">({ type: "string", enum: ["bfs", "dfs", "best-first"] }),
+		Type.Unsafe<"bfs" | "dfs" | "best-first">({ enum: ["bfs", "dfs", "best-first"] }),
 	),
 	proxy: Type.Optional(Type.Union([Type.String(), Type.Array(Type.String())])),
 	concurrency: Type.Optional(Type.Integer()),

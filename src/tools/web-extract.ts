@@ -45,11 +45,11 @@ const extractActions = [
 
 const extractActionSchema = Type.Unsafe<
 	"list" | "vertical" | "pattern" | "surface" | "selector" | "summarize" | "adhoc" | "css-extract" | "xpath-extract" | "regex-extract" | "cosine"
->({ type: "string", enum: ["list", "vertical", "pattern", "surface", "selector", "summarize", "adhoc", "css-extract", "xpath-extract", "regex-extract", "cosine"] });
+>({ enum: ["list", "vertical", "pattern", "surface", "selector", "summarize", "adhoc", "css-extract", "xpath-extract", "regex-extract", "cosine"] });
 
 const extractSchemaPresetSchema = Type.Unsafe<
 	"api-reference" | "changelog" | "faq" | "compatibility-table"
->({ type: "string", enum: ["api-reference", "changelog", "faq", "compatibility-table"] });
+>({ enum: ["api-reference", "changelog", "faq", "compatibility-table"] });
 
 export const webExtractSchema = Type.Object({
 	action: Type.Optional(extractActionSchema),
@@ -92,7 +92,7 @@ export const webExtractSchema = Type.Object({
 	),
 	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
 	extract: Type.Optional(
-		Type.Unsafe<"api-surface">({ type: "string", enum: ["api-surface"] }),
+		Type.Unsafe<"api-surface">({ enum: ["api-surface"] }),
 	),
 	// Selector extraction (Task 27)
 	selector: Type.Optional(Type.String({ description: "CSS/XPath" })),
