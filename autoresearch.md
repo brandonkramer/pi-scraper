@@ -69,3 +69,27 @@ Focus on descriptions that are:
 4. **Long descriptions that can be shortened**: `selectors`, `extract`, etc.
 
 ### Key insight: `Type.Unsafe<...>({description: "..."})` produces the same schema as `Type.String({description: "..."})` — the description is just a string field, so we can freely shorten or remove descriptions.
+
+## Results (final)
+
+**Baseline**: 2068 tokens → **Final**: 1846 tokens — **222 tokens saved (10.7%)**
+
+| Tool | Before | After | Saved |
+|------|-------:|------:|-----:|
+| web_scrape | 492 | 428 | 64 (13.0%) |
+| web_crawl | 322 | 301 | 21 (6.5%) |
+| web_map | 58 | 57 | 1 (1.7%) |
+| web_batch | 224 | 202 | 22 (9.8%) |
+| web_extract | 852 | 745 | 107 (12.6%) |
+| web_get_result | 120 | 113 | 7 (5.8%) |
+| **Total** | **2068** | **1846** | **222 (10.7%)** |
+
+### What was changed
+
+1. **Removed redundant descriptions**: maxBytes, snapshotName, snapshotTag, headers, autoSave, limit, extractor — all restated the key name
+2. **Removed vague descriptions**: sessionId ("Consent session."), saveSession ("Persist."), clearSession ("Clear.") — didn't help LLM
+3. **Shortened format docs**: regexes, sections, excerpts, diff, saveToFile — kept clarity while abbreviating field names
+4. **Shortened remaining descriptions**: selectors, schema, extract, content, sourceFormat, query, topN, minScore, flags, attribute, identifier, adaptive, threshold, extractSchema, browserBackend, provider, map — trimmed to minimum viable length
+
+### Remaining descriptions
+All remaining descriptions (182 total chars of descriptions across 5 tools) are genuinely useful for LLM understanding. Further shortening would risk reducing the LLM's ability to correctly use the tools.
