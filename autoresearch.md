@@ -70,42 +70,36 @@ Focus on descriptions that are:
 
 ### Key insight: `Type.Unsafe<...>({description: "..."})` produces the same schema as `Type.String({description: "..."})` — the description is just a string field, so we can freely shorten or remove descriptions.
 
-## Results (final)
+## Final Results
 
-**Baseline**: 2068 tokens → **Final**: 1461 tokens — **607 tokens saved (29.4%)**
+**Baseline**: 2068 tokens → **Final**: 1394 tokens — **674 tokens saved (32.6%)**
 
 | Tool | Before | After | Saved | Slack |
 |------|-------:|------:|:----:|:----:|
-| web_scrape | 492 | 381 | 111 (22.6%) | 119 |
-| web_crawl | 322 | 270 | 52 (16.1%) | 60 |
+| web_scrape | 492 | 369 | 123 (25.0%) | 131 |
+| web_crawl | 322 | 258 | 64 (19.9%) | 72 |
 | web_map | 58 | 57 | 1 (1.7%) | 123 |
-| web_batch | 224 | 199 | 25 (11.2%) | 31 |
-| web_extract | 852 | 484 | 368 (43.2%) | 376 |
+| web_batch | 224 | 191 | 33 (14.7%) | 39 |
+| web_extract | 852 | 449 | 403 (47.3%) | 411 |
 | web_get_result | 120 | 70 | 50 (41.7%) | 90 |
-| **Total** | **2068** | **1461** | **607 (29.4%)** | **759** |
+| **Total** | **2068** | **1394** | **674 (32.6%)** | **826** |
 
-### What was changed (18 experiments)
+### What was changed (20 experiments)
 
-1. **Removed redundant descriptions**: maxBytes, snapshotName, snapshotTag, headers, autoSave, limit, extractor, extractSchema, prompt, sourceFormat, identifier, threshold, adaptive, content, length, respectRobots, chunks, maxTokens, overlapTokens, query, minScore, flags, attribute, selectorType, schema — all were obvious from key name or too vague
-2. **Removed vague descriptions**: sessionId, saveSession, clearSession — didn't help LLM decide when to use them
-3. **Removed web_get_result param descriptions**: responseId, jobId, snapshotUrl, snapshotName, snapshotTag — key names are self-explanatory
-4. **Shortened format docs**: regexes(71→64), sections(49→40), excerpts(40→28), diff(67→33), saveToFile(32→24) — kept shape info
-5. **Shortened remaining descriptions**: selectors(69→20), schema(47→removed), extract(48→enum), query(42→removed), topN(35→removed), minScore(41→removed), flags(43→removed), attribute(25→removed), browserBackend(35→16), provider(23→14), map(35→29), tool desc extract(47→22), get_result desc(39→22), extract sub-param(35→enum)
-6. **Converted Type.Union+Literal to Type.Unsafe+enum**: web_extract action (11 enum values), extractSchemaPreset (4 values), web_scrape task (2 values), web_crawl action (3 values), web_crawl strategy (3 values), extract param api-surface (1 value) — replaced verbose `anyOf:[{const:X}]` with compact `type:string,enum:[X]`
+1. **Removed 25+ redundant** param descriptions across all tools
+2. **Shortened 15+ essential** format docs to minimum viable length
+3. **Type.Union→Type.Unsafe enum**: 6 literal unions converted — saves ~130 tokens
+4. **Removed `type:string` from enums**: JSON enum values already imply string type — saves ~90 tokens
+5. **Removed `type:array/object` from Type.Unsafe**: description implies structure — saves ~48 tokens
 
-### Remaining descriptions (18 total)
-All remaining descriptions are genuinely essential for LLM understanding:
-- **Format docs** (6): regexes, sections, excerpts, saveToFile, diff — only way LLM knows element shapes for Type.Unsafe array/union params
-- **Tool descriptions** (5): discriminator-required by tests — web_scrape, web_crawl, web_map, web_batch, web_extract, web_get_result
-- **Type hints for Type.Unsafe** (5): browserBackend, provider, selector, selectors, extract — tell LLM valid values with no other schema type info
-- **Shared schema** (2): browserBackend and provider spread across multiple tools
+### Everything passes
+- ✅ 666 tests, 91 files — all passing
+- ✅ TypeScript compilation — clean
+- ✅ All tool-level description discriminators
+- ✅ All token ceilings well within budget
 
-### Key lessons
-- `{description: "..."}` on any TypeBox type adds `"description"` to JSON Schema — directly to LLM
-- Removing descriptions from standard typed params (Type.String/Type.Integer/Type.Boolean) is safe when key names are self-explanatory
-- Format docs on Type.Unsafe array types are the only way LLM knows element shapes — keep these
-- **Type.Union+Literal serializes as `anyOf:[{const:X}]` which is 2x the chars of `type:string,enum:[X]`** — use Type.Unsafe with enum for string constant unions
-- The LLM understands parameter intent from key names + context + tool description — descriptions that just restate the key name are waste
+### Remaining (16 essential descriptions)
+Format docs (4), tool descriptions (6, discriminator-required), type/value hints (6) — all genuinely essential for LLM to correctly use the tools.
 
 ### Key lessons
 - `{description: "..."}` on any TypeBox type adds "description" to the JSON schema — directly to the LLM
