@@ -2,6 +2,12 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [Unreleased]
+
+### Changed
+
+- **README contract estimates** — synced the public tool token counts with the current tool menu values.
+
 ## [0.10.0] - 2026-05-31
 
 ### Added

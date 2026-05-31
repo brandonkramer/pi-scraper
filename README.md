@@ -50,12 +50,12 @@ Ask naturally; Pi can choose the right web tool automatically:
 
 | Tool | Capability | Best For... | Contract ≈ |
 | :--- | :--- | :--- | :---: |
-| `web_scrape` | 🏠 Local | Reading a single URL as Markdown, Text, or HTML. | 426 tokens |
-| `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 322 tokens |
-| `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 58 tokens |
-| `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 224 tokens |
-| `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 852 tokens |
-| `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 120 tokens |
+| `web_scrape` | 🏠 Local | Reading a single URL as Markdown, Text, or HTML. | 268 tokens |
+| `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 179 tokens |
+| `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 51 tokens |
+| `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 151 tokens |
+| `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 407 tokens |
+| `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 55 tokens |
 
 > [!NOTE]
 > **Contract** is the total tokens for the tool declaration.
