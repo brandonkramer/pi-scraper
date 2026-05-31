@@ -11,7 +11,7 @@ import {
 } from "../index.ts";
 import { toolResultCard } from "../tool-card.ts";
 import { buildToolResultTree } from "../tool-result-tree.ts";
-import { toolStatusMark } from "../tool-status.ts";
+import { successCountSegment } from "../tool-status.ts";
 
 const theme: RenderTheme = {
 	fg: (name, text) => `<fg:${name}>${text}\u001B[39m`,
@@ -25,10 +25,7 @@ describe("tool TUI components", () => {
 	});
 
 	it("renders status and tally segments", () => {
-		const status = toolStatus(
-			[toolStatusMark("success", 2, "succeeded", theme), "markdown"],
-			theme,
-		);
+		const status = toolStatus([successCountSegment(2, "succeeded", theme), "markdown"], theme);
 		expect(status).toContain("✓ 2 succeeded");
 		expect(status).toContain("markdown");
 	});

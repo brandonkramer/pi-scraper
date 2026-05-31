@@ -150,17 +150,6 @@ export function toolStatusDot(status: number | undefined, theme?: RenderTheme): 
 }
 
 /** Batch tally segment: colored count + label with glyph prefix. */
-export function toolStatusMark(
-	kind: "success" | "failure" | "cache",
-	count: number,
-	label: string,
-	theme?: RenderTheme,
-): string {
-	if (kind === "success") return successCountSegment(count, label, theme);
-	if (kind === "failure") return failureCountSegment(count, label, theme);
-	return activityCountSegment(count, label, "\u21BB", theme);
-}
-
 const TONE_FNS = {
 	success,
 	failure,

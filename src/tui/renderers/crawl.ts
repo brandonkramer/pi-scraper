@@ -24,7 +24,8 @@ import { renderResourceItemList as toolResourceList } from "../tool-resource.ts"
 import { toolResultTree } from "../tool-result-tree.ts";
 import { buildExpandedResultDetails, toolResultId } from "../tool-result.ts";
 import {
-	toolStatusMark,
+	failureCountSegment as toolFailureCount,
+	successCountSegment as toolSuccessCount,
 	toolStatus,
 	activityCountSegment as toolActivityCount,
 } from "../tool-status.ts";
@@ -109,8 +110,8 @@ export function renderWebCrawlResult(
 		? toolErrorLabel("web_crawl", envelope.error, { allowIcons: true })
 		: toolStatus(
 				[
-					toolStatusMark("success", metadata?.succeededCount ?? 0, "succeeded", theme),
-					toolStatusMark("failure", failed, "failed", theme),
+					toolSuccessCount(metadata?.succeededCount ?? 0, "succeeded", theme),
+					toolFailureCount(failed, "failed", theme),
 					toolActivityCount(metadata?.visitedCount ?? 0, "visited", "◉", theme),
 					toolNeutral(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
 					strategy
