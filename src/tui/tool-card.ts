@@ -175,7 +175,6 @@ export function toolProgressCard(
 	options?: { allowIcons?: boolean },
 ): RenderComponent {
 	const startedAtMs = progressStartedAtMs(details) ?? Date.now();
-	const icons = options?.allowIcons ?? false;
 	return defineResultRenderer({
 		renderContent(width) {
 			const statusWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
@@ -194,7 +193,7 @@ export function toolProgressCard(
 			});
 			const lines = [`${glyph} ${toolName} ${details.state}${count}${url}${message} ${pill}`];
 			if (details.checklist?.length) {
-				const formatter = icons
+				const formatter = options?.allowIcons
 					? (item: { label: string; state: string; detail?: string }) =>
 							`${{ done: "\u2713", failed: "\u2715", warning: "\u26A0", pending: "\u2610" }[item.state] ?? "\u2022"} ${formatChecklistText(item)}`
 					: formatChecklistText;
@@ -203,7 +202,7 @@ export function toolProgressCard(
 			if (details.counts) {
 				const counts = details.counts;
 				const segment = (val: number | undefined, label: string, render: (v: number) => string) =>
-					val === undefined ? undefined : icons ? render(val) : `${val} ${label}`;
+					val === undefined ? undefined : options?.allowIcons ? render(val) : `${val} ${label}`;
 				lines.push(
 					[
 						segment(counts.succeeded, "succeeded", (n) => c.success(n, "succeeded", theme)),
