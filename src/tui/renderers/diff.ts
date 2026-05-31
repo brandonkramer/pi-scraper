@@ -16,14 +16,6 @@ export interface DiffData {
 	diff?: { changedCount?: number; addedCount?: number; removedCount?: number };
 }
 
-export type ChecklistState = "done" | "pending" | "failed" | "warning" | "info";
-
-export interface ChecklistItem {
-	label: string;
-	state: ChecklistState;
-	detail?: string;
-}
-
 export function renderWebDiffResult(
 	result: PiToolShell,
 	expanded = false,
