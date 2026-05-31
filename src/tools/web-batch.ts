@@ -31,7 +31,7 @@ export const webBatchSchema = Type.Object({
 	contextLines: Type.Optional(Type.Unsafe<number>({})),
 	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
 	compile: Type.Optional(
-		Type.Unsafe<boolean | { mode?: string }>({ type: ["boolean", "object"], properties: { mode: {} } }),
+		Type.Unsafe<boolean | { mode?: string }>({ type: ["boolean", "object"], description: "mode" }),
 	),
 });
 
