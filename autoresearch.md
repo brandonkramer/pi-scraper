@@ -29,7 +29,7 @@ Reduce physical TypeScript LOC under `src/tui` while preserving the rendered out
 
 ## What's Been Tried
 ### Results
-**Best: 2413 LOC** (from baseline 2586, saved 173 LOC / 6.7%)
+**Best: 2379 LOC** (from baseline 2586, saved 207 LOC / 8.0%)
 
 ### Kept changes (16)
 1. **splitValueByWidth export + reuse** (-12): Removed duplicate transcript wrapping in vertical renderer.
