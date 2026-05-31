@@ -145,35 +145,28 @@ function buildVerticalSections(
 function extractorPreview(data: unknown): [string, string | undefined] {
 	const d = data as Record<string, unknown> | undefined;
 	if (!d) return ["extracted JSON", undefined];
-
-	const parts: string[] = [];
-	if (typeof d.title === "string" && d.title) parts.push(d.title);
-
-	if (typeof d.views === "number" && d.views > 0) {
-		parts.push(`${(d.views / 1000000).toFixed(d.views >= 100000000 ? 0 : 1)}M views`);
-	} else if (typeof d.views === "string" && d.views) {
-		parts.push(`${d.views} views`);
-	}
-
-	const transcript = d.transcript as { text?: string; segments?: unknown[] } | undefined;
-	if (transcript?.segments) parts.push(`${transcript.segments.length} segments`);
-	if (transcript?.text) {
-		const text = transcript.text.replaceAll(/\s+/gu, " ").trim();
-		const snippet = text.length > 120 ? text.slice(0, 120) + "\u2026" : text;
-		return [parts.join(" \u00B7 "), snippet];
-	}
-
-	if (typeof d.description === "string" && d.description) {
-		const desc = d.description.replaceAll(/\s+/gu, " ").trim();
-		const snippet = desc.length > 120 ? desc.slice(0, 120) + "\u2026" : desc;
-		parts.push(snippet);
-	}
-
-	const comments = d.comments;
-	if (Array.isArray(comments) && comments.length > 0) parts.push(`${comments.length} comments`);
-
-	const tracks = d.transcriptTracks;
-	if (Array.isArray(tracks) && tracks.length > 1) parts.push(`${tracks.length} languages`);
-
-	return [parts.length > 0 ? parts.join(" \u00B7 ") : "extracted JSON", undefined];
+	const trans = d.transcript as { text?: string; segments?: unknown[] } | undefined;
+	const rawText = trans?.text || (typeof d.description === "string" ? d.description : "");
+	const clean = rawText ? rawText.replaceAll(/\s+/gu, " ").trim() : undefined;
+	const snippet = clean && clean.length > 120 ? clean.slice(0, 120) + "\u2026" : clean;
+	const parts = [
+		typeof d.title === "string" && d.title ? d.title : undefined,
+		typeof d.views === "number" && d.views > 0
+			? `${(d.views / 1000000).toFixed(d.views >= 100000000 ? 0 : 1)}M views`
+			: typeof d.views === "string" && d.views
+				? `${d.views} views`
+				: undefined,
+		trans?.segments ? `${trans.segments.length} segments` : undefined,
+		!trans?.text ? snippet : undefined,
+		Array.isArray(d.comments) && d.comments.length > 0
+			? `${d.comments.length} comments`
+			: undefined,
+		Array.isArray(d.transcriptTracks) && d.transcriptTracks.length > 1
+			? `${d.transcriptTracks.length} languages`
+			: undefined,
+	].filter(Boolean);
+	return [
+		(parts as string[]).length > 0 ? (parts as string[]).join(" \u00B7 ") : "extracted JSON",
+		snippet,
+	];
 }
