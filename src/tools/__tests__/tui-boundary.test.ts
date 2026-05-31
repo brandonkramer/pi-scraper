@@ -5,7 +5,6 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const toolsRoot = new URL("..", import.meta.url).pathname;
-const publicIndexPath = new URL("../../tui/index.ts", import.meta.url).pathname;
 const allowedIndexImports = new Set(["toolCall", "RenderComponent", "RenderTheme"]);
 
 describe("tool TUI import boundary", () => {

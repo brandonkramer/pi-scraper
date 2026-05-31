@@ -8,7 +8,7 @@ import {
 	muted,
 	separator,
 } from "./theme.ts";
-import { currentSpinnerFrame } from "./tool-process.ts";
+import { currentSpinnerFrame } from "./tool-spinner.ts";
 import type { RenderTheme } from "./types.ts";
 /**
  * @file Pi terminal UI status pill primitive with tuned background behavior. The background reset

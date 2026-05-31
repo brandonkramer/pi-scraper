@@ -25,8 +25,7 @@ import {
 } from "../tool-format.ts";
 import { toolContextPackageResponseId, toolErrorLabel, toolSessionNotice } from "../tool-labels.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
-import { buildExpandedResultDetails } from "../tool-result.ts";
-import { toolResultId } from "../tool-result.ts";
+import { buildExpandedResultDetails, toolResultId } from "../tool-result.ts";
 import { toolStatusMark, toolStatus } from "../tool-status.ts";
 import { toolNeutral } from "../tool-text.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";

@@ -1,8 +1,9 @@
+import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
 /**
  * @file Tool handler for web_extract strategy actions: cosine, css-extract, xpath-extract,
  *   regex-extract.
  */
-import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
+import type { ScrapeMode } from "../types.ts";
 import type { ToolUpdate } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
 import { inputErrorResult, toolResult } from "./infra/result.ts";
@@ -207,7 +208,7 @@ async function resolveContent(
 		const { scrapeUrl } = await import("../scrape/pipeline.ts");
 		const result = await scrapeUrl(
 			params.url,
-			{ mode: (params.mode ?? "fast") as import("../types.ts").ScrapeMode },
+			{ mode: (params.mode ?? "fast") as ScrapeMode },
 			{},
 			signal,
 		);

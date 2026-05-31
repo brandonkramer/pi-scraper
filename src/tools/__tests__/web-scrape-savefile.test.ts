@@ -6,16 +6,14 @@ import { createWebScrapeTool } from "../web-scrape.ts";
 describe("web_scrape saveToFile schema", () => {
 	it("schema includes saveToFile param", () => {
 		const tool = createWebScrapeTool();
-		const schema = tool.parameters as { properties?: Record<string, unknown> };
-		const props = schema.properties ?? {};
-		expect(props).toHaveProperty("saveToFile");
+		const schema = tool.parameters as { properties: Record<string, unknown> };
+		expect(schema.properties).toHaveProperty("saveToFile");
 	});
 
 	it("saveToFile param has a description", () => {
 		const tool = createWebScrapeTool();
-		const schema = tool.parameters as { properties?: Record<string, unknown> };
-		const props = schema.properties ?? {};
-		const saveToFile = props.saveToFile as { description?: string };
+		const saveToFile = (tool.parameters as { properties: Record<string, unknown> }).properties
+			.saveToFile as { description?: string };
 		expect(saveToFile.description?.length).toBeGreaterThan(0);
 	});
 });

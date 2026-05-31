@@ -1,4 +1,6 @@
 /** @file Pi terminal UI checklist formatting primitives. */
+import type { ToolContext, StructuredError } from "../types.ts";
+
 const CHECKLIST_ICONS: Record<string, string> = {
 	done: "✓",
 	failed: "✕",
@@ -19,7 +21,6 @@ export function formatChecklistText(item: { label: string; detail?: string }): s
 }
 
 /** @file Tool label builders. */
-import type { ToolContext, StructuredError } from "../types.ts";
 
 // ── Label functions ───────────────────────────────────────────────
 

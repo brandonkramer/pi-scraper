@@ -1,4 +1,6 @@
 import type { PiToolShell, ToolContext } from "../types.ts";
+import { muted } from "./theme.ts";
+import type { ToolResultTreeSection } from "./tool-result-tree.ts";
 import type { RenderTheme } from "./types.ts";
 /** @file Pi terminal UI preview and metadata formatting primitives. */
 
@@ -56,13 +58,6 @@ export function previewText(
 	if (typeof value === "number" || typeof value === "boolean") return String(value);
 	return JSON.stringify(value);
 }
-
-/**
- * @file ToolResultId — footer line(s) for responseId / jobId references. Also builds expanded
- *   result details (key/value tree) from a flat record.
- */
-import { muted } from "./theme.ts";
-import type { ToolResultTreeSection } from "./tool-result-tree.ts";
 
 export interface ToolResultIdEntry {
 	label: string;

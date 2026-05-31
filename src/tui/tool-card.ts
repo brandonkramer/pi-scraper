@@ -6,17 +6,14 @@ import type {
 	BatchProgressView,
 } from "../batch/progress-state.ts";
 import type { ProgressDetails, ToolContext } from "../types.ts";
-import { muted, backgroundText, inlineThemeText } from "./theme.ts";
+import { muted } from "./theme.ts";
 import { renderText } from "./tool-call.ts";
 import { formatChecklistItem, formatChecklistText } from "./tool-labels.ts";
-import { toolProcess } from "./tool-process.ts";
-import { currentSpinnerFrame, withSpinnerFooter } from "./tool-process.ts";
-import { toolResourceStatus } from "./tool-resource.ts";
-import { formatBytes } from "./tool-resource.ts";
+import { toolProcess, withSpinnerFooter } from "./tool-process.ts";
+import { toolResourceStatus, formatBytes } from "./tool-resource.ts";
 import { toolResultId } from "./tool-result.ts";
 import {
 	type StatusPillState,
-	type StatusPillOptions,
 	renderStatusGlyph,
 	renderStatusPill,
 	paintFirstLineBg,
