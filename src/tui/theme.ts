@@ -46,13 +46,7 @@ export function activity(text: string, theme?: RenderTheme): string {
 	return inlineThemeText("warning", text, theme) ?? paintFg(theme, "accent", text);
 }
 
-/**
- * Build a MarkdownTheme from the runtime Pi theme palette.
- *
- * @remarks
- *   Each MarkdownTheme slot tries a semantic color name on the host theme. If the host does not
- *   define that name, the text falls back to plain.
- */
+/** Build a MarkdownTheme from runtime semantic colors, falling back to plain text. */
 export function getMarkdownTheme(theme?: RenderTheme): MarkdownTheme {
 	const themed = (name: string) => (text: string) => theme?.fg?.(name, text) ?? text;
 	return {

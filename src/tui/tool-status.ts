@@ -128,10 +128,7 @@ export interface ToolStatusPart {
 	tone?: "accent" | "success" | "failure" | "muted" | "neutral";
 }
 
-/**
- * Compose a single status line from parts. Empty/undefined parts dropped. `parts` either strings
- * (default tone) or `{text, tone}` for explicit coloring.
- */
+/** Compose a status line from string or toned parts, dropping empty entries. */
 export function toolStatus(
 	parts: Array<string | ToolStatusPart | undefined | false>,
 	theme?: RenderTheme,
@@ -154,13 +151,7 @@ export function toolStatusDot(status: number | undefined, theme?: RenderTheme): 
 	return fn("\u25CF", theme);
 }
 
-/**
- * Batch tally segment — colored count + label with glyph prefix.
- *
- * TallyMark("success", 3, "succeeded") => `✓ 3 succeeded` (green) toolStatusMark("failure", 0,
- * "failed") => `✕ 0 failed` (red) toolStatusMark("cache", 0, "cache hits") => `↻ 0 cache hits`
- * (activity)
- */
+/** Batch tally segment: colored count + label with glyph prefix. */
 export function toolStatusMark(
 	kind: "success" | "failure" | "cache",
 	count: number,
