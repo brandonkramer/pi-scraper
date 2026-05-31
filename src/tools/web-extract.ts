@@ -108,7 +108,7 @@ export const webExtractSchema = Type.Object({
 		Type.String({ description: "Extraction target, e.g. api-surface." }),
 	),
 	// Selector extraction (Task 27)
-	selector: Type.Optional(Type.String({ description: "CSS/XPath selector." })),
+	selector: Type.Optional(Type.String({ description: "CSS/XPath" })),
 	selectorType: Type.Optional(Type.String({ description: "css or xpath." })),
 	attribute: Type.Optional(Type.String({ description: "HTML attr." })),
 	identifier: Type.Optional(Type.String()),
@@ -124,11 +124,11 @@ export const webExtractSchema = Type.Object({
 			description: "Field-to-selector map for css/xpath/regex",
 		}),
 	),
-	query: Type.Optional(Type.String({ description: "Query for cosine scoring." })),
+	query: Type.Optional(Type.String()),
 	topN: Type.Optional(Type.Integer({ description: "Top-N for cosine (default 5)." })),
-	minScore: Type.Optional(Type.Number({ description: "Cosine threshold (0-1, default 0)." })),
+	minScore: Type.Optional(Type.Number()),
 	flags: Type.Optional(
-		Type.String({ description: "Regex flags (default 'g')." }),
+		Type.String({ description: "Flags (default g)." }),
 	),
 });
 
@@ -146,7 +146,7 @@ export function createWebExtractTool(
 	return defineWebTool({
 		name: "web_extract",
 		label: "Extract",
-		description: "Vertical/regex/JSON/schema/summarize extraction",
+		description: "Vertical/regex/JSON/schema",
 		parameters: webExtractSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate, context) {
 			const action = inferExtractAction(params);
