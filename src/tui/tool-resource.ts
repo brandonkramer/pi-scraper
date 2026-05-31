@@ -65,18 +65,17 @@ function renderResourceItemLines(item: ResourceListItem): string[] {
 			`  ${[item.error?.code, item.error?.phase, item.error?.message ?? "failed"].filter(Boolean).join(" · ")}`,
 		];
 	}
+	const f = item.fields;
 	const fieldsStr =
 		[
-			item.fields.status ? `status ${item.fields.status}` : undefined,
-			item.fields.mode,
-			item.fields.format,
-			item.fields.contentType,
-			formatBytes(item.fields.downloadedBytes),
-			formatDuration(item.fields.durationMs),
-			item.fields.cached
-				? `cache hit${item.fields.staleness ? ` ${item.fields.staleness}` : ""}`
-				: undefined,
-			item.fields.truncated ? "truncated" : undefined,
+			f.status ? `status ${f.status}` : undefined,
+			f.mode,
+			f.format,
+			f.contentType,
+			formatBytes(f.downloadedBytes),
+			formatDuration(f.durationMs),
+			f.cached ? `cache hit${f.staleness ? ` ${f.staleness}` : ""}` : undefined,
+			f.truncated ? "truncated" : undefined,
 		]
 			.filter(Boolean)
 			.join(" · ") || "fetched";
