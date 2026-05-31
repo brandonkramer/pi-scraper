@@ -19,10 +19,7 @@ import {
 } from "./tool-status.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 
-/**
- * @file Generic file/binary content-type detection and result card. Used by any tool result whose
- *   envelope carries a non-text payload.
- */
+/** @file Generic file/binary content-type detection and result cards. */
 
 const FILE_TYPE_PREFIXES = [
 	"application/octet-stream",

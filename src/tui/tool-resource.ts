@@ -1,10 +1,7 @@
 import { failure, muted, success, inlineThemeText } from "./theme.ts";
 import { type StatusPillState, renderStatusGlyph, renderStatusPill } from "./tool-status.ts";
 import type { RenderTheme } from "./types.ts";
-/**
- * @file URL status row, badge row, fetched resource formatters, and
- *   toolResource/toolResourceStatus.
- */
+/** @file URL status rows, badges, fetched-resource formatters, and resource status. */
 
 function paintAccentUrl(url: string, width: number, theme?: RenderTheme): string {
 	const t =

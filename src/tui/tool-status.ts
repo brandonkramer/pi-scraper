@@ -9,11 +9,7 @@ import {
 	separator,
 } from "./theme.ts";
 import type { RenderTheme } from "./types.ts";
-/**
- * @file Pi terminal UI status pill primitive with tuned background behavior. The background reset
- *   stripping is intentionally conservative to avoid trailing dark cells after `]` and background
- *   bleed past the pill boundary.
- */
+/** @file Pi terminal UI status pill primitive with tuned background reset behavior. */
 
 /* Background helpers — open and paint a single-line bg without trailing reset bleed. */
 function bgStart(name: string, theme?: RenderTheme): string {

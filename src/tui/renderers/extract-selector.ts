@@ -1,9 +1,5 @@
 import type { PiToolShell, ToolContext } from "../../types.ts";
-/**
- * @file Dedicated renderer for web_extract action="selector". Composes new TUI components but
- *   preserves prior visual output: only `content[0].text` is rendered. Summary omitted when it
- *   duplicates text.
- */
+/** @file Dedicated renderer for web_extract action="selector" text output. */
 import { toolResultCard } from "../tool-card.ts";
 import { toolResultId } from "../tool-result.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";

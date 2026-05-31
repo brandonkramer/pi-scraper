@@ -1,7 +1,4 @@
-/**
- * @file ToolResultTree — grouped key/value tree component for expanded tool details. Tool renderers
- *   should use this semantic surface, not internal tree primitives.
- */
+/** @file ToolResultTree — grouped key/value tree component for expanded tool details. */
 import { muted } from "./theme.ts";
 import type { RenderTheme } from "./types.ts";
 

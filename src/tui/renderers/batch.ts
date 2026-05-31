@@ -1,7 +1,4 @@
-/**
- * @file Pi web_batch renderer — top-level result/progress card, batch progress state UI, and
- *   per-URL expanded details composer.
- */
+/** @file Pi web_batch renderer — result/progress card and per-URL expanded details. */
 import {
 	batchProgressFromItems,
 	isBatchProgress,
