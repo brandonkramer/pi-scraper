@@ -42,7 +42,7 @@ export function renderVerticalResult(
 		| VerticalBrowserFallbackMetadata["browserFallback"]
 		| undefined;
 	const browserFallback = bfFallback?.used ? bfFallback : undefined;
-	const [metaLine] = extractorPreview(data);
+	const metaLine = extractorPreview(data);
 	const check = success("\u2713", theme);
 	const summaryDetails = [
 		metaLine,
@@ -142,31 +142,31 @@ function buildVerticalSections(
 	return sections;
 }
 
-function extractorPreview(data: unknown): [string, string | undefined] {
+function extractorPreview(data: unknown): string {
 	const d = data as Record<string, unknown> | undefined;
-	if (!d) return ["extracted JSON", undefined];
+	if (!d) return "extracted JSON";
 	const trans = d.transcript as { text?: string; segments?: unknown[] } | undefined;
-	const rawText = trans?.text || (typeof d.description === "string" ? d.description : "");
-	const clean = rawText ? rawText.replaceAll(/\s+/gu, " ").trim() : undefined;
-	const snippet = clean && clean.length > 120 ? clean.slice(0, 120) + "\u2026" : clean;
-	const parts = [
-		typeof d.title === "string" && d.title ? d.title : undefined,
-		typeof d.views === "number" && d.views > 0
-			? `${(d.views / 1000000).toFixed(d.views >= 100000000 ? 0 : 1)}M views`
-			: typeof d.views === "string" && d.views
-				? `${d.views} views`
+	return (
+		[
+			typeof d.title === "string" && d.title ? d.title : undefined,
+			typeof d.views === "number" && d.views > 0
+				? `${(d.views / 1000000).toFixed(d.views >= 100000000 ? 0 : 1)}M views`
+				: typeof d.views === "string" && d.views
+					? `${d.views} views`
+					: undefined,
+			trans?.segments ? `${trans.segments.length} segments` : undefined,
+			!trans?.text && typeof d.description === "string" && d.description
+				? d.description.replaceAll(/\s+/gu, " ").trim().slice(0, 120) +
+					(d.description.length > 120 ? "\u2026" : "")
 				: undefined,
-		trans?.segments ? `${trans.segments.length} segments` : undefined,
-		!trans?.text ? snippet : undefined,
-		Array.isArray(d.comments) && d.comments.length > 0
-			? `${d.comments.length} comments`
-			: undefined,
-		Array.isArray(d.transcriptTracks) && d.transcriptTracks.length > 1
-			? `${d.transcriptTracks.length} languages`
-			: undefined,
-	].filter(Boolean);
-	return [
-		(parts as string[]).length > 0 ? (parts as string[]).join(" \u00B7 ") : "extracted JSON",
-		snippet,
-	];
+			Array.isArray(d.comments) && d.comments.length > 0
+				? `${d.comments.length} comments`
+				: undefined,
+			Array.isArray(d.transcriptTracks) && d.transcriptTracks.length > 1
+				? `${d.transcriptTracks.length} languages`
+				: undefined,
+		]
+			.filter(Boolean)
+			.join(" \u00B7 ") || "extracted JSON"
+	);
 }
