@@ -2,11 +2,11 @@
 import { Markdown } from "@earendil-works/pi-tui";
 
 import type { PiToolShell, ToolContext } from "../../types.ts";
-import { getMarkdownTheme as toolMarkdownTheme } from "../theme.ts";
+import { getMarkdownTheme as toolMarkdownTheme, muted as toolMuted } from "../theme.ts";
 import { toolResultCard } from "../tool-card.ts";
 import { toolResourceStatus } from "../tool-resource.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
-import { buildExpandedResultDetails, toolResultId } from "../tool-result.ts";
+import { buildExpandedResultDetails } from "../tool-result.ts";
 import { toolStatusDot, toolStatus } from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
@@ -84,12 +84,11 @@ export function renderWebExtractResult(
 				const sections = buildExpandedResultDetails(details as Record<string, unknown>);
 				if (sections.length > 0) tree = toolResultTree(sections, width, theme);
 			}
-			const ids = expanded
-				? toolResultId([{ label: "responseId", id: details?.responseId ?? "" }], theme)
-				: [];
-			return [loader, body, tree, ids.length > 0 ? ids.join("\n") : ""]
-				.filter(Boolean)
-				.join("\n\n");
+			const id =
+				expanded && details?.responseId
+					? toolMuted(`responseId: ${details.responseId}`, theme)
+					: "";
+			return [loader, body, tree, id].filter(Boolean).join("\n\n");
 		},
 		padToWidth: true,
 		markdownPreview: hasLongMarkdown
