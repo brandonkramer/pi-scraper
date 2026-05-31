@@ -105,7 +105,7 @@ export const webExtractSchema = Type.Object({
 	),
 	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
 	extract: Type.Optional(
-		Type.String({ description: "Target, e.g. api-surface." }),
+		Type.String({ description: "api-surface" }),
 	),
 	// Selector extraction (Task 27)
 	selector: Type.Optional(Type.String({ description: "CSS/XPath" })),
@@ -127,9 +127,7 @@ export const webExtractSchema = Type.Object({
 	query: Type.Optional(Type.String()),
 	topN: Type.Optional(Type.Integer()),
 	minScore: Type.Optional(Type.Number()),
-	flags: Type.Optional(
-		Type.String({ description: "Flags (default g)." }),
-	),
+	flags: Type.Optional(Type.String()),
 });
 
 export type Params = Static<typeof webExtractSchema>;
