@@ -17,20 +17,6 @@ export interface MapUrlEntryView {
 	title?: string;
 }
 
-function renderMapLines(
-	urls: readonly MapUrlEntryView[],
-	expanded: boolean,
-	width: number,
-	theme?: RenderTheme,
-): string {
-	const rows = urls
-		.slice(0, expanded ? 50 : 12)
-		.map((entry) => toolResource({ url: entry.url, badge: entry.source, width, theme }));
-	if (urls.length > rows.length)
-		rows.push(toolMuted(`… ${urls.length - rows.length} more urls`, theme));
-	return rows.join("\n");
-}
-
 export function renderWebMapResult(
 	result: PiToolShell,
 	expanded = false,
@@ -54,8 +40,12 @@ export function renderWebMapResult(
 		});
 	return toolResultCard({
 		renderContent(width) {
-			const mapText = renderMapLines(urls, expanded, width, theme);
-			const lines = [summary, mapText];
+			const rows = urls
+				.slice(0, expanded ? 50 : 12)
+				.map((entry) => toolResource({ url: entry.url, badge: entry.source, width, theme }));
+			if (urls.length > rows.length)
+				rows.push(toolMuted(`… ${urls.length - rows.length} more urls`, theme));
+			const lines = [summary, rows.join("\n")];
 			if (expanded) {
 				const ids = toolResultId([{ label: "responseId", id: envelope.responseId ?? "" }], theme);
 				if (ids.length > 0) lines.push("", ...ids);
