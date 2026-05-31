@@ -3,7 +3,7 @@ import type { Component } from "@earendil-works/pi-tui";
 import type { BatchProgressView } from "../batch/progress-state.ts";
 import type { ProgressDetails, ToolContext } from "../types.ts";
 import { muted } from "./theme.ts";
-import { renderText } from "./tool-call.ts";
+import { renderDynamicText, renderText } from "./tool-call.ts";
 import { formatChecklistText } from "./tool-labels.ts";
 import { toolProcess, withSpinnerFooter } from "./tool-process.ts";
 import { toolResourceStatus, formatBytes } from "./tool-resource.ts";
@@ -29,12 +29,15 @@ export function toolFileResultCard(
 	const fileSize = stringValue(data?.fileSize) ?? formatBytes(file.downloadedBytes) ?? "unknown";
 	const filePath = stringValue(data?.filePath) ?? file.path ?? "unknown";
 	const mimeType = stringValue(data?.mimeType) ?? file.contentType;
-	const lines = [
-		muted(`File size: ${fileSize}`, theme),
-		...(mimeType ? [muted(`Mime type: ${mimeType}`, theme)] : []),
-		muted(`File path: ${filePath}`, theme),
-	];
-	return renderText(lines.join("\n"), { padToWidth: true });
+	return renderDynamicText(
+		() =>
+			[
+				muted(`File size: ${fileSize}`, theme),
+				...(mimeType ? [muted(`Mime type: ${mimeType}`, theme)] : []),
+				muted(`File path: ${filePath}`, theme),
+			].join("\n"),
+		{ padToWidth: true },
+	);
 }
 
 function stringValue(value: unknown): string | undefined {

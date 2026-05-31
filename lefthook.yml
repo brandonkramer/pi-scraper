@@ -5,7 +5,7 @@ pre-commit:
   jobs:
     - name: oxfmt
       glob: "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc}"
-      run: npx oxfmt {staged_files}
+      run: npx oxfmt --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true
     - name: oxlint
       glob: "*.{ts,tsx,js,jsx,mjs,cjs}"

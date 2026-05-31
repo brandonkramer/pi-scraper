@@ -24,6 +24,18 @@ describe("tool TUI components", () => {
 		expect(rendered).toContain("<fg:accent>web_scrape (auto → markdown)\u001B[39m");
 	});
 
+	it("rebuilds themed tool-call text after invalidation", () => {
+		let accent = "accent-a";
+		const liveTheme: RenderTheme = {
+			fg: (name, text) => `<fg:${name}:${accent}>${text}\u001B[39m`,
+		};
+		const component = toolCall("web_extract", ["vertical"], liveTheme);
+		expect(component.render(80).join("\n")).toContain("<fg:accent:accent-a>");
+		accent = "accent-b";
+		component.invalidate();
+		expect(component.render(80).join("\n")).toContain("<fg:accent:accent-b>");
+	});
+
 	it("renders status and tally segments", () => {
 		const status = toolStatus([countSegments.success(2, "succeeded", theme), "markdown"], theme);
 		expect(status).toContain("✓ 2 succeeded");

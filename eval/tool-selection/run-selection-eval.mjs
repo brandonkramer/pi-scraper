@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -11,9 +11,10 @@ await main();
 async function main() {
 	const args = process.argv.slice(2);
 	const predictionsPath = valueFlag(args, "--predictions");
-	const outDir =
+	const outDir = String(
 		valueFlag(args, "--out-dir") ??
-		path.join(rootDir, "bench/results/tool-selection");
+			path.join(rootDir, "bench/results/tool-selection"),
+	);
 	const fixtures = JSON.parse(
 		await readFile(
 			path.join(rootDir, "eval/tool-selection/prompts.json"),
@@ -32,7 +33,7 @@ async function main() {
 		contracts,
 		fixtures,
 	});
-	const report = buildReport({ contracts, fixtures, predictions });
+	const report = buildReport({ contracts, fixtures, predictions, predictionsPath });
 	const markdown = renderMarkdown(report);
 	await mkdir(outDir, { recursive: true });
 	await writeFile(
@@ -41,11 +42,13 @@ async function main() {
 	);
 	await writeFile(path.join(outDir, "latest.md"), `${markdown}\n`);
 	console.log(markdown);
-	console.log(`\nJSON: ${path.join(outDir, "latest.json")}`);
+	console.log("\nJSON:", path.join(outDir, "latest.json"));
 }
 
 async function loadWebTools() {
 	const outDir = path.join(rootDir, "bench/.build/tool-selection-eval");
+	await rm(outDir, { recursive: true, force: true });
+	await mkdir(outDir, { recursive: true });
 	execFileSync(
 		process.execPath,
 		[
@@ -63,20 +66,24 @@ async function loadWebTools() {
 			"false",
 			"--target",
 			"ES2022",
+			"--lib",
+			"ES2023,DOM",
 			"--module",
 			"NodeNext",
 			"--moduleResolution",
 			"NodeNext",
 			"--skipLibCheck",
+			"--allowImportingTsExtensions",
+			"--rewriteRelativeImportExtensions",
 			"--types",
 			"node",
 			"src/env.d.ts",
-			"src/tools/register.ts",
+			"src/tools/infra/register.ts",
 		],
 		{ cwd: rootDir, stdio: "pipe" },
 	);
 	const mod = await import(
-		pathToFileURL(path.join(outDir, "tools/register.js"))
+		pathToFileURL(path.join(outDir, "tools/infra/register.js"))
 	);
 	return mod.webTools;
 }
@@ -98,7 +105,7 @@ async function loadPredictions({ predictionsPath, contracts, fixtures }) {
 		});
 		const result = spawnSync(command, { shell: true, input, encoding: "utf8" });
 		if (result.status !== 0)
-			throw new Error(result.stderr || "model command failed");
+			throw new Error(result.stderr.length > 0 ? result.stderr : "model command failed");
 		const parsed = JSON.parse(result.stdout);
 		return Array.isArray(parsed) ? parsed : parsed.predictions;
 	}
@@ -110,7 +117,7 @@ async function loadPredictions({ predictionsPath, contracts, fixtures }) {
 	}));
 }
 
-function buildReport({ contracts, fixtures, predictions }) {
+function buildReport({ contracts, fixtures, predictions, predictionsPath }) {
 	const byId = new Map(
 		predictions.map((prediction) => [prediction.id, prediction]),
 	);

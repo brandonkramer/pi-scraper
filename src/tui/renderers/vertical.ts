@@ -1,6 +1,6 @@
 import type { PiToolShell } from "../../types.ts";
 import { activity, failure, muted, success } from "../theme.ts";
-import { renderText } from "../tool-call.ts";
+import { renderDynamicText } from "../tool-call.ts";
 import {
 	buildToolResultTree,
 	splitValueByWidth,
@@ -27,8 +27,11 @@ export function renderVerticalResult(
 
 	if (wrapper?.error ?? details?.error) {
 		const error = (wrapper?.error ?? details?.error) as { code?: string } | undefined;
-		const treeLine = `\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${error?.code ?? "FAILED"}`, theme)}`;
-		return renderText(treeLine, { padToWidth: true });
+		return renderDynamicText(
+			() =>
+				`\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${error?.code ?? "FAILED"}`, theme)}`,
+			{ padToWidth: true },
+		);
 	}
 
 	const data = wrapper?.data as Record<string, unknown> | undefined;
@@ -36,40 +39,48 @@ export function renderVerticalResult(
 	if (blocked) return renderBlockedVerticalResult(name, data, blocked, expanded, theme);
 	const bfFallback = wrapper?.browserFallback as BrowserFallback | undefined;
 	const browserFallback = bfFallback?.used ? bfFallback : undefined;
-	const summaryDetails = [
-		extractorPreview(data),
-		browserFallback?.used ? `browser fallback · ${browserFallback.backend}` : undefined,
-	]
-		.filter(Boolean)
-		.join(" \u00B7 ");
-	const treeLine = `${success("\u2713", theme)} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
+	const treeLine = () => {
+		const summaryDetails = [
+			extractorPreview(data),
+			browserFallback?.used ? `browser fallback · ${browserFallback.backend}` : undefined,
+		]
+			.filter(Boolean)
+			.join(" \u00B7 ");
+		return `${success("\u2713", theme)} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
+	};
 
-	if (!expanded || !data) return renderText(treeLine, { padToWidth: true });
+	if (!expanded || !data) return renderDynamicText(treeLine, { padToWidth: true });
 
-	const sections = buildToolResultTree(buildVerticalSections(data, browserFallback));
-	const transcriptBlock = formatTranscriptBlock(
-		data.transcript as TranscriptPreview | undefined,
-		80,
-		theme,
-	);
-	const commentsBlock = formatCommentsBlock(
-		data.comments as VerticalComment[] | undefined,
-		80,
-		theme,
-	);
-	const sourceSections = buildToolResultTree(buildSourceSections(data));
-	const hasVerticalBlocks = Boolean(transcriptBlock || commentsBlock || sourceSections.length > 0);
-	if (sections.every((section) => section.name === "extraction") && !hasVerticalBlocks)
-		sections.push(
-			...buildExpandedResultDetails(data, {
-				hide: new Set<string>(),
-				sectionName: "data",
-			}),
-		);
-	const body = toolResultTree(sections, 80, theme);
-	const sourceBlock = toolResultTree(sourceSections, 80, theme);
-	return renderText(
-		[treeLine, transcriptBlock, body, commentsBlock, sourceBlock].filter(Boolean).join("\n\n"),
+	return renderDynamicText(
+		() => {
+			const sections = buildToolResultTree(buildVerticalSections(data, browserFallback));
+			const transcriptBlock = formatTranscriptBlock(
+				data.transcript as TranscriptPreview | undefined,
+				80,
+				theme,
+			);
+			const commentsBlock = formatCommentsBlock(
+				data.comments as VerticalComment[] | undefined,
+				80,
+				theme,
+			);
+			const sourceSections = buildToolResultTree(buildSourceSections(data));
+			const hasVerticalBlocks = Boolean(
+				transcriptBlock || commentsBlock || sourceSections.length > 0,
+			);
+			if (sections.every((section) => section.name === "extraction") && !hasVerticalBlocks)
+				sections.push(
+					...buildExpandedResultDetails(data, {
+						hide: new Set<string>(),
+						sectionName: "data",
+					}),
+				);
+			const body = toolResultTree(sections, 80, theme);
+			const sourceBlock = toolResultTree(sourceSections, 80, theme);
+			return [treeLine(), transcriptBlock, body, commentsBlock, sourceBlock]
+				.filter(Boolean)
+				.join("\n\n");
+		},
 		{ padToWidth: true },
 	);
 }
@@ -128,24 +139,28 @@ function renderBlockedVerticalResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const reason = blocked.reason ?? "structured endpoint unavailable";
-	const treeLine = `${activity("!", theme)} ${name} metadata only${muted(` \u00B7 ${summarizeBlockedReason(reason)}`, theme)}`;
-	if (!expanded) return renderText(treeLine, { padToWidth: true });
-	const attemptedBlock = formatListBlock(
-		"attempted endpoints",
-		[...new Set(blocked.attemptedEndpoints ?? [])],
-		80,
-		theme,
-	);
-	const sourceBlock = data
-		? toolResultTree(
-				buildToolResultTree(buildSourceSections(data, { includeEndpoint: false })),
+	const treeLine = () =>
+		`${activity("!", theme)} ${name} metadata only${muted(` \u00B7 ${summarizeBlockedReason(reason)}`, theme)}`;
+	if (!expanded) return renderDynamicText(treeLine, { padToWidth: true });
+	return renderDynamicText(
+		() => {
+			const attemptedBlock = formatListBlock(
+				"attempted endpoints",
+				[...new Set(blocked.attemptedEndpoints ?? [])],
 				80,
 				theme,
-			)
-		: "";
-	return renderText([treeLine, attemptedBlock, sourceBlock].filter(Boolean).join("\n\n"), {
-		padToWidth: true,
-	});
+			);
+			const sourceBlock = data
+				? toolResultTree(
+						buildToolResultTree(buildSourceSections(data, { includeEndpoint: false })),
+						80,
+						theme,
+					)
+				: "";
+			return [treeLine(), attemptedBlock, sourceBlock].filter(Boolean).join("\n\n");
+		},
+		{ padToWidth: true },
+	);
 }
 
 function summarizeBlockedReason(reason: string): string {

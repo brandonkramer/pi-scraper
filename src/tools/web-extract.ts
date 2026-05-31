@@ -80,7 +80,7 @@ export const webExtractSchema = Type.Object({
 	extractor: Type.Optional(
 		Type.Unsafe<string>({
 			description:
-				"Vertical extractor name for action=vertical, e.g. github_repo, gitingest, huggingface_model, or huggingface_dataset. Use gitingest for an LLM-ready GitHub codebase digest.",
+				"For action=vertical: github_repo/gitingest/npm/pypi/huggingface_model/huggingface_dataset.",
 		}),
 	),
 	url: Type.Optional(urlProperty()),
@@ -150,7 +150,7 @@ export function createWebExtractTool(
 	return defineWebTool({
 		name: "web_extract",
 		label: "Extract",
-		description: "Vertical/regex/JSON/schema",
+		description: "Vertical action=vertical; patterns/regex/JSON/schema; summarize",
 		parameters: webExtractSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate, context) {
 			const action = inferExtractAction(params);
