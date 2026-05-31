@@ -1,6 +1,6 @@
 import type { Component } from "@earendil-works/pi-tui";
 
-import type { BatchProgressItemView, BatchProgressView } from "../batch/progress-state.ts";
+import type { BatchProgressView } from "../batch/progress-state.ts";
 import type { ProgressDetails, ToolContext } from "../types.ts";
 import { muted } from "./theme.ts";
 import { renderText } from "./tool-call.ts";
@@ -135,53 +135,36 @@ function renderBatchProgressText(
 		],
 		theme,
 	);
-	const rows = batch.items
-		.slice(0, expanded ? batch.items.length : 12)
-		.map((item) => renderBatchRow(item, width, theme, restoreBg));
+	const rows = batch.items.slice(0, expanded ? batch.items.length : 12).map((item) => {
+		const sbWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
+		const bState: StatusPillState = progressPillState(item.status);
+		const statusBox =
+			item.status === "processing" && typeof item.progress === "number"
+				? renderProgressBar(item.progress, sbWidth - 2)
+				: renderStatusPill({
+						label: bState,
+						state: bState,
+						width: sbWidth,
+						theme,
+						startedAtMs: item.startedAtMs,
+						restoreBg,
+					});
+		return toolResourceStatus({
+			url: item.url,
+			label: bState,
+			state: bState,
+			width,
+			theme,
+			startedAtMs: item.startedAtMs,
+			statusBox,
+			restoreBg,
+		});
+	});
 	const more =
 		!expanded && batch.items.length > rows.length
 			? [muted(`… ${batch.items.length - rows.length} more urls`, theme)]
 			: [];
 	return [title, ...rows, ...more].join("\n");
-}
-
-function renderBatchRow(
-	item: BatchProgressItemView,
-	width: number,
-	theme?: RenderTheme,
-	restoreBg?: string,
-): string {
-	const statusWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
-	const state: StatusPillState = progressPillState(item.status);
-	return toolResourceStatus({
-		url: item.url,
-		label: state,
-		state,
-		width,
-		theme,
-		startedAtMs: item.startedAtMs,
-		statusBox: renderStatusBox(item, statusWidth, theme, restoreBg),
-		restoreBg,
-	});
-}
-
-function renderStatusBox(
-	item: BatchProgressItemView,
-	width: number,
-	theme?: RenderTheme,
-	restoreBg?: string,
-): string {
-	if (item.status === "processing" && typeof item.progress === "number")
-		return renderProgressBar(item.progress, width - 2);
-	const state: StatusPillState = progressPillState(item.status);
-	return renderStatusPill({
-		label: state,
-		state,
-		width,
-		theme,
-		startedAtMs: item.startedAtMs,
-		restoreBg,
-	});
 }
 
 /** @file Pi terminal UI progress primitives — bar, status bridge, and fallback card. */
