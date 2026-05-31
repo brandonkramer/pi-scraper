@@ -74,7 +74,7 @@ export const webExtractSchema = Type.Object({
 	content: Type.Optional(Type.String({ description: "Inline when no URL." })),
 	prompt: Type.Optional(Type.String({ description: "Adhoc prompt." })),
 	schema: Type.Optional(
-		Type.Any({ description: "JSON schema for structured extraction." }),
+		Type.Any({ description: "Structured extraction schema." }),
 	),
 	sentences: Type.Optional(Type.Number()),
 	bullets: Type.Optional(Type.Number()),
@@ -85,7 +85,7 @@ export const webExtractSchema = Type.Object({
 	extractSchema: Type.Optional(extractSchemaPresetSchema),
 	length: Type.Optional(
 		Type.Union([Type.Boolean(), Type.String()], {
-			description: "Flag or preset name.",
+			description: "Flag/preset name.",
 		}),
 	),
 	markers: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
@@ -115,9 +115,9 @@ export const webExtractSchema = Type.Object({
 	// Selector extraction (Task 27)
 	selector: Type.Optional(Type.String({ description: "CSS/XPath selector." })),
 	selectorType: Type.Optional(Type.String({ description: "css or xpath." })),
-	attribute: Type.Optional(Type.String({ description: "HTML attribute." })),
+	attribute: Type.Optional(Type.String({ description: "HTML attr." })),
 	identifier: Type.Optional(Type.String({ description: "Extraction ID." })),
-	adaptive: Type.Optional(Type.Boolean({ description: "Adaptive relocation." })),
+	adaptive: Type.Optional(Type.Boolean({ description: "Auto selector." })),
 	autoSave: Type.Optional(Type.Boolean()),
 	threshold: Type.Optional(Type.Number({ description: "Min confidence." })),
 	limit: Type.Optional(Type.Integer()),
