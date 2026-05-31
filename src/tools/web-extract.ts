@@ -68,7 +68,7 @@ export const webExtractSchema = Type.Object({
 	include: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	extractSchema: Type.Optional(extractSchemaPresetSchema),
 	length: Type.Optional(
-		Type.Union([Type.Boolean(), Type.String()]),
+		Type.Unsafe<boolean | string>({ type: ["boolean", "string"] }),
 	),
 	markers: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	contains: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
