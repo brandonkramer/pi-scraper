@@ -71,7 +71,7 @@ export const webExtractSchema = Type.Object({
 	content: Type.Optional(Type.String()),
 	prompt: Type.Optional(Type.String()),
 	schema: Type.Optional(
-		Type.Any({ description: "Extraction schema." }),
+		Type.Any(),
 	),
 	sentences: Type.Optional(Type.Number()),
 	bullets: Type.Optional(Type.Number()),
@@ -105,12 +105,12 @@ export const webExtractSchema = Type.Object({
 	),
 	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
 	extract: Type.Optional(
-		Type.String({ description: "Extraction target, e.g. api-surface." }),
+		Type.String({ description: "Target, e.g. api-surface." }),
 	),
 	// Selector extraction (Task 27)
 	selector: Type.Optional(Type.String({ description: "CSS/XPath" })),
-	selectorType: Type.Optional(Type.String({ description: "css or xpath." })),
-	attribute: Type.Optional(Type.String({ description: "HTML attr." })),
+	selectorType: Type.Optional(Type.String()),
+	attribute: Type.Optional(Type.String()),
 	identifier: Type.Optional(Type.String()),
 	adaptive: Type.Optional(Type.Boolean()),
 	autoSave: Type.Optional(Type.Boolean()),
@@ -121,11 +121,11 @@ export const webExtractSchema = Type.Object({
 	selectors: Type.Optional(
 		Type.Unsafe<Record<string, string>>({
 			type: "object",
-			description: "Field-to-selector map for css/xpath/regex",
+			description: "CSS/XPath/regex map",
 		}),
 	),
 	query: Type.Optional(Type.String()),
-	topN: Type.Optional(Type.Integer({ description: "Top-N for cosine (default 5)." })),
+	topN: Type.Optional(Type.Integer()),
 	minScore: Type.Optional(Type.Number()),
 	flags: Type.Optional(
 		Type.String({ description: "Flags (default g)." }),
