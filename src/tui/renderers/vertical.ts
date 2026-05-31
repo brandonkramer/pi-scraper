@@ -109,9 +109,7 @@ function buildVerticalSections(
 	}
 	if (videoRows.length > 0) sections.push({ name: "video", rows: videoRows });
 
-	const comments = data.comments as
-		| Array<{ author?: string; text: string; likeCount?: string }>
-		| undefined;
+	const comments = data.comments as { author?: string; text: string }[] | undefined;
 	if (comments && comments.length > 0) {
 		const commentRows = comments
 			.slice(0, 5)
