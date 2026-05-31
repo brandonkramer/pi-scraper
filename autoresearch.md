@@ -72,33 +72,40 @@ Focus on descriptions that are:
 
 ## Results (final)
 
-**Baseline**: 2068 tokens → **Final**: 1769 tokens — **299 tokens saved (14.5%)**
+**Baseline**: 2068 tokens → **Final**: 1461 tokens — **607 tokens saved (29.4%)**
 
 | Tool | Before | After | Saved | Slack |
 |------|-------:|------:|:----:|:----:|
-| web_scrape | 492 | 428 | 64 (13.0%) | 72 |
-| web_crawl | 322 | 301 | 21 (6.5%) | 29 |
+| web_scrape | 492 | 381 | 111 (22.6%) | 119 |
+| web_crawl | 322 | 270 | 52 (16.1%) | 60 |
 | web_map | 58 | 57 | 1 (1.7%) | 123 |
-| web_batch | 224 | 202 | 22 (9.8%) | 28 |
-| web_extract | 852 | 668 | 184 (21.6%) | 192 |
-| web_get_result | 120 | 113 | 7 (5.8%) | 47 |
-| **Total** | **2068** | **1769** | **299 (14.5%)** | **451** |
+| web_batch | 224 | 199 | 25 (11.2%) | 31 |
+| web_extract | 852 | 484 | 368 (43.2%) | 376 |
+| web_get_result | 120 | 70 | 50 (41.7%) | 90 |
+| **Total** | **2068** | **1461** | **607 (29.4%)** | **759** |
 
-### What was changed (10 experiments)
+### What was changed (18 experiments)
 
-1. **Removed redundant descriptions**: maxBytes, snapshotName, snapshotTag, headers, autoSave, limit, extractor, extractSchema, prompt, sourceFormat, identifier, threshold, adaptive, content, length, respectRobots — all were restating the key name or too vague
-2. **Removed vague descriptions**: sessionId, saveSession, clearSession — "Consent session.", "Persist.", "Clear." didn't help LLM decide when to use them
-3. **Shortened format docs**: regexes({…}→{…}), sections({…}→{…}), excerpts({…}→{…}), diff({…}→{…}), saveToFile(true or {…}→true/{…}) — condensed field names, kept shape info
-4. **Shortened remaining descriptions**: selectors(69→41), schema(47→18), extract(48→35), query(42→25), topN(35→29), minScore(41→34), flags(43→26), attribute(25→10), browserBackend(35→27), provider(23→22), map(35→29) — trimmed to minimum viable length
+1. **Removed redundant descriptions**: maxBytes, snapshotName, snapshotTag, headers, autoSave, limit, extractor, extractSchema, prompt, sourceFormat, identifier, threshold, adaptive, content, length, respectRobots, chunks, maxTokens, overlapTokens, query, minScore, flags, attribute, selectorType, schema — all were obvious from key name or too vague
+2. **Removed vague descriptions**: sessionId, saveSession, clearSession — didn't help LLM decide when to use them
+3. **Removed web_get_result param descriptions**: responseId, jobId, snapshotUrl, snapshotName, snapshotTag — key names are self-explanatory
+4. **Shortened format docs**: regexes(71→64), sections(49→40), excerpts(40→28), diff(67→33), saveToFile(32→24) — kept shape info
+5. **Shortened remaining descriptions**: selectors(69→20), schema(47→removed), extract(48→enum), query(42→removed), topN(35→removed), minScore(41→removed), flags(43→removed), attribute(25→removed), browserBackend(35→16), provider(23→14), map(35→29), tool desc extract(47→22), get_result desc(39→22), extract sub-param(35→enum)
+6. **Converted Type.Union+Literal to Type.Unsafe+enum**: web_extract action (11 enum values), extractSchemaPreset (4 values), web_scrape task (2 values), web_crawl action (3 values), web_crawl strategy (3 values), extract param api-surface (1 value) — replaced verbose `anyOf:[{const:X}]` with compact `type:string,enum:[X]`
 
-### Remaining descriptions (13 tool desc + 17 param desc = 30 total)
+### Remaining descriptions (18 total)
 All remaining descriptions are genuinely essential for LLM understanding:
-- **Format docs** (6): regexes, sections, excerpts, saveToFile, diff — only way LLM knows complex type shapes
-- **Tool descriptions** (6): discriminator-required by tests
-- **Default/info** (5): maxTokens, overlapTokens, flags, topN, minScore — help LLM make informed parameter choices
-- **Type/value hints** (7): selector, selectorType, attribute, browserBackend, provider, extract, selectors — clarify accepted values
-- **Schema docs** (2): schema, query, sourceFormat — clarify usage context
-- **Shared** (2): Model provider, Backend — spread via shared schemas
+- **Format docs** (6): regexes, sections, excerpts, saveToFile, diff — only way LLM knows element shapes for Type.Unsafe array/union params
+- **Tool descriptions** (5): discriminator-required by tests — web_scrape, web_crawl, web_map, web_batch, web_extract, web_get_result
+- **Type hints for Type.Unsafe** (5): browserBackend, provider, selector, selectors, extract — tell LLM valid values with no other schema type info
+- **Shared schema** (2): browserBackend and provider spread across multiple tools
+
+### Key lessons
+- `{description: "..."}` on any TypeBox type adds `"description"` to JSON Schema — directly to LLM
+- Removing descriptions from standard typed params (Type.String/Type.Integer/Type.Boolean) is safe when key names are self-explanatory
+- Format docs on Type.Unsafe array types are the only way LLM knows element shapes — keep these
+- **Type.Union+Literal serializes as `anyOf:[{const:X}]` which is 2x the chars of `type:string,enum:[X]`** — use Type.Unsafe with enum for string constant unions
+- The LLM understands parameter intent from key names + context + tool description — descriptions that just restate the key name are waste
 
 ### Key lessons
 - `{description: "..."}` on any TypeBox type adds "description" to the JSON schema — directly to the LLM
