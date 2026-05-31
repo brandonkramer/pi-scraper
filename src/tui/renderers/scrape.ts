@@ -301,19 +301,17 @@ interface CacheControlInfo {
 	swr: number | undefined;
 }
 
-const CC_FIELDS: Array<[string, "maxAge" | "swr"]> = [
-	["max-age=", "maxAge"],
-	["s-maxage=", "maxAge"],
-	["stale-while-revalidate=", "swr"],
-];
-
 function parseCacheControl(value: string | undefined): CacheControlInfo | undefined {
 	if (!value) return;
 	let maxAge: number | undefined;
 	let swr: number | undefined;
 	for (const part of value.toLowerCase().split(",")) {
 		const t = part.trim();
-		for (const [prefix, field] of CC_FIELDS) {
+		for (const [prefix, field] of [
+			["max-age=", "maxAge" as const],
+			["s-maxage=", "maxAge" as const],
+			["stale-while-revalidate=", "swr" as const],
+		] as Array<[string, "maxAge" | "swr"]>) {
 			if (!t.startsWith(prefix)) continue;
 			const n = Number(t.slice(prefix.length));
 			if (Number.isFinite(n)) {
