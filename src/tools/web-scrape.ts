@@ -67,7 +67,7 @@ export const webScrapeSchema = Type.Object({
 	followMetaRefresh: Type.Optional(Type.Unsafe<boolean>({})),
 	saveToFile: Type.Optional(
 		Type.Unsafe<boolean | { dir?: string; filename?: string; maxBytes?: number }>({
-			description: "true or {dir,filename,maxBytes}",
+			description: "true/{dir,name,maxBytes}",
 		}),
 	),
 	snapshotName: Type.Optional(Type.String()),
@@ -90,11 +90,11 @@ export const webScrapeSchema = Type.Object({
 	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
 
 	chunks: Type.Optional(
-		Type.Boolean({ description: "Return chunked output alongside full text." }),
+		Type.Boolean({ description: "Chunked output with full text." }),
 	),
-	maxTokens: Type.Optional(Type.Integer({ description: "Max tokens per chunk (default 500)." })),
+	maxTokens: Type.Optional(Type.Integer({ description: "Max tokens/chunk (default 500)." })),
 	overlapTokens: Type.Optional(
-		Type.Integer({ description: "Overlap tokens between chunks (default 50)." }),
+		Type.Integer({ description: "Overlap tokens (default 50)." }),
 	),
 
 	...sessionOptionSchema,

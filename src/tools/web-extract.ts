@@ -69,7 +69,7 @@ const extractSchemaPresetSchema = Type.Union(
 
 export const webExtractSchema = Type.Object({
 	action: Type.Optional(extractActionSchema),
-	extractor: Type.Optional(Type.String({ description: "Vertical extractor." })),
+	extractor: Type.Optional(Type.String()),
 	url: Type.Optional(urlProperty()),
 	content: Type.Optional(Type.String({ description: "Inline when no URL." })),
 	prompt: Type.Optional(Type.String({ description: "Adhoc prompt." })),
@@ -116,7 +116,7 @@ export const webExtractSchema = Type.Object({
 	selector: Type.Optional(Type.String({ description: "CSS/XPath selector." })),
 	selectorType: Type.Optional(Type.String({ description: "css or xpath." })),
 	attribute: Type.Optional(Type.String({ description: "HTML attribute." })),
-	identifier: Type.Optional(Type.String({ description: "Named extraction ID." })),
+	identifier: Type.Optional(Type.String({ description: "Extraction ID." })),
 	adaptive: Type.Optional(Type.Boolean({ description: "Adaptive relocation." })),
 	autoSave: Type.Optional(Type.Boolean()),
 	threshold: Type.Optional(Type.Number({ description: "Min confidence." })),
