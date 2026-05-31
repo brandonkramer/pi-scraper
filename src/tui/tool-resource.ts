@@ -1,42 +1,14 @@
 import { failure, muted, success, inlineThemeText } from "./theme.ts";
-import {
-	type StatusPillOptions,
-	type StatusPillState,
-	renderStatusGlyph,
-	renderStatusPill,
-} from "./tool-status.ts";
+import { type StatusPillState, renderStatusGlyph, renderStatusPill } from "./tool-status.ts";
 import type { RenderTheme } from "./types.ts";
 /**
  * @file URL status row, badge row, fetched resource formatters, and
  *   toolResource/toolResourceStatus.
  */
 
-export interface UrlStatusRowOptions extends StatusPillOptions {
-	url: string;
-	statusBox?: string;
-}
-
 function paintAccentUrl(url: string, width: number, theme?: RenderTheme): string {
 	const t = truncateMiddle(url, width);
 	return inlineThemeText("accent", t, theme) ?? t;
-}
-
-export function renderUrlStatusRow(options: UrlStatusRowOptions): string {
-	const statusWidth = Math.max(12, Math.min(18, Math.floor(options.width * 0.22)));
-	const urlWidth = Math.max(12, options.width - statusWidth - 3);
-	const glyph = renderStatusGlyph(options.state, options.theme);
-	const renderedUrl = paintAccentUrl(options.url, urlWidth, options.theme);
-	const box =
-		options.statusBox ??
-		renderStatusPill({
-			label: options.label,
-			state: options.state,
-			width: statusWidth,
-			theme: options.theme,
-			startedAtMs: options.startedAtMs,
-			restoreBg: options.restoreBg,
-		});
-	return `${glyph} ${renderedUrl} ${box}`;
 }
 
 function truncateMiddle(value: string, width: number): string {
@@ -177,16 +149,21 @@ export interface ToolResourceOptions {
 
 /** Per-resource loader row with status pill. */
 export function toolResourceStatus(row: ToolResourceStatusRow): string {
-	return renderUrlStatusRow({
-		url: row.url,
-		state: row.state,
-		width: row.width,
-		theme: row.theme,
-		label: row.label ?? row.state,
-		startedAtMs: row.startedAtMs,
-		statusBox: row.statusBox,
-		restoreBg: row.restoreBg,
-	});
+	const statusWidth = Math.max(12, Math.min(18, Math.floor(row.width * 0.22)));
+	const urlWidth = Math.max(12, row.width - statusWidth - 3);
+	const glyph = renderStatusGlyph(row.state, row.theme);
+	const renderedUrl = paintAccentUrl(row.url, urlWidth, row.theme);
+	const box =
+		row.statusBox ??
+		renderStatusPill({
+			label: row.label ?? row.state,
+			state: row.state,
+			width: statusWidth,
+			theme: row.theme,
+			startedAtMs: row.startedAtMs,
+			restoreBg: row.restoreBg,
+		});
+	return `${glyph} ${renderedUrl} ${box}`;
 }
 
 export function toolResource(options: ToolResourceOptions): string {
