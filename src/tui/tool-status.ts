@@ -78,7 +78,26 @@ export function renderStatusPill(options: StatusPillOptions): string {
 	if (!theme?.bg) return neutral(text, theme);
 	const bg = STATE_BG[options.state];
 	const tail = bgStart(options.restoreBg ?? bg, theme);
-	if (options.state === "loading") return `${renderLoadingStatusFill(options, text)}${tail}`;
+	if (options.state === "loading") {
+		const lrElapsed =
+			typeof options.startedAtMs === "number" ? Date.now() - options.startedAtMs : 0;
+		const lrRatio =
+			typeof options.startedAtMs !== "number"
+				? 0.1
+				: lrElapsed >= 2400
+					? 0.6
+					: lrElapsed >= 1600
+						? 0.4
+						: lrElapsed >= 800
+							? 0.2
+							: 0.1;
+		const filled = text.slice(0, Math.max(1, Math.ceil(text.length * lrRatio)));
+		const rest = text.slice(filled.length);
+		const restPaint = rest
+			? backgroundText("toolPendingBg", neutral(rest, options.theme), options.theme)
+			: "";
+		return `${backgroundText("selectedBg", filled, options.theme)}${restPaint}${tail}`;
+	}
 	const body = options.state === "waiting" ? neutral(text, theme) : text;
 	return `${backgroundText(bg, body, theme)}${tail}`;
 }
@@ -88,28 +107,6 @@ export function renderStatusGlyph(state: StatusPillState, theme?: RenderTheme): 
 	const g = state === "loading" ? currentSpinnerFrame() : glyph;
 	return inlineThemeText(tone, g, theme) ?? g;
 }
-
-function renderLoadingStatusFill(options: StatusPillOptions, text: string): string {
-	const theme = options.theme;
-	const lrElapsed = typeof options.startedAtMs === "number" ? Date.now() - options.startedAtMs : 0;
-	const lrRatio =
-		options.state === "done"
-			? 1
-			: typeof options.startedAtMs !== "number"
-				? 0.1
-				: lrElapsed >= 2400
-					? 0.6
-					: lrElapsed >= 1600
-						? 0.4
-						: lrElapsed >= 800
-							? 0.2
-							: 0.1;
-	const filled = text.slice(0, Math.max(1, Math.ceil(text.length * lrRatio)));
-	const rest = text.slice(filled.length);
-	const restPaint = rest ? backgroundText("toolPendingBg", neutral(rest, theme), theme) : "";
-	return `${backgroundText("selectedBg", filled, theme)}${restPaint}`;
-}
-
 /** @file Pi terminal UI count segment primitives for success/failure/activity. */
 
 export function successCountSegment(count: number, label: string, theme?: RenderTheme): string {
