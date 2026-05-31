@@ -33,11 +33,6 @@ export function errorLabel(
 	return `${prefix}${tool} ${error.code}: ${error.message}`;
 }
 
-export function cacheLabel(envelope: Partial<ToolContext<unknown>>): string | undefined {
-	if (!envelope.cache?.cached) return;
-	return `↻ cache hit${envelope.cache.staleness ? ` ${envelope.cache.staleness}` : ""}`;
-}
-
 export function freshnessLabel(envelope: Partial<ToolContext<unknown>>): string | undefined {
 	return envelope.freshness?.stale ? "⚠ stale" : undefined;
 }
@@ -57,7 +52,6 @@ export function contextPackageResponseId(
 // ── Tool-prefixed aliases ──────────────────────────────────────────
 
 export const toolErrorLabel = errorLabel;
-export const toolCacheLabel = cacheLabel;
 export const toolFreshnessLabel = freshnessLabel;
 export const toolSessionNotice = sessionNotice;
 export const toolContextPackageResponseId = contextPackageResponseId;
