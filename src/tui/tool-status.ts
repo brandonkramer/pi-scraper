@@ -26,13 +26,11 @@ function bgStart(name: string, theme?: RenderTheme): string {
 	}
 }
 
-function paintBgLine(line: string, bgName: string, theme?: RenderTheme): string {
-	return theme?.bg ? `${backgroundText(bgName, line, theme)}${bgStart(bgName, theme)}` : line;
-}
-
 export function paintFirstLineBg(lines: string[], bgName: string, theme?: RenderTheme): string[] {
 	if (lines.length === 0 || !theme?.bg) return lines;
-	return lines.map((line, index) => (index === 0 ? paintBgLine(line, bgName, theme) : line));
+	return lines.map((line, index) =>
+		index === 0 ? `${backgroundText(bgName, line, theme)}${bgStart(bgName, theme)}` : line,
+	);
 }
 
 export type StatusPillState = "waiting" | "loading" | "done" | "error";
@@ -69,7 +67,12 @@ const GLYPHS: Record<StatusPillState, [string, string]> = {
 };
 
 export function renderStatusPill(options: StatusPillOptions): string {
-	const inner = centerStatusLabel(options.label, Math.max(1, options.width - 2));
+	const cw = Math.max(1, options.width - 2);
+	const labelBase = ` ${options.label} `;
+	const inner =
+		labelBase.length >= cw
+			? labelBase.slice(0, cw)
+			: `${" ".repeat(Math.floor((cw - labelBase.length) / 2))}${labelBase}`.padEnd(cw, " ");
 	const text = `[${inner}]`;
 	const theme = options.theme;
 	if (!theme?.bg) return neutral(text, theme);
@@ -88,24 +91,23 @@ export function renderStatusGlyph(state: StatusPillState, theme?: RenderTheme): 
 
 function renderLoadingStatusFill(options: StatusPillOptions, text: string): string {
 	const theme = options.theme;
-	const filled = text.slice(0, Math.max(1, Math.ceil(text.length * loadingRatio(options))));
+	const lrElapsed = typeof options.startedAtMs === "number" ? Date.now() - options.startedAtMs : 0;
+	const lrRatio =
+		options.state === "done"
+			? 1
+			: typeof options.startedAtMs !== "number"
+				? 0.1
+				: lrElapsed >= 2400
+					? 0.6
+					: lrElapsed >= 1600
+						? 0.4
+						: lrElapsed >= 800
+							? 0.2
+							: 0.1;
+	const filled = text.slice(0, Math.max(1, Math.ceil(text.length * lrRatio)));
 	const rest = text.slice(filled.length);
 	const restPaint = rest ? backgroundText("toolPendingBg", neutral(rest, theme), theme) : "";
 	return `${backgroundText("selectedBg", filled, theme)}${restPaint}`;
-}
-
-function loadingRatio(options: StatusPillOptions): number {
-	if (options.state === "done") return 1;
-	const started = options.startedAtMs;
-	if (typeof started !== "number") return 0.1;
-	const elapsed = Date.now() - started;
-	return elapsed >= 2400 ? 0.6 : elapsed >= 1600 ? 0.4 : elapsed >= 800 ? 0.2 : 0.1;
-}
-
-function centerStatusLabel(label: string, width: number): string {
-	const base = ` ${label} `;
-	if (base.length >= width) return base.slice(0, width);
-	return `${" ".repeat(Math.floor((width - base.length) / 2))}${base}`.padEnd(width, " ");
 }
 
 /** @file Pi terminal UI count segment primitives for success/failure/activity. */
