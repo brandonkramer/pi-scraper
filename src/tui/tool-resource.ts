@@ -112,16 +112,13 @@ export interface ToolResourceStatusRow {
 	restoreBg?: string;
 }
 
-export interface ToolResourceOptions {
+export interface ToolResourceOptions extends Partial<
+	Omit<ToolResourceStatusRow, "url" | "state" | "restoreBg">
+> {
 	url: string;
 	state?: ToolResourceState | ToolResourceStatusState;
 	badge?: string;
 	detail?: string;
-	width?: number;
-	theme?: RenderTheme;
-	label?: string;
-	startedAtMs?: number;
-	statusBox?: string;
 }
 
 export function toolResourceStatus(row: ToolResourceStatusRow): string {
