@@ -7,6 +7,7 @@ All notable changes to `pi-scraper` are summarized from the git history and rele
 ### Added
 
 - **Custom vertical manifest docs** — documented YAML manifest overrides/additions in the README and bundled `web-scraping` skill, including project/user manifest locations and a dedicated custom vertical manifest reference.
+- **Bundled skill guidance** — updated the `web-scraping` skill and `web_extract` reference so agents know how to create project/user YAML vertical manifests and where to find examples.
 
 ### Changed
 
