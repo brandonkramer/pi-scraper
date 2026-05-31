@@ -238,14 +238,12 @@ export function toolProgressCard(
 	});
 }
 
-export interface ResultRendererOptions {
+export function defineResultRenderer(options: {
 	renderContent: (width: number) => string;
 	mapLines?: (lines: string[], width: number) => string[];
 	padToWidth?: boolean;
 	markdownPreview?: (width: number) => Component | undefined;
-}
-
-export function defineResultRenderer(options: ResultRendererOptions): RenderComponent {
+}): RenderComponent {
 	return {
 		render(width: number) {
 			const text = options.renderContent(width);
