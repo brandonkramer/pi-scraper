@@ -46,11 +46,10 @@ export function crawlExpandedDetails(
 				finalUrl:
 					page.finalUrl && page.url && page.finalUrl !== page.url ? page.finalUrl : undefined,
 				title: page.data?.title,
-				excerpt: [page.data?.description, page.data?.markdown, page.data?.text]
-					.find(Boolean)
-					?.replaceAll(/\s+/gu, " ")
-					.trim()
-					.slice(0, cap),
+				excerpt: (() => {
+					const v = [page.data?.description, page.data?.markdown, page.data?.text].find(Boolean);
+					return v ? v.replaceAll(/\s+/gu, " ").trim().slice(0, cap) : undefined;
+				})(),
 				fields: {
 					status: page.status,
 					mode: page.mode,
