@@ -213,16 +213,11 @@ export function toolProgressCard(
 			});
 			const lines = [`${glyph} ${toolName} ${details.state}${count}${url}${message} ${pill}`];
 			if (details.checklist?.length) {
-				if (icons) {
-					lines.push(
-						...details.checklist.map(
-							(item: { label: string; state: string; detail?: string }) =>
-								`${{ done: "\u2713", failed: "\u2715", warning: "\u26A0", pending: "\u2610" }[item.state] ?? "\u2022"} ${item.label}${item.detail ? ` \u2014 ${item.detail}` : ""}`,
-						),
-					);
-				} else {
-					lines.push(...details.checklist.map(formatChecklistText));
-				}
+				const formatter = icons
+					? (item: { label: string; state: string; detail?: string }) =>
+							`${{ done: "\u2713", failed: "\u2715", warning: "\u26A0", pending: "\u2610" }[item.state] ?? "\u2022"} ${formatChecklistText(item)}`
+					: formatChecklistText;
+				lines.push(...details.checklist.map(formatter));
 			}
 			if (details.counts) {
 				const counts = details.counts;
