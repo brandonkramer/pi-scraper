@@ -83,7 +83,7 @@ function renderTreeSections(
 	return lines.join("\n");
 }
 
-function splitValueByWidth(value: string, maxChars: number): string[] {
+export function splitValueByWidth(value: string, maxChars: number): string[] {
 	if (value.length <= maxChars) return [value];
 	const lines: string[] = [];
 	let remaining = value;

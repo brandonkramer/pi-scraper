@@ -2,7 +2,12 @@
 import type { PiToolShell } from "../../types.ts";
 import { failure, muted, success } from "../theme.ts";
 import { renderText } from "../tool-call.ts";
-import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
+import {
+	buildToolResultTree,
+	splitValueByWidth,
+	toolResultTree,
+	type ToolResultGroup,
+} from "../tool-result-tree.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 interface VerticalBrowserFallbackMetadata {
@@ -69,7 +74,7 @@ export function renderVerticalResult(
 	if (segCount > firstSegments.length) {
 		transcriptLines.push(`… ${segCount - firstSegments.length} more segments`);
 	}
-	const wrappedLines = transcriptLines.flatMap((line) => wrapTranscriptLine(line, 80));
+	const wrappedLines = transcriptLines.flatMap((line) => splitValueByWidth(line, 80));
 	const transcriptBlock = wrappedLines
 		.map((line) => `${muted("\u2502 ", theme)}${line}`)
 		.join("\n");
@@ -180,21 +185,4 @@ function extractorPreview(data: unknown): [string, string | undefined] {
 	if (Array.isArray(tracks) && tracks.length > 1) parts.push(`${tracks.length} languages`);
 
 	return [parts.length > 0 ? parts.join(" \u00B7 ") : "extracted JSON", undefined];
-}
-
-function wrapTranscriptLine(line: string, maxChars: number): string[] {
-	if (line.length <= maxChars) return [line];
-	const lines: string[] = [];
-	let remaining = line;
-	while (remaining.length > 0) {
-		if (remaining.length <= maxChars) {
-			lines.push(remaining);
-			break;
-		}
-		let breakAt = remaining.lastIndexOf(" ", maxChars);
-		if (breakAt <= 0) breakAt = maxChars;
-		lines.push(remaining.slice(0, breakAt));
-		remaining = remaining.slice(breakAt).trimStart();
-	}
-	return lines;
 }
