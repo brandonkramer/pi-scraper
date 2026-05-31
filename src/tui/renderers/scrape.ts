@@ -292,18 +292,13 @@ function parseCacheControl(value: string | undefined) {
 	let swr: number | undefined;
 	for (const part of value.toLowerCase().split(",")) {
 		const t = part.trim();
-		for (const [prefix, field] of [
-			["max-age=", "maxAge" as const],
-			["s-maxage=", "maxAge" as const],
-			["stale-while-revalidate=", "swr" as const],
-		] as Array<[string, "maxAge" | "swr"]>) {
-			if (!t.startsWith(prefix)) continue;
-			const n = Number(t.slice(prefix.length));
-			if (Number.isFinite(n)) {
-				if (field === "maxAge") maxAge = n;
-				else swr = n;
-			}
-		}
+		const eq = t.indexOf("=");
+		if (eq === -1) continue;
+		const key = t.slice(0, eq);
+		const n = Number(t.slice(eq + 1));
+		if (!Number.isFinite(n)) continue;
+		if (key === "max-age" || key === "s-maxage") maxAge = n;
+		else if (key === "stale-while-revalidate") swr = n;
 	}
 	return maxAge !== undefined ? { maxAge, swr } : undefined;
 }
