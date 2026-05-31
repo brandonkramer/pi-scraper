@@ -28,12 +28,36 @@ Reduce physical TypeScript LOC under `src/tui` while preserving the rendered out
 - Before editing a function/class/method, run GitNexus impact analysis for the symbol and record the blast radius.
 
 ## What's Been Tried
-- Baseline after portable harness: `tui_loc=2586`, `file_count=23`, `renderer_loc=1271`, `helper_loc=1315` with typecheck and targeted TUI/renderer tests passing.
-- Kept: exported `splitValueByWidth` from `tool-result-tree.ts` and reused it for vertical transcript wrapping (`tui_loc=2574`). This removed duplicate wrapping logic and centralized width splitting.
-- Kept: inlined the one-use private `groupEntries` helper in `renderers/scrape.ts` (`tui_loc=2570`). Low-risk because it had one caller.
-- Kept: inlined one-use `renderSpinner` into `withSpinnerFooter` (`tui_loc=2566`) after confirming no direct imports.
-- Kept: moved spinner frames/current frame primitive into `tool-status.ts` and removed `tool-spinner.ts` (`tui_loc=2564`, `file_count=22`).
-- Kept: compacted `DEFAULT_HIDDEN_EXPANDED_KEYS` construction in `tool-result.ts` (`tui_loc=2562`).
-- Discarded: merging `tool-text.ts` into `tool-format.ts` reduced `file_count` but increased total LOC to 2573. Do not retry unless primary metric changes.
-- Discarded: micro-collapsing the final vertical transcript return increased total LOC to 2563. Target larger structural reuse instead.
-- Avoided: inlining `TONE_FNS`/touching `paintPart`; GitNexus reported CRITICAL blast radius through `toolStatus` and tool renderers for a tiny LOC win.
+### Results
+**Best: 2413 LOC** (from baseline 2586, saved 173 LOC / 6.7%)
+
+### Kept changes (16)
+1. **splitValueByWidth export + reuse** (-12): Removed duplicate transcript wrapping in vertical renderer.
+2. **groupEntries inline** (-4): Inlined one-use private group mapper in scrape.
+3. **renderSpinner inline** (-4): Inlined one-use spinner into withSpinnerFooter.
+4. **Spinner co-location** (-2): Moved SPINNER_FRAMES/currentSpinnerFrame into tool-status.
+5. **DEFAULT_HIDDEN_EXPANDED_KEYS compaction** (-2): Compacted multiline string split.
+6. **renderMetadataLines removal** (-21): Removed unused exported metadata formatter.
+7. **cacheLabel removal** (-6): Removed unused cache label helper.
+8. **renderMapResultCard removal** (-13): Removed unused map result-card wrapper.
+9. **stripTextPadding inline** (-4): Inlined one-use private text trim helper.
+10. **renderUrlBadgeRow inline** (-14): Inlined one-use badge row helper into toolResource.
+11. **renderUrlStatusRow inline** (-23): Inlined one-use status row helper into toolResourceStatus.
+12. **Progress count segment dedup** (-5): Shared formatter for succeeded/failed/cache-hit counts.
+13. **truncateMiddle inline** (-3): Inlined one-use URL truncation helper.
+14. **Model usage/cost inlining** (-13): Inlined formatModelUsage/tokenSuffix/formatCostUSD.
+15. **Extract all 4 helpers inline** (-25): Inlined extractSummary/extractLoader/extractTree/expandedExtractText.
+16. **Diff helpers inline** (-21): Inlined renderChecklistResult and diffTitle.
+
+### Discarded patterns
+- **Merging re-export shims** (tool-text → tool-format): saved 1 file but increased total LOC. The re-export lines outweighed the deleted file.
+- **Micro-inlining small helpers** (paintBgLine, trunctateMiddle was borderline, parseAgeSeconds): Private functions under 5 lines cost more to inline than they save.
+- **Inlining medium helpers with complex bodies** (renderResourceItemLines, batchItemGroup): The arrow-wrapper overhead + body brackets made the inline version longer.
+
+### Key insight
+Biggest wins came from:
+1. **Removing unused code** (metadata formatter, cache label, map wrapper) — safe, zero-risk, ~40 LOC.
+2. **Inlining moderately-sized (10-25 line) single-use private exports** (renderUrlStatusRow, diff helpers, extract helpers) — 15-25 LOC savings each because function declaration overhead + blank lines are real.
+3. **Eliminating small files** (spinner co-location, tool-text merge attempted) — minimal per-file savings.
+
+Small helpers (<5 lines) should NOT be inlined. Medium helpers (10-25 lines with 1 caller) should be inlined if they're private or have no external callers.
