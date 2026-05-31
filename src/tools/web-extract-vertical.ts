@@ -3,6 +3,10 @@ import type {
 	VerticalExtractionResult,
 	VerticalExtractorPage,
 } from "../extract/vertical/capabilities.ts";
+import type {
+	listExtractorCapabilities as listExtractorCapabilitiesFn,
+	runVerticalExtractor as runVerticalExtractorFn,
+} from "../extract/vertical/registry.ts";
 import { scrapeUrl, type ScrapePipelineDeps } from "../scrape/pipeline.ts";
 /**
  * @file Web_extract action="vertical" and action="list" handlers — deterministic extractor
@@ -21,9 +25,20 @@ interface VerticalBrowserFallbackMetadata {
 }
 
 type VerticalResultWithMetadata = VerticalExtractionResult & VerticalBrowserFallbackMetadata;
+type VerticalRegistryModule = {
+	listExtractorCapabilities: typeof listExtractorCapabilitiesFn;
+	runVerticalExtractor: typeof runVerticalExtractorFn;
+};
+
+let verticalRegistryPromise: Promise<VerticalRegistryModule> | undefined;
+
+function loadVerticalRegistry(): Promise<VerticalRegistryModule> {
+	verticalRegistryPromise ??= import("../extract/vertical/registry.ts");
+	return verticalRegistryPromise;
+}
 
 export async function listDeterministicExtractors() {
-	const { listExtractorCapabilities } = await import("../extract/vertical/registry.ts");
+	const { listExtractorCapabilities } = await loadVerticalRegistry();
 	const capabilities = listExtractorCapabilities();
 	return toolResult({
 		text: `${capabilities.length} extractor(s): ${capabilities.map((item) => item.name).join(", ")}`,
@@ -64,7 +79,7 @@ export async function runDeterministicExtractor(
 		signal,
 		onUpdate,
 	);
-	const { runVerticalExtractor } = await import("../extract/vertical/registry.ts");
+	const { runVerticalExtractor } = await loadVerticalRegistry();
 	const result = await runVerticalExtractor(
 		extractor,
 		url,
