@@ -249,23 +249,17 @@ export function renderProgressCard(
 			}
 			if (details.counts) {
 				const counts = details.counts;
+				const segment = (val: number | undefined, label: string, render: (v: number) => string) =>
+					val === undefined ? undefined : icons ? render(val) : `${val} ${label}`;
 				lines.push(
 					[
-						counts.succeeded === undefined
-							? undefined
-							: icons
-								? successCountSegment(counts.succeeded, "succeeded", theme)
-								: `${counts.succeeded} succeeded`,
-						counts.failed === undefined
-							? undefined
-							: icons
-								? failureCountSegment(counts.failed, "failed", theme)
-								: `${counts.failed} failed`,
-						counts.cacheHits === undefined
-							? undefined
-							: icons
-								? activityCountSegment(counts.cacheHits, "cache hits", "ⓞ", theme)
-								: `${counts.cacheHits} cache hits`,
+						segment(counts.succeeded, "succeeded", (n) =>
+							successCountSegment(n, "succeeded", theme),
+						),
+						segment(counts.failed, "failed", (n) => failureCountSegment(n, "failed", theme)),
+						segment(counts.cacheHits, "cache hits", (n) =>
+							activityCountSegment(n, "cache hits", "ⓞ", theme),
+						),
 					]
 						.filter(Boolean)
 						.join(" · "),
