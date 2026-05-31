@@ -127,8 +127,7 @@ function renderBatchProgressText(
 			item.status === "processing" && typeof item.progress === "number"
 				? (() => {
 						const filled = Math.round(Math.max(0, Math.min(1, item.progress)) * (sbWidth - 2));
-						const empty = sbWidth - 2 - filled;
-						return `[${"=".repeat(Math.max(0, filled - 1))}${filled > 0 ? ">" : ""}${" ".repeat(Math.max(0, empty))}]`;
+						return `[${"=".repeat(Math.max(0, filled - 1))}${filled > 0 ? ">" : ""}${" ".repeat(Math.max(0, sbWidth - 2 - filled))}]`;
 					})()
 				: renderStatusPill({
 						label: bState,
