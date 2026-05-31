@@ -48,5 +48,3 @@ export function toolContextPackageResponseId(
 	const value = envelope.diagnostics?.contextPackage as { responseId?: unknown } | undefined;
 	return typeof value?.responseId === "string" ? value.responseId : undefined;
 }
-
-// ── Tool-prefixed aliases ──────────────────────────────────────────
