@@ -131,8 +131,6 @@ export interface ToolResourceOptions {
 export function toolResourceStatus(row: ToolResourceStatusRow): string {
 	const statusWidth = Math.max(12, Math.min(18, Math.floor(row.width * 0.22)));
 	const urlWidth = Math.max(12, row.width - statusWidth - 3);
-	const glyph = renderStatusGlyph(row.state, row.theme);
-	const renderedUrl = paintAccentUrl(row.url, urlWidth, row.theme);
 	const box =
 		row.statusBox ??
 		renderStatusPill({
@@ -143,7 +141,7 @@ export function toolResourceStatus(row: ToolResourceStatusRow): string {
 			startedAtMs: row.startedAtMs,
 			restoreBg: row.restoreBg,
 		});
-	return `${glyph} ${renderedUrl} ${box}`;
+	return `${renderStatusGlyph(row.state, row.theme)} ${paintAccentUrl(row.url, urlWidth, row.theme)} ${box}`;
 }
 
 export function toolResource(options: ToolResourceOptions): string {
