@@ -30,8 +30,8 @@ import {
 } from "../tool-labels.ts";
 import {
 	toolResourceStatus,
-	formatBytes as toolFormatBytes,
-	formatDuration as toolFormatDuration,
+	formatBytes as fmtBytes,
+	formatDuration as fmtDuration,
 } from "../tool-resource.ts";
 import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
 import { previewText as toolPreviewText } from "../tool-result.ts";
@@ -89,7 +89,7 @@ export function renderWebScrapeResult(
 					`${envelope.mode ?? ""} mode`,
 					envelope.format,
 					sourceLabel,
-					{ text: toolFormatDuration(envelope.timing?.durationMs) ?? "", tone: "muted" },
+					{ text: fmtDuration(envelope.timing?.durationMs) ?? "", tone: "muted" },
 					toolFreshnessLabel(envelope),
 					expanded ? undefined : { text: "(ctrl+o to expand)", tone: "muted" },
 				],
@@ -171,14 +171,9 @@ function buildScrapeSections(
 	addScrapeRow(groups, "details", "mode", envelope.mode);
 	addScrapeRow(groups, "details", "format", envelope.format);
 	if (envelope.downloadedBytes !== undefined)
-		addScrapeRow(groups, "details", "size", toolFormatBytes(envelope.downloadedBytes) ?? "");
+		addScrapeRow(groups, "details", "size", fmtBytes(envelope.downloadedBytes) ?? "");
 	if (envelope.timing?.durationMs !== undefined)
-		addScrapeRow(
-			groups,
-			"details",
-			"duration",
-			toolFormatDuration(envelope.timing.durationMs) ?? "",
-		);
+		addScrapeRow(groups, "details", "duration", fmtDuration(envelope.timing.durationMs) ?? "");
 	addScrapeRow(groups, "details", "type", envelope.contentType);
 	addScrapeRow(groups, "details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
 
