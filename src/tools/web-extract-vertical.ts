@@ -46,7 +46,7 @@ export async function listDeterministicExtractors() {
 		format: "json",
 		summary: "Listed deterministic extractor capabilities.",
 		assistantGuidance:
-			"Use action=vertical with extractor=<name> for supported known sites. Hugging Face: extractor=huggingface_model accepts /owner/model and legacy /model; extractor=huggingface_dataset accepts /datasets/owner/dataset and legacy /datasets/dataset. Use action=pattern for deterministic markers/regex/excerpts and action=adhoc for model-backed schema extraction.",
+			"Use action=vertical with extractor=<name> for supported known sites. GitHub: use extractor=github_repo for API metadata/README/tree or extractor=gitingest for an LLM-ready codebase digest. Hugging Face: extractor=huggingface_model accepts /owner/model and legacy /model; extractor=huggingface_dataset accepts /datasets/owner/dataset and legacy /datasets/dataset. Use action=pattern for deterministic markers/regex/excerpts and action=adhoc for model-backed schema extraction.",
 	});
 }
 

@@ -265,6 +265,7 @@ For well-known sites, `pi-scraper` uses optimized "vertical" extractors that hit
 | **GitHub Issue** | GitHub | Issue body, comments, participants, labels, status. |
 | **GitHub PR** | GitHub | Pull request body, diff stats, reviews, comments. |
 | **GitHub Release** | GitHub | Release notes, tag info, assets, author metadata. |
+| **GitIngest** | GitHub / gitingest.com | Prompt-friendly codebase digest, directory structure, and full-content download URL. |
 | **npm Package** | npmjs.com | Manifest JSON, versions, dependencies, README. |
 | **PyPI Package** | pypi.org | Package metadata, versions, author, description. |
 | **crates.io** | crates.io | Rust crate metadata, versions, dependencies. |

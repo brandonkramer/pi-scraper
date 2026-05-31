@@ -80,7 +80,7 @@ export const webExtractSchema = Type.Object({
 	extractor: Type.Optional(
 		Type.Unsafe<string>({
 			description:
-				"Vertical extractor name for action=vertical, e.g. huggingface_model or huggingface_dataset. Hugging Face accepts /owner/name and legacy /name URLs.",
+				"Vertical extractor name for action=vertical, e.g. github_repo, gitingest, huggingface_model, or huggingface_dataset. Use gitingest for an LLM-ready GitHub codebase digest.",
 		}),
 	),
 	url: Type.Optional(urlProperty()),

@@ -48,6 +48,22 @@ const context: VerticalExtractorContext = {
 				],
 			} as T;
 		}
+		if (url.includes("gitingest.com/api")) {
+			expect(url).toBe(
+				"https://gitingest.com/api/mario/pi?max_file_size=50&pattern_type=include&pattern=src%2F**%2F*.ts",
+			);
+			return {
+				repo_url: "mario/pi",
+				short_repo_url: "mario/pi",
+				summary: "Repository: mario/pi\nFiles analyzed: 1\n\nEstimated tokens: 1.0k",
+				digest_url: "https://example.com/mario-pi.txt",
+				tree: "Directory structure:\n└── src/api.ts",
+				content: "FILE: src/api.ts\nexport const pi = true;",
+				default_max_file_size: 50,
+				pattern_type: "include",
+				pattern: "src/**/*.ts",
+			} as T;
+		}
 		if (url.includes("api.github.com")) {
 			return {
 				full_name: "mario/pi",
@@ -173,6 +189,7 @@ describe("vertical extractor registry", () => {
 				"github_issue",
 				"github_pr",
 				"github_release",
+				"gitingest",
 				"npm",
 				"pypi",
 				"crates_io",
@@ -293,6 +310,20 @@ describe("vertical extractor registry", () => {
 	});
 
 	it("runs added registry and catalog extractors", async () => {
+		await expect(
+			runVerticalExtractor(
+				"gitingest",
+				"https://gitingest.com/mario/pi?max_file_size=50&pattern_type=include&pattern=src%2F**%2F*.ts",
+				{ context },
+			),
+		).resolves.toMatchObject({
+			data: {
+				owner: "mario",
+				repo: "pi",
+				digestUrl: "https://example.com/mario-pi.txt",
+				patternType: "include",
+			},
+		});
 		await expect(
 			runVerticalExtractor("crates_io", "https://crates.io/crates/serde", {
 				context,

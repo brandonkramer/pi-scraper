@@ -19,6 +19,7 @@ import { githubIssueExtractor } from "../vertical/extractors/github-issue.ts";
 import { githubPrExtractor } from "../vertical/extractors/github-pr.ts";
 import { githubReleaseExtractor } from "../vertical/extractors/github-release.ts";
 import { githubRepoExtractor } from "../vertical/extractors/github-repo.ts";
+import { gitIngestExtractor } from "../vertical/extractors/gitingest.ts";
 import { hackerNewsItemExtractor } from "../vertical/extractors/hackernews.ts";
 import {
 	huggingFaceDatasetExtractor,
@@ -39,6 +40,7 @@ export const verticalExtractors = [
 	githubIssueExtractor,
 	githubPrExtractor,
 	githubReleaseExtractor,
+	gitIngestExtractor,
 	npmPackageExtractor,
 	pypiPackageExtractor,
 	cratesIoExtractor,

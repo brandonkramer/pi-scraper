@@ -67,8 +67,12 @@ Extract structured data from URLs or content — verticals, patterns, selectors,
 ## Examples
 
 ```
-# Vertical — GitHub repo
+# Vertical — GitHub repo metadata/README/tree
 web_extract action=vertical extractor=github_repo url="https://github.com/can1357/oh-my-pi"
+
+# Vertical — GitIngest LLM-ready codebase digest for a GitHub repo
+web_extract action=vertical extractor=gitingest url="https://github.com/coderamp-labs/gitingest"
+web_extract action=vertical extractor=gitingest url="https://gitingest.com/coderamp-labs/gitingest?max_file_size=50&pattern_type=include&pattern=src/**/*.py"
 
 # Vertical — Hugging Face model (owner/model or legacy single-slug URL)
 web_extract action=vertical extractor=huggingface_model url="https://huggingface.co/google-bert/bert-base-uncased"

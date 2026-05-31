@@ -9,7 +9,7 @@ Full repo intelligence — metadata + base64-decoded README + depth-2 file tree.
 ### Example
 
 ```
-web_extract action=github_repo url="https://github.com/can1357/oh-my-pi"
+web_extract action=vertical extractor=github_repo url="https://github.com/can1357/oh-my-pi"
 ```
 
 **Returns:**
@@ -28,6 +28,29 @@ web_extract action=github_repo url="https://github.com/can1357/oh-my-pi"
 
 ---
 
+## `gitingest`
+
+**Matches:** `https://github.com/:owner/:repo` or `https://gitingest.com/:owner/:repo`
+
+LLM-ready codebase digest via GitIngest. Use this when you need prompt-friendly repository content instead of GitHub API metadata. Supports GitIngest query options on the URL: `max_file_size`, `pattern_type=include|exclude`, and `pattern`.
+
+### Example
+
+```
+web_extract action=vertical extractor=gitingest url="https://github.com/coderamp-labs/gitingest"
+web_extract action=vertical extractor=gitingest url="https://gitingest.com/coderamp-labs/gitingest?max_file_size=50&pattern_type=include&pattern=src/**/*.py"
+```
+
+**Returns:** owner, repo, repoUrl, shortRepoUrl, summary, digestUrl, tree, content, contentChars, contentTruncated, defaultMaxFileSizeKb, patternType, pattern
+
+### Rules
+
+- Use `github_repo` for metadata, README, and a shallow file tree.
+- Use `gitingest` when you need a digest formatted for LLM codebase review.
+- Large digests are bounded in tool output; use `digestUrl` from the result for the full GitIngest text file when available.
+
+---
+
 ## `github_issue`
 
 **Matches:** `https://github.com/:owner/:repo/issues/:number`
@@ -35,7 +58,7 @@ web_extract action=github_repo url="https://github.com/can1357/oh-my-pi"
 ### Example
 
 ```
-web_extract action=github_issue url="https://github.com/facebook/react/issues/12345"
+web_extract action=vertical extractor=github_issue url="https://github.com/facebook/react/issues/12345"
 ```
 
 **Returns:** owner, repo, number, title, state, url, author, labels[], comments, createdAt, updatedAt, closedAt, isPullRequest
@@ -49,7 +72,7 @@ web_extract action=github_issue url="https://github.com/facebook/react/issues/12
 ### Example
 
 ```
-web_extract action=github_pr url="https://github.com/facebook/react/pull/25000"
+web_extract action=vertical extractor=github_pr url="https://github.com/facebook/react/pull/25000"
 ```
 
 **Returns:** owner, repo, number, title, state, url, author, draft, merged, baseRef, baseRepo, headRef, headRepo, additions, deletions, changedFiles, createdAt, updatedAt, closedAt, mergedAt
@@ -63,7 +86,7 @@ web_extract action=github_pr url="https://github.com/facebook/react/pull/25000"
 ### Example
 
 ```
-web_extract action=github_release url="https://github.com/facebook/react/releases/tag/v18.2.0"
+web_extract action=vertical extractor=github_release url="https://github.com/facebook/react/releases/tag/v18.2.0"
 ```
 
 **Returns:** owner, repo, tag, name, url, draft, prerelease, author, publishedAt, createdAt, body, assets[{name, size, downloads, url}]
