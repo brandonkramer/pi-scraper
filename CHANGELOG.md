@@ -2,6 +2,16 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [0.10.1] - 2026-06-01
+
+### Added
+
+- **Custom vertical manifest docs** — documented YAML manifest overrides/additions in the README and bundled `web-scraping` skill, including project/user manifest locations and a dedicated custom vertical manifest reference.
+
+### Changed
+
+- **Vertical manifest README guidance** — clarified where agents can find YAML creation guidance and how to prompt an LLM/agent to use the bundled skill reference.
+
 ## [0.10.0] - 2026-05-31
 
 ### Added
