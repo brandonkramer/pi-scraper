@@ -19,7 +19,6 @@ import {
 	formatChecklistText as toolChecklistText,
 } from "../tool-labels.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
-export type DiffData = Partial<SnapshotDiffResult>;
 export function renderWebDiffResult(
 	result: PiToolShell,
 	expanded = false,
@@ -28,7 +27,7 @@ export function renderWebDiffResult(
 	const details = result.details as Partial<ToolContext<unknown>> | ProgressDetails;
 	if (isProgress(details))
 		return toolProgressCard("web_scrape diff", details, theme, { allowIcons: false });
-	const envelope = details as Partial<ToolContext<DiffData>>;
+	const envelope = details as Partial<ToolContext<Partial<SnapshotDiffResult>>>;
 	const diff = envelope.data;
 	const title = envelope.error
 		? toolErrorLabel("web_scrape", envelope.error, { allowIcons: false })
