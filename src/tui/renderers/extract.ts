@@ -17,79 +17,22 @@ export function renderWebExtractResult(
 ): RenderComponent {
 	const details = result.details as Partial<ToolContext<unknown>> | undefined;
 	const preview = result.content[0]?.text ?? "";
-	const summary = extractSummary(details, theme);
-	const body = expanded ? expandedExtractText(summary, preview, details) : summary;
-	const hasLongMarkdown = expanded && details?.format === "markdown" && preview.length > 100;
-	return toolResultCard({
-		renderContent(width) {
-			const loader = extractLoader(details, width, theme);
-			const tree = expanded ? extractTree(details, width, theme) : "";
-			const ids = expanded
-				? toolResultId([{ label: "responseId", id: details?.responseId ?? "" }], theme)
-				: [];
-			return [loader, body, tree, ids.length > 0 ? ids.join("\n") : ""]
-				.filter(Boolean)
-				.join("\n\n");
-		},
-		padToWidth: true,
-		markdownPreview: hasLongMarkdown
-			? () => new Markdown(preview.slice(0, 800), 0, 0, toolMarkdownTheme(theme))
-			: undefined,
-	});
-}
-
-function extractSummary(
-	details: Partial<ToolContext<unknown>> | undefined,
-	theme?: RenderTheme,
-): string {
-	if (details?.summary) return details.summary;
 	const numericStatus = typeof details?.status === "number" ? details.status : undefined;
-	return toolStatus(
-		[
-			numericStatus !== undefined
-				? `${toolStatusDot(numericStatus, theme)} ${numericStatus}`
-				: details?.status
-					? String(details.status)
-					: "done",
-			details?.finalUrl ?? details?.url,
-			details?.responseId ? `responseId: ${details.responseId}` : undefined,
-			details?.freshness?.stale ? "stale" : undefined,
-		],
-		theme,
-	);
-}
-
-function extractLoader(
-	details: Partial<ToolContext<unknown>> | undefined,
-	width: number,
-	theme?: RenderTheme,
-): string {
-	const url = details?.finalUrl ?? details?.url;
-	if (!url) return "";
-	return toolResourceStatus({
-		url,
-		state: details?.error ? "error" : "done",
-		width,
-		theme,
-		restoreBg: details?.error ? "toolErrorBg" : "toolSuccessBg",
-	});
-}
-
-function extractTree(
-	details: Partial<ToolContext<unknown>> | undefined,
-	width: number,
-	theme?: RenderTheme,
-): string {
-	if (!details) return "";
-	const sections = buildExpandedResultDetails(details as Record<string, unknown>);
-	return sections.length > 0 ? toolResultTree(sections, width, theme) : "";
-}
-
-function expandedExtractText(
-	summary: string,
-	preview: string,
-	details: Partial<ToolContext<unknown>> | undefined,
-): string {
+	const summary =
+		details?.summary ??
+		toolStatus(
+			[
+				numericStatus !== undefined
+					? `${toolStatusDot(numericStatus, theme)} ${numericStatus}`
+					: details?.status
+						? String(details.status)
+						: "done",
+				details?.finalUrl ?? details?.url,
+				details?.responseId ? `responseId: ${details.responseId}` : undefined,
+				details?.freshness?.stale ? "stale" : undefined,
+			],
+			theme,
+		);
 	const extras: string[] = [];
 	if (details?.freshness?.stale) extras.push("freshness: stale; refresh if time-sensitive");
 	const u = details?.modelUsage;
@@ -114,11 +57,43 @@ function expandedExtractText(
 	}
 	const extra = extras.length > 0 ? `${extras.join("\n")}\n` : "";
 	const previewBlock = (details?.answerContext ?? preview).slice(0, 500);
-	const next = details?.nextActions
+	const nextActions = details?.nextActions
 		?.slice(0, 3)
 		.map((a) => `- ${a.action}${a.tool ? ` via ${a.tool}` : ""}: ${a.description}`)
 		.join("\n");
-	return [summary, extra, previewBlock, next ? `\nNext actions:\n${next}` : ""]
-		.filter(Boolean)
-		.join("\n");
+	const body = expanded
+		? [summary, extra, previewBlock, nextActions ? `\nNext actions:\n${nextActions}` : ""]
+				.filter(Boolean)
+				.join("\n")
+		: summary;
+	const hasLongMarkdown = expanded && details?.format === "markdown" && preview.length > 100;
+	return toolResultCard({
+		renderContent(width) {
+			const loaderUrl = details?.finalUrl ?? details?.url;
+			const loader = loaderUrl
+				? toolResourceStatus({
+						url: loaderUrl,
+						state: details?.error ? "error" : "done",
+						width,
+						theme,
+						restoreBg: details?.error ? "toolErrorBg" : "toolSuccessBg",
+					})
+				: "";
+			let tree = "";
+			if (expanded && details) {
+				const sections = buildExpandedResultDetails(details as Record<string, unknown>);
+				if (sections.length > 0) tree = toolResultTree(sections, width, theme);
+			}
+			const ids = expanded
+				? toolResultId([{ label: "responseId", id: details?.responseId ?? "" }], theme)
+				: [];
+			return [loader, body, tree, ids.length > 0 ? ids.join("\n") : ""]
+				.filter(Boolean)
+				.join("\n\n");
+		},
+		padToWidth: true,
+		markdownPreview: hasLongMarkdown
+			? () => new Markdown(preview.slice(0, 800), 0, 0, toolMarkdownTheme(theme))
+			: undefined,
+	});
 }
