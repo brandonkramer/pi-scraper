@@ -101,7 +101,8 @@ export function renderWebCrawlResult(
 		return toolProgressCard("web_crawl", details, theme, { allowIcons: true });
 	}
 	const envelope = details as Partial<ToolContext<Partial<CrawlRunResult>>>;
-	const metadata = envelope.data?.metadata;
+	const data = envelope.data;
+	const metadata = data?.metadata;
 	const failed = metadata?.failedCount ?? 0;
 	const summary = envelope.error
 		? toolErrorLabel("web_crawl", envelope.error, { allowIcons: true })
@@ -121,10 +122,7 @@ export function renderWebCrawlResult(
 				],
 				theme,
 			);
-	const pages = Array.isArray(envelope.data?.pages)
-		? // oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
-			(envelope.data?.pages as CrawlPageView[])
-		: [];
+	const pages = Array.isArray(data?.pages) ? (data.pages as CrawlPageView[]) : [];
 	const progress = isBatchProgressView(envelope.diagnostics?.batchProgress)
 		? envelope.diagnostics.batchProgress
 		: batchProgressFromCrawlPages(pages);
