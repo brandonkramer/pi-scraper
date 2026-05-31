@@ -24,15 +24,11 @@ export function renderText(text: string, options: { padToWidth?: boolean } = {})
 			const lines = rendered.length > 0 ? rendered : [""];
 			return options.padToWidth
 				? lines.map((line) => truncateToWidth(line, safeWidth, "", true))
-				: lines.map((line) => stripTextPadding(line));
+				: lines.map((line) => line.replaceAll(/ +$/gu, ""));
 		},
 
 		invalidate(): void {
 			component.invalidate();
 		},
 	};
-}
-
-function stripTextPadding(line: string): string {
-	return line.replaceAll(/ +$/gu, "");
 }
