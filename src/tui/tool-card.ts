@@ -68,7 +68,6 @@ export function toolBatchProgressCard(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const batch = details.data?.batchProgress;
-	const tick = details.data?.spinnerTick;
 	return defineResultRenderer({
 		renderContent(width) {
 			const text = batch
@@ -76,7 +75,7 @@ export function toolBatchProgressCard(
 				: muted("No batch progress available.", theme);
 			const isDone = batch ? batch.completed >= batch.total : false;
 			const lines = text.split("\n");
-			return isDone ? lines.join("\n") : withSpinnerFooter(lines, tick);
+			return isDone ? lines.join("\n") : withSpinnerFooter(lines, details.data?.spinnerTick);
 		},
 	});
 }
