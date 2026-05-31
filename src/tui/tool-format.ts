@@ -13,10 +13,7 @@ export {
 	previewText as toolPreviewText,
 	pickExcerpt as toolPickExcerpt,
 } from "./tool-result.ts";
-export {
-	renderProgressCard as toolProgressCard,
-	progressStartedAtMs as toolProgressStartedAtMs,
-} from "./tool-card.ts";
+export { toolProgressCard, progressStartedAtMs as toolProgressStartedAtMs } from "./tool-card.ts";
 export {
 	renderResourceItemList as toolResourceList,
 	type ResourceListItem as ToolResourceListItem,

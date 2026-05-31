@@ -32,13 +32,13 @@ const FILE_TYPE_PREFIXES = [
 	"video/",
 ];
 
-export function isFileResult(envelope: Partial<ToolContext<unknown>>): boolean {
+export function toolIsFileResult(envelope: Partial<ToolContext<unknown>>): boolean {
 	const ct = envelope.contentType ?? "";
 	if (FILE_TYPE_PREFIXES.some((p) => ct === p || ct.startsWith(p))) return true;
 	return !!(envelope.data && typeof envelope.data === "object" && "fileSize" in envelope.data);
 }
 
-export function renderFileResultCard(
+export function toolFileResultCard(
 	envelope: Partial<ToolContext<Record<string, unknown>>>,
 	theme?: RenderTheme,
 ): RenderComponent {
@@ -67,7 +67,7 @@ function stringValue(value: unknown): string | undefined {
 	return JSON.stringify(value);
 }
 
-export function renderBatchProgressCard(
+export function toolBatchProgressCard(
 	details: ProgressDetails<{ batchProgress: BatchProgressView; spinnerTick?: number }>,
 	expanded: boolean,
 	theme?: RenderTheme,
@@ -97,12 +97,12 @@ export interface BatchResultCardOptions {
 	padToWidth?: boolean;
 }
 
-export function renderBatchResultCard(
+export function toolBatchResultCard(
 	options: BatchResultCardOptions,
 	expanded: boolean,
 	theme?: RenderTheme,
 ): RenderComponent {
-	return renderStackedResultCard(
+	return toolStackedCard(
 		{
 			...options,
 			body: (width) =>
@@ -208,7 +208,7 @@ export function progressPillLabel(state: string): string {
 	return state === "processing" || state === "connecting" ? "loading" : state;
 }
 
-export function renderProgressCard(
+export function toolProgressCard(
 	toolName: `web_${string}`,
 	details: ProgressDetails,
 	theme?: RenderTheme,
@@ -287,12 +287,6 @@ export function defineResultRenderer(options: ResultRendererOptions): RenderComp
 	};
 }
 
-export const toolBatchProgressCard = renderBatchProgressCard;
-export const toolBatchResultCard = renderBatchResultCard;
-export const toolProgressCard = renderProgressCard;
-export const toolIsFileResult = isFileResult;
-export const toolFileResultCard = renderFileResultCard;
-
 export interface StackedResultCardOptions {
 	body: string | ((width: number) => string);
 	summary: string;
@@ -307,7 +301,7 @@ export interface StackedResultCardOptions {
 	hasError?: boolean;
 }
 
-export function renderStackedResultCard(
+export function toolStackedCard(
 	options: StackedResultCardOptions,
 	theme?: RenderTheme,
 ): RenderComponent {
@@ -352,7 +346,7 @@ export function toolResultCard(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const { renderContent, body, ...rest } = options;
-	return renderStackedResultCard(
+	return toolStackedCard(
 		{
 			...rest,
 			body: renderContent ?? body ?? "",
@@ -361,5 +355,3 @@ export function toolResultCard(
 		theme,
 	);
 }
-
-export const toolStackedCard = renderStackedResultCard;
