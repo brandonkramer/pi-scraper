@@ -4,7 +4,7 @@ import type { BatchProgressView } from "../batch/progress-state.ts";
 import type { ProgressDetails, ToolContext } from "../types.ts";
 import { muted } from "./theme.ts";
 import { renderText } from "./tool-call.ts";
-import { formatChecklistItem, formatChecklistText } from "./tool-labels.ts";
+import { formatChecklistText } from "./tool-labels.ts";
 import { toolProcess, withSpinnerFooter } from "./tool-process.ts";
 import { toolResourceStatus, formatBytes } from "./tool-resource.ts";
 import { toolResultId } from "./tool-result.ts";
@@ -213,8 +213,16 @@ export function toolProgressCard(
 			});
 			const lines = [`${glyph} ${toolName} ${details.state}${count}${url}${message} ${pill}`];
 			if (details.checklist?.length) {
-				const formatter = icons ? formatChecklistItem : formatChecklistText;
-				lines.push(...details.checklist.map(formatter));
+				if (icons) {
+					lines.push(
+						...details.checklist.map(
+							(item: { label: string; state: string; detail?: string }) =>
+								`${{ done: "\u2713", failed: "\u2715", warning: "\u26A0", pending: "\u2610" }[item.state] ?? "\u2022"} ${item.label}${item.detail ? ` \u2014 ${item.detail}` : ""}`,
+						),
+					);
+				} else {
+					lines.push(...details.checklist.map(formatChecklistText));
+				}
 			}
 			if (details.counts) {
 				const counts = details.counts;
