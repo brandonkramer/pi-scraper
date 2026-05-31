@@ -8,7 +8,6 @@ import {
 	isBatchProgressView,
 } from "../../batch/progress-state.ts";
 import type { BatchItemResult } from "../../batch/run.ts";
-import type { LineMatch } from "../../scrape/line-filter.ts";
 import { formatLineMatchPreview } from "../../scrape/line-preview.ts";
 import {
 	isProgress,
@@ -32,33 +31,10 @@ import { toolResultId } from "../tool-result.ts";
 import { toolStatusMark, toolStatus } from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
-export interface BatchItem {
-	ok?: boolean;
-	url?: string;
-	result?: BatchItemRenderResult;
-	error?: { code?: string; phase?: string; message?: string };
-}
-
-interface BatchItemRenderResult {
-	url?: string;
-	finalUrl?: string;
-	status?: number;
-	mode?: string;
-	format?: string;
-	contentType?: string;
-	downloadedBytes?: number;
-	truncated?: boolean;
-	timing?: { durationMs?: number; fetchMs?: number; parseMs?: number };
-	cache?: { cached?: boolean; staleness?: string; ageSeconds?: number };
-	data?: {
-		title?: string;
-		description?: string;
-		markdown?: string;
-		text?: string;
-		route?: string;
-		matches?: LineMatch[];
-	};
-}
+export type BatchItem = Partial<Omit<BatchItemResult, "result" | "error">> & {
+	result?: Partial<Extract<BatchItemResult, { ok: true }>["result"]>;
+	error?: Partial<Extract<BatchItemResult, { ok: false }>["error"]>;
+};
 
 export function batchExpandedSections(
 	items: readonly BatchItem[],
