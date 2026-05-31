@@ -10,7 +10,6 @@ import { renderText as toolText } from "../tool-call.ts";
 import { toolProgressCard, toolResultCard } from "../tool-card.ts";
 import { toolProcess } from "../tool-process.ts";
 import { toolResource } from "../tool-resource.ts";
-import { toolResultId } from "../tool-result.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export function renderWebMapResult(
 	result: PiToolShell,
@@ -41,10 +40,8 @@ export function renderWebMapResult(
 			if (urls.length > rows.length)
 				rows.push(toolMuted(`… ${urls.length - rows.length} more urls`, theme));
 			const lines = [summary, rows.join("\n")];
-			if (expanded) {
-				const ids = toolResultId([{ label: "responseId", id: envelope.responseId ?? "" }], theme);
-				if (ids.length > 0) lines.push("", ...ids);
-			}
+			if (expanded && envelope.responseId)
+				lines.push("", toolMuted(`responseId: ${envelope.responseId}`, theme));
 			return lines.join("\n");
 		},
 		padToWidth: true,
