@@ -80,8 +80,7 @@ export function buildExpandedResultDetails(
 	const rows: ToolResultTreeSection["rows"] = [];
 	for (const key of order)
 		if (fieldMap.has(key)) {
-			const val = fieldMap.get(key)!;
-			rows.push({ key, value: val });
+			rows.push({ key, value: fieldMap.get(key)! });
 			fieldMap.delete(key);
 		}
 	for (const [key, value] of fieldMap) rows.push({ key, value });
