@@ -26,12 +26,12 @@ export const webCrawlSchema = Type.Object({
 	strategy: Type.Optional(
 		Type.Unsafe<"bfs" | "dfs" | "best-first">({ enum: ["bfs", "dfs", "best-first"] }),
 	),
-	proxy: Type.Optional(Type.Union([Type.String(), Type.Array(Type.String())])),
+	proxy: Type.Optional(Type.Unsafe<string | string[]>({ anyOf: [{ type: "string" }, { type: "array" }] })),
 	concurrency: Type.Optional(Type.Integer()),
 	perHostConcurrency: Type.Optional(Type.Integer()),
 	...scrapeModeOptionSchema,
-	include: Type.Optional(Type.Array(Type.String())),
-	exclude: Type.Optional(Type.Array(Type.String())),
+	include: Type.Optional(Type.Array(Type.Unsafe<string>({}))),
+	exclude: Type.Optional(Type.Array(Type.Unsafe<string>({}))),
 	extract: Type.Optional(Type.String()),
 	compile: Type.Optional(Type.Boolean()),
 
