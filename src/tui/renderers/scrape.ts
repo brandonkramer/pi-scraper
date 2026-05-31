@@ -115,8 +115,7 @@ export function renderWebScrapeResult(
 				if (toolIsFileResult(envelope)) {
 					return [toolFileResultCard(envelope, theme).render(width).join("\n")];
 				}
-				const allSections = buildScrapeSections(envelope, theme);
-				const out = [toolResultTree(allSections, width, theme)];
+				const out = [toolResultTree(buildScrapeSections(envelope, theme), width, theme)];
 				if (preview && !markdownPreviewComponent(envelope.format, preview, theme))
 					out.push(
 						(envelope.format === "json" || envelope.format === "html"
