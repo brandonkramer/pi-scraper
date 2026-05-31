@@ -151,10 +151,8 @@ function buildScrapeSections(
 	const groups = new Map<string, ToolResultGroup["rows"]>();
 	const t = envelope.data?.title;
 	const d = envelope.data?.description;
-	const dataTitle = typeof t === "string" && t ? t : undefined;
-	const dataDesc = typeof d === "string" && d ? d : undefined;
 
-	addScrapeRow(groups, "page", "title", dataTitle);
+	addScrapeRow(groups, "page", "title", typeof t === "string" && t ? t : undefined);
 	if (hasHeaders) {
 		const url = envelope.finalUrl ?? envelope.url;
 		if (url) {
@@ -165,7 +163,7 @@ function buildScrapeSections(
 			}
 		}
 	}
-	addScrapeRow(groups, "page", "description", dataDesc);
+	addScrapeRow(groups, "page", "description", typeof d === "string" && d ? d : undefined);
 
 	addScrapeRow(groups, "details", "url", envelope.url);
 	if (envelope.finalUrl && envelope.finalUrl !== envelope.url)
