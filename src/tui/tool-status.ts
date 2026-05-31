@@ -41,8 +41,7 @@ const STATE_BG: Record<StatusPillState, string> = {
 export const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 export function currentSpinnerFrame(): string {
-	const tick = Math.floor(Date.now() / 80);
-	return SPINNER_FRAMES[tick % SPINNER_FRAMES.length];
+	return SPINNER_FRAMES[Math.floor(Date.now() / 80) % SPINNER_FRAMES.length];
 }
 
 const GLYPHS: Record<StatusPillState, [string, string]> = {
@@ -86,11 +85,9 @@ export function renderStatusPill(o: {
 							: 0.1;
 		const filled = text.slice(0, Math.max(1, Math.ceil(text.length * lrRatio)));
 		const rest = text.slice(filled.length);
-		const restPaint = rest ? backgroundText("toolPendingBg", neutral(rest, o.theme), o.theme) : "";
-		return `${backgroundText("selectedBg", filled, o.theme)}${restPaint}${tail}`;
+		return `${backgroundText("selectedBg", filled, o.theme)}${rest ? backgroundText("toolPendingBg", neutral(rest, o.theme), o.theme) : ""}${tail}`;
 	}
-	const body = o.state === "waiting" ? neutral(text, theme) : text;
-	return `${backgroundText(bg, body, theme)}${tail}`;
+	return `${backgroundText(bg, o.state === "waiting" ? neutral(text, theme) : text, theme)}${tail}`;
 }
 
 export function renderStatusGlyph(state: StatusPillState, theme?: RenderTheme): string {
