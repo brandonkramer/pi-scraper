@@ -134,38 +134,34 @@ export function toolResourceStatus(row: ToolResourceStatusRow): string {
 	return `${renderStatusGlyph(row.state, row.theme)} ${paintAccentUrl(row.url, Math.max(12, row.width - statusWidth - 3), row.theme)} ${box}`;
 }
 
-export function toolResource(options: ToolResourceOptions): string {
-	if (options.badge !== undefined && options.width !== undefined) {
-		const badgeText = options.badge ? `[ ${options.badge} ]` : "";
-		const urlWidth = Math.max(12, options.width - badgeText.length - 2);
-		const renderedUrl = paintAccentUrl(options.url, urlWidth, options.theme);
-		const badge = badgeText
-			? (inlineThemeText("muted", badgeText, options.theme) ?? badgeText)
-			: "";
+export function toolResource(o: ToolResourceOptions): string {
+	if (o.badge !== undefined && o.width !== undefined) {
+		const badgeText = o.badge ? `[ ${o.badge} ]` : "";
+		const urlWidth = Math.max(12, o.width - badgeText.length - 2);
+		const renderedUrl = paintAccentUrl(o.url, urlWidth, o.theme);
+		const badge = badgeText ? (inlineThemeText("muted", badgeText, o.theme) ?? badgeText) : "";
 		return badge ? `${renderedUrl} ${badge}` : renderedUrl;
 	}
 	if (
-		options.width !== undefined &&
-		(options.label !== undefined ||
-			options.startedAtMs !== undefined ||
-			options.statusBox !== undefined)
+		o.width !== undefined &&
+		(o.label !== undefined || o.startedAtMs !== undefined || o.statusBox !== undefined)
 	) {
 		return toolResourceStatus({
-			url: options.url,
-			state: (options.state ?? "done") as ToolResourceStatusState,
-			width: options.width,
-			theme: options.theme,
-			label: options.label,
-			startedAtMs: options.startedAtMs,
-			statusBox: options.statusBox,
+			url: o.url,
+			state: (o.state ?? "done") as ToolResourceStatusState,
+			width: o.width,
+			theme: o.theme,
+			label: o.label,
+			startedAtMs: o.startedAtMs,
+			statusBox: o.statusBox,
 		});
 	}
-	const state = options.state ?? "pending";
+	const state = o.state ?? "pending";
 	const glyph =
 		state === "ok" || state === "done"
-			? success("✓", options.theme)
+			? success("✓", o.theme)
 			: state === "error"
-				? failure("✕", options.theme)
-				: muted("·", options.theme);
-	return `${glyph} ${options.url}${options.detail ? ` ${muted(options.detail, options.theme)}` : ""}`;
+				? failure("✕", o.theme)
+				: muted("·", o.theme);
+	return `${glyph} ${o.url}${o.detail ? ` ${muted(o.detail, o.theme)}` : ""}`;
 }

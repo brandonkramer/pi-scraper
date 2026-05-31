@@ -69,10 +69,9 @@ export function renderWebCrawlLookupResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const envelope = result.details as Partial<ToolContext<unknown>>;
-	const summary = envelope.summary ?? result.content[0].text;
 	return toolResultCard({
 		renderContent(width) {
-			const lines = [summary];
+			const lines = [envelope.summary ?? result.content[0].text];
 			if (expanded) {
 				const sections = buildExpandedResultDetails(envelope as Record<string, unknown>);
 				const tree = toolResultTree(sections, width, theme);

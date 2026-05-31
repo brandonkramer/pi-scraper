@@ -10,8 +10,7 @@ export function toolCall(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const label = [name, ...(parts.filter(Boolean) as string[])].join(" ");
-	const text = paintFg(theme, "accent", label);
-	return renderText(text);
+	return renderText(paintFg(theme, "accent", label));
 }
 
 /** Width-safe text render component. */

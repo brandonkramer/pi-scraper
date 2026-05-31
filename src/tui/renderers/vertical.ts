@@ -52,8 +52,7 @@ export function renderVerticalResult(
 	const firstSegments = transcript.segments?.slice(0, 20) ?? [];
 	const transcriptLines = firstSegments.map((seg) => {
 		const m = Math.floor(seg.start / 60);
-		const s = (seg.start % 60).toFixed(0).padStart(2, "0");
-		return `[${m}:${s}] ${seg.text}`;
+		return `[${m}:${(seg.start % 60).toFixed(0).padStart(2, "0")}] ${seg.text}`;
 	});
 	if (segCount > firstSegments.length)
 		transcriptLines.push(`… ${segCount - firstSegments.length} more segments`);
