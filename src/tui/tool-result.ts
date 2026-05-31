@@ -5,15 +5,6 @@ import type { RenderTheme } from "./types.ts";
 /** @file Pi terminal UI preview and metadata formatting primitives. */
 
 /** First non-empty candidate, whitespace-collapsed. Final number arg overrides 180-char cap. */
-export function pickExcerpt(
-	...args: ReadonlyArray<string | undefined | number>
-): string | undefined {
-	const mutable = args as Array<string | undefined | number>;
-	const maxChars = typeof mutable.at(-1) === "number" ? (mutable.pop() as number) : 180;
-	for (const value of mutable as Array<string | undefined>)
-		if (value) return value.replaceAll(/\s+/gu, " ").trim().slice(0, maxChars);
-}
-
 export function previewText(
 	result: PiToolShell,
 	envelope: Partial<ToolContext<Record<string, unknown>>>,
