@@ -140,7 +140,12 @@ function renderBatchProgressText(
 		const bState: StatusPillState = progressPillState(item.status);
 		const statusBox =
 			item.status === "processing" && typeof item.progress === "number"
-				? renderProgressBar(item.progress, sbWidth - 2)
+				? (() => {
+						const clamped = Math.max(0, Math.min(1, item.progress));
+						const filled = Math.round(clamped * (sbWidth - 2));
+						const empty = sbWidth - 2 - filled;
+						return `[${"=".repeat(Math.max(0, filled - 1))}${filled > 0 ? ">" : ""}${" ".repeat(Math.max(0, empty))}]`;
+					})()
 				: renderStatusPill({
 						label: bState,
 						state: bState,
@@ -165,15 +170,6 @@ function renderBatchProgressText(
 			? [muted(`… ${batch.items.length - rows.length} more urls`, theme)]
 			: [];
 	return [title, ...rows, ...more].join("\n");
-}
-
-/** @file Pi terminal UI progress primitives — bar, status bridge, and fallback card. */
-
-export function renderProgressBar(progress: number, width = 12): string {
-	const clamped = Math.max(0, Math.min(1, progress));
-	const filled = Math.round(clamped * width);
-	const empty = width - filled;
-	return `[${"=".repeat(Math.max(0, filled - 1))}${filled > 0 ? ">" : ""}${" ".repeat(Math.max(0, empty))}]`;
 }
 
 export function progressStartedAtMs(details: ProgressDetails): number | undefined {
