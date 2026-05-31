@@ -72,24 +72,36 @@ Focus on descriptions that are:
 
 ## Results (final)
 
-**Baseline**: 2068 tokens → **Final**: 1846 tokens — **222 tokens saved (10.7%)**
+**Baseline**: 2068 tokens → **Final**: 1769 tokens — **299 tokens saved (14.5%)**
 
-| Tool | Before | After | Saved |
-|------|-------:|------:|-----:|
-| web_scrape | 492 | 428 | 64 (13.0%) |
-| web_crawl | 322 | 301 | 21 (6.5%) |
-| web_map | 58 | 57 | 1 (1.7%) |
-| web_batch | 224 | 202 | 22 (9.8%) |
-| web_extract | 852 | 745 | 107 (12.6%) |
-| web_get_result | 120 | 113 | 7 (5.8%) |
-| **Total** | **2068** | **1846** | **222 (10.7%)** |
+| Tool | Before | After | Saved | Slack |
+|------|-------:|------:|:----:|:----:|
+| web_scrape | 492 | 428 | 64 (13.0%) | 72 |
+| web_crawl | 322 | 301 | 21 (6.5%) | 29 |
+| web_map | 58 | 57 | 1 (1.7%) | 123 |
+| web_batch | 224 | 202 | 22 (9.8%) | 28 |
+| web_extract | 852 | 668 | 184 (21.6%) | 192 |
+| web_get_result | 120 | 113 | 7 (5.8%) | 47 |
+| **Total** | **2068** | **1769** | **299 (14.5%)** | **451** |
 
-### What was changed
+### What was changed (10 experiments)
 
-1. **Removed redundant descriptions**: maxBytes, snapshotName, snapshotTag, headers, autoSave, limit, extractor — all restated the key name
-2. **Removed vague descriptions**: sessionId ("Consent session."), saveSession ("Persist."), clearSession ("Clear.") — didn't help LLM
-3. **Shortened format docs**: regexes, sections, excerpts, diff, saveToFile — kept clarity while abbreviating field names
-4. **Shortened remaining descriptions**: selectors, schema, extract, content, sourceFormat, query, topN, minScore, flags, attribute, identifier, adaptive, threshold, extractSchema, browserBackend, provider, map — trimmed to minimum viable length
+1. **Removed redundant descriptions**: maxBytes, snapshotName, snapshotTag, headers, autoSave, limit, extractor, extractSchema, prompt, sourceFormat, identifier, threshold, adaptive, content, length, respectRobots — all were restating the key name or too vague
+2. **Removed vague descriptions**: sessionId, saveSession, clearSession — "Consent session.", "Persist.", "Clear." didn't help LLM decide when to use them
+3. **Shortened format docs**: regexes({…}→{…}), sections({…}→{…}), excerpts({…}→{…}), diff({…}→{…}), saveToFile(true or {…}→true/{…}) — condensed field names, kept shape info
+4. **Shortened remaining descriptions**: selectors(69→41), schema(47→18), extract(48→35), query(42→25), topN(35→29), minScore(41→34), flags(43→26), attribute(25→10), browserBackend(35→27), provider(23→22), map(35→29) — trimmed to minimum viable length
 
-### Remaining descriptions
-All remaining descriptions (182 total chars of descriptions across 5 tools) are genuinely useful for LLM understanding. Further shortening would risk reducing the LLM's ability to correctly use the tools.
+### Remaining descriptions (13 tool desc + 17 param desc = 30 total)
+All remaining descriptions are genuinely essential for LLM understanding:
+- **Format docs** (6): regexes, sections, excerpts, saveToFile, diff — only way LLM knows complex type shapes
+- **Tool descriptions** (6): discriminator-required by tests
+- **Default/info** (5): maxTokens, overlapTokens, flags, topN, minScore — help LLM make informed parameter choices
+- **Type/value hints** (7): selector, selectorType, attribute, browserBackend, provider, extract, selectors — clarify accepted values
+- **Schema docs** (2): schema, query, sourceFormat — clarify usage context
+- **Shared** (2): Model provider, Backend — spread via shared schemas
+
+### Key lessons
+- `{description: "..."}` on any TypeBox type adds "description" to the JSON schema — directly to the LLM
+- The LLM uses these descriptions to understand parameter semantics → removing them must be done carefully
+- Format docs on `Type.Unsafe` array types are the only way the LLM knows the element shape
+- The fastest wins came from descriptions that either restated the key name or were too vague to help
