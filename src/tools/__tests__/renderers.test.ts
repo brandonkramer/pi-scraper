@@ -323,6 +323,19 @@ describe("web tool renderers", () => {
 		expect(text(renderWebExtractResult(result, false))).toContain("done · https://example.com");
 		expect(text(renderWebExtractResult(result, false))).not.toContain("✓ done");
 	});
+
+	it("renders extract progress without expanded result details", () => {
+		const progress = progressShell({
+			state: "processing",
+			url: "https://example.com",
+			message: "selector h1",
+		});
+		const rendered = text(renderWebExtractResult(progress, true));
+		expect(rendered).toContain("web_extract processing");
+		expect(rendered).toContain("selector h1");
+		expect(rendered).not.toContain("_progress");
+		expect(rendered).not.toContain("result");
+	});
 });
 
 function text(component: RenderComponent | undefined): string {

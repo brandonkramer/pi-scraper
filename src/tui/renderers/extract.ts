@@ -1,10 +1,10 @@
 /** @file Dedicated web_extract renderer for non-vertical, non-selector extraction results. */
 import { Markdown } from "@earendil-works/pi-tui";
 
-import type { PiToolShell, ToolContext } from "../../types.ts";
+import { isProgress, type PiToolShell, type ToolContext } from "../../types.ts";
 import { getMarkdownTheme as toolMarkdownTheme, muted as toolMuted } from "../theme.ts";
-import { toolResultCard } from "../tool-card.ts";
-import { toolResourceStatus } from "../tool-resource.ts";
+import { toolProgressCard, toolResultCard } from "../tool-card.ts";
+import { toolResource } from "../tool-resource.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
 import { buildExpandedResultDetails } from "../tool-result.ts";
 import { toolStatusDot, toolStatus } from "../tool-status.ts";
@@ -16,6 +16,7 @@ export function renderWebExtractResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const details = result.details as Partial<ToolContext<unknown>> | undefined;
+	if (isProgress(details)) return toolProgressCard("web_extract", details, theme);
 	const preview = result.content[0]?.text ?? "";
 	const numericStatus = typeof details?.status === "number" ? details.status : undefined;
 	const summary =
@@ -71,12 +72,10 @@ export function renderWebExtractResult(
 		renderContent(width) {
 			const loaderUrl = details?.finalUrl ?? details?.url;
 			const loader = loaderUrl
-				? toolResourceStatus({
+				? toolResource({
 						url: loaderUrl,
 						state: details?.error ? "error" : "done",
-						width,
 						theme,
-						restoreBg: details?.error ? "toolErrorBg" : "toolSuccessBg",
 					})
 				: "";
 			let tree = "";
