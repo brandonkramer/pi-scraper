@@ -38,10 +38,16 @@ export function renderVerticalResult(
 	}
 
 	const data = wrapper?.data as Record<string, unknown> | undefined;
-	const browserFallback = browserFallbackMetadata(wrapper);
+	const bfFallback = wrapper?.browserFallback as
+		| VerticalBrowserFallbackMetadata["browserFallback"]
+		| undefined;
+	const browserFallback = bfFallback?.used ? bfFallback : undefined;
 	const [metaLine] = extractorPreview(data);
 	const check = success("\u2713", theme);
-	const summaryDetails = [metaLine, browserFallbackLabel(browserFallback)]
+	const summaryDetails = [
+		metaLine,
+		browserFallback?.used ? `browser fallback · ${browserFallback.backend}` : undefined,
+	]
 		.filter(Boolean)
 		.join(" \u00B7 ");
 	const treeLine = `\u2514\u2500 ${check} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
@@ -82,21 +88,6 @@ export function renderVerticalResult(
 	const header = `${treeLine}\n${transcriptBlock}`;
 	if (!body) return renderText(header, { padToWidth: true });
 	return renderText(`${header}\n\n${body}`, { padToWidth: true });
-}
-
-function browserFallbackMetadata(
-	wrapper: Record<string, unknown> | undefined,
-): VerticalBrowserFallbackMetadata["browserFallback"] | undefined {
-	const fallback = wrapper?.browserFallback as
-		| VerticalBrowserFallbackMetadata["browserFallback"]
-		| undefined;
-	return fallback?.used ? fallback : undefined;
-}
-
-function browserFallbackLabel(
-	fallback: VerticalBrowserFallbackMetadata["browserFallback"] | undefined,
-): string | undefined {
-	return fallback?.used ? `browser fallback · ${fallback.backend}` : undefined;
 }
 
 function buildVerticalSections(
