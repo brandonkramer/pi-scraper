@@ -14,15 +14,12 @@ export function renderGetResult(
 ): RenderComponent {
 	const details = result.details as Record<string, unknown> | undefined;
 	const hasError = !!details?.error;
-	const statusLine = paintFg(
-		theme,
-		hasError ? "error" : "accent",
-		hasError ? "✕ no result" : "✓ result found",
-	);
 	const sections = buildExpandedResultDetails(details);
 	return defineResultRenderer({
 		renderContent(width) {
-			const lines = [`└─ ${statusLine}`];
+			const lines = [
+				`└─ ${paintFg(theme, hasError ? "error" : "accent", hasError ? "✕ no result" : "✓ result found")}`,
+			];
 			if (expanded && sections.length > 0) {
 				const tree = toolResultTree(sections, width, theme);
 				if (tree) lines.push("", ...tree.split("\n"));
