@@ -16,24 +16,9 @@ export interface UrlStatusRowOptions extends StatusPillOptions {
 	statusBox?: string;
 }
 
-export interface UrlBadgeRowOptions {
-	url: string;
-	badge?: string;
-	width: number;
-	theme?: RenderTheme;
-}
-
 function paintAccentUrl(url: string, width: number, theme?: RenderTheme): string {
 	const t = truncateMiddle(url, width);
 	return inlineThemeText("accent", t, theme) ?? t;
-}
-
-export function renderUrlBadgeRow(options: UrlBadgeRowOptions): string {
-	const badgeText = options.badge ? `[ ${options.badge} ]` : "";
-	const urlWidth = Math.max(12, options.width - badgeText.length - 2);
-	const renderedUrl = paintAccentUrl(options.url, urlWidth, options.theme);
-	const badge = badgeText ? (inlineThemeText("muted", badgeText, options.theme) ?? badgeText) : "";
-	return badge ? `${renderedUrl} ${badge}` : renderedUrl;
 }
 
 export function renderUrlStatusRow(options: UrlStatusRowOptions): string {
@@ -207,12 +192,13 @@ export function toolResourceStatus(row: ToolResourceStatusRow): string {
 export function toolResource(options: ToolResourceOptions): string {
 	// Badge mode: url + [badge]
 	if (options.badge !== undefined && options.width !== undefined) {
-		return renderUrlBadgeRow({
-			url: options.url,
-			badge: options.badge,
-			width: options.width,
-			theme: options.theme,
-		});
+		const badgeText = options.badge ? `[ ${options.badge} ]` : "";
+		const urlWidth = Math.max(12, options.width - badgeText.length - 2);
+		const renderedUrl = paintAccentUrl(options.url, urlWidth, options.theme);
+		const badge = badgeText
+			? (inlineThemeText("muted", badgeText, options.theme) ?? badgeText)
+			: "";
+		return badge ? `${renderedUrl} ${badge}` : renderedUrl;
 	}
 	// Loader mode: url + status pill
 	if (
