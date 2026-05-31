@@ -52,7 +52,7 @@ const GLYPHS: Record<StatusPillState, [string, string]> = {
 	waiting: ["muted", "·"],
 };
 
-export function renderStatusPill(options: {
+export function renderStatusPill(o: {
 	label: string;
 	state: StatusPillState;
 	width: number;
@@ -61,22 +61,21 @@ export function renderStatusPill(options: {
 	/** Re-open the surrounding Box background after the pill so pill bg does not bleed across the row. */
 	restoreBg?: string;
 }): string {
-	const cw = Math.max(1, options.width - 2);
-	const labelBase = ` ${options.label} `;
+	const cw = Math.max(1, o.width - 2);
+	const labelBase = ` ${o.label} `;
 	const inner =
 		labelBase.length >= cw
 			? labelBase.slice(0, cw)
 			: `${" ".repeat(Math.floor((cw - labelBase.length) / 2))}${labelBase}`.padEnd(cw, " ");
 	const text = `[${inner}]`;
-	const theme = options.theme;
+	const theme = o.theme;
 	if (!theme?.bg) return neutral(text, theme);
-	const bg = STATE_BG[options.state];
-	const tail = bgStart(options.restoreBg ?? bg, theme);
-	if (options.state === "loading") {
-		const lrElapsed =
-			typeof options.startedAtMs === "number" ? Date.now() - options.startedAtMs : 0;
+	const bg = STATE_BG[o.state];
+	const tail = bgStart(o.restoreBg ?? bg, theme);
+	if (o.state === "loading") {
+		const lrElapsed = typeof o.startedAtMs === "number" ? Date.now() - o.startedAtMs : 0;
 		const lrRatio =
-			typeof options.startedAtMs !== "number"
+			typeof o.startedAtMs !== "number"
 				? 0.1
 				: lrElapsed >= 2400
 					? 0.6
@@ -87,12 +86,10 @@ export function renderStatusPill(options: {
 							: 0.1;
 		const filled = text.slice(0, Math.max(1, Math.ceil(text.length * lrRatio)));
 		const rest = text.slice(filled.length);
-		const restPaint = rest
-			? backgroundText("toolPendingBg", neutral(rest, options.theme), options.theme)
-			: "";
-		return `${backgroundText("selectedBg", filled, options.theme)}${restPaint}${tail}`;
+		const restPaint = rest ? backgroundText("toolPendingBg", neutral(rest, o.theme), o.theme) : "";
+		return `${backgroundText("selectedBg", filled, o.theme)}${restPaint}${tail}`;
 	}
-	const body = options.state === "waiting" ? neutral(text, theme) : text;
+	const body = o.state === "waiting" ? neutral(text, theme) : text;
 	return `${backgroundText(bg, body, theme)}${tail}`;
 }
 
