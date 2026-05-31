@@ -68,7 +68,6 @@ export function buildExpandedResultDetails(
 	const hide = options.hide ?? DEFAULT_HIDDEN_EXPANDED_KEYS;
 	const describe = options.describe ?? DEFAULT_EXPANDED_KEY_DESCRIPTIONS;
 	const order = options.order ?? DEFAULT_EXPANDED_DISPLAY_ORDER;
-	const sectionName = options.sectionName ?? "result";
 
 	const fieldMap = new Map<string, string>();
 	for (const [key, value] of Object.entries(data ?? {})) {
@@ -86,5 +85,5 @@ export function buildExpandedResultDetails(
 			fieldMap.delete(key);
 		}
 	for (const [key, value] of fieldMap) rows.push({ key, value });
-	return [{ name: sectionName, rows }];
+	return [{ name: options.sectionName ?? "result", rows }];
 }
