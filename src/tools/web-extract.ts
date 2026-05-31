@@ -69,9 +69,9 @@ const extractSchemaPresetSchema = Type.Union(
 
 export const webExtractSchema = Type.Object({
 	action: Type.Optional(extractActionSchema),
-	extractor: Type.Optional(Type.String({ description: "Vertical extractor name." })),
+	extractor: Type.Optional(Type.String({ description: "Vertical extractor." })),
 	url: Type.Optional(urlProperty()),
-	content: Type.Optional(Type.String({ description: "Inline content (when no URL)." })),
+	content: Type.Optional(Type.String({ description: "Inline when no URL." })),
 	prompt: Type.Optional(Type.String({ description: "Adhoc extraction prompt." })),
 	schema: Type.Optional(
 		Type.Any({ description: "JSON schema for structured extraction." }),
@@ -80,12 +80,12 @@ export const webExtractSchema = Type.Object({
 	bullets: Type.Optional(Type.Number()),
 	...modelProviderOptionSchema,
 	...scrapeOutputOptionSchema,
-	sourceFormat: Type.Optional(Type.String({ description: "Override source content format." })),
+	sourceFormat: Type.Optional(Type.String({ description: "Override source format." })),
 	include: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	extractSchema: Type.Optional(extractSchemaPresetSchema),
 	length: Type.Optional(
 		Type.Union([Type.Boolean(), Type.String()], {
-			description: "truthy flag or string preset",
+			description: "Flag or preset name.",
 		}),
 	),
 	markers: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
@@ -115,9 +115,9 @@ export const webExtractSchema = Type.Object({
 	// Selector extraction (Task 27)
 	selector: Type.Optional(Type.String({ description: "CSS/XPath selector." })),
 	selectorType: Type.Optional(Type.String({ description: "css or xpath." })),
-	attribute: Type.Optional(Type.String({ description: "HTML attribute to extract." })),
-	identifier: Type.Optional(Type.String({ description: "Named extraction identifier." })),
-	adaptive: Type.Optional(Type.Boolean({ description: "Adaptive selector relocation." })),
+	attribute: Type.Optional(Type.String({ description: "HTML attribute." })),
+	identifier: Type.Optional(Type.String({ description: "Named extraction ID." })),
+	adaptive: Type.Optional(Type.Boolean({ description: "Adaptive relocation." })),
 	autoSave: Type.Optional(Type.Boolean({ description: "Auto-save results." })),
 	threshold: Type.Optional(Type.Number({ description: "Confidence threshold." })),
 	limit: Type.Optional(Type.Integer({ description: "Result limit." })),
@@ -129,11 +129,11 @@ export const webExtractSchema = Type.Object({
 			description: "Field-to-selector map for css/xpath/regex",
 		}),
 	),
-	query: Type.Optional(Type.String({ description: "Search query for cosine relevance scoring." })),
-	topN: Type.Optional(Type.Integer({ description: "Top-N results for cosine (default 5)." })),
-	minScore: Type.Optional(Type.Number({ description: "Minimum cosine score (0-1, default 0)." })),
+	query: Type.Optional(Type.String({ description: "Query for cosine scoring." })),
+	topN: Type.Optional(Type.Integer({ description: "Top-N for cosine (default 5)." })),
+	minScore: Type.Optional(Type.Number({ description: "Cosine threshold (0-1, default 0)." })),
 	flags: Type.Optional(
-		Type.String({ description: "Regex flags for regex-extract (default 'g')." }),
+		Type.String({ description: "Regex flags (default 'g')." }),
 	),
 });
 

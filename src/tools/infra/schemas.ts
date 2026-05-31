@@ -33,7 +33,7 @@ export const scrapeOutputOptionSchema = {
 	autoWait: Type.Optional(Type.Boolean()),
 	browserBackend: Type.Optional(
 		Type.Unsafe<"cloak" | "playwright">({
-			description: "Browser backend (cloak|playwright).",
+			description: "Backend (cloak|playwright).",
 		}),
 	),
 } as const;
