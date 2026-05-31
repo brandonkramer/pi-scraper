@@ -78,9 +78,7 @@ export function renderWebCrawlLookupResult(
 		renderContent(width) {
 			const lines = [summary];
 			if (expanded) {
-				const sections = buildExpandedResultDetails(
-					envelope as Record<string, unknown> | undefined,
-				);
+				const sections = buildExpandedResultDetails(envelope as Record<string, unknown>);
 				const tree = toolResultTree(sections, width, theme);
 				if (tree) lines.push("", tree);
 				const ids = toolResultId([{ label: "responseId", id: envelope.responseId ?? "" }], theme);
