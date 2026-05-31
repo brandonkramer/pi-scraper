@@ -243,8 +243,6 @@ export function toolProgressCard(
 	});
 }
 
-/** @file Shared Pi tool result renderer scaffold. */
-
 export interface ResultRendererOptions {
 	renderContent: (width: number) => string;
 	mapLines?: (lines: string[], width: number) => string[];

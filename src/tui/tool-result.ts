@@ -48,13 +48,6 @@ export const DEFAULT_EXPANDED_KEY_DESCRIPTIONS: Record<string, string> = Object.
 
 export const DEFAULT_EXPANDED_DISPLAY_ORDER = ["truncated", "responseId", "data", "url"] as const;
 
-export interface BuildExpandedDetailsOptions {
-	hide?: ReadonlySet<string>;
-	describe?: Record<string, string>;
-	order?: readonly string[];
-	sectionName?: string;
-}
-
 export function stringifyExpandedValue(value: unknown): string {
 	if (typeof value === "string") return value.slice(0, 80);
 	if (Array.isArray(value)) return `${value.length} item${value.length === 1 ? "" : "s"}`;
@@ -68,7 +61,12 @@ export function stringifyExpandedValue(value: unknown): string {
 
 export function buildExpandedResultDetails(
 	data: Record<string, unknown> | undefined,
-	options: BuildExpandedDetailsOptions = {},
+	options: {
+		hide?: ReadonlySet<string>;
+		describe?: Record<string, string>;
+		order?: readonly string[];
+		sectionName?: string;
+	} = {},
 ): ToolResultTreeSection[] {
 	const hide = options.hide ?? DEFAULT_HIDDEN_EXPANDED_KEYS;
 	const describe = options.describe ?? DEFAULT_EXPANDED_KEY_DESCRIPTIONS;

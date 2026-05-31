@@ -16,11 +16,6 @@ function paintAccentUrl(url: string, width: number, theme?: RenderTheme): string
 	return inlineThemeText("accent", t, theme) ?? t;
 }
 
-/**
- * @file Fetched-resource field formatter and per-item list composer used by scrape, batch, and
- *   crawl detail renderers.
- */
-
 export interface FetchedResourceFields {
 	status?: number | string;
 	mode?: string;
@@ -99,7 +94,6 @@ function renderResourceItemLines(item: ResourceListItem): string[] {
 	return lines;
 }
 
-/** @file Pi terminal UI string formatting primitives for bytes and duration. */
 export function formatBytes(bytes: number | undefined): string | undefined {
 	if (typeof bytes !== "number") return;
 	if (bytes < 1024) return `${bytes} B`;
@@ -110,13 +104,6 @@ export function formatDuration(ms: number | undefined): string | undefined {
 	if (typeof ms !== "number") return;
 	return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`;
 }
-
-/**
- * @file ToolResource — single-resource row. Three flavors based on input shape:
- *   toolResource({state, url, detail?}) → `✓ https://... detail` toolResource({url, badge?, width,
- *   theme?}) → `https://... [badge]` toolResource({state, url, width, theme?, label?, startedAtMs?,
- *   statusBox?, restoreBg?}) → `✓ https://... [ done ]` (loader mode)
- */
 
 export type ToolResourceStatusState = StatusPillState;
 

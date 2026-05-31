@@ -107,7 +107,6 @@ export function renderStatusGlyph(state: StatusPillState, theme?: RenderTheme): 
 	const g = state === "loading" ? currentSpinnerFrame() : glyph;
 	return inlineThemeText(tone, g, theme) ?? g;
 }
-/** @file Pi terminal UI count segment primitives for success/failure/activity. */
 
 export function successCountSegment(count: number, label: string, theme?: RenderTheme): string {
 	const text = `${count} ${label}`;
@@ -127,12 +126,6 @@ export function activityCountSegment(
 ): string {
 	return activity(`${icon} ${count} ${label}`, theme);
 }
-
-/**
- * @file ToolStatus — status summary line with dots and separators. Single dot variant: `● 200 ·
- *   fast mode · markdown · ↻ fresh fetch · 67 ms` Batch tally variant: `✓ 3 succeeded · ✕ 0 failed
- *   · ↻ 0 cache hits`
- */
 
 export interface ToolStatusPart {
 	text: string;

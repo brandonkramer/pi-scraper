@@ -5,10 +5,6 @@ export function formatChecklistText(item: { label: string; detail?: string }): s
 	return `${item.label}${item.detail ? ` — ${item.detail}` : ""}`;
 }
 
-/** @file Tool label builders. */
-
-// ── Label functions ───────────────────────────────────────────────
-
 export function toolErrorLabel(
 	tool: string,
 	error: StructuredError,
