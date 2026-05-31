@@ -58,9 +58,7 @@ export const webScrapeSchema = Type.Object({
 	maxBytes: Type.Optional(Type.Integer()),
 	maxChars: Type.Optional(Type.Integer()),
 	headers: Type.Optional(
-		Type.Record(Type.String(), Type.String(), {
-			description: "Headers.",
-		}),
+		Type.Record(Type.String(), Type.String()),
 	),
 	proxy: Type.Optional(Type.Union([Type.String(), Type.Array(Type.String())])),
 	respectRobots: Type.Optional(Type.Boolean()),
@@ -84,7 +82,7 @@ export const webScrapeSchema = Type.Object({
 					maxSnapshotAgeSeconds?: number;
 			  }
 		>({
-			description: "true or {snapshotName,snapshotTag,compareTag,maxSnapshotAgeSeconds}",
+			description: "true or {name,tag,compare,maxAge}",
 		}),
 	),
 	linesMatching: Type.Optional(Type.Array(Type.Unsafe<string>({}))),

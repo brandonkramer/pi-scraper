@@ -13,9 +13,9 @@ import { errorResult, structuredToolError, toolResult } from "./infra/result.ts"
 export const webGetResultSchema = Type.Object({
 	responseId: Type.Optional(Type.String({ description: "Stored response ID." })),
 	jobId: Type.Optional(Type.String({ description: "Job identifier." })),
-	snapshotUrl: Type.Optional(Type.String({ description: "Snapshot source URL." })),
-	snapshotName: Type.Optional(Type.String({ description: "Snapshot baseline name." })),
-	snapshotTag: Type.Optional(Type.String({ description: "Snapshot version tag." })),
+	snapshotUrl: Type.Optional(Type.String({ description: "Source URL." })),
+	snapshotName: Type.Optional(Type.String({ description: "Baseline name." })),
+	snapshotTag: Type.Optional(Type.String({ description: "Version tag." })),
 });
 
 type Params = Static<typeof webGetResultSchema>;

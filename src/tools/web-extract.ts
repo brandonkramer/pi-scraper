@@ -64,7 +64,7 @@ const extractSchemaPresetSchema = Type.Union(
 		Type.Literal("faq"),
 		Type.Literal("compatibility-table"),
 	],
-	{ description: "Predefined extraction schema." },
+	{ description: "Preset schema." },
 );
 
 export const webExtractSchema = Type.Object({
@@ -118,9 +118,9 @@ export const webExtractSchema = Type.Object({
 	attribute: Type.Optional(Type.String({ description: "HTML attribute." })),
 	identifier: Type.Optional(Type.String({ description: "Named extraction ID." })),
 	adaptive: Type.Optional(Type.Boolean({ description: "Adaptive relocation." })),
-	autoSave: Type.Optional(Type.Boolean({ description: "Auto-save results." })),
-	threshold: Type.Optional(Type.Number({ description: "Confidence threshold." })),
-	limit: Type.Optional(Type.Integer({ description: "Result limit." })),
+	autoSave: Type.Optional(Type.Boolean()),
+	threshold: Type.Optional(Type.Number({ description: "Min confidence." })),
+	limit: Type.Optional(Type.Integer()),
 	respectRobots: Type.Optional(Type.Boolean({ description: "Default: true." })),
 	// Strategy extraction params (css-extract, xpath-extract, regex-extract, cosine)
 	selectors: Type.Optional(
