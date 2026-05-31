@@ -1,4 +1,5 @@
 /** @file Pi web_scrape/diff tool result renderer. */
+import type { SnapshotDiffResult } from "../../diff/snapshots.ts";
 import {
 	isProgress,
 	type PiToolShell,
@@ -18,12 +19,7 @@ import {
 	formatChecklistText as toolChecklistText,
 } from "../tool-labels.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
-export interface DiffData {
-	previous?: unknown;
-	current?: unknown;
-	diff?: { changedCount?: number; addedCount?: number; removedCount?: number };
-}
-
+export type DiffData = Partial<SnapshotDiffResult>;
 export function renderWebDiffResult(
 	result: PiToolShell,
 	expanded = false,
