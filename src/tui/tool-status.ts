@@ -149,7 +149,6 @@ export function toolStatusDot(status: number | undefined, theme?: RenderTheme): 
 	return fn("\u25CF", theme);
 }
 
-/** Batch tally segment: colored count + label with glyph prefix. */
 const TONE_FNS = {
 	success,
 	failure,
