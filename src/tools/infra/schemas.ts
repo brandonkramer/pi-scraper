@@ -20,7 +20,7 @@ export const sessionOptionSchema = {
 export const modelProviderOptionSchema = {
 	provider: Type.Optional(
 		Type.String({
-			description: "Model name or auto/off.",
+			description: "Model/auto/off",
 		}),
 	),
 } as const;
@@ -33,7 +33,7 @@ export const scrapeOutputOptionSchema = {
 	autoWait: Type.Optional(Type.Boolean()),
 	browserBackend: Type.Optional(
 		Type.Unsafe<"cloak" | "playwright">({
-			description: "Backend (cloak|playwright).",
+			description: "cloak|playwright",
 		}),
 	),
 } as const;

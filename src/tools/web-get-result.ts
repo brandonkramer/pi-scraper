@@ -23,7 +23,7 @@ type Params = Static<typeof webGetResultSchema>;
 export const webGetResultTool = defineWebTool({
 	name: "web_get_result",
 	label: "Get",
-	description: "Retrieve stored response / job manifest",
+	description: "Retrieve stored response",
 	parameters: webGetResultSchema,
 	async execute(_toolCallId, params: Params) {
 		if (params.jobId) return await getJob(params.jobId);

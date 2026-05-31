@@ -102,7 +102,7 @@ export const webScrapeSchema = Type.Object({
 	autoWait: Type.Optional(Type.Boolean()),
 	browserBackend: Type.Optional(
 		Type.Unsafe<"cloak" | "playwright">({
-			description: "Backend (cloak|playwright).",
+			description: "cloak|playwright",
 		}),
 	),
 });
