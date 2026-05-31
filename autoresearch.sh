@@ -17,37 +17,4 @@ npx vitest run --reporter=dot \
 
 # Extract per-tool token counts by running a dedicated extraction script
 # We inline it here to keep everything in one file
-node --input-type=module -e "
-import { webTools } from './src/tools/infra/register.ts';
-
-function approxTokens(s) { return Math.ceil(s.length / 4); }
-
-let total = 0;
-const counts = {};
-
-for (const tool of webTools) {
-  const contract = JSON.stringify({
-    name: tool.name,
-    label: tool.label,
-    description: tool.description,
-    parameters: tool.parameters,
-  });
-  const tokens = approxTokens(contract.length);
-  const key = tool.name.replace('web_', '');
-  counts[key] = tokens;
-  total += tokens;
-}
-
-console.log('METRIC total_tokens=' + total);
-for (const [k, v] of Object.entries(counts)) {
-  console.log('METRIC ' + k + '_tokens=' + v);
-}
-
-// Also output per-tool param counts for diagnostics
-for (const tool of webTools) {
-  const props = tool.parameters.properties || {};
-  const withDesc = Object.values(props).filter(p => p.description).length;
-  const key = tool.name.replace('web_', '');
-  console.log('DIAG ' + key + '=' + Object.keys(props).length + 'params,' + withDesc + 'desc');
-}
-" 2>&1
+npx tsx src/tools/__tests__/tool-contract-stats.ts 2>&1
