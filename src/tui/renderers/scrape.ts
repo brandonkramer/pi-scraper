@@ -53,7 +53,6 @@ export function renderWebScrapeResult(
 		const status =
 			details.state === "error" ? "error" : details.state === "done" ? "done" : "loading";
 		const startedAtMs = toolProgressStartedAtMs(details) ?? Date.now();
-		const working = status === "loading";
 		return toolResultCard({
 			renderContent(width) {
 				const row = toolResourceStatus({
@@ -69,7 +68,7 @@ export function renderWebScrapeResult(
 				const lines = [row, "", summary];
 				if (expanded && details.checklist?.length)
 					lines.push("", ...details.checklist.map(toolChecklistText));
-				if (working) lines.push("", `${toolCurrentSpinnerFrame()} Working...`);
+				if (status === "loading") lines.push("", `${toolCurrentSpinnerFrame()} Working...`);
 				return lines.join("\n");
 			},
 			padToWidth: true,
