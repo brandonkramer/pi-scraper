@@ -239,7 +239,7 @@ function buildScrapeSections(
 	}
 
 	if (hasHeaders) addHeaderSections(groups, envelope, headers);
-	return buildToolResultTree(groupEntries(groups));
+	return buildToolResultTree(Array.from(groups.entries(), ([name, rows]) => ({ name, rows })));
 }
 
 function addHeaderSections(
@@ -312,10 +312,6 @@ function addScrapeRow(
 	const rows = groups.get(group) ?? [];
 	rows.push([key, value]);
 	groups.set(group, rows);
-}
-
-function groupEntries(groups: Map<string, ToolResultGroup["rows"]>): ToolResultGroup[] {
-	return Array.from(groups.entries(), ([name, rows]) => ({ name, rows }));
 }
 
 function parseAgeSeconds(v: string | undefined): number | undefined {
