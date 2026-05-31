@@ -295,6 +295,39 @@ web_extract({ action: "vertical", url: "https://www.npmjs.com/package/undici" })
 web_extract({ action: "vertical", extractor: "youtube", url: "https://www.youtube.com/watch?v=arj7oStGLkU" })
 ```
 
+### YAML manifests, overrides, and custom verticals
+
+Most verticals are backed by declarative YAML manifests in `verticals/*.yaml`. You can extend or override them without changing the public tool API: keep calling `web_extract({ action: "vertical", ... })`.
+
+Manifest load order is layered:
+
+1. Built-ins: package `verticals/*.yaml`
+2. User overrides/additions: `~/.pi/scraper/verticals/*.{yaml,yml,json,jsonc}`
+3. Project overrides/additions: `.pi/scraper/verticals/*.{yaml,yml,json,jsonc}`
+
+A user or project manifest with the same `name` replaces the lower-priority manifest; a new `name` adds a new vertical. Run `web_extract({ action: "list" })` to see each vertical's source, whether it is declarative, and whether it overrides another manifest.
+
+See the bundled [`verticals/`](verticals/) folder for examples.
+
+Minimal custom vertical example:
+
+```yaml
+version: 1
+name: my_docs
+kind: api-json
+description: Example docs metadata from a JSON endpoint.
+urlPatterns:
+  - https://docs.example.com/:slug+
+request:
+  urlTemplate: https://docs.example.com/api/pages/{{slug|encodePathSegments}}
+extract:
+  title: $.title
+  updatedAt: $.updated_at
+  summary: $.summary
+```
+
+Supported manifest styles include `api-json`, `api-json-aggregate`, `api-json-chain`, `http-workflow`, `api-xml`, `selector`, `pattern`, `html-extract`, `text-extract`, `code-extract`, and bounded `recipe` primitives.
+
 ---
 
 ## 💾 Download, Storage & History
