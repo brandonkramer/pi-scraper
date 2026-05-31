@@ -23,9 +23,7 @@ export function renderVerticalResult(
 	const isError = Boolean(wrapper?.error ?? details?.error);
 
 	if (isError) {
-		const error = (wrapper?.error ?? details?.error) as
-			| { code?: string; message?: string }
-			| undefined;
+		const error = (wrapper?.error ?? details?.error) as { code?: string } | undefined;
 		const code = error?.code ?? "FAILED";
 		const treeLine = `\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${code}`, theme)}`;
 		return renderText(treeLine, { padToWidth: true });
