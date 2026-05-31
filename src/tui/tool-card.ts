@@ -12,9 +12,7 @@ import {
 	renderStatusGlyph,
 	renderStatusPill,
 	paintFirstLineBg,
-	successCountSegment,
-	failureCountSegment,
-	activityCountSegment,
+	countSegments as countSeg,
 } from "./tool-status.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 
@@ -208,12 +206,10 @@ export function toolProgressCard(
 					val === undefined ? undefined : icons ? render(val) : `${val} ${label}`;
 				lines.push(
 					[
-						segment(counts.succeeded, "succeeded", (n) =>
-							successCountSegment(n, "succeeded", theme),
-						),
-						segment(counts.failed, "failed", (n) => failureCountSegment(n, "failed", theme)),
+						segment(counts.succeeded, "succeeded", (n) => countSeg.success(n, "succeeded", theme)),
+						segment(counts.failed, "failed", (n) => countSeg.failure(n, "failed", theme)),
 						segment(counts.cacheHits, "cache hits", (n) =>
-							activityCountSegment(n, "cache hits", "ⓞ", theme),
+							countSeg.activity(n, "cache hits", "ⓞ", theme),
 						),
 					]
 						.filter(Boolean)
