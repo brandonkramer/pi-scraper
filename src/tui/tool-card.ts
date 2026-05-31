@@ -265,22 +265,18 @@ export function defineResultRenderer(options: ResultRendererOptions): RenderComp
 	};
 }
 
-export interface StackedResultCardOptions {
-	body: string | ((width: number) => string);
-	summary: string;
-	expanded?: boolean;
-	notice?: string;
-	expandedSections?: (width: number) => Array<string | undefined>;
-	/** Optional Markdown component rendered inline after text sections when expanded. */
-	markdownPreview?: (width: number) => RenderComponent | undefined;
-	responseId?: string;
-	padToWidth?: boolean;
-	/** When true, paint the first line background with the error color. */
-	hasError?: boolean;
-}
-
 export function toolStackedCard(
-	options: StackedResultCardOptions,
+	options: {
+		body: string | ((width: number) => string);
+		summary: string;
+		expanded?: boolean;
+		notice?: string;
+		expandedSections?: (width: number) => Array<string | undefined>;
+		markdownPreview?: (width: number) => RenderComponent | undefined;
+		responseId?: string;
+		padToWidth?: boolean;
+		hasError?: boolean;
+	},
 	theme?: RenderTheme,
 ): RenderComponent {
 	return defineResultRenderer({
@@ -308,7 +304,7 @@ export function toolStackedCard(
 	});
 }
 
-/** ToolResultCard — adapter mapping renderContent/body to StackedResultCardOptions. */
+/** ToolResultCard — adapter mapping renderContent/body to a stacked card. */
 export function toolResultCard(
 	options: {
 		renderContent?: (width: number) => string;
