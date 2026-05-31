@@ -23,22 +23,20 @@ export function renderVerticalResult(
 
 	if (wrapper?.error ?? details?.error) {
 		const error = (wrapper?.error ?? details?.error) as { code?: string } | undefined;
-		const code = error?.code ?? "FAILED";
-		const treeLine = `\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${code}`, theme)}`;
+		const treeLine = `\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${error?.code ?? "FAILED"}`, theme)}`;
 		return renderText(treeLine, { padToWidth: true });
 	}
 
 	const data = wrapper?.data as Record<string, unknown> | undefined;
 	const bfFallback = wrapper?.browserFallback as BrowserFallback | undefined;
 	const browserFallback = bfFallback?.used ? bfFallback : undefined;
-	const check = success("\u2713", theme);
 	const summaryDetails = [
 		extractorPreview(data),
 		browserFallback?.used ? `browser fallback · ${browserFallback.backend}` : undefined,
 	]
 		.filter(Boolean)
 		.join(" \u00B7 ");
-	const treeLine = `\u2514\u2500 ${check} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
+	const treeLine = `\u2514\u2500 ${success("\u2713", theme)} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
 
 	if (!expanded || !data) {
 		return renderText(treeLine, { padToWidth: true });
