@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 15
 name: arxiv
 # api-xml: HTTP Atom/XML → extract (xml:first, xml:all, xml:attr, …).
 kind: api-xml
 description: arXiv paper metadata, abstract, authors, and categories.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://arxiv.org/abs/:id
   - https://arxiv.org/pdf/:id

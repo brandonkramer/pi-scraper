@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 6
 name: npm
 # api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
 kind: api-json
 description: npm package metadata, version, license, and dependencies.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://www.npmjs.com/package/:name+/v/:version
   - https://www.npmjs.com/package/:name+

@@ -5,7 +5,7 @@ import type {
 	ManifestKind,
 	ManifestSource,
 	VerticalManifest,
-} from "./types.ts";
+} from "./manifest-types.ts";
 
 const VALID_NAME = /^[a-z][a-z0-9_-]*$/iu;
 const VALID_KINDS = new Set<ManifestKind>([

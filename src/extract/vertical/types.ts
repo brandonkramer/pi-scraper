@@ -17,7 +17,9 @@ export interface VerticalExtractorProgress {
 }
 
 export interface VerticalExtractorContext {
-	/** Recipe-level options supplied by a YAML/JSONC vertical manifest. */
+	/** Manifest-level options passed into primitive extractors (e.g. code-extract). */
+	manifest?: Record<string, unknown>;
+	/** @deprecated Use manifest */
 	recipe?: Record<string, unknown>;
 	fetchJson<T = unknown>(url: string, signal?: AbortSignal): Promise<T>;
 	fetchJsonPost?<T = unknown>(url: string, body: unknown, signal?: AbortSignal): Promise<T>;

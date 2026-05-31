@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 19
 name: ossinsight_collections
 # api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
 kind: api-json
 description: OSSInsight repository collections.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://ossinsight.io/collections
   - https://ossinsight.io/collections/

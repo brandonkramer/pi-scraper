@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 16
 name: deepwiki
 # text-extract: fetch request URL as text → clean → fields.
 kind: text-extract
 description: DeepWiki repository documentation overview.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://deepwiki.com/:owner/:repo
   - https://deepwiki.com/:owner/:repo/:page*

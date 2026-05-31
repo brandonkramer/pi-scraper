@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 1
 name: github_repo
 # api-json-aggregate: parallel JSON requests (requests.*) → extract (@.scope, |transforms).
 kind: api-json-aggregate
 description: GitHub repository metadata, README, file tree, and stats.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://github.com/:owner/:repo
 # Runtime requirements for the scrape host.

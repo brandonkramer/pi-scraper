@@ -1,27 +1,17 @@
-/** @file Bounded HTTP workflow recipe primitive. */
+/** @file Http-workflow manifest runner. */
 import { createStructuredError, hasStructuredError } from "../../../http/errors.ts";
 import type { VerticalExtractorContext } from "../capabilities.ts";
-import { evaluateJsonWalkRule } from "../json-walk-rules.ts";
-import type { VerticalManifest } from "./types.ts";
+import { evaluateJsonWalkRule } from "../json-walk.ts";
+import type { VerticalManifest } from "../manifest-types.ts";
 
 type Scope = Record<string, unknown>;
 type WorkflowObject = Record<string, unknown>;
 
-export function supportsWorkflowRecipe(manifest: VerticalManifest): boolean {
+export function supportsHttpWorkflow(manifest: VerticalManifest): boolean {
 	return manifest.kind === "http-workflow" || manifest.recipe?.primitive === "http.workflow";
 }
 
-export async function runHttpWorkflowManifest(
-	manifest: VerticalManifest,
-	url: URL,
-	match: Record<string, string>,
-	context: VerticalExtractorContext,
-	signal?: AbortSignal,
-): Promise<unknown> {
-	return await runWorkflowRecipe(manifest, url, match, context, signal);
-}
-
-export async function runWorkflowRecipe(
+export async function runHttpWorkflow(
 	manifest: VerticalManifest,
 	url: URL,
 	match: Record<string, string>,

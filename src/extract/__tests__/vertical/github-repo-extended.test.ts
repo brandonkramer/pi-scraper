@@ -5,7 +5,7 @@ import type { VerticalExtractorContext } from "../../vertical/capabilities.ts";
 import {
 	buildManifestRegistry,
 	clearManifestRegistryCache,
-} from "../../vertical/manifest/registry.ts";
+} from "../../vertical/manifest-registry.ts";
 import { runVerticalExtractor } from "../../vertical/registry.ts";
 
 const signal = new AbortController().signal;

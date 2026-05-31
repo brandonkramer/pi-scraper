@@ -1,7 +1,7 @@
 import { loadLayeredManifests } from "./loader.ts";
+import type { ManifestDiagnostic, ManifestSource, VerticalManifest } from "./manifest-types.ts";
 /** @file Manifest registry — merges package, global, and project vertical manifests. */
 import { matchManifestUrl } from "./matcher.ts";
-import type { ManifestDiagnostic, ManifestSource, VerticalManifest } from "./types.ts";
 import { isManifestValid } from "./validate.ts";
 
 export interface ManifestRegistryEntry {

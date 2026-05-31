@@ -1,10 +1,10 @@
 /** @file Declarative vertical extractor end-to-end tests. */
 import { describe, expect, it } from "vitest";
 
-import { createDeclarativeExtractor } from "../../vertical/manifest/declarative.ts";
-import type { VerticalManifest } from "../../vertical/manifest/types.ts";
+import { createManifestExtractor } from "../../vertical/extractor.ts";
+import type { VerticalManifest } from "../../vertical/manifest-types.ts";
 
-describe("declarative extractor", () => {
+describe("manifest extractor", () => {
 	const mockContext = {
 		fetchJson: async <T>(url: string): Promise<T> => {
 			if (url.includes("api.example.com")) {
@@ -58,7 +58,7 @@ describe("declarative extractor", () => {
 			},
 		};
 
-		const extractor = createDeclarativeExtractor(manifest);
+		const extractor = createManifestExtractor(manifest);
 		const match = extractor.match(new URL("https://example.com/42"));
 		expect(match).toEqual({ id: "42" });
 
@@ -87,7 +87,7 @@ describe("declarative extractor", () => {
 			},
 		};
 
-		const extractor = createDeclarativeExtractor(manifest);
+		const extractor = createManifestExtractor(manifest);
 		const match = extractor.match(new URL("https://example.com/page"));
 		expect(match).toBeDefined();
 
@@ -118,7 +118,7 @@ describe("declarative extractor", () => {
 			},
 		};
 
-		const extractor = createDeclarativeExtractor(manifest);
+		const extractor = createManifestExtractor(manifest);
 		const match = extractor.match(new URL("https://example.com/page"));
 		expect(match).toBeDefined();
 
@@ -145,7 +145,7 @@ describe("declarative extractor", () => {
 			extract: { id: "$.id" },
 		};
 
-		const extractor = createDeclarativeExtractor(manifest);
+		const extractor = createManifestExtractor(manifest);
 		const match = extractor.match(new URL("https://other.com/42"));
 		expect(match).toBeUndefined();
 	});

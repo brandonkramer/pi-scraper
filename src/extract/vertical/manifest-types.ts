@@ -15,11 +15,6 @@ export type ManifestKind =
 	| "code-extract";
 export type ManifestSource = "builtin" | "user" | "project";
 
-/** URL pattern with named captures like https://example.com/:id */
-export interface ManifestUrlPattern {
-	pattern: string;
-}
-
 export interface ManifestRequest {
 	method?: "GET" | "POST" | "PUT" | "DELETE";
 	urlTemplate: string;
@@ -50,13 +45,6 @@ export interface ManifestExtractList {
 	as?: string;
 	/** Drop fields whose extracted values are undefined. */
 	omitUndefined?: boolean;
-}
-
-export interface ManifestExtractField {
-	/** JSONPath-like selector (e.g. $.summary) or constant value. */
-	path: string;
-	/** Max characters for this field. */
-	maxChars?: number;
 }
 
 export interface ManifestLimits {
@@ -218,15 +206,4 @@ export interface ManifestDiagnostic {
 	severity: "error" | "warning";
 	message: string;
 	field?: string;
-}
-
-export interface ManifestLoadResult {
-	manifests: VerticalManifest[];
-	errors: ManifestDiagnostic[];
-}
-
-export interface ManifestRegistryEntry {
-	manifest: VerticalManifest;
-	/** Built-in TypeScript extractor, if any. */
-	builtin?: unknown;
 }

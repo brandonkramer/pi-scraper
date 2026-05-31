@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 23
 name: youtube
 # http-workflow: multi-step pipeline (steps[]); final step is usually extract:.
 kind: http-workflow
 description: YouTube metadata, comments, transcripts, and captions.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://www.youtube.com/watch
   - https://youtube.com/watch

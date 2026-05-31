@@ -3,8 +3,8 @@ import type {
 	VerticalExtractionResult,
 	VerticalExtractorPage,
 } from "../extract/vertical/capabilities.ts";
-import type { ManifestRegistry } from "../extract/vertical/manifest/registry.ts";
-import type { ManifestDiagnostic } from "../extract/vertical/manifest/types.ts";
+import type { ManifestRegistry } from "../extract/vertical/manifest-registry.ts";
+import type { ManifestDiagnostic } from "../extract/vertical/manifest-types.ts";
 import type {
 	listExtractorCapabilities as listExtractorCapabilitiesFn,
 	runVerticalExtractor as runVerticalExtractorFn,
@@ -45,7 +45,7 @@ export async function listDeterministicExtractors() {
 	const { listExtractorCapabilities, buildManifestRegistry } = await loadVerticalRegistry();
 	const capabilities = listExtractorCapabilities();
 	const registry = await buildManifestRegistry();
-	const { listManifestExtractors } = await import("../extract/vertical/manifest/registry.ts");
+	const { listManifestExtractors } = await import("../extract/vertical/manifest-registry.ts");
 	const manifestItems = listManifestExtractors(registry);
 	const merged = manifestItems.map((item) => {
 		const cap = capabilities.find((c: ExtractorCapability) => c.name === item.name);

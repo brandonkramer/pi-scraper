@@ -1,15 +1,11 @@
 /** @file Vertical manifest tests. */
 import { describe, expect, it } from "vitest";
 
-import { matchUrlPattern, extractJsonPath } from "../../vertical/manifest/declarative.ts";
-import {
-	parseJsonc,
-	parseManifestText,
-	parseYamlManifest,
-} from "../../vertical/manifest/loader.ts";
-import { mergeManifests } from "../../vertical/manifest/registry.ts";
-import type { VerticalManifest } from "../../vertical/manifest/types.ts";
-import { isManifestValid, validateManifest } from "../../vertical/manifest/validate.ts";
+import { matchUrlPattern, extractJsonPath } from "../../vertical/extractor.ts";
+import { parseJsonc, parseManifestText, parseYamlManifest } from "../../vertical/loader.ts";
+import { mergeManifests } from "../../vertical/manifest-registry.ts";
+import type { VerticalManifest } from "../../vertical/manifest-types.ts";
+import { isManifestValid, validateManifest } from "../../vertical/validate.ts";
 
 describe("vertical manifest", () => {
 	describe("parseYamlManifest", () => {

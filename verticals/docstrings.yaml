@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 97
 name: docstrings
 # code-extract: parse JSDoc/TSDoc from source file bytes.
 kind: code-extract
 description: Extract JSDoc/TSDoc docstrings from source files.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://:host/:path*.ts
   - https://:host/:path*.tsx

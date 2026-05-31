@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 98
 name: docsite
 # html-extract: fetch matched URL as HTML → fields (selectors, rules).
 kind: html-extract
 description: Documentation site structured extraction (API ref, changelog, FAQ, compatibility).
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://:host/docs/:path*
   - https://:host/api/:path*

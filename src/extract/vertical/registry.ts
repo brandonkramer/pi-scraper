@@ -13,10 +13,10 @@ import type {
 	VerticalExtractorPage,
 	VerticalExtractorProgress,
 } from "../vertical/capabilities.ts";
-import { parseManifestText } from "./manifest/loader.ts";
-import { matchManifestUrl } from "./manifest/matcher.ts";
-import type { ManifestRegistryEntry } from "./manifest/registry.ts";
-import type { VerticalManifest } from "./manifest/types.ts";
+import { parseManifestText } from "./loader.ts";
+import type { ManifestRegistryEntry } from "./manifest-registry.ts";
+import type { VerticalManifest } from "./manifest-types.ts";
+import { matchManifestUrl } from "./matcher.ts";
 
 export const verticalExtractors: readonly VerticalExtractor[] = [];
 
@@ -85,7 +85,7 @@ function isVerticalManifest(value: unknown): value is VerticalManifest {
 
 /** Build the full manifest registry including built-in + user manifests. */
 export async function buildManifestRegistry(includeProject = false) {
-	const { buildManifestRegistry: build } = await import("./manifest/registry.ts");
+	const { buildManifestRegistry: build } = await import("./manifest-registry.ts");
 	return await build(includeProject);
 }
 
@@ -98,7 +98,7 @@ export async function runVerticalExtractor<T = unknown>(
 	const url = new URL(input.toString());
 
 	// Check manifest registry first — user overrides take priority
-	const manifestMod = await import("./manifest/registry.ts");
+	const manifestMod = await import("./manifest-registry.ts");
 	const registry = await manifestMod.buildManifestRegistry();
 	const entry = registry.get(name);
 	if (entry?.isDeclarative) {
@@ -186,8 +186,8 @@ async function runDeclarativeExtractor<T>(
 	deps: VerticalRegistryDeps,
 	signal?: AbortSignal,
 ): Promise<VerticalExtractionResult<T>> {
-	const { createDeclarativeExtractor } = await import("./manifest/declarative.ts");
-	const extractor = createDeclarativeExtractor(entry.manifest);
+	const { createManifestExtractor } = await import("./extractor.ts");
+	const extractor = createManifestExtractor(entry.manifest);
 	const sources: SourceReference[] = [];
 	try {
 		const data = await extractor.extract(

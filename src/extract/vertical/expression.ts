@@ -1,148 +1,15 @@
-/** @file Declarative vertical extractor runtime for API JSON/XML, selector, and pattern manifests. */
-import { cleanText } from "../../text.ts";
-import type { VerticalExtractor, VerticalExtractorContext } from "../capabilities.ts";
-import { capability } from "../capabilities.ts";
-import { codeDocstringsExtractor } from "../primitives/code-docstrings.ts";
-import { codeExtractOptions } from "../primitives/recipe-options.ts";
-import { applyMatchOptions, matchManifestUrl } from "./matcher.ts";
-import { runApiJsonAggregateManifest, runApiJsonChainManifest } from "./recipe-http.ts";
-import { runRuleRecipe } from "./recipe-rules.ts";
-import { runHttpWorkflowManifest } from "./recipe-workflow.ts";
-import { runRecipeManifest } from "./recipe.ts";
-import type { ManifestRequest, VerticalManifest } from "./types.ts";
-export { matchUrlPattern } from "./matcher.ts";
+/** @file Shared manifest field expressions, requests, and XML helpers. */
+import { cleanText } from "../text.ts";
+import type { VerticalExtractorContext } from "./capabilities.ts";
+import { extractJsonPath } from "./manifest-json-path.ts";
+import type { ManifestRequest, VerticalManifest } from "./manifest-types.ts";
 
-type Values = Record<string, string>;
-type ResponseFormat = "json" | "xml";
-
-export function createDeclarativeExtractor(manifest: VerticalManifest): VerticalExtractor {
-	return {
-		capability: manifestToCapability(manifest),
-		match: (url) => matchManifestUrl(manifest, url),
-		extract: (url, match, context, signal) =>
-			runDeclarativeExtraction(manifest, url, match, context, signal),
-	};
-}
-
-function manifestToCapability(manifest: VerticalManifest) {
-	return capability(
-		manifest.name,
-		manifest.urlPatterns,
-		manifest.outputSchema ??
-			(manifest.extract
-				? {
-						type: "object",
-						properties: Object.fromEntries(
-							Object.entries(manifest.extract).map(([key]) => [key, { type: "string" }]),
-						),
-					}
-				: { type: "object" }),
-		{
-			requiresBrowser: manifest.requirements?.requiresBrowser ?? false,
-			requiresLLM: manifest.requirements?.requiresLLM ?? false,
-			requiresCloud: manifest.requirements?.requiresCloud ?? false,
-		},
-	);
-}
-
-async function runDeclarativeExtraction(
-	manifest: VerticalManifest,
-	url: URL,
-	match: Values,
-	context: VerticalExtractorContext,
-	signal?: AbortSignal,
-): Promise<unknown> {
-	if (manifest.kind === "api-json") {
-		return await runApiJsonManifest(manifest, url, match, context, signal);
-	}
-	if (manifest.kind === "api-json-aggregate") {
-		return await runApiJsonAggregateManifest(manifest, url, match, context, signal);
-	}
-	if (manifest.kind === "api-json-chain") {
-		return await runApiJsonChainManifest(manifest, url, match, context, signal);
-	}
-	if (manifest.kind === "http-workflow") {
-		return await runHttpWorkflowManifest(manifest, url, match, context, signal);
-	}
-	if (manifest.kind === "api-xml") {
-		return await runApiXmlManifest(manifest, url, match, context, signal);
-	}
-	if (manifest.kind === "selector") {
-		return await runSelectorManifest(manifest, url, match, context, signal);
-	}
-	if (manifest.kind === "pattern") {
-		return await runPatternManifest(manifest, url, match, context, signal);
-	}
-	if (manifest.kind === "html-extract" || manifest.kind === "text-extract") {
-		return await runRuleRecipe(manifest, url, match, context, signal);
-	}
-	if (manifest.kind === "code-extract") {
-		const primitiveMatch = codeDocstringsExtractor.match(url) ?? match;
-		return await codeDocstringsExtractor.extract(
-			url,
-			primitiveMatch,
-			{
-				...context,
-				recipe: codeExtractOptions(manifest),
-			},
-			signal,
-		);
-	}
-	if (manifest.kind === "recipe") {
-		return await runRecipeManifest(manifest, url, match, context, signal);
-	}
-	throw new Error(`Unsupported declarative kind: ${manifest.kind}`);
-}
-
-async function runApiJsonManifest(
-	manifest: VerticalManifest,
-	url: URL,
-	match: Values,
-	context: VerticalExtractorContext,
-	signal?: AbortSignal,
-): Promise<unknown> {
-	const values = applyMatchOptions(url, match, manifest.matchOptions) ?? match;
-	const response = await fetchJsonRequest(manifest.request!, url, values, context, signal);
-	throwIfConfigured(manifest, response);
-	return buildJsonResult(manifest, response, values);
-}
-
-function throwIfConfigured(manifest: VerticalManifest, response: unknown): void {
-	const config = manifest.throwIf;
-	if (!config) return;
-	const value = extractJsonPath(
-		response,
-		config.path.startsWith("$") ? config.path : `$.${config.path}`,
-	);
-	if (value === undefined || value === null || value === "") return;
-	const message =
-		typeof config.message === "string"
-			? config.message
-			: typeof value === "string"
-				? value
-				: JSON.stringify(value);
-	throw new Error(message);
-}
-
-async function runApiXmlManifest(
-	manifest: VerticalManifest,
-	url: URL,
-	match: Values,
-	context: VerticalExtractorContext,
-	signal?: AbortSignal,
-): Promise<unknown> {
-	const values = applyMatchOptions(url, match, manifest.matchOptions) ?? match;
-	const request = manifest.request!;
-	const fetchUrl = buildRequestUrl(request, url, values);
-	const text = await context.fetchText?.(fetchUrl, signal);
-	if (text === undefined) throw new Error("fetchText not available for api-xml manifest");
-	return buildExtractResult(manifest.extract ?? {}, text, values, "xml");
-}
-
-async function fetchJsonRequest(
+export type MatchValues = Record<string, string>;
+export type ResponseFormat = "json" | "xml";
+export async function fetchJsonRequest(
 	request: ManifestRequest,
 	url: URL,
-	values: Values,
+	values: MatchValues,
 	context: VerticalExtractorContext,
 	signal?: AbortSignal,
 ): Promise<unknown> {
@@ -164,7 +31,7 @@ async function fetchJsonRequest(
 	return await context.fetchJson<unknown>(finalUrl, signal);
 }
 
-function buildRequestUrl(request: ManifestRequest, url: URL, values: Values): string {
+export function buildRequestUrl(request: ManifestRequest, url: URL, values: MatchValues): string {
 	const requestUrl = new URL(expandTemplate(request.urlTemplate, values, url));
 	for (const name of request.queryPassthrough ?? []) {
 		const value = url.searchParams.get(name);
@@ -176,32 +43,10 @@ function buildRequestUrl(request: ManifestRequest, url: URL, values: Values): st
 	return requestUrl.toString();
 }
 
-function buildJsonResult(
-	manifest: VerticalManifest,
-	response: unknown,
-	values: Values,
-): Record<string, unknown> {
-	const extract = manifest.extract ?? {};
-	const result = applyResultLimits(
-		buildExtractResult(extract as Record<string, string>, response, values, "json"),
-		manifest,
-	);
-	if (!manifest.extractList) return result;
-	const list = extractJsonPath(response, manifest.extractList.path);
-	const items = Array.isArray(list) ? list : [];
-	const rows = items.map((item) =>
-		buildExtractResult(manifest.extractList?.fields ?? {}, item, values, "json", {
-			omitUndefined: manifest.extractList?.omitUndefined ?? false,
-		}),
-	);
-	const wrapper = buildExtractResult(manifest.extractListWrapper ?? {}, response, values, "json");
-	return { ...wrapper, [manifest.extractList.as ?? "items"]: rows };
-}
-
-function buildExtractResult(
+export function buildExtractResult(
 	extract: Record<string, string>,
 	response: unknown,
-	values: Values,
+	values: MatchValues,
 	format: ResponseFormat,
 	options: { omitUndefined?: boolean } = {},
 ): Record<string, unknown> {
@@ -214,7 +59,7 @@ function buildExtractResult(
 	return result;
 }
 
-function applyResultLimits(
+export function applyResultLimits(
 	result: Record<string, unknown>,
 	manifest: Pick<VerticalManifest, "limits">,
 ): Record<string, unknown> {
@@ -229,29 +74,10 @@ function applyResultLimits(
 	return limited;
 }
 
-function buildSelectorResult(
-	extract: Record<string, string>,
-	html: string,
-): Record<string, unknown> {
-	const result: Record<string, unknown> = {};
-	for (const [field, selector] of Object.entries(extract)) {
-		result[field] = extractSimpleSelector(html, selector);
-	}
-	return result;
-}
-
-function extractSimpleSelector(html: string, selector: string): string | undefined {
-	const tag = selector.trim().replace(/^[#.]/u, "");
-	if (!/^[A-Za-z][\w-]*$/u.test(tag)) return undefined;
-	const regex = new RegExp(`<${escapeRegex(tag)}\\b[^>]*>([\\s\\S]*?)</${escapeRegex(tag)}>`, "iu");
-	const value = regex.exec(html)?.[1];
-	return value ? cleanText(value.replaceAll(/<[^>]+>/gu, "")) : undefined;
-}
-
 function evaluateExpression(
 	response: unknown,
 	expression: string,
-	values: Values,
+	values: MatchValues,
 	format: ResponseFormat,
 ): unknown {
 	const alternatives = expression.split("||").map((part) => part.trim());
@@ -277,7 +103,7 @@ function evaluateExpression(
 }
 
 /** Expand {{key}} and {{key|filter}} templates. */
-function expandTemplate(template: string, values: Values, url: URL): string {
+function expandTemplate(template: string, values: MatchValues, url: URL): string {
 	return template.replaceAll(/\{\{\s*([^}]+)\s*\}\}/gu, (_match, rawKey: string) => {
 		const [key, ...filters] = rawKey.split("|").map((part) => part.trim());
 		let value = key === "url" ? url.toString() : (values[key] ?? "");
@@ -312,29 +138,7 @@ function encodePathSegments(value: string): string {
 		.join("/");
 }
 
-/** Simple JSONPath-like extractor supporting $.a, $.a.b, $.a[0]. */
-export function extractJsonPath(obj: unknown, path: string): unknown {
-	if (path === "$" || path === "") return obj;
-	if (!path.startsWith("$.")) return path;
-	const segments = path.slice(2).split(".");
-	let current: unknown = obj;
-	for (const segment of segments) {
-		if (current === null || current === undefined) return undefined;
-		const arrayMatch = segment.match(/^(.+)\[(\d+)\]$/u);
-		if (arrayMatch) {
-			const key = arrayMatch[1];
-			const index = Number.parseInt(arrayMatch[2], 10);
-			const arr = (current as Record<string, unknown>)[key];
-			if (!Array.isArray(arr)) return undefined;
-			current = arr[index];
-		} else {
-			current = (current as Record<string, unknown>)[segment];
-		}
-	}
-	return current;
-}
-
-function applyValueTransforms(value: unknown, transforms: string[], values: Values): unknown {
+function applyValueTransforms(value: unknown, transforms: string[], values: MatchValues): unknown {
 	let current = value;
 	for (const transform of transforms) {
 		if (transform === "clean")
@@ -520,38 +324,4 @@ function decodeXml(value: string): string {
 		.replaceAll("&lt;", "<")
 		.replaceAll("&gt;", ">")
 		.replaceAll("&amp;", "&");
-}
-
-async function runSelectorManifest(
-	manifest: VerticalManifest,
-	url: URL,
-	match: Values,
-	context: VerticalExtractorContext,
-	signal?: AbortSignal,
-): Promise<unknown> {
-	const request = manifest.request!;
-	const values = applyMatchOptions(url, match, manifest.matchOptions) ?? match;
-	const page = await context.fetchPage?.(buildRequestUrl(request, url, values), signal);
-	if (!page) throw new Error("fetchPage not available for selector manifest");
-	return applyResultLimits(buildSelectorResult(manifest.extract ?? {}, page.text), manifest);
-}
-
-async function runPatternManifest(
-	manifest: VerticalManifest,
-	url: URL,
-	match: Values,
-	context: VerticalExtractorContext,
-	signal?: AbortSignal,
-): Promise<unknown> {
-	const request = manifest.request!;
-	const values = applyMatchOptions(url, match, manifest.matchOptions) ?? match;
-	const text = await context.fetchText?.(buildRequestUrl(request, url, values), signal);
-	if (text === undefined) throw new Error("fetchText not available for pattern manifest");
-	const result: Record<string, unknown> = {};
-	for (const [field, pattern] of Object.entries(manifest.extract ?? {})) {
-		const regex = new RegExp(pattern, "gmu");
-		const matches = Array.from(text.matchAll(regex)).map((m) => (m.length > 1 ? m[1] : m[0]));
-		result[field] = matches.length > 1 ? matches : matches[0];
-	}
-	return result;
 }

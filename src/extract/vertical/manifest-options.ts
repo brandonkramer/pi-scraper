@@ -1,9 +1,9 @@
-/** @file Small helpers for reading primitive options from recipe YAML. */
-import type { VerticalExtractorContext } from "../capabilities.ts";
-import type { VerticalManifest } from "../manifest/types.ts";
+/** @file Helpers for reading options from manifest YAML into extractor context. */
+import type { VerticalExtractorContext } from "./capabilities.ts";
+import type { VerticalManifest } from "./manifest-types.ts";
 
-export function recipeOptions(context: VerticalExtractorContext): Record<string, unknown> {
-	return asRecord(context.recipe) ?? {};
+export function manifestOptions(context: VerticalExtractorContext): Record<string, unknown> {
+	return asRecord(context.manifest) ?? {};
 }
 
 /** Options for code-extract manifests (or legacy recipe.code.docstrings blocks). */
@@ -20,13 +20,6 @@ export function codeExtractOptions(manifest: VerticalManifest): Record<string, u
 		);
 	}
 	return asRecord(manifest.recipe) ?? {};
-}
-
-export function optionRecord(
-	options: Record<string, unknown>,
-	path: string,
-): Record<string, unknown> | undefined {
-	return asRecord(readPath(options, path));
 }
 
 export function optionBoolean(
@@ -46,15 +39,6 @@ export function optionNumber(
 	const value = readPath(options, path);
 	if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
 	return Math.max(0, Math.trunc(value));
-}
-
-export function optionString(
-	options: Record<string, unknown>,
-	path: string,
-	fallback: string,
-): string {
-	const value = readPath(options, path);
-	return typeof value === "string" && value ? value : fallback;
 }
 
 export function optionStringArray(options: Record<string, unknown>, path: string): string[] {

@@ -1,7 +1,7 @@
 /** @file Tests for declarative recursive JSON walk rules. */
 import { describe, expect, it } from "vitest";
 
-import { evaluateJsonWalkRule } from "../../vertical/json-walk-rules.ts";
+import { evaluateJsonWalkRule } from "../../vertical/json-walk.ts";
 
 describe("json walk rules", () => {
 	it("collects nested projected objects with transforms and dedupe", () => {

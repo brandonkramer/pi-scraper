@@ -1,8 +1,13 @@
 /** @file Generic deterministic source-code docstring extraction primitive. */
 
-import { parseDocstrings, type ParsedDocstrings } from "../../../parse/markup/docstrings.ts";
-import { capability, type VerticalExtractor } from "../../vertical/capabilities.ts";
-import { optionBoolean, optionNumber, optionStringArray } from "./recipe-options.ts";
+import { parseDocstrings, type ParsedDocstrings } from "../../parse/markup/docstrings.ts";
+import { capability, type VerticalExtractor } from "./capabilities.ts";
+import {
+	manifestOptions,
+	optionBoolean,
+	optionNumber,
+	optionStringArray,
+} from "./manifest-options.ts";
 
 export const codeDocstringsExtractor: VerticalExtractor<ParsedDocstrings> = {
 	capability: capability(
@@ -19,7 +24,7 @@ export const codeDocstringsExtractor: VerticalExtractor<ParsedDocstrings> = {
 	),
 	match: (url) => (isSupportedSourceUrl(url) ? { file: url.pathname } : undefined),
 	extract: async (url, match, context, signal) => {
-		const options = docstringOptions(context.recipe ?? {});
+		const options = docstringOptions(manifestOptions(context));
 		const file = match.file;
 		if (!isAllowedSourceFile(file, options)) return { file, exports: [] };
 		const text = context.fetchPage

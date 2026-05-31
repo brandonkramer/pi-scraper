@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 4
 name: github_release
 # api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
 kind: api-json
 description: GitHub release metadata, tag, assets, and changelog.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://github.com/:owner/:repo/releases/tag/:tag+
 # Runtime requirements for the scrape host.

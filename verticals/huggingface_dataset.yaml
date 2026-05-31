@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 11
 name: huggingface_dataset
 # api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
 kind: api-json
 description: Hugging Face dataset metadata, tags, and downloads.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://huggingface.co/datasets/:id+
   - https://huggingface.co/datasets/:dataset

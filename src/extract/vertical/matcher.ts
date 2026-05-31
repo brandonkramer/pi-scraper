@@ -1,5 +1,5 @@
 /** @file URL matcher for vertical manifests. */
-import type { VerticalManifest } from "./types.ts";
+import type { VerticalManifest } from "./manifest-types.ts";
 
 type Values = Record<string, string>;
 

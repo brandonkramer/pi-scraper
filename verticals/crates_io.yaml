@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 8
 name: crates_io
 # api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
 kind: api-json
 description: crates.io crate metadata, version, and downloads.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://crates.io/crates/:crate
 # Runtime requirements for the scrape host.

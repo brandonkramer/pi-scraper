@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 13
 name: reddit
 # http-workflow: multi-step pipeline (steps[]); final step is usually extract:.
 kind: http-workflow
 description: Reddit post metadata, comments, and subreddit.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://www.reddit.com/r/:subreddit/comments/:postId/:slug*
   - https://old.reddit.com/r/:subreddit/comments/:postId/:slug*

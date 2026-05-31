@@ -7,19 +7,19 @@ import path from "node:path";
 
 import { parse as parseYaml } from "yaml";
 
-import { resolvePiStoragePaths } from "../../../storage/paths.ts";
-import type {
-	ManifestDiagnostic,
-	ManifestLoadResult,
-	ManifestSource,
-	VerticalManifest,
-} from "./types.ts";
+import { resolvePiStoragePaths } from "../../storage/paths.ts";
+import type { ManifestDiagnostic, ManifestSource, VerticalManifest } from "./manifest-types.ts";
 import { isManifestValid, validateManifest } from "./validate.ts";
 
 export interface LayeredManifestLoadResult {
 	packageManifests: VerticalManifest[];
 	globalManifests: VerticalManifest[];
 	projectManifests: VerticalManifest[];
+	errors: ManifestDiagnostic[];
+}
+
+interface ManifestLoadResult {
+	manifests: VerticalManifest[];
 	errors: ManifestDiagnostic[];
 }
 
@@ -47,18 +47,9 @@ export async function loadLayeredManifests(
 	};
 }
 
-/** Load global and optionally project manifests; retained for direct callers. */
-export async function loadUserManifests(includeProject = true): Promise<ManifestLoadResult> {
-	const layered = await loadLayeredManifests(includeProject);
-	return {
-		manifests: [...layered.globalManifests, ...layered.projectManifests],
-		errors: layered.errors,
-	};
-}
-
 /** Root-level package manifests live at pi-scraper/verticals/*.yaml. */
 function resolvePackageVerticalsDir(): string {
-	return path.resolve(import.meta.dirname, "../../../../verticals");
+	return path.resolve(import.meta.dirname, "../../../verticals");
 }
 
 async function loadManifestsFromDirectory(

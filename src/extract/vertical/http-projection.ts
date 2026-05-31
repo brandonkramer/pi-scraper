@@ -1,18 +1,18 @@
-/** @file Generic HTTP/JSON recipe primitives for vertical manifests. */
-import type { VerticalExtractorContext } from "../capabilities.ts";
+/** @file HTTP JSON projection and multi-request manifest runners. */
+import type { VerticalExtractorContext } from "./capabilities.ts";
 import type {
 	ManifestRecipeProjection,
 	ManifestRecipeRequest,
 	ManifestRecipeStep,
 	ManifestRequest,
 	VerticalManifest,
-} from "./types.ts";
+} from "./manifest-types.ts";
 
 type Scope = Record<string, unknown>;
 
 type FindConfig = NonNullable<ManifestRecipeStep["find"]>;
 
-export async function runHttpJsonRecipe(
+export async function runLegacyHttpJson(
 	manifest: VerticalManifest,
 	url: URL,
 	match: Record<string, string>,
@@ -45,7 +45,7 @@ function isHttpJsonPrimitive(name: string | undefined): boolean {
 	);
 }
 
-export function supportsHttpJsonRecipe(manifest: VerticalManifest): boolean {
+export function supportsLegacyHttpJson(manifest: VerticalManifest): boolean {
 	return isHttpJsonPrimitive(manifest.recipe?.primitive);
 }
 
@@ -74,7 +74,7 @@ async function runJsonChain(
 	signal?: AbortSignal,
 ): Promise<unknown> {
 	const scope: Scope = { ...match };
-	const steps = manifest.steps ?? manifest.recipe?.steps ?? [];
+	const steps = manifestSteps(manifest);
 	if (steps.length === 0) throw new Error("HTTP JSON chain requires steps");
 	for (const step of steps) {
 		const response = step.request
@@ -89,7 +89,7 @@ async function runJsonChain(
 	return projection ? projectObject(projection, scope, scope, url) : scope;
 }
 
-export async function runApiJsonChainManifest(
+export async function runApiJsonChain(
 	manifest: VerticalManifest,
 	url: URL,
 	match: Record<string, string>,
@@ -122,7 +122,7 @@ async function runJsonAggregate(
 	return projection ? projectObject(projection, scope, scope, url) : scope;
 }
 
-export async function runApiJsonAggregateManifest(
+export async function runApiJsonAggregate(
 	manifest: VerticalManifest,
 	url: URL,
 	match: Record<string, string>,
@@ -130,6 +130,16 @@ export async function runApiJsonAggregateManifest(
 	signal?: AbortSignal,
 ): Promise<unknown> {
 	return await runJsonAggregate(manifest, url, match, context, signal);
+}
+
+function manifestSteps(manifest: VerticalManifest): ManifestRecipeStep[] {
+	return (manifest.steps ?? manifest.recipe?.steps ?? []).filter((step) => isRecipeStep(step));
+}
+
+function isRecipeStep(
+	value: ManifestRecipeStep | Record<string, unknown>,
+): value is ManifestRecipeStep {
+	return "request" in value || "select" in value || "as" in value || "find" in value;
 }
 
 function manifestProjection(

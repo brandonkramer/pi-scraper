@@ -1,34 +1,36 @@
-/** @file Runtime bridge for complex YAML/JSONC vertical recipes. */
+/** @file Runtime bridge for legacy kind: recipe manifests. */
 import type { VerticalExtractor, VerticalExtractorContext } from "../capabilities.ts";
-import { codeDocstringsExtractor } from "../primitives/code-docstrings.ts";
-import { runHttpJsonRecipe, supportsHttpJsonRecipe } from "./recipe-http.ts";
-import { runRuleRecipe, supportsRuleRecipe } from "./recipe-rules.ts";
-import { runWorkflowRecipe, supportsWorkflowRecipe } from "./recipe-workflow.ts";
-import type { VerticalManifest } from "./types.ts";
+import { codeDocstringsExtractor } from "../code-docstrings.ts";
+import { runLegacyHttpJson, supportsLegacyHttpJson } from "../http-projection.ts";
+import type { VerticalManifest } from "../manifest-types.ts";
+import { runFieldRules, supportsFieldRules } from "./field-rules.ts";
+import { runHttpWorkflow, supportsHttpWorkflow } from "./http-workflow.ts";
 
 const recipePrimitives = new Map<string, VerticalExtractor>([
 	["code.docstrings", codeDocstringsExtractor],
 ]);
 
-export async function runRecipeManifest(
+export async function runLegacyRecipe(
 	manifest: VerticalManifest,
 	url: URL,
 	match: Record<string, string>,
 	context: VerticalExtractorContext,
 	signal?: AbortSignal,
 ): Promise<unknown> {
-	if (supportsHttpJsonRecipe(manifest)) {
-		return await runHttpJsonRecipe(manifest, url, match, context, signal);
+	if (supportsLegacyHttpJson(manifest)) {
+		return await runLegacyHttpJson(manifest, url, match, context, signal);
 	}
-	if (supportsRuleRecipe(manifest))
-		return await runRuleRecipe(manifest, url, match, context, signal);
-	if (supportsWorkflowRecipe(manifest))
-		return await runWorkflowRecipe(manifest, url, match, context, signal);
+	if (supportsFieldRules(manifest))
+		return await runFieldRules(manifest, url, match, context, signal);
+	if (supportsHttpWorkflow(manifest))
+		return await runHttpWorkflow(manifest, url, match, context, signal);
 	const primitiveName = manifest.recipe?.primitive;
 	const primitive = selectRecipePrimitive(manifest);
 	if (!primitive) throw new Error(`Unsupported recipe primitive: ${primitiveName ?? "<missing>"}`);
 	const primitiveMatch = primitive.match(url) ?? match;
-	const recipeContext = manifest.recipe ? { ...context, recipe: { ...manifest.recipe } } : context;
+	const recipeContext = manifest.recipe
+		? { ...context, manifest: { ...manifest.recipe } }
+		: context;
 	return await primitive.extract(url, primitiveMatch, recipeContext, signal);
 }
 

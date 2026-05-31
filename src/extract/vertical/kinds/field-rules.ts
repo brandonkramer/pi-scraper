@@ -11,8 +11,8 @@ import {
 } from "../../doc-structure.ts";
 import { cleanText, stripUndefined, titleCase, truncateText } from "../../text.ts";
 import type { VerticalExtractorContext } from "../capabilities.ts";
-import { evaluateJsonWalkRule } from "../json-walk-rules.ts";
-import type { ManifestRequest, VerticalManifest } from "./types.ts";
+import { evaluateJsonWalkRule } from "../json-walk.ts";
+import type { ManifestRequest, VerticalManifest } from "../manifest-types.ts";
 
 type Scope = Record<string, unknown>;
 type FieldSpec = Record<string, unknown>;
@@ -38,7 +38,7 @@ function ruleExtractConfig(manifest: VerticalManifest): RuleExtractConfig {
 	};
 }
 
-export function supportsRuleRecipe(manifest: VerticalManifest): boolean {
+export function supportsFieldRules(manifest: VerticalManifest): boolean {
 	if (manifest.kind === "html-extract" || manifest.kind === "text-extract") return true;
 	const primitive = manifest.recipe?.primitive;
 	return (
@@ -46,7 +46,7 @@ export function supportsRuleRecipe(manifest: VerticalManifest): boolean {
 	);
 }
 
-export async function runRuleRecipe(
+export async function runFieldRules(
 	manifest: VerticalManifest,
 	url: URL,
 	match: Record<string, string>,

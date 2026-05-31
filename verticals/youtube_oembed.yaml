@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 24
 name: youtube_oembed
 # api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
 kind: api-json
 description: Lightweight YouTube oEmbed metadata fallback without transcripts or comments.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://www.youtube.com/watch
   - https://youtube.com/watch

@@ -1,11 +1,10 @@
-# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/manifest/.
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
 version: 1
 order: 7
 name: pypi
 # api-json: one JSON HTTP request → extract ($.paths, {{captures}}, |transforms).
 kind: api-json
 description: PyPI package metadata, version, and project URLs.
-# URL patterns to match; :segments become named captures for {{templates}}.
 urlPatterns:
   - https://pypi.org/project/:project
   - https://pypi.org/project/:project/:version
