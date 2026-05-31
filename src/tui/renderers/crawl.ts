@@ -23,12 +23,7 @@ import { toolContextPackageResponseId, toolErrorLabel, toolSessionNotice } from 
 import { renderResourceItemList as toolResourceList } from "../tool-resource.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
 import { buildExpandedResultDetails, toolResultId } from "../tool-result.ts";
-import {
-	failureCountSegment as toolFailureCount,
-	successCountSegment as toolSuccessCount,
-	toolStatus,
-	activityCountSegment as toolActivityCount,
-} from "../tool-status.ts";
+import { countSegments as count, toolStatus } from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export type CrawlPageView = Partial<CrawlRunResult["pages"][number]>;
 
@@ -110,9 +105,9 @@ export function renderWebCrawlResult(
 		? toolErrorLabel("web_crawl", envelope.error, { allowIcons: true })
 		: toolStatus(
 				[
-					toolSuccessCount(metadata?.succeededCount ?? 0, "succeeded", theme),
-					toolFailureCount(failed, "failed", theme),
-					toolActivityCount(metadata?.visitedCount ?? 0, "visited", "◉", theme),
+					count.success(metadata?.succeededCount ?? 0, "succeeded", theme),
+					count.failure(failed, "failed", theme),
+					count.activity(metadata?.visitedCount ?? 0, "visited", "◉", theme),
 					toolNeutral(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
 					strategy
 						? toolNeutral(`· ${formatCrawlStrategyLabel(strategy) ?? strategy} crawl`, theme)

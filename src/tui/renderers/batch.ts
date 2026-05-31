@@ -25,12 +25,7 @@ import {
 } from "../tool-resource.ts";
 import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
 import { toolResultId } from "../tool-result.ts";
-import {
-	activityCountSegment as toolActivityCount,
-	failureCountSegment as toolFailureCount,
-	successCountSegment as toolSuccessCount,
-	toolStatus,
-} from "../tool-status.ts";
+import { countSegments as count, toolStatus } from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 export type BatchItem = Partial<Omit<BatchItemResult, "result" | "error">> & {
@@ -103,9 +98,9 @@ export function renderWebBatchResult(
 		? toolErrorLabel("web_batch", envelope.error, { allowIcons: true })
 		: toolStatus(
 				[
-					toolSuccessCount(succeeded, "succeeded", theme),
-					toolFailureCount(failed, "failed", theme),
-					toolActivityCount(cacheHits, "cache hits", "\u21BB", theme),
+					count.success(succeeded, "succeeded", theme),
+					count.failure(failed, "failed", theme),
+					count.activity(cacheHits, "cache hits", "\u21BB", theme),
 					toolFreshnessLabel(envelope),
 					!expanded && { text: "(ctrl+o to expand)", tone: "muted" as const },
 				],

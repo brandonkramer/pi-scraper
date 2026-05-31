@@ -121,6 +121,12 @@ export function activityCountSegment(
 	return activity(`${icon} ${count} ${label}`, theme);
 }
 
+export const countSegments = {
+	success: successCountSegment,
+	failure: failureCountSegment,
+	activity: activityCountSegment,
+} as const;
+
 export interface ToolStatusPart {
 	text: string;
 	tone?: "accent" | "success" | "failure" | "muted" | "neutral";
