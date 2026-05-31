@@ -23,7 +23,7 @@ import { scrapeOutputOptionSchema } from "./infra/schemas.ts";
 import { sessionLifecycle } from "./infra/session-lifecycle.ts";
 
 export const webBatchSchema = Type.Object({
-	urls: Type.Unsafe<string[]>({ minItems: 1 }),
+	urls: Type.Unsafe<string[]>({}),
 	concurrency: Type.Optional(Type.Unsafe<number>({})),
 	perHostConcurrency: Type.Optional(Type.Unsafe<number>({})),
 	...scrapeOutputOptionSchema,
