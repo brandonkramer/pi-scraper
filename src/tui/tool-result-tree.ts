@@ -5,14 +5,9 @@
 import { muted } from "./theme.ts";
 import type { RenderTheme } from "./types.ts";
 
-export interface ToolResultTreeRow {
-	key: string;
-	value: string;
-}
-
 export interface ToolResultTreeSection {
 	name: string;
-	rows: ToolResultTreeRow[];
+	rows: Array<{ key: string; value: string }>;
 }
 
 export interface ToolResultGroup {
