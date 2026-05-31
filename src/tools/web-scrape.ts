@@ -46,23 +46,23 @@ const scrapeTaskSchema = Type.Unsafe<"read" | "summarize">({ enum: ["read", "sum
 export const webScrapeSchema = Type.Object({
 	task: Type.Optional(scrapeTaskSchema),
 	url: Type.Optional(urlProperty()),
-	content: Type.Optional(Type.String()),
-	sentences: Type.Optional(Type.Integer()),
-	bullets: Type.Optional(Type.Integer()),
+	content: Type.Optional(Type.Unsafe<string>({})),
+	sentences: Type.Optional(Type.Unsafe<number>({})),
+	bullets: Type.Optional(Type.Unsafe<number>({})),
 	...scrapeModeOptionSchema,
 	format: Type.Optional(outputFormatSchema),
 	include: Type.Optional(Type.Unsafe<string[]>({ type: "array" })),
 	exclude: Type.Optional(Type.Unsafe<string[]>({ type: "array" })),
-	onlyMainContent: Type.Optional(Type.Boolean()),
-	timeoutSeconds: Type.Optional(Type.Integer()),
-	maxBytes: Type.Optional(Type.Integer()),
-	maxChars: Type.Optional(Type.Integer()),
+	onlyMainContent: Type.Optional(Type.Unsafe<boolean>({})),
+	timeoutSeconds: Type.Optional(Type.Unsafe<number>({})),
+	maxBytes: Type.Optional(Type.Unsafe<number>({})),
+	maxChars: Type.Optional(Type.Unsafe<number>({})),
 	headers: Type.Optional(
 		Type.Unsafe<Record<string, string>>({}),
 	),
 	proxy: Type.Optional(Type.Unsafe<string | string[]>({ type: ["string", "array"] })),
-	respectRobots: Type.Optional(Type.Boolean()),
-	refresh: Type.Optional(Type.Boolean()),
+	respectRobots: Type.Optional(Type.Unsafe<boolean>({})),
+	refresh: Type.Optional(Type.Unsafe<boolean>({})),
 	followAlternates: Type.Optional(Type.Unsafe<boolean>({})),
 	followMetaRefresh: Type.Optional(Type.Unsafe<boolean>({})),
 	saveToFile: Type.Optional(
@@ -70,8 +70,8 @@ export const webScrapeSchema = Type.Object({
 			description: "true/{dir,name,maxBytes}",
 		}),
 	),
-	snapshotName: Type.Optional(Type.String()),
-	snapshotTag: Type.Optional(Type.String()),
+	snapshotName: Type.Optional(Type.Unsafe<string>({})),
+	snapshotTag: Type.Optional(Type.Unsafe<string>({})),
 	diff: Type.Optional(
 		Type.Unsafe<
 			| boolean
@@ -89,17 +89,13 @@ export const webScrapeSchema = Type.Object({
 	contextLines: Type.Optional(Type.Unsafe<number>({})),
 	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
 
-	chunks: Type.Optional(
-		Type.Boolean(),
-	),
-	maxTokens: Type.Optional(Type.Integer()),
-	overlapTokens: Type.Optional(
-		Type.Integer(),
-	),
+	chunks: Type.Optional(Type.Unsafe<boolean>({})),
+	maxTokens: Type.Optional(Type.Unsafe<number>({})),
+	overlapTokens: Type.Optional(Type.Unsafe<number>({})),
 
 	...sessionOptionSchema,
-	stealth: Type.Optional(Type.Boolean()),
-	autoWait: Type.Optional(Type.Boolean()),
+	stealth: Type.Optional(Type.Unsafe<boolean>({})),
+	autoWait: Type.Optional(Type.Unsafe<boolean>({})),
 	browserBackend: Type.Optional(
 		Type.Unsafe<"cloak" | "playwright">({
 			description: "cloak|playwright",

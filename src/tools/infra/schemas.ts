@@ -13,8 +13,8 @@ export const scrapeModeOptionSchema = {
 
 export const sessionOptionSchema = {
 	sessionId: Type.Optional(Type.Unsafe<string>({})),
-	saveSession: Type.Optional(Type.Boolean()),
-	clearSession: Type.Optional(Type.Boolean()),
+	saveSession: Type.Optional(Type.Unsafe<boolean>({})),
+	clearSession: Type.Optional(Type.Unsafe<boolean>({})),
 } as const;
 
 export const modelProviderOptionSchema = {
@@ -27,8 +27,8 @@ export const scrapeOutputOptionSchema = {
 	...scrapeModeOptionSchema,
 	format: Type.Optional(outputFormatSchema),
 	...sessionOptionSchema,
-	stealth: Type.Optional(Type.Boolean()),
-	autoWait: Type.Optional(Type.Boolean()),
+	stealth: Type.Optional(Type.Unsafe<boolean>({})),
+	autoWait: Type.Optional(Type.Unsafe<boolean>({})),
 	browserBackend: Type.Optional(
 		Type.Unsafe<"cloak" | "playwright">({
 			description: "cloak|playwright",

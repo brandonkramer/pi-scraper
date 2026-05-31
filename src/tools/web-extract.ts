@@ -53,18 +53,18 @@ const extractSchemaPresetSchema = Type.Unsafe<
 
 export const webExtractSchema = Type.Object({
 	action: Type.Optional(extractActionSchema),
-	extractor: Type.Optional(Type.String()),
+	extractor: Type.Optional(Type.Unsafe<string>({})),
 	url: Type.Optional(urlProperty()),
-	content: Type.Optional(Type.String()),
-	prompt: Type.Optional(Type.String()),
+	content: Type.Optional(Type.Unsafe<string>({})),
+	prompt: Type.Optional(Type.Unsafe<string>({})),
 	schema: Type.Optional(
 		Type.Any(),
 	),
-	sentences: Type.Optional(Type.Number()),
-	bullets: Type.Optional(Type.Number()),
+	sentences: Type.Optional(Type.Unsafe<number>({})),
+	bullets: Type.Optional(Type.Unsafe<number>({})),
 	...modelProviderOptionSchema,
 	...scrapeOutputOptionSchema,
-	sourceFormat: Type.Optional(Type.String()),
+	sourceFormat: Type.Optional(Type.Unsafe<string>({})),
 	include: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	extractSchema: Type.Optional(extractSchemaPresetSchema),
 	length: Type.Optional(
@@ -92,25 +92,25 @@ export const webExtractSchema = Type.Object({
 		Type.Unsafe<"api-surface">({ enum: ["api-surface"] }),
 	),
 	// Selector extraction (Task 27)
-	selector: Type.Optional(Type.String({ description: "CSS/XPath" })),
-	selectorType: Type.Optional(Type.String()),
-	attribute: Type.Optional(Type.String()),
-	identifier: Type.Optional(Type.String()),
-	adaptive: Type.Optional(Type.Boolean()),
-	autoSave: Type.Optional(Type.Boolean()),
-	threshold: Type.Optional(Type.Number()),
-	limit: Type.Optional(Type.Integer()),
-	respectRobots: Type.Optional(Type.Boolean()),
+	selector: Type.Optional(Type.Unsafe<string>({ description: "CSS/XPath" })),
+	selectorType: Type.Optional(Type.Unsafe<string>({})),
+	attribute: Type.Optional(Type.Unsafe<string>({})),
+	identifier: Type.Optional(Type.Unsafe<string>({})),
+	adaptive: Type.Optional(Type.Unsafe<boolean>({})),
+	autoSave: Type.Optional(Type.Unsafe<boolean>({})),
+	threshold: Type.Optional(Type.Unsafe<number>({})),
+	limit: Type.Optional(Type.Unsafe<number>({})),
+	respectRobots: Type.Optional(Type.Unsafe<boolean>({})),
 	// Strategy extraction params (css-extract, xpath-extract, regex-extract, cosine)
 	selectors: Type.Optional(
 		Type.Unsafe<Record<string, string>>({
 			description: "CSS/XPath/regex map",
 		}),
 	),
-	query: Type.Optional(Type.String()),
-	topN: Type.Optional(Type.Integer()),
-	minScore: Type.Optional(Type.Number()),
-	flags: Type.Optional(Type.String()),
+	query: Type.Optional(Type.Unsafe<string>({})),
+	topN: Type.Optional(Type.Unsafe<number>({})),
+	minScore: Type.Optional(Type.Unsafe<number>({})),
+	flags: Type.Optional(Type.Unsafe<string>({})),
 });
 
 export type Params = Static<typeof webExtractSchema>;

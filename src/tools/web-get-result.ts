@@ -11,11 +11,11 @@ import { defineWebTool } from "./infra/define.ts";
 import { errorResult, structuredToolError, toolResult } from "./infra/result.ts";
 
 export const webGetResultSchema = Type.Object({
-	responseId: Type.Optional(Type.String()),
-	jobId: Type.Optional(Type.String()),
-	snapshotUrl: Type.Optional(Type.String()),
-	snapshotName: Type.Optional(Type.String()),
-	snapshotTag: Type.Optional(Type.String()),
+	responseId: Type.Optional(Type.Unsafe<string>({})),
+	jobId: Type.Optional(Type.Unsafe<string>({})),
+	snapshotUrl: Type.Optional(Type.Unsafe<string>({})),
+	snapshotName: Type.Optional(Type.Unsafe<string>({})),
+	snapshotTag: Type.Optional(Type.Unsafe<string>({})),
 });
 
 type Params = Static<typeof webGetResultSchema>;

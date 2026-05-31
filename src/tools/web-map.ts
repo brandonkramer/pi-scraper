@@ -13,7 +13,7 @@ import { urlProperty } from "./infra/schemas.ts";
 
 export const webMapSchema = Type.Object({
 	url: urlProperty(),
-	maxSitemaps: Type.Optional(Type.Number()),
+	maxSitemaps: Type.Optional(Type.Unsafe<number>({})),
 });
 
 type Params = Static<typeof webMapSchema>;

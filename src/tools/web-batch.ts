@@ -24,8 +24,8 @@ import { sessionLifecycle } from "./infra/session-lifecycle.ts";
 
 export const webBatchSchema = Type.Object({
 	urls: Type.Unsafe<string[]>({ type: "array", minItems: 1 }),
-	concurrency: Type.Optional(Type.Number()),
-	perHostConcurrency: Type.Optional(Type.Number()),
+	concurrency: Type.Optional(Type.Unsafe<number>({})),
+	perHostConcurrency: Type.Optional(Type.Unsafe<number>({})),
 	...scrapeOutputOptionSchema,
 	linesMatching: Type.Optional(Type.Unsafe<string[]>({ type: "array" })),
 	contextLines: Type.Optional(Type.Unsafe<number>({})),
