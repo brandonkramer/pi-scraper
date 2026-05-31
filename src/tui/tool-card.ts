@@ -1,14 +1,10 @@
 import type { Component } from "@earendil-works/pi-tui";
 
-import type {
-	BatchProgressItemView,
-	BatchProgressStatus,
-	BatchProgressView,
-} from "../batch/progress-state.ts";
+import type { BatchProgressView } from "../batch/progress-state.ts";
 import type { ProgressDetails, ToolContext } from "../types.ts";
 import { muted } from "./theme.ts";
 import { renderText } from "./tool-call.ts";
-import { formatChecklistItem, formatChecklistText } from "./tool-labels.ts";
+import { formatChecklistText } from "./tool-labels.ts";
 import { toolProcess, withSpinnerFooter } from "./tool-process.ts";
 import { toolResourceStatus, formatBytes } from "./tool-resource.ts";
 import { toolResultId } from "./tool-result.ts";
@@ -36,13 +32,13 @@ const FILE_TYPE_PREFIXES = [
 	"video/",
 ];
 
-export function isFileResult(envelope: Partial<ToolContext<unknown>>): boolean {
+export function toolIsFileResult(envelope: Partial<ToolContext<unknown>>): boolean {
 	const ct = envelope.contentType ?? "";
 	if (FILE_TYPE_PREFIXES.some((p) => ct === p || ct.startsWith(p))) return true;
 	return !!(envelope.data && typeof envelope.data === "object" && "fileSize" in envelope.data);
 }
 
-export function renderFileResultCard(
+export function toolFileResultCard(
 	envelope: Partial<ToolContext<Record<string, unknown>>>,
 	theme?: RenderTheme,
 ): RenderComponent {
@@ -71,7 +67,7 @@ function stringValue(value: unknown): string | undefined {
 	return JSON.stringify(value);
 }
 
-export function renderBatchProgressCard(
+export function toolBatchProgressCard(
 	details: ProgressDetails<{ batchProgress: BatchProgressView; spinnerTick?: number }>,
 	expanded: boolean,
 	theme?: RenderTheme,
@@ -101,12 +97,12 @@ export interface BatchResultCardOptions {
 	padToWidth?: boolean;
 }
 
-export function renderBatchResultCard(
+export function toolBatchResultCard(
 	options: BatchResultCardOptions,
 	expanded: boolean,
 	theme?: RenderTheme,
 ): RenderComponent {
-	return renderStackedResultCard(
+	return toolStackedCard(
 		{
 			...options,
 			body: (width) =>
@@ -139,68 +135,41 @@ function renderBatchProgressText(
 		],
 		theme,
 	);
-	const rows = batch.items
-		.slice(0, expanded ? batch.items.length : 12)
-		.map((item) => renderBatchRow(item, width, theme, restoreBg));
+	const rows = batch.items.slice(0, expanded ? batch.items.length : 12).map((item) => {
+		const sbWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
+		const bState: StatusPillState = progressPillState(item.status);
+		const statusBox =
+			item.status === "processing" && typeof item.progress === "number"
+				? (() => {
+						const clamped = Math.max(0, Math.min(1, item.progress));
+						const filled = Math.round(clamped * (sbWidth - 2));
+						const empty = sbWidth - 2 - filled;
+						return `[${"=".repeat(Math.max(0, filled - 1))}${filled > 0 ? ">" : ""}${" ".repeat(Math.max(0, empty))}]`;
+					})()
+				: renderStatusPill({
+						label: bState,
+						state: bState,
+						width: sbWidth,
+						theme,
+						startedAtMs: item.startedAtMs,
+						restoreBg,
+					});
+		return toolResourceStatus({
+			url: item.url,
+			label: bState,
+			state: bState,
+			width,
+			theme,
+			startedAtMs: item.startedAtMs,
+			statusBox,
+			restoreBg,
+		});
+	});
 	const more =
 		!expanded && batch.items.length > rows.length
 			? [muted(`… ${batch.items.length - rows.length} more urls`, theme)]
 			: [];
 	return [title, ...rows, ...more].join("\n");
-}
-
-function renderBatchRow(
-	item: BatchProgressItemView,
-	width: number,
-	theme?: RenderTheme,
-	restoreBg?: string,
-): string {
-	const statusWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
-	const state = statusState(item.status);
-	return toolResourceStatus({
-		url: item.url,
-		label: state,
-		state,
-		width,
-		theme,
-		startedAtMs: item.startedAtMs,
-		statusBox: renderStatusBox(item, statusWidth, theme, restoreBg),
-		restoreBg,
-	});
-}
-
-function renderStatusBox(
-	item: BatchProgressItemView,
-	width: number,
-	theme?: RenderTheme,
-	restoreBg?: string,
-): string {
-	if (item.status === "processing" && typeof item.progress === "number")
-		return renderProgressBar(item.progress, width - 2);
-	const state = statusState(item.status);
-	return renderStatusPill({
-		label: state,
-		state,
-		width,
-		theme,
-		startedAtMs: item.startedAtMs,
-		restoreBg,
-	});
-}
-
-function statusState(status: BatchProgressStatus) {
-	if (status === "queued") return "waiting";
-	if (status === "processing") return "loading";
-	return status;
-}
-
-/** @file Pi terminal UI progress primitives — bar, status bridge, and fallback card. */
-
-export function renderProgressBar(progress: number, width = 12): string {
-	const clamped = Math.max(0, Math.min(1, progress));
-	const filled = Math.round(clamped * width);
-	const empty = width - filled;
-	return `[${"=".repeat(Math.max(0, filled - 1))}${filled > 0 ? ">" : ""}${" ".repeat(Math.max(0, empty))}]`;
 }
 
 export function progressStartedAtMs(details: ProgressDetails): number | undefined {
@@ -218,7 +187,7 @@ export function progressPillLabel(state: string): string {
 	return state === "processing" || state === "connecting" ? "loading" : state;
 }
 
-export function renderProgressCard(
+export function toolProgressCard(
 	toolName: `web_${string}`,
 	details: ProgressDetails,
 	theme?: RenderTheme,
@@ -244,28 +213,30 @@ export function renderProgressCard(
 			});
 			const lines = [`${glyph} ${toolName} ${details.state}${count}${url}${message} ${pill}`];
 			if (details.checklist?.length) {
-				const formatter = icons ? formatChecklistItem : formatChecklistText;
-				lines.push(...details.checklist.map(formatter));
+				if (icons) {
+					lines.push(
+						...details.checklist.map(
+							(item: { label: string; state: string; detail?: string }) =>
+								`${{ done: "\u2713", failed: "\u2715", warning: "\u26A0", pending: "\u2610" }[item.state] ?? "\u2022"} ${item.label}${item.detail ? ` \u2014 ${item.detail}` : ""}`,
+						),
+					);
+				} else {
+					lines.push(...details.checklist.map(formatChecklistText));
+				}
 			}
 			if (details.counts) {
 				const counts = details.counts;
+				const segment = (val: number | undefined, label: string, render: (v: number) => string) =>
+					val === undefined ? undefined : icons ? render(val) : `${val} ${label}`;
 				lines.push(
 					[
-						counts.succeeded === undefined
-							? undefined
-							: icons
-								? successCountSegment(counts.succeeded, "succeeded", theme)
-								: `${counts.succeeded} succeeded`,
-						counts.failed === undefined
-							? undefined
-							: icons
-								? failureCountSegment(counts.failed, "failed", theme)
-								: `${counts.failed} failed`,
-						counts.cacheHits === undefined
-							? undefined
-							: icons
-								? activityCountSegment(counts.cacheHits, "cache hits", "ⓞ", theme)
-								: `${counts.cacheHits} cache hits`,
+						segment(counts.succeeded, "succeeded", (n) =>
+							successCountSegment(n, "succeeded", theme),
+						),
+						segment(counts.failed, "failed", (n) => failureCountSegment(n, "failed", theme)),
+						segment(counts.cacheHits, "cache hits", (n) =>
+							activityCountSegment(n, "cache hits", "ⓞ", theme),
+						),
 					]
 						.filter(Boolean)
 						.join(" · "),
@@ -303,12 +274,6 @@ export function defineResultRenderer(options: ResultRendererOptions): RenderComp
 	};
 }
 
-export const toolBatchProgressCard = renderBatchProgressCard;
-export const toolBatchResultCard = renderBatchResultCard;
-export const toolProgressCard = renderProgressCard;
-export const toolIsFileResult = isFileResult;
-export const toolFileResultCard = renderFileResultCard;
-
 export interface StackedResultCardOptions {
 	body: string | ((width: number) => string);
 	summary: string;
@@ -323,7 +288,7 @@ export interface StackedResultCardOptions {
 	hasError?: boolean;
 }
 
-export function renderStackedResultCard(
+export function toolStackedCard(
 	options: StackedResultCardOptions,
 	theme?: RenderTheme,
 ): RenderComponent {
@@ -368,7 +333,7 @@ export function toolResultCard(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const { renderContent, body, ...rest } = options;
-	return renderStackedResultCard(
+	return toolStackedCard(
 		{
 			...rest,
 			body: renderContent ?? body ?? "",
@@ -377,5 +342,3 @@ export function toolResultCard(
 		theme,
 	);
 }
-
-export const toolStackedCard = renderStackedResultCard;

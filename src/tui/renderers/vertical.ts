@@ -2,7 +2,12 @@
 import type { PiToolShell } from "../../types.ts";
 import { failure, muted, success } from "../theme.ts";
 import { renderText } from "../tool-call.ts";
-import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
+import {
+	buildToolResultTree,
+	splitValueByWidth,
+	toolResultTree,
+	type ToolResultGroup,
+} from "../tool-result-tree.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 interface VerticalBrowserFallbackMetadata {
@@ -33,10 +38,16 @@ export function renderVerticalResult(
 	}
 
 	const data = wrapper?.data as Record<string, unknown> | undefined;
-	const browserFallback = browserFallbackMetadata(wrapper);
-	const [metaLine] = extractorPreview(data);
+	const bfFallback = wrapper?.browserFallback as
+		| VerticalBrowserFallbackMetadata["browserFallback"]
+		| undefined;
+	const browserFallback = bfFallback?.used ? bfFallback : undefined;
+	const metaLine = extractorPreview(data);
 	const check = success("\u2713", theme);
-	const summaryDetails = [metaLine, browserFallbackLabel(browserFallback)]
+	const summaryDetails = [
+		metaLine,
+		browserFallback?.used ? `browser fallback · ${browserFallback.backend}` : undefined,
+	]
 		.filter(Boolean)
 		.join(" \u00B7 ");
 	const treeLine = `\u2514\u2500 ${check} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
@@ -69,7 +80,7 @@ export function renderVerticalResult(
 	if (segCount > firstSegments.length) {
 		transcriptLines.push(`… ${segCount - firstSegments.length} more segments`);
 	}
-	const wrappedLines = transcriptLines.flatMap((line) => wrapTranscriptLine(line, 80));
+	const wrappedLines = transcriptLines.flatMap((line) => splitValueByWidth(line, 80));
 	const transcriptBlock = wrappedLines
 		.map((line) => `${muted("\u2502 ", theme)}${line}`)
 		.join("\n");
@@ -77,21 +88,6 @@ export function renderVerticalResult(
 	const header = `${treeLine}\n${transcriptBlock}`;
 	if (!body) return renderText(header, { padToWidth: true });
 	return renderText(`${header}\n\n${body}`, { padToWidth: true });
-}
-
-function browserFallbackMetadata(
-	wrapper: Record<string, unknown> | undefined,
-): VerticalBrowserFallbackMetadata["browserFallback"] | undefined {
-	const fallback = wrapper?.browserFallback as
-		| VerticalBrowserFallbackMetadata["browserFallback"]
-		| undefined;
-	return fallback?.used ? fallback : undefined;
-}
-
-function browserFallbackLabel(
-	fallback: VerticalBrowserFallbackMetadata["browserFallback"] | undefined,
-): string | undefined {
-	return fallback?.used ? `browser fallback · ${fallback.backend}` : undefined;
 }
 
 function buildVerticalSections(
@@ -146,55 +142,31 @@ function buildVerticalSections(
 	return sections;
 }
 
-function extractorPreview(data: unknown): [string, string | undefined] {
+function extractorPreview(data: unknown): string {
 	const d = data as Record<string, unknown> | undefined;
-	if (!d) return ["extracted JSON", undefined];
-
-	const parts: string[] = [];
-	if (typeof d.title === "string" && d.title) parts.push(d.title);
-
-	if (typeof d.views === "number" && d.views > 0) {
-		parts.push(`${(d.views / 1000000).toFixed(d.views >= 100000000 ? 0 : 1)}M views`);
-	} else if (typeof d.views === "string" && d.views) {
-		parts.push(`${d.views} views`);
-	}
-
-	const transcript = d.transcript as { text?: string; segments?: unknown[] } | undefined;
-	if (transcript?.segments) parts.push(`${transcript.segments.length} segments`);
-	if (transcript?.text) {
-		const text = transcript.text.replaceAll(/\s+/gu, " ").trim();
-		const snippet = text.length > 120 ? text.slice(0, 120) + "\u2026" : text;
-		return [parts.join(" \u00B7 "), snippet];
-	}
-
-	if (typeof d.description === "string" && d.description) {
-		const desc = d.description.replaceAll(/\s+/gu, " ").trim();
-		const snippet = desc.length > 120 ? desc.slice(0, 120) + "\u2026" : desc;
-		parts.push(snippet);
-	}
-
-	const comments = d.comments;
-	if (Array.isArray(comments) && comments.length > 0) parts.push(`${comments.length} comments`);
-
-	const tracks = d.transcriptTracks;
-	if (Array.isArray(tracks) && tracks.length > 1) parts.push(`${tracks.length} languages`);
-
-	return [parts.length > 0 ? parts.join(" \u00B7 ") : "extracted JSON", undefined];
-}
-
-function wrapTranscriptLine(line: string, maxChars: number): string[] {
-	if (line.length <= maxChars) return [line];
-	const lines: string[] = [];
-	let remaining = line;
-	while (remaining.length > 0) {
-		if (remaining.length <= maxChars) {
-			lines.push(remaining);
-			break;
-		}
-		let breakAt = remaining.lastIndexOf(" ", maxChars);
-		if (breakAt <= 0) breakAt = maxChars;
-		lines.push(remaining.slice(0, breakAt));
-		remaining = remaining.slice(breakAt).trimStart();
-	}
-	return lines;
+	if (!d) return "extracted JSON";
+	const trans = d.transcript as { text?: string; segments?: unknown[] } | undefined;
+	return (
+		[
+			typeof d.title === "string" && d.title ? d.title : undefined,
+			typeof d.views === "number" && d.views > 0
+				? `${(d.views / 1000000).toFixed(d.views >= 100000000 ? 0 : 1)}M views`
+				: typeof d.views === "string" && d.views
+					? `${d.views} views`
+					: undefined,
+			trans?.segments ? `${trans.segments.length} segments` : undefined,
+			!trans?.text && typeof d.description === "string" && d.description
+				? d.description.replaceAll(/\s+/gu, " ").trim().slice(0, 120) +
+					(d.description.length > 120 ? "\u2026" : "")
+				: undefined,
+			Array.isArray(d.comments) && d.comments.length > 0
+				? `${d.comments.length} comments`
+				: undefined,
+			Array.isArray(d.transcriptTracks) && d.transcriptTracks.length > 1
+				? `${d.transcriptTracks.length} languages`
+				: undefined,
+		]
+			.filter(Boolean)
+			.join(" \u00B7 ") || "extracted JSON"
+	);
 }

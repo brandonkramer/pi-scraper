@@ -38,14 +38,6 @@ export function toolResultTree(
 	terminalWidth: number,
 	theme?: RenderTheme,
 ): string {
-	return renderTreeSections(sections, terminalWidth, theme);
-}
-
-function renderTreeSections(
-	sections: ToolResultTreeSection[],
-	terminalWidth: number,
-	theme?: RenderTheme,
-): string {
 	if (sections.length === 0) return "";
 
 	const keyColWidth = Math.max(1, ...sections.flatMap((s) => s.rows.map((r) => r.key.length)));
@@ -83,7 +75,7 @@ function renderTreeSections(
 	return lines.join("\n");
 }
 
-function splitValueByWidth(value: string, maxChars: number): string[] {
+export function splitValueByWidth(value: string, maxChars: number): string[] {
 	if (value.length <= maxChars) return [value];
 	const lines: string[] = [];
 	let remaining = value;

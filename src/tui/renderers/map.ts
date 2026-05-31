@@ -5,43 +5,17 @@ import {
 	type ProgressDetails,
 	type ToolContext,
 } from "../../types.ts";
+import { muted as toolMuted } from "../theme.ts";
+import { renderText as toolText } from "../tool-call.ts";
 import { toolProgressCard, toolResultCard } from "../tool-card.ts";
 import { toolProcess } from "../tool-process.ts";
 import { toolResource } from "../tool-resource.ts";
 import { toolResultId } from "../tool-result.ts";
-import { toolMuted, toolText } from "../tool-text.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export interface MapUrlEntryView {
 	url: string;
 	source?: string;
 	title?: string;
-}
-
-export function renderMapResultCard(
-	urls: readonly MapUrlEntryView[],
-	expanded: boolean,
-	theme?: RenderTheme,
-): RenderComponent {
-	return toolResultCard({
-		renderContent(width) {
-			return renderMapLines(urls, expanded, width, theme);
-		},
-		padToWidth: true,
-	});
-}
-
-function renderMapLines(
-	urls: readonly MapUrlEntryView[],
-	expanded: boolean,
-	width: number,
-	theme?: RenderTheme,
-): string {
-	const rows = urls
-		.slice(0, expanded ? 50 : 12)
-		.map((entry) => toolResource({ url: entry.url, badge: entry.source, width, theme }));
-	if (urls.length > rows.length)
-		rows.push(toolMuted(`… ${urls.length - rows.length} more urls`, theme));
-	return rows.join("\n");
 }
 
 export function renderWebMapResult(
@@ -67,8 +41,12 @@ export function renderWebMapResult(
 		});
 	return toolResultCard({
 		renderContent(width) {
-			const mapText = renderMapLines(urls, expanded, width, theme);
-			const lines = [summary, mapText];
+			const rows = urls
+				.slice(0, expanded ? 50 : 12)
+				.map((entry) => toolResource({ url: entry.url, badge: entry.source, width, theme }));
+			if (urls.length > rows.length)
+				rows.push(toolMuted(`… ${urls.length - rows.length} more urls`, theme));
+			const lines = [summary, rows.join("\n")];
 			if (expanded) {
 				const ids = toolResultId([{ label: "responseId", id: envelope.responseId ?? "" }], theme);
 				if (ids.length > 0) lines.push("", ...ids);

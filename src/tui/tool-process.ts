@@ -1,17 +1,12 @@
 /** @file Pi terminal UI spinner and spinner-footer primitives. */
 import { muted, separator } from "./theme.ts";
-import { SPINNER_FRAMES } from "./tool-spinner.ts";
-import { toolStatus, type ToolStatusPart } from "./tool-status.ts";
+import { SPINNER_FRAMES, toolStatus, type ToolStatusPart } from "./tool-status.ts";
 import type { RenderTheme } from "./types.ts";
-
-export function renderSpinner(tick: number, message = "Working..."): string {
-	const frame = SPINNER_FRAMES[tick % SPINNER_FRAMES.length];
-	return `${frame} ${message}`;
-}
 
 export function withSpinnerFooter(lines: string[], tick?: number): string {
 	if (typeof tick !== "number") return lines.join("\n");
-	return [...lines, "", renderSpinner(tick)].join("\n");
+	const frame = SPINNER_FRAMES[tick % SPINNER_FRAMES.length];
+	return [...lines, "", `${frame} Working...`].join("\n");
 }
 
 export function toolProcess(

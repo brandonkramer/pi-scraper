@@ -9,32 +9,37 @@ import {
 	type ToolContext,
 } from "../../types.ts";
 import {
+	activity as toolActivity,
+	failure as toolFailure,
+	getMarkdownTheme as toolMarkdownTheme,
+	muted as toolMuted,
+	separator as toolSeparator,
+	success as toolSuccess,
+} from "../theme.ts";
+import {
 	toolFileResultCard,
 	toolIsFileResult,
 	toolResultCard,
 	toolStackedCard,
+	progressStartedAtMs as toolProgressStartedAtMs,
 } from "../tool-card.ts";
 import {
-	toolChecklistText,
-	toolCurrentSpinnerFrame,
-	toolFormatBytes,
-	toolFormatDuration,
-	toolFormatPreview,
-	toolPreviewText,
-	toolProgressStartedAtMs,
-} from "../tool-format.ts";
-import { toolFreshnessLabel, toolSessionNotice } from "../tool-labels.ts";
-import { toolResourceStatus } from "../tool-resource.ts";
-import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
-import { toolStatusDot, toolStatus } from "../tool-status.ts";
+	toolFreshnessLabel,
+	toolSessionNotice,
+	formatChecklistText as toolChecklistText,
+} from "../tool-labels.ts";
 import {
-	toolActivity,
-	toolFailure,
-	toolMarkdownTheme,
-	toolMuted,
-	toolSeparator,
-	toolSuccess,
-} from "../tool-text.ts";
+	toolResourceStatus,
+	formatBytes as toolFormatBytes,
+	formatDuration as toolFormatDuration,
+} from "../tool-resource.ts";
+import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
+import { previewText as toolPreviewText } from "../tool-result.ts";
+import {
+	toolStatusDot,
+	toolStatus,
+	currentSpinnerFrame as toolCurrentSpinnerFrame,
+} from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 export function renderWebScrapeResult(
@@ -43,7 +48,33 @@ export function renderWebScrapeResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const details = result.details as Partial<ToolContext<unknown>> | ProgressDetails;
-	if (isProgress(details)) return renderScrapeProgressCard(details, expanded, theme);
+	if (isProgress(details)) {
+		const url = details.url ?? "unknown URL";
+		const status =
+			details.state === "error" ? "error" : details.state === "done" ? "done" : "loading";
+		const startedAtMs = toolProgressStartedAtMs(details) ?? Date.now();
+		const working = status === "loading";
+		return toolResultCard({
+			renderContent(width) {
+				const row = toolResourceStatus({
+					url,
+					label: status,
+					state: status,
+					width,
+					theme,
+					startedAtMs,
+					restoreBg: "toolPendingBg",
+				});
+				const summary = `web_scrape ${details.state}${toolSeparator(theme)}${toolMuted("(ctrl+o to expand)", theme)}`;
+				const lines = [row, "", summary];
+				if (expanded && details.checklist?.length)
+					lines.push("", ...details.checklist.map(toolChecklistText));
+				if (working) lines.push("", `${toolCurrentSpinnerFrame()} Working...`);
+				return lines.join("\n");
+			},
+			padToWidth: true,
+		});
+	}
 	const envelope = details as Partial<ToolContext<Record<string, unknown>>>;
 
 	const stale = envelope.cache?.staleness;
@@ -65,62 +96,7 @@ export function renderWebScrapeResult(
 				],
 				theme,
 			);
-	return renderScrapeResultCard(
-		envelope,
-		{
-			expanded,
-			summary,
-			notice: toolSessionNotice(envelope),
-			preview: toolPreviewText(result, envelope),
-			responseId: envelope.responseId,
-		},
-		theme,
-	);
-}
-
-function renderScrapeProgressCard(
-	details: ProgressDetails,
-	expanded: boolean,
-	theme?: RenderTheme,
-): RenderComponent {
-	const url = details.url ?? "unknown URL";
-	const status =
-		details.state === "error" ? "error" : details.state === "done" ? "done" : "loading";
-	const startedAtMs = toolProgressStartedAtMs(details) ?? Date.now();
-	const working = status === "loading";
-	return toolResultCard({
-		renderContent(width) {
-			const row = toolResourceStatus({
-				url,
-				label: status,
-				state: status,
-				width,
-				theme,
-				startedAtMs,
-				restoreBg: "toolPendingBg",
-			});
-			const summary = `web_scrape ${details.state}${toolSeparator(theme)}${toolMuted("(ctrl+o to expand)", theme)}`;
-			const lines = [row, "", summary];
-			if (expanded && details.checklist?.length)
-				lines.push("", ...details.checklist.map(toolChecklistText));
-			if (working) lines.push("", `${toolCurrentSpinnerFrame()} Working...`);
-			return lines.join("\n");
-		},
-		padToWidth: true,
-	});
-}
-
-function renderScrapeResultCard(
-	envelope: Partial<ToolContext<Record<string, unknown>>>,
-	options: {
-		expanded: boolean;
-		summary: string;
-		notice?: string;
-		preview?: string;
-		responseId?: string;
-	},
-	theme?: RenderTheme,
-): RenderComponent {
+	const preview = toolPreviewText(result, envelope);
 	const url = envelope.finalUrl ?? envelope.url ?? "unknown URL";
 	const state = envelope.error ? "error" : "done";
 	return toolStackedCard(
@@ -133,18 +109,31 @@ function renderScrapeResultCard(
 					width,
 					theme,
 				}),
-			summary: options.summary,
-			expanded: options.expanded,
-			notice: options.notice,
-			expandedSections: (width) => scrapeExpandedSections(envelope, options, width, theme),
-			markdownPreview: () => markdownPreviewComponent(envelope.format, options.preview, theme),
-			responseId: options.responseId,
+			summary,
+			expanded,
+			notice: toolSessionNotice(envelope),
+			expandedSections: (width) => {
+				if (toolIsFileResult(envelope)) {
+					return [toolFileResultCard(envelope, theme).render(width).join("\n")];
+				}
+				const allSections = buildScrapeSections(envelope, theme);
+				const out = [toolResultTree(allSections, width, theme)];
+				if (preview && !markdownPreviewComponent(envelope.format, preview, theme))
+					out.push(
+						(envelope.format === "json" || envelope.format === "html"
+							? `\`\`\`${envelope.format}\n${preview}\n\`\`\``
+							: preview
+						).slice(0, 1200),
+					);
+				return out;
+			},
+			markdownPreview: () => markdownPreviewComponent(envelope.format, preview, theme),
+			responseId: envelope.responseId,
 			hasError: !!envelope.error,
 		},
 		theme,
 	);
 }
-
 function markdownPreviewComponent(
 	format: string | undefined,
 	preview: string | undefined,
@@ -152,22 +141,6 @@ function markdownPreviewComponent(
 ): RenderComponent | undefined {
 	if (format !== "markdown" || !preview || preview.length <= 100) return;
 	return new Markdown(preview.slice(0, 1200), 0, 0, toolMarkdownTheme(theme));
-}
-
-function scrapeExpandedSections(
-	envelope: Partial<ToolContext<Record<string, unknown>>>,
-	options: { preview?: string },
-	width: number,
-	theme?: RenderTheme,
-): string[] {
-	if (toolIsFileResult(envelope)) {
-		return [toolFileResultCard(envelope, theme).render(width).join("\n")];
-	}
-	const allSections = buildScrapeSections(envelope, theme);
-	const out = [toolResultTree(allSections, width, theme)];
-	if (options.preview && !markdownPreviewComponent(envelope.format, options.preview, theme))
-		out.push(toolFormatPreview(envelope.format, options.preview).slice(0, 1200));
-	return out;
 }
 
 function buildScrapeSections(
@@ -239,7 +212,7 @@ function buildScrapeSections(
 	}
 
 	if (hasHeaders) addHeaderSections(groups, envelope, headers);
-	return buildToolResultTree(groupEntries(groups));
+	return buildToolResultTree(Array.from(groups.entries(), ([name, rows]) => ({ name, rows })));
 }
 
 function addHeaderSections(
@@ -250,7 +223,8 @@ function addHeaderSections(
 	/* cache */
 	addScrapeRow(groups, "cache", "status", headers["cf-cache-status"]);
 	if (headers["age"]) {
-		const sec = parseAgeSeconds(headers["age"]);
+		const n = Number(headers["age"]);
+		const sec = Number.isFinite(n) && n >= 0 ? n : undefined;
 		addScrapeRow(groups, "cache", "age", sec !== undefined ? formatSeconds(sec) : headers["age"]);
 	}
 	const cc = parseCacheControl(headers["cache-control"]);
@@ -314,15 +288,6 @@ function addScrapeRow(
 	groups.set(group, rows);
 }
 
-function groupEntries(groups: Map<string, ToolResultGroup["rows"]>): ToolResultGroup[] {
-	return Array.from(groups.entries(), ([name, rows]) => ({ name, rows }));
-}
-
-function parseAgeSeconds(v: string | undefined): number | undefined {
-	const n = v === undefined ? NaN : Number(v);
-	return Number.isFinite(n) && n >= 0 ? n : undefined;
-}
-
 const fmtTwoUnit = (whole: number, big: string, rem: number, small: string) =>
 	rem > 0 ? `${whole}${big} ${rem}${small}` : `${whole}${big}`;
 
@@ -338,19 +303,17 @@ interface CacheControlInfo {
 	swr: number | undefined;
 }
 
-const CC_FIELDS: Array<[string, "maxAge" | "swr"]> = [
-	["max-age=", "maxAge"],
-	["s-maxage=", "maxAge"],
-	["stale-while-revalidate=", "swr"],
-];
-
 function parseCacheControl(value: string | undefined): CacheControlInfo | undefined {
 	if (!value) return;
 	let maxAge: number | undefined;
 	let swr: number | undefined;
 	for (const part of value.toLowerCase().split(",")) {
 		const t = part.trim();
-		for (const [prefix, field] of CC_FIELDS) {
+		for (const [prefix, field] of [
+			["max-age=", "maxAge" as const],
+			["s-maxage=", "maxAge" as const],
+			["stale-while-revalidate=", "swr" as const],
+		] as Array<[string, "maxAge" | "swr"]>) {
 			if (!t.startsWith(prefix)) continue;
 			const n = Number(t.slice(prefix.length));
 			if (Number.isFinite(n)) {

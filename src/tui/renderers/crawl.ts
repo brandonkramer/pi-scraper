@@ -11,23 +11,22 @@ import {
 	type ProgressDetails,
 	type ToolContext,
 } from "../../types.ts";
+import { neutral as toolNeutral } from "../theme.ts";
 import {
 	toolBatchProgressCard,
 	toolBatchResultCard,
 	toolProgressCard,
 	toolResultCard,
 } from "../tool-card.ts";
-import {
-	toolActivityCount,
-	toolPickExcerpt,
-	toolResourceList,
-	type ToolResourceListItem,
-} from "../tool-format.ts";
 import { toolContextPackageResponseId, toolErrorLabel, toolSessionNotice } from "../tool-labels.ts";
+import { renderResourceItemList as toolResourceList } from "../tool-resource.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
 import { buildExpandedResultDetails, toolResultId } from "../tool-result.ts";
-import { toolStatusMark, toolStatus } from "../tool-status.ts";
-import { toolNeutral } from "../tool-text.ts";
+import {
+	toolStatusMark,
+	toolStatus,
+	activityCountSegment as toolActivityCount,
+} from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export interface CrawlMeta {
 	succeededCount: number;
@@ -64,37 +63,34 @@ export function crawlExpandedDetails(
 ): string {
 	const cap = Math.max(100, Math.min(500, Math.floor(1000 / Math.max(1, pages.length))));
 	return toolResourceList(
-		pages.map((page) => toCrawlListItem(page, cap)),
+		pages.map((page) => {
+			const url = page.finalUrl ?? page.url ?? "unknown URL";
+			if (page.error) return { ok: false, url, fields: {}, error: page.error };
+			return {
+				ok: true,
+				url,
+				finalUrl:
+					page.finalUrl && page.url && page.finalUrl !== page.url ? page.finalUrl : undefined,
+				title: page.data?.title,
+				excerpt: (() => {
+					const v = [page.data?.description, page.data?.markdown, page.data?.text].find(Boolean);
+					return v ? v.replaceAll(/\s+/gu, " ").trim().slice(0, cap) : undefined;
+				})(),
+				fields: {
+					status: page.status,
+					mode: page.mode,
+					format: page.format,
+					contentType: page.contentType,
+					downloadedBytes: page.downloadedBytes,
+					durationMs: page.timing?.durationMs,
+					cached: page.cache?.cached,
+					staleness: page.cache?.staleness,
+					truncated: page.truncated,
+				},
+			};
+		}),
 		{ header: "Per-page details:", metadata },
 	);
-}
-
-function toCrawlListItem(page: CrawlPageView, excerptCap = 180): ToolResourceListItem {
-	const url = page.finalUrl ?? page.url ?? "unknown URL";
-	if (page.error) return { ok: false, url, fields: {}, error: page.error };
-	return {
-		ok: true,
-		url,
-		finalUrl: page.finalUrl && page.url && page.finalUrl !== page.url ? page.finalUrl : undefined,
-		title: page.data?.title,
-		excerpt: toolPickExcerpt(
-			page.data?.description,
-			page.data?.markdown,
-			page.data?.text,
-			excerptCap,
-		),
-		fields: {
-			status: page.status,
-			mode: page.mode,
-			format: page.format,
-			contentType: page.contentType,
-			downloadedBytes: page.downloadedBytes,
-			durationMs: page.timing?.durationMs,
-			cached: page.cache?.cached,
-			staleness: page.cache?.staleness,
-			truncated: page.truncated,
-		},
-	};
 }
 
 export function renderWebCrawlLookupResult(
