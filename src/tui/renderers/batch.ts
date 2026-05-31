@@ -93,8 +93,7 @@ export function renderWebBatchResult(
 	const items = Array.isArray(envelope.data) ? envelope.data : [];
 	const succeeded = items.filter((item) => item.ok).length;
 	const failed = items.length - succeeded;
-	// oxlint-disable-next-line typescript/no-unnecessary-condition -- capture group/optional field may be undefined at runtime
-	const cacheHits = items.filter((item) => item.ok && item.result?.cache?.cached).length;
+	const cacheHits = items.filter((item) => item.ok && item["result"]?.cache?.cached).length;
 	const summary = envelope.error
 		? toolErrorLabel("web_batch", envelope.error, { allowIcons: true })
 		: toolStatus(
