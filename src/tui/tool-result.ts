@@ -8,29 +8,6 @@ export function formatPreview(format: string | undefined, content: string): stri
 	return format === "json" || format === "html" ? `\`\`\`${format}\n${content}\n\`\`\`` : content;
 }
 
-export function renderMetadataLines(
-	data: Record<string, unknown> | undefined,
-	theme?: RenderTheme,
-): string {
-	if (!data) return "";
-	const fields: Array<[string, unknown]> = [
-		["Title", data.title],
-		["Published", data.published],
-		["Author", data.author],
-		["Description", data.description],
-	];
-	const lines = fields
-		.filter(([, value]) => typeof value === "string" && value.length > 0)
-		.map(([label, value]) => metadataLine(label, String(value), theme));
-	return lines.join("\n");
-}
-
-function metadataLine(label: string, value: string, theme?: RenderTheme): string {
-	const coloredLabel = theme?.fg?.("syntaxKeyword", `${label}: `) ?? `${label}: `;
-	const coloredValue = theme?.fg?.("syntaxString", value) ?? value;
-	return `${coloredLabel}${coloredValue}`;
-}
-
 /** First non-empty candidate, whitespace-collapsed. Final number arg overrides 180-char cap. */
 export function pickExcerpt(
 	...args: ReadonlyArray<string | undefined | number>
