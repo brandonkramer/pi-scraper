@@ -92,7 +92,7 @@ export const webExtractSchema = Type.Object({
 	),
 	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
 	extract: Type.Optional(
-		Type.String({ description: "api-surface" }),
+		Type.Unsafe<"api-surface">({ type: "string", enum: ["api-surface"] }),
 	),
 	// Selector extraction (Task 27)
 	selector: Type.Optional(Type.String({ description: "CSS/XPath" })),
