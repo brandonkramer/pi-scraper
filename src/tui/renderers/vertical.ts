@@ -8,6 +8,7 @@ import {
 	toolResultTree,
 	type ToolResultGroup,
 } from "../tool-result-tree.ts";
+import { buildExpandedResultDetails } from "../tool-result.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 type BrowserFallback = { used: boolean; backend: string };
@@ -41,6 +42,10 @@ export function renderVerticalResult(
 	if (!expanded || !data) return renderText(treeLine, { padToWidth: true });
 
 	const sections = buildToolResultTree(buildVerticalSections(data, browserFallback));
+	if (sections.every((section) => section.name === "extraction"))
+		sections.push(
+			...buildExpandedResultDetails(data, { hide: new Set<string>(), sectionName: "data" }),
+		);
 	const body = toolResultTree(sections, 80, theme);
 
 	const transcript = data.transcript as

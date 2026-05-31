@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { RenderComponent } from "../../tui/index.ts";
 import { renderWebExtractResult } from "../../tui/renderers/extract.ts";
+import { renderVerticalResult } from "../../tui/renderers/vertical.ts";
 import type { ToolRenderContext } from "../infra/define.ts";
 import { progressShell } from "../infra/progress.ts";
 import { toolResult } from "../infra/result.ts";
@@ -335,6 +336,21 @@ describe("web tool renderers", () => {
 		expect(rendered).toContain("selector h1");
 		expect(rendered).not.toContain("_progress");
 		expect(rendered).not.toContain("result");
+	});
+
+	it("shows generic vertical data when no specialized section matches", () => {
+		const result = toolResult({
+			text: "ok",
+			data: {
+				extractor: "npm",
+				data: { name: "typescript", version: "5.9.3", summary: "typed JavaScript" },
+			},
+		});
+		const rendered = text(renderVerticalResult(result, true));
+		expect(rendered).toContain("data");
+		expect(rendered).toContain("version");
+		expect(rendered).toContain("5.9.3");
+		expect(rendered).toContain("summary");
 	});
 });
 
