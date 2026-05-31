@@ -43,7 +43,33 @@ export function renderWebScrapeResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const details = result.details as Partial<ToolContext<unknown>> | ProgressDetails;
-	if (isProgress(details)) return renderScrapeProgressCard(details, expanded, theme);
+	if (isProgress(details)) {
+		const url = details.url ?? "unknown URL";
+		const status =
+			details.state === "error" ? "error" : details.state === "done" ? "done" : "loading";
+		const startedAtMs = toolProgressStartedAtMs(details) ?? Date.now();
+		const working = status === "loading";
+		return toolResultCard({
+			renderContent(width) {
+				const row = toolResourceStatus({
+					url,
+					label: status,
+					state: status,
+					width,
+					theme,
+					startedAtMs,
+					restoreBg: "toolPendingBg",
+				});
+				const summary = `web_scrape ${details.state}${toolSeparator(theme)}${toolMuted("(ctrl+o to expand)", theme)}`;
+				const lines = [row, "", summary];
+				if (expanded && details.checklist?.length)
+					lines.push("", ...details.checklist.map(toolChecklistText));
+				if (working) lines.push("", `${toolCurrentSpinnerFrame()} Working...`);
+				return lines.join("\n");
+			},
+			padToWidth: true,
+		});
+	}
 	const envelope = details as Partial<ToolContext<Record<string, unknown>>>;
 
 	const stale = envelope.cache?.staleness;
@@ -77,39 +103,6 @@ export function renderWebScrapeResult(
 		theme,
 	);
 }
-
-function renderScrapeProgressCard(
-	details: ProgressDetails,
-	expanded: boolean,
-	theme?: RenderTheme,
-): RenderComponent {
-	const url = details.url ?? "unknown URL";
-	const status =
-		details.state === "error" ? "error" : details.state === "done" ? "done" : "loading";
-	const startedAtMs = toolProgressStartedAtMs(details) ?? Date.now();
-	const working = status === "loading";
-	return toolResultCard({
-		renderContent(width) {
-			const row = toolResourceStatus({
-				url,
-				label: status,
-				state: status,
-				width,
-				theme,
-				startedAtMs,
-				restoreBg: "toolPendingBg",
-			});
-			const summary = `web_scrape ${details.state}${toolSeparator(theme)}${toolMuted("(ctrl+o to expand)", theme)}`;
-			const lines = [row, "", summary];
-			if (expanded && details.checklist?.length)
-				lines.push("", ...details.checklist.map(toolChecklistText));
-			if (working) lines.push("", `${toolCurrentSpinnerFrame()} Working...`);
-			return lines.join("\n");
-		},
-		padToWidth: true,
-	});
-}
-
 function renderScrapeResultCard(
 	envelope: Partial<ToolContext<Record<string, unknown>>>,
 	options: {
