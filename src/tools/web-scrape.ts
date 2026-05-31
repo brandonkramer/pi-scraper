@@ -90,11 +90,11 @@ export const webScrapeSchema = Type.Object({
 	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
 
 	chunks: Type.Optional(
-		Type.Boolean({ description: "Chunked output with full text." }),
+		Type.Boolean(),
 	),
-	maxTokens: Type.Optional(Type.Integer({ description: "Max tokens/chunk (default 500)." })),
+	maxTokens: Type.Optional(Type.Integer()),
 	overlapTokens: Type.Optional(
-		Type.Integer({ description: "Overlap tokens (default 50)." }),
+		Type.Integer(),
 	),
 
 	...sessionOptionSchema,
