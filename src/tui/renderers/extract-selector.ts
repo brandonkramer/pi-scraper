@@ -20,9 +20,7 @@ export function renderWebExtractSelectorResult(
 		: [];
 	return toolResultCard({
 		renderContent() {
-			const lines = [text];
-			if (ids.length > 0) lines.push("", ...ids);
-			return lines.join("\n");
+			return ids.length > 0 ? [text, "", ...ids].join("\n") : text;
 		},
 		padToWidth: true,
 	});
