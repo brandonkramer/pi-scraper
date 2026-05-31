@@ -258,9 +258,7 @@ function addHeaderSections(
 		);
 	}
 
-	const headerEntries = Object.entries(headers).filter(
-		(e): e is [string, string] => typeof e[1] === "string",
-	);
+	const headerEntries = Object.entries(headers).filter(([, v]) => typeof v === "string");
 	for (const [k, v] of headerEntries)
 		addScrapeRow(groups, "headers", `${k}:`, v.length > 120 ? `${v.slice(0, 120)}...` : v);
 
