@@ -18,4 +18,16 @@
 
 ## Already tried and failed
 - Inlining medium-sized (10-20 line) helpers: renderResourceItemLines, batchItemGroup, paintBgLine, parseAgeSeconds — all increased LOC due to wrapper overhead.
+- Inlining stringValue as a local arrow function — arrow wrapper was longer than the function declaration.
 - Merging tool-text → tool-format: saved file_count but added LOC.
+
+## Already tried and succeeded
+- Replaced private `statusState` function with shared `progressPillState` in tool-card.ts (used in renderBatchRow and renderStatusBox). Saved ~6 LOC by reusing an existing helper with identical behavior. This pattern (replacing private duplicates with shared helpers) is more reliable than inlining for small functions.
+
+## Fully exhausted
+- All single-use exported/private functions ≥5 lines with one caller have been evaluated.
+- All unused exports have been removed.
+- The remaining 6 big files (tool-card: 369, scrape: 367, tool-resource: 204, tool-status: 196, vertical: 188, crawl: 177) are tightly organized. Further gains require either:
+  (a) Structural refactors (changing behavior)
+  (b) Removing still-used abstractions (hurting reusability)
+  (c) Bigger cross-cutting changes (violating file-scope)
