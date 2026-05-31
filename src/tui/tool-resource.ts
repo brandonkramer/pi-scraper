@@ -170,6 +170,5 @@ export function toolResource(options: ToolResourceOptions): string {
 			: state === "error"
 				? failure("✕", options.theme)
 				: muted("·", options.theme);
-	const tail = options.detail ? ` ${muted(options.detail, options.theme)}` : "";
-	return `${glyph} ${options.url}${tail}`;
+	return `${glyph} ${options.url}${options.detail ? ` ${muted(options.detail, options.theme)}` : ""}`;
 }
