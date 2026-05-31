@@ -6,11 +6,7 @@ import {
 	type ToolContext,
 	type ProgressDetails,
 } from "../../types.ts";
-import {
-	joinSegments as toolJoinSegments,
-	muted as toolMuted,
-	separator as toolSeparator,
-} from "../theme.ts";
+import { joinSegments as toolJoinSegments, muted as toolMuted } from "../theme.ts";
 import { renderText as toolText } from "../tool-call.ts";
 import { toolProgressCard } from "../tool-card.ts";
 import {
@@ -40,7 +36,7 @@ export function renderWebDiffResult(
 				toolFreshnessLabel(envelope),
 			]);
 	if (!expanded) {
-		return toolText(`${title}${toolSeparator(theme)}${toolMuted("(ctrl+o to expand)", theme)}`, {
+		return toolText(toolJoinSegments([title, toolMuted("(ctrl+o to expand)", theme)], theme), {
 			padToWidth: true,
 		});
 	}
