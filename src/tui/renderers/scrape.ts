@@ -168,7 +168,6 @@ function buildScrapeSections(
 	}
 	addScrapeRow(groups, "page", "description", dataDesc);
 
-	/* details */
 	addScrapeRow(groups, "details", "url", envelope.url);
 	if (envelope.finalUrl && envelope.finalUrl !== envelope.url)
 		addScrapeRow(groups, "details", "final", envelope.finalUrl);
@@ -187,7 +186,6 @@ function buildScrapeSections(
 	addScrapeRow(groups, "details", "type", envelope.contentType);
 	addScrapeRow(groups, "details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
 
-	/* chunks */
 	const chunks = envelope.data?.chunks as Chunk[] | undefined;
 	if (chunks?.length) {
 		addScrapeRow(groups, "chunks", "count", String(chunks.length));
@@ -220,7 +218,6 @@ function addHeaderSections(
 	envelope: Partial<ToolContext<Record<string, unknown>>>,
 	headers: Record<string, string>,
 ): void {
-	/* cache */
 	addScrapeRow(groups, "cache", "status", headers["cf-cache-status"]);
 	if (headers["age"]) {
 		const n = Number(headers["age"]);
@@ -240,7 +237,6 @@ function addHeaderSections(
 		addScrapeRow(groups, "cache", "browser", fmtCc(cc.maxAge, swr));
 	}
 
-	/* server */
 	addScrapeRow(groups, "server", "vendor", headers["server"]);
 	if (headers["cf-ray"]) {
 		const di = headers["cf-ray"].lastIndexOf("-");
@@ -249,7 +245,6 @@ function addHeaderSections(
 		addScrapeRow(groups, "server", "ray", `${ray}${loc ? `  \u2192  ${loc}` : ""}`);
 	}
 
-	/* time */
 	if (headers["date"]) addScrapeRow(groups, "time", "fetched", formatHttpTime(headers["date"]));
 	if (headers["last-modified"]) {
 		const now = new Date(headers["date"] ?? Date.now()).getTime();

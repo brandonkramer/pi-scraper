@@ -145,7 +145,6 @@ export function toolResourceStatus(row: ToolResourceStatusRow): string {
 }
 
 export function toolResource(options: ToolResourceOptions): string {
-	// Badge mode: url + [badge]
 	if (options.badge !== undefined && options.width !== undefined) {
 		const badgeText = options.badge ? `[ ${options.badge} ]` : "";
 		const urlWidth = Math.max(12, options.width - badgeText.length - 2);
@@ -155,7 +154,6 @@ export function toolResource(options: ToolResourceOptions): string {
 			: "";
 		return badge ? `${renderedUrl} ${badge}` : renderedUrl;
 	}
-	// Loader mode: url + status pill
 	if (
 		options.width !== undefined &&
 		(options.label !== undefined ||
@@ -172,7 +170,6 @@ export function toolResource(options: ToolResourceOptions): string {
 			statusBox: options.statusBox,
 		});
 	}
-	// Simple glyph mode
 	const state = options.state ?? "pending";
 	const glyph =
 		state === "ok" || state === "done"
