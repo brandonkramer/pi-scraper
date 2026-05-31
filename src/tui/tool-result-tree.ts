@@ -1,35 +1,48 @@
 /**
- * @file Reusable tree-section layout — connector-prefixed key/value rows grouped by section with
- *   value wrapping and continuation markers. Used by scrape, batch, and crawl expanded details.
+ * @file ToolResultTree — grouped key/value tree component for expanded tool details. Tool renderers
+ *   should use this semantic surface, not internal tree primitives.
  */
 import { muted } from "./theme.ts";
 import type { RenderTheme } from "./types.ts";
 
-export interface TreeSection {
+export interface ToolResultTreeRow {
+	key: string;
+	value: string;
+}
+
+export interface ToolResultTreeSection {
 	name: string;
-	rows: Array<{ key: string; value: string }>;
+	rows: ToolResultTreeRow[];
 }
 
-export interface TreeBuilder {
-	sections: TreeSection[];
-	add(section: string, key: string, value: string | undefined): void;
+export interface ToolResultGroup {
+	name: string;
+	rows: Array<[key: string, value: string | undefined]>;
 }
 
-export function createTreeBuilder(): TreeBuilder {
-	const sections: TreeSection[] = [];
-	return {
-		sections,
-		add(section, key, value) {
-			if (value === undefined || value === "") return;
-			let sec = sections.find((s) => s.name === section);
-			if (!sec) sections.push((sec = { name: section, rows: [] }));
-			sec.rows.push({ key, value });
-		},
-	};
+/** Compose sections from a flat list of groups. Empty rows dropped. */
+export function buildToolResultTree(groups: ToolResultGroup[]): ToolResultTreeSection[] {
+	const sections: ToolResultTreeSection[] = [];
+	for (const group of groups) {
+		const rows = group.rows
+			.filter(([, value]) => value !== undefined && value !== "")
+			.map(([key, value]) => ({ key, value: value as string }));
+		if (rows.length > 0) sections.push({ name: group.name, rows });
+	}
+	return sections;
 }
 
-export function renderTreeSections(
-	sections: TreeSection[],
+/** Render grouped tool result sections to a terminal tree. */
+export function toolResultTree(
+	sections: ToolResultTreeSection[],
+	terminalWidth: number,
+	theme?: RenderTheme,
+): string {
+	return renderTreeSections(sections, terminalWidth, theme);
+}
+
+function renderTreeSections(
+	sections: ToolResultTreeSection[],
 	terminalWidth: number,
 	theme?: RenderTheme,
 ): string {

@@ -1,4 +1,4 @@
-/** @file Pi TUI rendering contracts. Boundary between TUI primitives and tool composition. */
+/** @file Public TUI component type exports. Individual TUI component types. */
 import type { Component } from "@earendil-works/pi-tui";
 
 /** Subset of Pi's Theme palette using plain string names; supports custom bg slots like toolErrorBg. */

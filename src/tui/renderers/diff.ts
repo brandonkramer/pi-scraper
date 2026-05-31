@@ -1,16 +1,15 @@
-import { formatChecklistItem, formatChecklistText } from "../../tui/checklist.ts";
-import { errorLabel, freshnessLabel } from "../../tui/envelope.ts";
-import { renderProgressCard } from "../../tui/progress.ts";
-import { renderText } from "../../tui/text.ts";
-import { joinSegments, muted, separator } from "../../tui/theme.ts";
-import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 /** @file Pi web_scrape/diff tool result renderer. */
 import {
 	isProgress,
 	type PiToolShell,
-	type ResultEnvelope,
+	type ToolContext,
 	type ProgressDetails,
 } from "../../types.ts";
+import { toolProgressCard } from "../tool-card.ts";
+import { toolChecklistItem, toolChecklistText } from "../tool-format.ts";
+import { toolErrorLabel, toolFreshnessLabel } from "../tool-labels.ts";
+import { toolJoinSegments, toolMuted, toolSeparator, toolText } from "../tool-text.ts";
+import type { RenderComponent, RenderTheme } from "../types.ts";
 export interface DiffData {
 	previous?: unknown;
 	current?: unknown;
@@ -30,14 +29,14 @@ export function renderWebDiffResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
+	const details = result.details as Partial<ToolContext<unknown>> | ProgressDetails;
 	if (isProgress(details))
-		return renderProgressCard("web_scrape diff", details, theme, { allowIcons: false });
-	const envelope = details as Partial<ResultEnvelope<DiffData>>;
+		return toolProgressCard("web_scrape diff", details, theme, { allowIcons: false });
+	const envelope = details as Partial<ToolContext<DiffData>>;
 	const diff = envelope.data;
 	const title = envelope.error
-		? errorLabel("web_scrape", envelope.error, { allowIcons: false })
-		: joinSegments([diffTitle(diff, envelope.summary), freshnessLabel(envelope)]);
+		? toolErrorLabel("web_scrape", envelope.error, { allowIcons: false })
+		: toolJoinSegments([diffTitle(diff, envelope.summary), toolFreshnessLabel(envelope)]);
 	return renderChecklistResult(
 		title,
 		expanded,
@@ -69,20 +68,23 @@ export function renderChecklistResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	if (!expanded) {
-		const notice = options.notice ? `\n\n${muted(options.notice, theme)}` : "";
-		return renderText(`${title}${separator(theme)}${muted("(ctrl+o to expand)", theme)}${notice}`, {
-			padToWidth: true,
-		});
+		const notice = options.notice ? `\n\n${toolMuted(options.notice, theme)}` : "";
+		return toolText(
+			`${title}${toolSeparator(theme)}${toolMuted("(ctrl+o to expand)", theme)}${notice}`,
+			{
+				padToWidth: true,
+			},
+		);
 	}
 	const lines = [title];
-	if (options.notice) lines.push("", muted(options.notice, theme));
+	if (options.notice) lines.push("", toolMuted(options.notice, theme));
 	if (options.items?.length) {
-		const fmt = options.icons === false ? formatChecklistText : formatChecklistItem;
+		const fmt = options.icons === false ? toolChecklistText : toolChecklistItem;
 		lines.push("", ...options.items.map(fmt));
 	}
 	if (options.preview) lines.push("", options.preview.slice(0, 500));
-	if (options.responseId) lines.push("", muted(`responseId: ${options.responseId}`, theme));
-	return renderText(lines.join("\n"), { padToWidth: true });
+	if (options.responseId) lines.push("", toolMuted(`responseId: ${options.responseId}`, theme));
+	return toolText(lines.join("\n"), { padToWidth: true });
 }
 
 function diffTitle(diff: DiffData | undefined, summary: string | undefined): string {

@@ -1,6 +1,20 @@
-/** @file Width-safe text render components for Pi terminal UI cards. */
+/** @file ToolCall — header line: `toolName parts[0] · parts[1] · ...` */
 import { type Component, Text, truncateToWidth } from "@earendil-works/pi-tui";
 
+import { paintFg } from "./theme.ts";
+import type { RenderComponent, RenderTheme } from "./types.ts";
+
+export function toolCall(
+	name: string,
+	parts: (string | undefined)[],
+	theme?: RenderTheme,
+): RenderComponent {
+	const label = [name, ...(parts.filter(Boolean) as string[])].join(" ");
+	const text = paintFg(theme, "accent", label);
+	return renderText(text);
+}
+
+/** Width-safe text render component. */
 export function renderText(text: string, options: { padToWidth?: boolean } = {}): Component {
 	const component = new Text(text, 0, 0);
 	return {

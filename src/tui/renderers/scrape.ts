@@ -1,82 +1,81 @@
 /** @file Pi web_scrape result, progress card, and URL result card composition. */
 import { Markdown } from "@earendil-works/pi-tui";
 
-import { formatChecklistText } from "../../tui/checklist.ts";
-import { freshnessLabel, sessionNotice } from "../../tui/envelope.ts";
-import { isFileResult, renderFileResultCard } from "../../tui/file.ts";
-import { formatBytes, formatDuration } from "../../tui/format.ts";
-import { formatPreview, previewText } from "../../tui/preview.ts";
-import { progressStartedAtMs } from "../../tui/progress.ts";
-import { defineResultRenderer } from "../../tui/result-renderer.ts";
-import { renderUrlStatusRow } from "../../tui/rows.ts";
-import { currentSpinnerFrame } from "../../tui/spinner.ts";
-import { renderStackedResultCard } from "../../tui/stacked.ts";
-import {
-	activity,
-	failure,
-	getMarkdownTheme,
-	muted,
-	neutral,
-	separator,
-	success,
-} from "../../tui/theme.ts";
-import {
-	createTreeBuilder,
-	renderTreeSections,
-	type TreeBuilder,
-	type TreeSection,
-} from "../../tui/tree.ts";
-import type { RenderComponent, RenderTheme } from "../../tui/types.ts";
 import {
 	isProgress,
 	type Chunk,
 	type PiToolShell,
 	type ProgressDetails,
-	type ResultEnvelope,
+	type ToolContext,
 } from "../../types.ts";
+import {
+	toolFileResultCard,
+	toolIsFileResult,
+	toolResultCard,
+	toolStackedCard,
+} from "../tool-card.ts";
+import {
+	toolChecklistText,
+	toolCurrentSpinnerFrame,
+	toolFormatBytes,
+	toolFormatDuration,
+	toolFormatPreview,
+	toolPreviewText,
+	toolProgressStartedAtMs,
+} from "../tool-format.ts";
+import { toolFreshnessLabel, toolSessionNotice } from "../tool-labels.ts";
+import { toolResourceStatus } from "../tool-resource.ts";
+import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
+import { toolStatusDot, toolStatus } from "../tool-status.ts";
+import {
+	toolActivity,
+	toolFailure,
+	toolMarkdownTheme,
+	toolMuted,
+	toolSeparator,
+	toolSuccess,
+} from "../tool-text.ts";
+import type { RenderComponent, RenderTheme } from "../types.ts";
 
 export function renderWebScrapeResult(
 	result: PiToolShell,
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ResultEnvelope<unknown>> | ProgressDetails;
+	const details = result.details as Partial<ToolContext<unknown>> | ProgressDetails;
 	if (isProgress(details)) return renderScrapeProgressCard(details, expanded, theme);
-	const envelope = details as Partial<ResultEnvelope<Record<string, unknown>>>;
+	const envelope = details as Partial<ToolContext<Record<string, unknown>>>;
 
 	const stale = envelope.cache?.staleness;
 	const sourceLabel = envelope.cache?.cached
-		? activity(`\u21BB cache hit${stale ? ` ${stale}` : ""}`, theme)
-		: success("\u21BB fresh fetch", theme);
+		? toolActivity(`\u21BB cache hit${stale ? ` ${stale}` : ""}`, theme)
+		: toolSuccess("\u21BB fresh fetch", theme);
 
-	const parts: Array<string | undefined> = envelope.error
-		? [`${envelope.mode ?? ""} mode`, envelope.format ?? ""]
-		: [
-				`${statusDot(envelope.status, theme)} ${envelope.status ?? ""}`,
-				`${envelope.mode ?? ""} mode`,
-				envelope.format,
-				sourceLabel,
-				muted(formatDuration(envelope.timing?.durationMs) ?? "", theme),
-				freshnessLabel(envelope),
-				expanded ? undefined : muted("(ctrl+o to expand)", theme),
-			];
-	const summary = parts.filter(Boolean).join(separator(theme));
+	const summary = envelope.error
+		? toolStatus([`${envelope.mode ?? ""} mode`, envelope.format ?? ""], theme)
+		: toolStatus(
+				[
+					`${toolStatusDot(envelope.status, theme)} ${envelope.status ?? ""}`,
+					`${envelope.mode ?? ""} mode`,
+					envelope.format,
+					sourceLabel,
+					{ text: toolFormatDuration(envelope.timing?.durationMs) ?? "", tone: "muted" },
+					toolFreshnessLabel(envelope),
+					expanded ? undefined : { text: "(ctrl+o to expand)", tone: "muted" },
+				],
+				theme,
+			);
 	return renderScrapeResultCard(
 		envelope,
 		{
 			expanded,
 			summary,
-			notice: sessionNotice(envelope),
-			preview: previewText(result, envelope),
+			notice: toolSessionNotice(envelope),
+			preview: toolPreviewText(result, envelope),
 			responseId: envelope.responseId,
 		},
 		theme,
 	);
-}
-
-function statusDot(status: number | undefined, theme?: RenderTheme): string {
-	if (status === undefined) return "\u25CF";
-	return (status < 300 ? success : status < 400 ? neutral : failure)("\u25CF", theme);
 }
 
 function renderScrapeProgressCard(
@@ -87,23 +86,24 @@ function renderScrapeProgressCard(
 	const url = details.url ?? "unknown URL";
 	const status =
 		details.state === "error" ? "error" : details.state === "done" ? "done" : "loading";
-	const startedAtMs = progressStartedAtMs(details) ?? Date.now();
+	const startedAtMs = toolProgressStartedAtMs(details) ?? Date.now();
 	const working = status === "loading";
-	return defineResultRenderer({
+	return toolResultCard({
 		renderContent(width) {
-			const row = renderUrlStatusRow({
+			const row = toolResourceStatus({
 				url,
 				label: status,
 				state: status,
 				width,
 				theme,
 				startedAtMs,
+				restoreBg: "toolPendingBg",
 			});
-			const summary = `web_scrape ${details.state}${separator(theme)}${muted("(ctrl+o to expand)", theme)}`;
+			const summary = `web_scrape ${details.state}${toolSeparator(theme)}${toolMuted("(ctrl+o to expand)", theme)}`;
 			const lines = [row, "", summary];
 			if (expanded && details.checklist?.length)
-				lines.push("", ...details.checklist.map(formatChecklistText));
-			if (working) lines.push("", `${currentSpinnerFrame()} Working...`);
+				lines.push("", ...details.checklist.map(toolChecklistText));
+			if (working) lines.push("", `${toolCurrentSpinnerFrame()} Working...`);
 			return lines.join("\n");
 		},
 		padToWidth: true,
@@ -111,7 +111,7 @@ function renderScrapeProgressCard(
 }
 
 function renderScrapeResultCard(
-	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
+	envelope: Partial<ToolContext<Record<string, unknown>>>,
 	options: {
 		expanded: boolean;
 		summary: string;
@@ -123,15 +123,23 @@ function renderScrapeResultCard(
 ): RenderComponent {
 	const url = envelope.finalUrl ?? envelope.url ?? "unknown URL";
 	const state = envelope.error ? "error" : "done";
-	return renderStackedResultCard(
+	return toolStackedCard(
 		{
-			body: (width) => renderUrlStatusRow({ url, label: state, state, width, theme }),
+			body: (width) =>
+				toolResourceStatus({
+					url,
+					label: state,
+					state,
+					width,
+					theme,
+				}),
 			summary: options.summary,
 			expanded: options.expanded,
 			notice: options.notice,
 			expandedSections: (width) => scrapeExpandedSections(envelope, options, width, theme),
 			markdownPreview: () => markdownPreviewComponent(envelope.format, options.preview, theme),
 			responseId: options.responseId,
+			hasError: !!envelope.error,
 		},
 		theme,
 	);
@@ -143,92 +151,107 @@ function markdownPreviewComponent(
 	theme?: RenderTheme,
 ): RenderComponent | undefined {
 	if (format !== "markdown" || !preview || preview.length <= 100) return;
-	return new Markdown(preview.slice(0, 1200), 0, 0, getMarkdownTheme(theme));
+	return new Markdown(preview.slice(0, 1200), 0, 0, toolMarkdownTheme(theme));
 }
 
 function scrapeExpandedSections(
-	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
+	envelope: Partial<ToolContext<Record<string, unknown>>>,
 	options: { preview?: string },
 	width: number,
 	theme?: RenderTheme,
 ): string[] {
-	if (isFileResult(envelope)) {
-		return [renderFileResultCard(envelope, theme).render(width).join("\n")];
+	if (toolIsFileResult(envelope)) {
+		return [toolFileResultCard(envelope, theme).render(width).join("\n")];
 	}
 	const allSections = buildScrapeSections(envelope, theme);
-	const out = [renderTreeSections(allSections, width, theme)];
+	const out = [toolResultTree(allSections, width, theme)];
 	if (options.preview && !markdownPreviewComponent(envelope.format, options.preview, theme))
-		out.push(formatPreview(envelope.format, options.preview).slice(0, 1200));
+		out.push(toolFormatPreview(envelope.format, options.preview).slice(0, 1200));
 	return out;
 }
 
 function buildScrapeSections(
-	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
+	envelope: Partial<ToolContext<Record<string, unknown>>>,
 	theme?: RenderTheme,
-): TreeSection[] {
+): ReturnType<typeof buildToolResultTree> {
 	const headers = envelope.headers;
 	const hasHeaders = !!headers && Object.keys(headers).length > 0;
-	const b = createTreeBuilder();
+	const groups = new Map<string, ToolResultGroup["rows"]>();
 	const t = envelope.data?.title;
 	const d = envelope.data?.description;
 	const dataTitle = typeof t === "string" && t ? t : undefined;
 	const dataDesc = typeof d === "string" && d ? d : undefined;
 
-	b.add("page", "title", dataTitle);
+	addScrapeRow(groups, "page", "title", dataTitle);
 	if (hasHeaders) {
 		const url = envelope.finalUrl ?? envelope.url;
 		if (url) {
 			try {
-				b.add("page", "site", new URL(url).hostname.replace(/^www\./iu, ""));
+				addScrapeRow(groups, "page", "site", new URL(url).hostname.replace(/^www\./iu, ""));
 			} catch {
 				/* ignore */
 			}
 		}
 	}
-	b.add("page", "description", dataDesc);
+	addScrapeRow(groups, "page", "description", dataDesc);
 
 	/* details */
-	b.add("details", "url", envelope.url);
+	addScrapeRow(groups, "details", "url", envelope.url);
 	if (envelope.finalUrl && envelope.finalUrl !== envelope.url)
-		b.add("details", "final", envelope.finalUrl);
-	b.add("details", "status", envelope.status ? String(envelope.status) : undefined);
-	b.add("details", "mode", envelope.mode);
-	b.add("details", "format", envelope.format);
+		addScrapeRow(groups, "details", "final", envelope.finalUrl);
+	addScrapeRow(groups, "details", "status", envelope.status ? String(envelope.status) : undefined);
+	addScrapeRow(groups, "details", "mode", envelope.mode);
+	addScrapeRow(groups, "details", "format", envelope.format);
 	if (envelope.downloadedBytes !== undefined)
-		b.add("details", "size", formatBytes(envelope.downloadedBytes) ?? "");
+		addScrapeRow(groups, "details", "size", toolFormatBytes(envelope.downloadedBytes) ?? "");
 	if (envelope.timing?.durationMs !== undefined)
-		b.add("details", "duration", formatDuration(envelope.timing.durationMs) ?? "");
-	b.add("details", "type", envelope.contentType);
-	b.add("details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
+		addScrapeRow(
+			groups,
+			"details",
+			"duration",
+			toolFormatDuration(envelope.timing.durationMs) ?? "",
+		);
+	addScrapeRow(groups, "details", "type", envelope.contentType);
+	addScrapeRow(groups, "details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
 
 	/* chunks */
 	const chunks = envelope.data?.chunks as Chunk[] | undefined;
 	if (chunks?.length) {
-		b.add("chunks", "count", String(chunks.length));
-		b.add("chunks", "tokens", `${chunks.reduce((sum, chunk) => sum + chunk.tokenCount, 0)} total`);
+		addScrapeRow(groups, "chunks", "count", String(chunks.length));
+		addScrapeRow(
+			groups,
+			"chunks",
+			"tokens",
+			`${chunks.reduce((sum, chunk) => sum + chunk.tokenCount, 0)} total`,
+		);
 	}
 
 	if (envelope.error) {
 		const code = envelope.error.code;
-		b.add("error", "code", code ? (theme ? failure(code, theme) : code) : undefined);
-		b.add("error", "phase", envelope.error.phase);
-		b.add("error", "message", envelope.error.message);
+		addScrapeRow(
+			groups,
+			"error",
+			"code",
+			code ? (theme ? toolFailure(code, theme) : code) : undefined,
+		);
+		addScrapeRow(groups, "error", "phase", envelope.error.phase);
+		addScrapeRow(groups, "error", "message", envelope.error.message);
 	}
 
-	if (hasHeaders) addHeaderSections(b, envelope, headers);
-	return b.sections;
+	if (hasHeaders) addHeaderSections(groups, envelope, headers);
+	return buildToolResultTree(groupEntries(groups));
 }
 
 function addHeaderSections(
-	b: TreeBuilder,
-	envelope: Partial<ResultEnvelope<Record<string, unknown>>>,
+	groups: Map<string, ToolResultGroup["rows"]>,
+	envelope: Partial<ToolContext<Record<string, unknown>>>,
 	headers: Record<string, string>,
 ): void {
 	/* cache */
-	b.add("cache", "status", headers["cf-cache-status"]);
+	addScrapeRow(groups, "cache", "status", headers["cf-cache-status"]);
 	if (headers["age"]) {
 		const sec = parseAgeSeconds(headers["age"]);
-		b.add("cache", "age", sec !== undefined ? formatSeconds(sec) : headers["age"]);
+		addScrapeRow(groups, "cache", "age", sec !== undefined ? formatSeconds(sec) : headers["age"]);
 	}
 	const cc = parseCacheControl(headers["cache-control"]);
 	const cdnCc = parseCacheControl(headers["cdn-cache-control"]);
@@ -237,41 +260,62 @@ function addHeaderSections(
 			? `max-age ${formatSeconds(maxAge)}  +swr ${formatSeconds(swr)}`
 			: `max-age ${formatSeconds(maxAge)}`;
 	const primary = cdnCc ?? cc;
-	if (primary) b.add("cache", "cdn", fmtCc(primary.maxAge, primary.swr));
+	if (primary) addScrapeRow(groups, "cache", "cdn", fmtCc(primary.maxAge, primary.swr));
 	if (cc?.maxAge !== undefined && (!cdnCc || cdnCc.maxAge !== cc.maxAge)) {
 		const swr = cc.swr && (!cdnCc || cdnCc.swr !== cc.swr) ? cc.swr : undefined;
-		b.add("cache", "browser", fmtCc(cc.maxAge, swr));
+		addScrapeRow(groups, "cache", "browser", fmtCc(cc.maxAge, swr));
 	}
 
 	/* server */
-	b.add("server", "vendor", headers["server"]);
+	addScrapeRow(groups, "server", "vendor", headers["server"]);
 	if (headers["cf-ray"]) {
 		const di = headers["cf-ray"].lastIndexOf("-");
 		const ray = di !== -1 ? headers["cf-ray"].slice(0, di) : headers["cf-ray"];
 		const loc = di !== -1 ? headers["cf-ray"].slice(di + 1) : "";
-		b.add("server", "ray", `${ray}${loc ? `  \u2192  ${loc}` : ""}`);
+		addScrapeRow(groups, "server", "ray", `${ray}${loc ? `  \u2192  ${loc}` : ""}`);
 	}
 
 	/* time */
-	if (headers["date"]) b.add("time", "fetched", formatHttpTime(headers["date"]));
+	if (headers["date"]) addScrapeRow(groups, "time", "fetched", formatHttpTime(headers["date"]));
 	if (headers["last-modified"]) {
 		const now = new Date(headers["date"] ?? Date.now()).getTime();
 		const diffSec = Math.floor((now - new Date(headers["last-modified"]).getTime()) / 1000);
 		const suffix = diffSec > 0 ? `  (${formatSeconds(diffSec)} ago)` : "";
-		b.add("time", "modified", `${formatHttpTime(headers["last-modified"])}${suffix}`);
+		addScrapeRow(
+			groups,
+			"time",
+			"modified",
+			`${formatHttpTime(headers["last-modified"])}${suffix}`,
+		);
 	}
 
 	const headerEntries = Object.entries(headers).filter(
 		(e): e is [string, string] => typeof e[1] === "string",
 	);
 	for (const [k, v] of headerEntries)
-		b.add("headers", `${k}:`, v.length > 120 ? `${v.slice(0, 120)}...` : v);
+		addScrapeRow(groups, "headers", `${k}:`, v.length > 120 ? `${v.slice(0, 120)}...` : v);
 
 	const respId = envelope.responseId ?? "";
 	if (respId || headerEntries.length > 0) {
-		if (respId) b.add("trace", "response", respId.slice(0, 8));
-		b.add("trace", "headers", `${headerEntries.length} total`);
+		if (respId) addScrapeRow(groups, "trace", "response", respId.slice(0, 8));
+		addScrapeRow(groups, "trace", "headers", `${headerEntries.length} total`);
 	}
+}
+
+function addScrapeRow(
+	groups: Map<string, ToolResultGroup["rows"]>,
+	group: string,
+	key: string,
+	value: string | undefined,
+): void {
+	if (value === undefined || value === "") return;
+	const rows = groups.get(group) ?? [];
+	rows.push([key, value]);
+	groups.set(group, rows);
+}
+
+function groupEntries(groups: Map<string, ToolResultGroup["rows"]>): ToolResultGroup[] {
+	return Array.from(groups.entries(), ([name, rows]) => ({ name, rows }));
 }
 
 function parseAgeSeconds(v: string | undefined): number | undefined {
