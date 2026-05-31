@@ -262,9 +262,8 @@ export function toolStackedCard(
 			const lines = options.summary ? [body, "", options.summary] : [body];
 			if (options.notice) lines.push("", muted(options.notice, theme));
 			if (options.expanded) {
-				for (const section of options.expandedSections?.(width) ?? []) {
+				for (const section of options.expandedSections?.(width) ?? [])
 					if (section) lines.push("", section);
-				}
 				if (options.responseId) lines.push("", muted(`responseId: ${options.responseId}`, theme));
 			}
 			return lines.join("\n");

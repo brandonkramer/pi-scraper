@@ -38,9 +38,7 @@ export function renderVerticalResult(
 		.join(" \u00B7 ");
 	const treeLine = `\u2514\u2500 ${success("\u2713", theme)} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
 
-	if (!expanded || !data) {
-		return renderText(treeLine, { padToWidth: true });
-	}
+	if (!expanded || !data) return renderText(treeLine, { padToWidth: true });
 
 	const sections = buildToolResultTree(buildVerticalSections(data, browserFallback));
 	const body = toolResultTree(sections, 80, theme);
@@ -48,9 +46,7 @@ export function renderVerticalResult(
 	const transcript = data.transcript as
 		| { segments?: { text: string; start: number; duration: number }[]; text?: string }
 		| undefined;
-	if (!transcript?.text) {
-		return renderText(`${treeLine}\n${body}`, { padToWidth: true });
-	}
+	if (!transcript?.text) return renderText(`${treeLine}\n${body}`, { padToWidth: true });
 
 	const segCount = transcript.segments?.length ?? 0;
 	const firstSegments = transcript.segments?.slice(0, 20) ?? [];
@@ -59,9 +55,8 @@ export function renderVerticalResult(
 		const s = (seg.start % 60).toFixed(0).padStart(2, "0");
 		return `[${m}:${s}] ${seg.text}`;
 	});
-	if (segCount > firstSegments.length) {
+	if (segCount > firstSegments.length)
 		transcriptLines.push(`… ${segCount - firstSegments.length} more segments`);
-	}
 	const wrappedLines = transcriptLines.flatMap((line) => splitValueByWidth(line, 80));
 	const transcriptBlock = wrappedLines
 		.map((line) => `${muted("\u2502 ", theme)}${line}`)
