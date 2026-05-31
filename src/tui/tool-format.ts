@@ -7,7 +7,7 @@ export {
 	formatChecklistItem as toolChecklistItem,
 	formatChecklistText as toolChecklistText,
 } from "./tool-labels.ts";
-export { currentSpinnerFrame as toolCurrentSpinnerFrame } from "./tool-spinner.ts";
+export { currentSpinnerFrame as toolCurrentSpinnerFrame } from "./tool-status.ts";
 export {
 	formatPreview as toolFormatPreview,
 	previewText as toolPreviewText,

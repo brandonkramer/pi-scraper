@@ -8,7 +8,6 @@ import {
 	muted,
 	separator,
 } from "./theme.ts";
-import { currentSpinnerFrame } from "./tool-spinner.ts";
 import type { RenderTheme } from "./types.ts";
 /**
  * @file Pi terminal UI status pill primitive with tuned background behavior. The background reset
@@ -54,6 +53,13 @@ const STATE_BG: Record<StatusPillState, string> = {
 	waiting: "toolPendingBg",
 	loading: "toolPendingBg",
 };
+
+export const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+export function currentSpinnerFrame(): string {
+	const tick = Math.floor(Date.now() / 80);
+	return SPINNER_FRAMES[tick % SPINNER_FRAMES.length];
+}
 
 const GLYPHS: Record<StatusPillState, [string, string]> = {
 	done: ["accent", "✓"],

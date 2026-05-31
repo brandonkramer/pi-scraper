@@ -1,7 +1,6 @@
 /** @file Pi terminal UI spinner and spinner-footer primitives. */
 import { muted, separator } from "./theme.ts";
-import { SPINNER_FRAMES } from "./tool-spinner.ts";
-import { toolStatus, type ToolStatusPart } from "./tool-status.ts";
+import { SPINNER_FRAMES, toolStatus, type ToolStatusPart } from "./tool-status.ts";
 import type { RenderTheme } from "./types.ts";
 
 export function withSpinnerFooter(lines: string[], tick?: number): string {
