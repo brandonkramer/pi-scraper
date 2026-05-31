@@ -57,22 +57,19 @@ const extractActionSchema = Type.Union([
 	Type.Literal("cosine"),
 ]);
 
-const extractSchemaPresetSchema = Type.Union(
-	[
-		Type.Literal("api-reference"),
-		Type.Literal("changelog"),
-		Type.Literal("faq"),
-		Type.Literal("compatibility-table"),
-	],
-	{ description: "Preset schema." },
-);
+const extractSchemaPresetSchema = Type.Union([
+	Type.Literal("api-reference"),
+	Type.Literal("changelog"),
+	Type.Literal("faq"),
+	Type.Literal("compatibility-table"),
+]);
 
 export const webExtractSchema = Type.Object({
 	action: Type.Optional(extractActionSchema),
 	extractor: Type.Optional(Type.String()),
 	url: Type.Optional(urlProperty()),
 	content: Type.Optional(Type.String({ description: "Inline when no URL." })),
-	prompt: Type.Optional(Type.String({ description: "Adhoc prompt." })),
+	prompt: Type.Optional(Type.String()),
 	schema: Type.Optional(
 		Type.Any({ description: "Structured extraction schema." }),
 	),
@@ -80,7 +77,7 @@ export const webExtractSchema = Type.Object({
 	bullets: Type.Optional(Type.Number()),
 	...modelProviderOptionSchema,
 	...scrapeOutputOptionSchema,
-	sourceFormat: Type.Optional(Type.String({ description: "Override source format." })),
+	sourceFormat: Type.Optional(Type.String()),
 	include: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	extractSchema: Type.Optional(extractSchemaPresetSchema),
 	length: Type.Optional(
@@ -116,10 +113,10 @@ export const webExtractSchema = Type.Object({
 	selector: Type.Optional(Type.String({ description: "CSS/XPath selector." })),
 	selectorType: Type.Optional(Type.String({ description: "css or xpath." })),
 	attribute: Type.Optional(Type.String({ description: "HTML attr." })),
-	identifier: Type.Optional(Type.String({ description: "Extraction ID." })),
-	adaptive: Type.Optional(Type.Boolean({ description: "Auto selector." })),
+	identifier: Type.Optional(Type.String()),
+	adaptive: Type.Optional(Type.Boolean()),
 	autoSave: Type.Optional(Type.Boolean()),
-	threshold: Type.Optional(Type.Number({ description: "Min confidence." })),
+	threshold: Type.Optional(Type.Number()),
 	limit: Type.Optional(Type.Integer()),
 	respectRobots: Type.Optional(Type.Boolean({ description: "Default: true." })),
 	// Strategy extraction params (css-extract, xpath-extract, regex-extract, cosine)
