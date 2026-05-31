@@ -24,7 +24,7 @@ Extract structured data from URLs or content — verticals, patterns, selectors,
 | `url` | string | Target URL |
 | `content` | string | Inline content (when no URL) |
 | `action` | string | `vertical`, `pattern`, `selector`, `adhoc`, `list`, `css-extract`, `xpath-extract`, `regex-extract`, `cosine` |
-| `extractor` | string | Vertical name (e.g. `github_repo`) |
+| `extractor` | string | Vertical name used with `action=vertical` (e.g. `github_repo`, `huggingface_model`, `huggingface_dataset`) |
 | `prompt` | string | Adhoc extraction prompt |
 | `schema` | object | JSON Schema for adhoc |
 | `selector` | string | CSS/XPath selector |
@@ -68,7 +68,15 @@ Extract structured data from URLs or content — verticals, patterns, selectors,
 
 ```
 # Vertical — GitHub repo
-web_extract action=github_repo url="https://github.com/can1357/oh-my-pi"
+web_extract action=vertical extractor=github_repo url="https://github.com/can1357/oh-my-pi"
+
+# Vertical — Hugging Face model (owner/model or legacy single-slug URL)
+web_extract action=vertical extractor=huggingface_model url="https://huggingface.co/google-bert/bert-base-uncased"
+web_extract action=vertical extractor=huggingface_model url="https://huggingface.co/bert-base-uncased"
+
+# Vertical — Hugging Face dataset (owner/dataset or legacy single-slug URL)
+web_extract action=vertical extractor=huggingface_dataset url="https://huggingface.co/datasets/rajpurkar/squad"
+web_extract action=vertical extractor=huggingface_dataset url="https://huggingface.co/datasets/cnn_dailymail"
 
 # Pattern — sections from README
 web_extract action=pattern url=https://raw.githubusercontent.com/vitejs/vite/main/README.md sections=[{start:"## Packages",end:"## Contribution"}]
@@ -119,6 +127,7 @@ This peer-optional design ensures users without custom LLM setups do not need to
 ## Rules
 
 - **Prefer vertical > pattern > css-extract > selector > adhoc LLM.** Use the cheapest extraction that works.
+- Vertical calls use `action=vertical extractor=<name>`; do not put extractor names such as `huggingface_model` in `action`.
 - For structured data from known layouts, use `css-extract` or `xpath-extract` with a `selectors` map.
 - For text with predictable patterns (emails, phone numbers, IDs), use `regex-extract`.
 - For open-ended content relevance, use `cosine` with a natural language query (pure TS, no LLM needed).

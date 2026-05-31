@@ -44,8 +44,32 @@ const extractActions = [
 ] as const;
 
 const extractActionSchema = Type.Unsafe<
-	"list" | "vertical" | "pattern" | "surface" | "selector" | "summarize" | "adhoc" | "css-extract" | "xpath-extract" | "regex-extract" | "cosine"
->({ enum: ["list", "vertical", "pattern", "surface", "selector", "summarize", "adhoc", "css-extract", "xpath-extract", "regex-extract", "cosine"] });
+	| "list"
+	| "vertical"
+	| "pattern"
+	| "surface"
+	| "selector"
+	| "summarize"
+	| "adhoc"
+	| "css-extract"
+	| "xpath-extract"
+	| "regex-extract"
+	| "cosine"
+>({
+	enum: [
+		"list",
+		"vertical",
+		"pattern",
+		"surface",
+		"selector",
+		"summarize",
+		"adhoc",
+		"css-extract",
+		"xpath-extract",
+		"regex-extract",
+		"cosine",
+	],
+});
 
 const extractSchemaPresetSchema = Type.Unsafe<
 	"api-reference" | "changelog" | "faq" | "compatibility-table"
@@ -53,13 +77,16 @@ const extractSchemaPresetSchema = Type.Unsafe<
 
 export const webExtractSchema = Type.Object({
 	action: Type.Optional(extractActionSchema),
-	extractor: Type.Optional(Type.Unsafe<string>({})),
+	extractor: Type.Optional(
+		Type.Unsafe<string>({
+			description:
+				"Vertical extractor name for action=vertical, e.g. huggingface_model or huggingface_dataset. Hugging Face accepts /owner/name and legacy /name URLs.",
+		}),
+	),
 	url: Type.Optional(urlProperty()),
 	content: Type.Optional(Type.Unsafe<string>({})),
 	prompt: Type.Optional(Type.Unsafe<string>({})),
-	schema: Type.Optional(
-		Type.Any(),
-	),
+	schema: Type.Optional(Type.Any()),
 	sentences: Type.Optional(Type.Unsafe<number>({})),
 	bullets: Type.Optional(Type.Unsafe<number>({})),
 	...modelProviderOptionSchema,
@@ -67,9 +94,7 @@ export const webExtractSchema = Type.Object({
 	sourceFormat: Type.Optional(Type.Unsafe<string>({})),
 	include: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	extractSchema: Type.Optional(extractSchemaPresetSchema),
-	length: Type.Optional(
-		Type.Unsafe<boolean | string>({ type: ["boolean", "string"] }),
-	),
+	length: Type.Optional(Type.Unsafe<boolean | string>({ type: ["boolean", "string"] })),
 	markers: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	contains: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
 	excerpts: Type.Optional(
@@ -88,9 +113,7 @@ export const webExtractSchema = Type.Object({
 		}),
 	),
 	jsonPaths: Type.Optional(Type.Unsafe<string[]>({})),
-	extract: Type.Optional(
-		Type.Unsafe<"api-surface">({ enum: ["api-surface"] }),
-	),
+	extract: Type.Optional(Type.Unsafe<"api-surface">({ enum: ["api-surface"] })),
 	// Selector extraction (Task 27)
 	selector: Type.Optional(Type.Unsafe<string>({ description: "CSS/XPath" })),
 	selectorType: Type.Optional(Type.Unsafe<string>({})),

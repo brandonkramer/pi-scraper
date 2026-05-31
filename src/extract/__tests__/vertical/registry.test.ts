@@ -197,6 +197,14 @@ describe("vertical extractor registry", () => {
 			requiresLLM: false,
 			requiresCloud: false,
 		});
+		expect(
+			listExtractorCapabilities().find((capability) => capability.name === "huggingface_model")
+				?.urlPatterns,
+		).toContain("https://huggingface.co/:model");
+		expect(
+			listExtractorCapabilities().find((capability) => capability.name === "huggingface_dataset")
+				?.urlPatterns,
+		).toContain("https://huggingface.co/datasets/:dataset");
 	});
 
 	it("runs named API-oriented extractors", async () => {
@@ -305,10 +313,24 @@ describe("vertical extractor registry", () => {
 			data: { id: "org/model", pipelineTag: "text-generation" },
 		});
 		await expect(
+			runVerticalExtractor("huggingface_model", "https://huggingface.co/legacy-model", {
+				context,
+			}),
+		).resolves.toMatchObject({ data: { pipelineTag: "text-generation" } });
+		await expect(
 			runVerticalExtractor("huggingface_dataset", "https://huggingface.co/datasets/org/dataset", {
 				context,
 			}),
 		).resolves.toMatchObject({ data: { id: "org/dataset", downloads: 12 } });
+		await expect(
+			runVerticalExtractor(
+				"huggingface_dataset",
+				"https://huggingface.co/datasets/legacy-dataset",
+				{
+					context,
+				},
+			),
+		).resolves.toMatchObject({ data: { downloads: 12 } });
 	});
 
 	it("runs the arXiv feed extractor", async () => {

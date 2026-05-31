@@ -41,22 +41,26 @@ const reservedModelRoots = new Set([
 ]);
 
 export const huggingFaceModelExtractor: VerticalExtractor = {
-	capability: capability("huggingface_model", ["https://huggingface.co/:owner/:model"], {
-		type: "object",
-		required: ["id"],
-		properties: {
-			id: { type: "string" },
-			author: { type: "string" },
-			pipelineTag: { type: "string" },
-			downloads: { type: "number" },
-			likes: { type: "number" },
+	capability: capability(
+		"huggingface_model",
+		["https://huggingface.co/:owner/:model", "https://huggingface.co/:model"],
+		{
+			type: "object",
+			required: ["id"],
+			properties: {
+				id: { type: "string" },
+				author: { type: "string" },
+				pipelineTag: { type: "string" },
+				downloads: { type: "number" },
+				likes: { type: "number" },
+			},
 		},
-	}),
+	),
 	match: (url) => {
 		if (url.hostname !== "huggingface.co") return;
 		const [owner, name, ...rest] = url.pathname.split("/").filter(Boolean);
-		if (!owner || !name || rest.length > 0 || reservedModelRoots.has(owner)) return;
-		return { id: `${owner}/${name}` };
+		if (!owner || rest.length > 0 || reservedModelRoots.has(owner)) return;
+		return { id: name ? `${owner}/${name}` : owner };
 	},
 	extract: async (_url, match, context, signal) => {
 		const model = await context.fetchJson<HuggingFaceModelApi>(
@@ -82,7 +86,7 @@ export const huggingFaceModelExtractor: VerticalExtractor = {
 export const huggingFaceDatasetExtractor: VerticalExtractor = {
 	capability: capability(
 		"huggingface_dataset",
-		["https://huggingface.co/datasets/:owner/:dataset"],
+		["https://huggingface.co/datasets/:owner/:dataset", "https://huggingface.co/datasets/:dataset"],
 		{
 			type: "object",
 			required: ["id"],
@@ -97,8 +101,8 @@ export const huggingFaceDatasetExtractor: VerticalExtractor = {
 	match: (url) => {
 		if (url.hostname !== "huggingface.co") return;
 		const [datasets, owner, name, ...rest] = url.pathname.split("/").filter(Boolean);
-		if (datasets !== "datasets" || !owner || !name || rest.length > 0) return;
-		return { id: `${owner}/${name}` };
+		if (datasets !== "datasets" || !owner || rest.length > 0) return;
+		return { id: name ? `${owner}/${name}` : owner };
 	},
 	extract: async (_url, match, context, signal) => {
 		const dataset = await context.fetchJson<HuggingFaceDatasetApi>(
