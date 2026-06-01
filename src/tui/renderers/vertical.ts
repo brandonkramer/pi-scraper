@@ -13,6 +13,9 @@ type TranscriptPreview = { segments?: TranscriptSegment[]; text?: string };
 type BlockedSource = { reason?: string; attemptedEndpoints?: string[] };
 type SourceInfo = { provider?: string; videoUrl?: string; endpoint?: string };
 
+const renderVerticalText = (buildText: () => string): RenderComponent =>
+	renderDynamicText(buildText, { padToWidth: true });
+
 export function renderVerticalResult(
 	result: PiToolShell,
 	expanded: boolean | undefined,
@@ -24,10 +27,9 @@ export function renderVerticalResult(
 
 	const error = (wrapper?.error ?? details?.error) as { code?: string } | undefined;
 	if (error)
-		return renderDynamicText(
+		return renderVerticalText(
 			() =>
 				`\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${error.code ?? "FAILED"}`, theme)}`,
-			{ padToWidth: true },
 		);
 
 	const data = wrapper?.data as VerticalData | undefined;
@@ -44,38 +46,35 @@ export function renderVerticalResult(
 		return `${success("\u2713", theme)} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
 	};
 
-	if (!expanded || !data) return renderDynamicText(treeLine, { padToWidth: true });
+	if (!expanded || !data) return renderVerticalText(treeLine);
 
-	return renderDynamicText(
-		() => {
-			const sections = buildToolResultTree(buildVerticalSections(data, browserFallback));
-			const transcriptBlock = formatTranscriptBlock(
-				data.transcript as TranscriptPreview | undefined,
-				80,
-				theme,
+	return renderVerticalText(() => {
+		const sections = buildToolResultTree(buildVerticalSections(data, browserFallback));
+		const transcriptBlock = formatTranscriptBlock(
+			data.transcript as TranscriptPreview | undefined,
+			80,
+			theme,
+		);
+		const commentsBlock = formatCommentsBlock(
+			data.comments as VerticalComment[] | undefined,
+			80,
+			theme,
+		);
+		const sourceSections = buildToolResultTree(buildSourceSections(data));
+		const hasVerticalBlocks = transcriptBlock || commentsBlock || sourceSections.length > 0;
+		if (sections.every((section) => section.name === "extraction") && !hasVerticalBlocks)
+			sections.push(
+				...buildToolResultDetails(data, {
+					hide: new Set<string>(),
+					sectionName: "data",
+				}),
 			);
-			const commentsBlock = formatCommentsBlock(
-				data.comments as VerticalComment[] | undefined,
-				80,
-				theme,
-			);
-			const sourceSections = buildToolResultTree(buildSourceSections(data));
-			const hasVerticalBlocks = transcriptBlock || commentsBlock || sourceSections.length > 0;
-			if (sections.every((section) => section.name === "extraction") && !hasVerticalBlocks)
-				sections.push(
-					...buildToolResultDetails(data, {
-						hide: new Set<string>(),
-						sectionName: "data",
-					}),
-				);
-			const body = toolResultTree(sections, 80, theme);
-			const sourceBlock = toolResultTree(sourceSections, 80, theme);
-			return [treeLine(), transcriptBlock, body, commentsBlock, sourceBlock]
-				.filter(Boolean)
-				.join("\n\n");
-		},
-		{ padToWidth: true },
-	);
+		const body = toolResultTree(sections, 80, theme);
+		const sourceBlock = toolResultTree(sourceSections, 80, theme);
+		return [treeLine(), transcriptBlock, body, commentsBlock, sourceBlock]
+			.filter(Boolean)
+			.join("\n\n");
+	});
 }
 
 function buildVerticalSections(
@@ -125,24 +124,21 @@ function renderBlockedVerticalResult(
 	const reason = blocked.reason ?? "structured endpoint unavailable";
 	const treeLine = () =>
 		`${activity("!", theme)} ${name} metadata only${muted(` \u00B7 ${summarizeBlockedReason(reason)}`, theme)}`;
-	if (!expanded) return renderDynamicText(treeLine, { padToWidth: true });
-	return renderDynamicText(
-		() => {
-			const attemptedBlock = formatListBlock(
-				"attempted endpoints",
-				[...new Set(blocked.attemptedEndpoints ?? [])],
-				80,
-				theme,
-			);
-			const sourceBlock = toolResultTree(
-				buildToolResultTree(buildSourceSections(data ?? {}, false)),
-				80,
-				theme,
-			);
-			return [treeLine(), attemptedBlock, sourceBlock].filter(Boolean).join("\n\n");
-		},
-		{ padToWidth: true },
-	);
+	if (!expanded) return renderVerticalText(treeLine);
+	return renderVerticalText(() => {
+		const attemptedBlock = formatListBlock(
+			"attempted endpoints",
+			[...new Set(blocked.attemptedEndpoints ?? [])],
+			80,
+			theme,
+		);
+		const sourceBlock = toolResultTree(
+			buildToolResultTree(buildSourceSections(data ?? {}, false)),
+			80,
+			theme,
+		);
+		return [treeLine(), attemptedBlock, sourceBlock].filter(Boolean).join("\n\n");
+	});
 }
 
 function summarizeBlockedReason(reason: string): string {
