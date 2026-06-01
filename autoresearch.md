@@ -37,4 +37,8 @@ Reduce production LOC in `src/tui` while preserving identical rendered behavior 
 - Before editing an existing symbol, run GitNexus impact analysis when the CLI can resolve that symbol; warn if HIGH/CRITICAL risk.
 
 ## What's Been Tried
-- Baseline setup only. Initial source read shows the largest opportunities are repeated renderer patterns (expanded response IDs, model/freshness summaries, list/tree blocks) and helper-level duplication in vertical list rendering, scrape sections, and batch/crawl summaries.
+- Baseline: `tui_loc=2049` production LOC under `src/tui`.
+- Kept wins so far: extract selector reuses `toolResultCard` response-id expansion; batch progress returns done text directly; vertical description preview uses one template literal; single-use comment truncation is inlined; diff summaries reuse `toolStatus` and removed single-use `joinSegments`; byte formatting uses a single post-guard ternary; HTTP time formatting uses one return; stored-result rendering reuses `toolStackedCard`; crawl excerpt selection uses a local variable instead of an IIFE. Current best observed: `tui_loc=2032`.
+- Dead ends: generic vertical list helper increased LOC; crawl lookup stacked-card rewrite grew; combined resource exports grew under oxfmt; crawl optional chaining grew; scrape trace response-id inline was neutral; nested ternaries for formatters/blocked reason grew; direct extract tree ternary grew; map stacked-card rewrite grew.
+- Formatter lesson: oxfmt often expands nested ternaries and large object-call expressions. Prefer early returns and local variables unless a ternary stays flat on one line.
+- Reuse lesson: existing `toolStackedCard`/`toolResultCard` helps when it replaces custom background/response-id line plumbing, but can grow small renderers due object boilerplate.
