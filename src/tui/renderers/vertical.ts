@@ -37,8 +37,7 @@ export function renderVerticalResult(
 	const data = wrapper?.data as Record<string, unknown> | undefined;
 	const blocked = (data as { source?: BlockedSource & { blocked?: boolean } } | undefined)?.source;
 	if (blocked?.blocked) return renderBlockedVerticalResult(name, data, blocked, expanded, theme);
-	const bfFallback = wrapper?.browserFallback as BrowserFallback | undefined;
-	const browserFallback = bfFallback?.used ? bfFallback : undefined;
+	const browserFallback = wrapper?.browserFallback as BrowserFallback | undefined;
 	const treeLine = () => {
 		const summaryDetails = [
 			extractorPreview(data),
