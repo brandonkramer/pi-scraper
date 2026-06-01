@@ -26,20 +26,14 @@ export function renderWebDiffResult(
 		return toolProgressCard("web_scrape diff", details, theme, { allowIcons: false });
 	const envelope = details as Partial<ToolContext<Partial<SnapshotDiffResult>>>;
 	const diff = envelope.data;
+	const diffState = !diff?.previous
+		? "saved baseline"
+		: envelope.summary?.includes("No meaningful") || envelope.summary?.includes("No content")
+			? "no content changes"
+			: `changed: ${diff.diff?.changedCount ?? 0} changed, ${diff.diff?.addedCount ?? 0} added, ${diff.diff?.removedCount ?? 0} removed`;
 	const title = envelope.error
 		? toolErrorLabel("web_scrape", envelope.error, { allowIcons: false })
-		: toolStatus(
-				[
-					!diff?.previous
-						? "saved baseline"
-						: envelope.summary?.includes("No meaningful") ||
-							  envelope.summary?.includes("No content")
-							? "no content changes"
-							: `changed: ${diff.diff?.changedCount ?? 0} changed, ${diff.diff?.addedCount ?? 0} added, ${diff.diff?.removedCount ?? 0} removed`,
-					toolFreshnessLabel(envelope),
-				],
-				theme,
-			);
+		: toolStatus([diffState, toolFreshnessLabel(envelope)], theme);
 	if (!expanded) {
 		return toolText(toolStatus([title, toolMuted(toolExpandHint.text, theme)], theme), {
 			padToWidth: true,
