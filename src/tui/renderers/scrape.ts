@@ -14,11 +14,7 @@ import {
 	toolSessionNotice,
 	formatChecklistText as toolChecklistText,
 } from "../tool-labels.ts";
-import {
-	toolResourceStatus,
-	formatBytes as fmtBytes,
-	formatDuration as fmtDuration,
-} from "../tool-resource.ts";
+import { toolResourceStatus, formatBytes, formatDuration } from "../tool-resource.ts";
 import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
 import {
 	toolStatusDot,
@@ -74,7 +70,7 @@ export function renderWebScrapeResult(
 					`${envelope.mode ?? ""} mode`,
 					envelope.format,
 					sourceLabel,
-					{ text: fmtDuration(envelope.timing?.durationMs) ?? "", tone: "muted" },
+					{ text: formatDuration(envelope.timing?.durationMs) ?? "", tone: "muted" },
 					toolFreshnessLabel(envelope),
 					expanded ? undefined : toolExpandHint,
 				],
@@ -167,8 +163,8 @@ function buildScrapeSections(
 	addScrapeRow(groups, "details", "status", envelope.status ? String(envelope.status) : undefined);
 	addScrapeRow(groups, "details", "mode", envelope.mode);
 	addScrapeRow(groups, "details", "format", envelope.format);
-	addScrapeRow(groups, "details", "size", fmtBytes(envelope.downloadedBytes));
-	addScrapeRow(groups, "details", "duration", fmtDuration(envelope.timing?.durationMs));
+	addScrapeRow(groups, "details", "size", formatBytes(envelope.downloadedBytes));
+	addScrapeRow(groups, "details", "duration", formatDuration(envelope.timing?.durationMs));
 	addScrapeRow(groups, "details", "type", envelope.contentType);
 	addScrapeRow(groups, "details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
 
