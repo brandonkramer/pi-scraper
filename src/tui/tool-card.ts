@@ -163,7 +163,6 @@ export function toolProgressCard(
 	const startedAtMs = progressStartedAtMs(details) ?? Date.now();
 	return defineResultRenderer({
 		renderContent(width) {
-			const statusWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
 			const state = progressPillState(details.state);
 			const count = details.total ? ` ${details.current ?? 0}/${details.total}` : "";
 			const message = details.message ? ` · ${details.message}` : "";
@@ -177,7 +176,7 @@ export function toolProgressCard(
 							? "loading"
 							: details.state,
 				state,
-				width: statusWidth,
+				width: Math.max(12, Math.min(18, Math.floor(width * 0.22))),
 				theme,
 				startedAtMs,
 				restoreBg: "toolPendingBg",
