@@ -213,7 +213,8 @@ function formatCommentsBlock(
 		const isLast = !hasMore && i === preview.length - 1;
 		const connector = isLast ? "\u2514\u2500 " : "\u251C\u2500 ";
 		const label = comment.author ? `${comment.author}: ` : `${i + 1}. `;
-		const value = `${label}${truncateComment(normalizePreviewText(comment.text))}`;
+		const text = normalizePreviewText(comment.text);
+		const value = `${label}${text.length > 180 ? `${text.slice(0, 180)}…` : text}`;
 		const valueLines = splitValueByWidth(value, Math.max(20, width - 2 - 3));
 		lines.push(`  ${muted(connector, theme)}${valueLines[0] ?? ""}`);
 		const continuationPrefix = isLast ? "   " : "\u2502  ";
@@ -253,10 +254,6 @@ function formatTimestamp(seconds: number): string {
 
 function normalizePreviewText(value: string | undefined): string {
 	return (value ?? "").replaceAll(/\s+/gu, " ").trim();
-}
-
-function truncateComment(value: string): string {
-	return value.length > 180 ? `${value.slice(0, 180)}…` : value;
 }
 
 function blockedSource(data: unknown): BlockedSource | undefined {
