@@ -84,7 +84,7 @@ function buildVerticalSections(
 	browserFallback?: BrowserFallback,
 ): ToolResultGroup[] {
 	const sections: ToolResultGroup[] = [];
-	if (browserFallback?.used) {
+	if (browserFallback?.used)
 		sections.push({
 			name: "extraction",
 			rows: [
@@ -92,7 +92,6 @@ function buildVerticalSections(
 				["browserBackend", browserFallback.backend],
 			],
 		});
-	}
 
 	const videoRows: ToolResultGroup["rows"] = [];
 	if (typeof data.title === "string" && data.title) videoRows.push(["title", data.title]);
