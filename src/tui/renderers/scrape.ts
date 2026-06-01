@@ -1,12 +1,6 @@
 import { Markdown } from "@earendil-works/pi-tui";
 
-import {
-	isProgress,
-	type Chunk,
-	type PiToolShell,
-	type ProgressDetails,
-	type ToolContext,
-} from "../../types.ts";
+import { isProgress, type Chunk, type PiToolShell, type ToolContext } from "../../types.ts";
 import {
 	activity as toolActivity,
 	failure as toolFailure,
@@ -45,7 +39,7 @@ export function renderWebScrapeResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ToolContext<unknown>> | ProgressDetails;
+	const details = result.details as Partial<ToolContext<unknown>>;
 	if (isProgress(details)) {
 		const url = details.url ?? "unknown URL";
 		const status =
