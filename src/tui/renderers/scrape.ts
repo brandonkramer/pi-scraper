@@ -94,10 +94,9 @@ export function renderWebScrapeResult(
 				theme,
 			);
 	const data = envelope.data;
-	const fallbackText = result.content.at(0)?.text;
 	const field =
 		data && typeof data === "object" ? (data.markdown ?? data.text ?? data.title) : undefined;
-	const previewValue = envelope.answerContext ?? field ?? fallbackText ?? "";
+	const previewValue = envelope.answerContext ?? field ?? result.content.at(0)?.text ?? "";
 	const preview =
 		typeof previewValue === "string"
 			? previewValue
