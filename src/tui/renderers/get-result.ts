@@ -12,12 +12,11 @@ export function renderGetResult(
 ): RenderComponent {
 	const details = result.details as Record<string, unknown> | undefined;
 	const hasError = !!details?.error;
-	const sections = buildToolResultDetails(details);
 	return toolProgressLayout(
 		{
 			body: `└─ ${paintFg(theme, hasError ? "error" : "accent", hasError ? "✕ no result" : "✓ result found")}`,
 			expanded,
-			expandedSections: (width) => [toolResultTree(sections, width, theme)],
+			expandedSections: (width) => [toolResultTree(buildToolResultDetails(details), width, theme)],
 			hasError,
 		},
 		theme,
