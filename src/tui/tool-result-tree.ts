@@ -52,7 +52,6 @@ export function toolResultTree(
 }
 
 export function splitValueByWidth(value: string, maxChars: number): string[] {
-	if (value.length <= maxChars) return [value];
 	const lines: string[] = [];
 	let remaining = value;
 	while (remaining.length > maxChars) {
@@ -61,6 +60,6 @@ export function splitValueByWidth(value: string, maxChars: number): string[] {
 		lines.push(remaining.slice(0, breakAt));
 		remaining = remaining.slice(breakAt).trimStart();
 	}
-	if (remaining) lines.push(remaining);
+	if (remaining || lines.length === 0) lines.push(remaining);
 	return lines;
 }
