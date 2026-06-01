@@ -210,9 +210,8 @@ function formatCommentsBlock(
 		const value = `${comment.author ? `${comment.author}: ` : `${i + 1}. `}${text.length > 180 ? `${text.slice(0, 180)}…` : text}`;
 		const valueLines = splitValueByWidth(value, Math.max(20, width - 2 - 3));
 		lines.push(`  ${muted(connector, theme)}${valueLines[0] ?? ""}`);
-		const continuationPrefix = isLast ? "   " : "\u2502  ";
 		for (const line of valueLines.slice(1))
-			lines.push(`  ${muted(continuationPrefix, theme)}${line}`);
+			lines.push(`  ${muted(isLast ? "   " : "\u2502  ", theme)}${line}`);
 	}
 	if (hasMore)
 		lines.push(
@@ -233,9 +232,8 @@ function formatListBlock(
 		const connector = i === items.length - 1 ? "\u2514\u2500 " : "\u251C\u2500 ";
 		const valueLines = splitValueByWidth(items[i] ?? "", Math.max(20, width - 2 - 3));
 		lines.push(`  ${muted(connector, theme)}${valueLines[0] ?? ""}`);
-		const continuationPrefix = i === items.length - 1 ? "   " : "\u2502  ";
 		for (const line of valueLines.slice(1))
-			lines.push(`  ${muted(continuationPrefix, theme)}${line}`);
+			lines.push(`  ${muted(i === items.length - 1 ? "   " : "\u2502  ", theme)}${line}`);
 	}
 	return lines.join("\n");
 }
