@@ -181,10 +181,8 @@ function buildScrapeSections(
 	addScrapeRow(groups, "details", "status", envelope.status ? String(envelope.status) : undefined);
 	addScrapeRow(groups, "details", "mode", envelope.mode);
 	addScrapeRow(groups, "details", "format", envelope.format);
-	if (envelope.downloadedBytes !== undefined)
-		addScrapeRow(groups, "details", "size", fmtBytes(envelope.downloadedBytes) ?? "");
-	if (envelope.timing?.durationMs !== undefined)
-		addScrapeRow(groups, "details", "duration", fmtDuration(envelope.timing.durationMs) ?? "");
+	addScrapeRow(groups, "details", "size", fmtBytes(envelope.downloadedBytes));
+	addScrapeRow(groups, "details", "duration", fmtDuration(envelope.timing?.durationMs));
 	addScrapeRow(groups, "details", "type", envelope.contentType);
 	addScrapeRow(groups, "details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
 
