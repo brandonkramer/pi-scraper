@@ -73,12 +73,11 @@ export function renderWebBatchResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ToolContext<unknown>>;
-	if (isProgress(details)) {
-		if (isBatchProgress(details)) return toolBatchProgressCard(details, expanded, theme);
-		return toolProgressCard("web_batch", details, theme, { allowIcons: true });
+	const envelope = result.details as Partial<ToolContext<BatchItemResult[]>>;
+	if (isProgress(envelope)) {
+		if (isBatchProgress(envelope)) return toolBatchProgressCard(envelope, expanded, theme);
+		return toolProgressCard("web_batch", envelope, theme, { allowIcons: true });
 	}
-	const envelope = details as Partial<ToolContext<BatchItemResult[]>>;
 	const items = Array.isArray(envelope.data) ? envelope.data : [];
 	const succeeded = items.filter((item) => item.ok).length;
 	const cacheHits = items.filter((item) => item.ok && item["result"]?.cache?.cached).length;
