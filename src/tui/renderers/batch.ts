@@ -93,9 +93,8 @@ export function renderWebBatchResult(
 				],
 				theme,
 			);
-	const progressValue = envelope.diagnostics?.batchProgress;
-	const progress = isBatchProgressView(progressValue)
-		? progressValue
+	const progress = isBatchProgressView(envelope.diagnostics?.batchProgress)
+		? envelope.diagnostics.batchProgress
 		: batchProgressFromItems(items);
 	const metadata = {
 		jobId: envelope.diagnostics?.jobId,
