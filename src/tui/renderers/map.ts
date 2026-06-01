@@ -1,9 +1,4 @@
-import {
-	isProgress,
-	type PiToolShell,
-	type ProgressDetails,
-	type ToolContext,
-} from "../../types.ts";
+import { isProgress, type PiToolShell, type ToolContext } from "../../types.ts";
 import { muted as toolMuted } from "../theme.ts";
 import { renderText as toolText } from "../tool-call.ts";
 import { toolProgressCard, toolResultCard } from "../tool-card.ts";
@@ -16,7 +11,7 @@ export function renderWebMapResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ToolContext<unknown>> | ProgressDetails;
+	const details = result.details as Partial<ToolContext<unknown>>;
 	if (isProgress(details))
 		return toolProgressCard("web_map", details, theme, { allowIcons: false });
 	const envelope = details as Partial<
