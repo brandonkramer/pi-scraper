@@ -11,6 +11,7 @@ type VerticalComment = { author?: string; text?: string };
 type TranscriptSegment = { text: string; start: number; duration?: number };
 type TranscriptPreview = { segments?: TranscriptSegment[]; text?: string };
 type BlockedSource = { reason?: string; attemptedEndpoints?: string[] };
+type SourceInfo = { provider?: string; videoUrl?: string; endpoint?: string };
 
 export function renderVerticalResult(
 	result: PiToolShell,
@@ -109,9 +110,7 @@ function buildSourceSections(
 	data: Record<string, unknown>,
 	options: { includeEndpoint?: boolean } = {},
 ): ToolResultGroup[] {
-	const source = data.source as
-		| { provider?: string; videoUrl?: string; endpoint?: string }
-		| undefined;
+	const source = data.source as SourceInfo | undefined;
 	const sourceRows: ToolResultGroup["rows"] = [];
 	if (source?.provider) sourceRows.push(["provider", source.provider]);
 	if (source?.videoUrl) sourceRows.push(["url", source.videoUrl]);
