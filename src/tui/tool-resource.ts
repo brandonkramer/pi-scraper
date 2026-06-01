@@ -56,12 +56,11 @@ export function renderResourceItemList(
 }
 
 function renderResourceItemLines(item: ResourceListItem): string[] {
-	if (!item.ok) {
+	if (!item.ok)
 		return [
 			`✕ ${item.url || "unknown URL"}`,
 			`  ${[item.error?.code, item.error?.phase, item.error?.message ?? "failed"].filter(Boolean).join(" · ")}`,
 		];
-	}
 	const f = item.fields;
 	const fieldsStr =
 		[
