@@ -35,18 +35,16 @@ export function renderVerticalResult(
 	const data = wrapper?.data as VerticalData | undefined;
 	const blocked = (data as { source?: BlockedSource & { blocked?: boolean } } | undefined)?.source;
 	if (blocked?.blocked) return renderBlockedVerticalResult(name, data, blocked, expanded, theme);
-	const browserFallback = wrapper?.browserFallback as BrowserFallback | undefined;
+	const browser = wrapper?.browserFallback as BrowserFallback | undefined;
 	const treeLine = () => {
-		const fallback = browserFallback?.used
-			? ` \u00B7 browser fallback \u00B7 ${browserFallback.backend}`
-			: "";
+		const fallback = browser?.used ? ` \u00B7 browser fallback \u00B7 ${browser.backend}` : "";
 		return `${success("\u2713", theme)} ${name} done${muted(` \u00B7 ${extractorPreview(data)}${fallback}`, theme)}`;
 	};
 
 	if (!expanded || !data) return renderVerticalText(treeLine);
 
 	return renderVerticalText(() => {
-		const sections = buildToolResultTree(buildVerticalSections(data, browserFallback));
+		const sections = buildToolResultTree(buildVerticalSections(data, browser));
 		const transcriptBlock = formatTranscriptBlock(
 			data.transcript as TranscriptPreview | undefined,
 			80,
