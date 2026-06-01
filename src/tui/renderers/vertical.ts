@@ -206,9 +206,8 @@ function formatCommentsBlock(
 	for (const [i, comment] of preview.entries()) {
 		const isLast = !hasMore && i === preview.length - 1;
 		const connector = isLast ? "\u2514\u2500 " : "\u251C\u2500 ";
-		const label = comment.author ? `${comment.author}: ` : `${i + 1}. `;
 		const text = (comment.text ?? "").replaceAll(/\s+/gu, " ").trim();
-		const value = `${label}${text.length > 180 ? `${text.slice(0, 180)}…` : text}`;
+		const value = `${comment.author ? `${comment.author}: ` : `${i + 1}. `}${text.length > 180 ? `${text.slice(0, 180)}…` : text}`;
 		const valueLines = splitValueByWidth(value, Math.max(20, width - 2 - 3));
 		lines.push(`  ${muted(connector, theme)}${valueLines[0] ?? ""}`);
 		const continuationPrefix = isLast ? "   " : "\u2502  ";
