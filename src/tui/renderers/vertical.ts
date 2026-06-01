@@ -21,14 +21,13 @@ export function renderVerticalResult(
 	const wrapper = details?.data as Record<string, unknown> | undefined;
 	const name = typeof wrapper?.extractor === "string" ? wrapper.extractor : "extractor";
 
-	if (wrapper?.error ?? details?.error) {
-		const error = (wrapper?.error ?? details?.error) as { code?: string } | undefined;
+	const error = (wrapper?.error ?? details?.error) as { code?: string } | undefined;
+	if (error)
 		return renderDynamicText(
 			() =>
-				`\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${error?.code ?? "FAILED"}`, theme)}`,
+				`\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${error.code ?? "FAILED"}`, theme)}`,
 			{ padToWidth: true },
 		);
-	}
 
 	const data = wrapper?.data as Record<string, unknown> | undefined;
 	const blocked = (data as { source?: BlockedSource & { blocked?: boolean } } | undefined)?.source;
