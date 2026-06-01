@@ -1,10 +1,5 @@
 import type { SnapshotDiffResult } from "../../diff/snapshots.ts";
-import {
-	isProgress,
-	type PiToolShell,
-	type ToolContext,
-	type ProgressDetails,
-} from "../../types.ts";
+import { isProgress, type PiToolShell, type ToolContext } from "../../types.ts";
 import { muted as toolMuted } from "../theme.ts";
 import { renderText as toolText } from "../tool-call.ts";
 import { toolProgressCard } from "../tool-card.ts";
@@ -16,7 +11,7 @@ export function renderWebDiffResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ToolContext<unknown>> | ProgressDetails;
+	const details = result.details as Partial<ToolContext<unknown>>;
 	if (isProgress(details))
 		return toolProgressCard("web_scrape diff", details, theme, { allowIcons: false });
 	const envelope = details as Partial<ToolContext<Partial<SnapshotDiffResult>>>;
