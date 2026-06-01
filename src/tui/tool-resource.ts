@@ -47,11 +47,9 @@ export function renderResourceItemList(
 	const m = options.metadata;
 	const jobId = typeof m?.jobId === "string" ? m.jobId : undefined;
 	const pkg = typeof m?.packageResponseId === "string" ? m.packageResponseId : undefined;
-	if (jobId || pkg) {
-		lines.push("", "Stored handles:");
-		if (jobId) lines.push(`jobId: ${jobId}`);
-		if (pkg) lines.push(`packageResponseId: ${pkg}`);
-	}
+	if (jobId || pkg) lines.push("", "Stored handles:");
+	if (jobId) lines.push(`jobId: ${jobId}`);
+	if (pkg) lines.push(`packageResponseId: ${pkg}`);
 	return lines.join("\n");
 }
 
