@@ -23,11 +23,10 @@ export function renderWebDiffResult(
 	const title = envelope.error
 		? toolErrorLabel("web_scrape", envelope.error, { allowIcons: false })
 		: toolStatus([diffState, toolFreshnessLabel(envelope)], theme);
-	if (!expanded) {
+	if (!expanded)
 		return toolText(toolStatus([title, toolMuted(toolExpandHint.text, theme)], theme), {
 			padToWidth: true,
 		});
-	}
 	const lines = diff
 		? [
 				title,
