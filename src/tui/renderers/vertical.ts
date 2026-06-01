@@ -64,9 +64,7 @@ export function renderVerticalResult(
 				theme,
 			);
 			const sourceSections = buildToolResultTree(buildSourceSections(data));
-			const hasVerticalBlocks = Boolean(
-				transcriptBlock || commentsBlock || sourceSections.length > 0,
-			);
+			const hasVerticalBlocks = transcriptBlock || commentsBlock || sourceSections.length > 0;
 			if (sections.every((section) => section.name === "extraction") && !hasVerticalBlocks)
 				sections.push(
 					...buildExpandedResultDetails(data, {
