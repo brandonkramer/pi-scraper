@@ -16,7 +16,6 @@ export function renderGetResult(
 	return toolStackedCard(
 		{
 			body: `└─ ${paintFg(theme, hasError ? "error" : "accent", hasError ? "✕ no result" : "✓ result found")}`,
-			summary: "",
 			expanded,
 			expandedSections: (width) => [toolResultTree(sections, width, theme)],
 			hasError,

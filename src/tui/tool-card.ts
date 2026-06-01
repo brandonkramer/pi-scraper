@@ -237,7 +237,7 @@ export function defineResultRenderer(options: {
 export function toolStackedCard(
 	options: {
 		body: string | ((width: number) => string);
-		summary: string;
+		summary?: string;
 		expanded?: boolean;
 		notice?: string;
 		expandedSections?: (width: number) => Array<string | undefined>;
