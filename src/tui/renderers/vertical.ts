@@ -173,7 +173,6 @@ function formatTranscriptBlock(
 	const preview = segments.slice(0, 20);
 	const timestamps = preview.map((segment) => formatTimestamp(segment.start));
 	const timeWidth = Math.max(4, ...timestamps.map((time) => time.length));
-	const availableWidth = Math.max(20, width - 2 - 3 - timeWidth - 2);
 	const lines = ["  transcript"];
 	const hasMore = segments.length > preview.length;
 	for (let i = 0; i < preview.length; i++) {
@@ -181,7 +180,7 @@ function formatTranscriptBlock(
 		const connector = isLast ? "\u2514\u2500 " : "\u251C\u2500 ";
 		const time = timestamps[i]?.padStart(timeWidth) ?? "".padStart(timeWidth);
 		const text = (preview[i]?.text ?? "").replaceAll(/\s+/gu, " ").trim();
-		const textLines = splitValueByWidth(text, availableWidth);
+		const textLines = splitValueByWidth(text, Math.max(20, width - 2 - 3 - timeWidth - 2));
 		lines.push(`  ${muted(`${connector}${time}  `, theme)}${textLines[0] ?? ""}`);
 		for (const line of textLines.slice(1))
 			lines.push(`  ${muted((isLast ? "  " : "\u2502 ").padEnd(3 + timeWidth + 2), theme)}${line}`);
