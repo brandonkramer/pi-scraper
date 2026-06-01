@@ -139,11 +139,9 @@ function renderBatchProgressText(
 			restoreBg,
 		});
 	});
-	const more =
-		!expanded && batch.items.length > rows.length
-			? [muted(`… ${batch.items.length - rows.length} more urls`, theme)]
-			: [];
-	return [title, ...rows, ...more].join("\n");
+	if (!expanded && batch.items.length > rows.length)
+		rows.push(muted(`… ${batch.items.length - rows.length} more urls`, theme));
+	return [title, ...rows].join("\n");
 }
 
 export function progressStartedAtMs(details: ProgressDetails): number | undefined {
