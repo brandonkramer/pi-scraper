@@ -228,18 +228,25 @@ export function defineResultRenderer(options: {
 	};
 }
 
+type ToolStackedCardOptions = {
+	body: string | ((width: number) => string);
+	summary?: string;
+	expanded?: boolean;
+	notice?: string;
+	expandedSections?: (width: number) => Array<string | undefined>;
+	markdownPreview?: (width: number) => RenderComponent | undefined;
+	responseId?: string;
+	padToWidth?: boolean;
+	hasError?: boolean;
+};
+
+type ToolResultCardOptions = Omit<ToolStackedCardOptions, "body"> & {
+	renderContent?: (width: number) => string;
+	body?: ToolStackedCardOptions["body"];
+};
+
 export function toolStackedCard(
-	options: {
-		body: string | ((width: number) => string);
-		summary?: string;
-		expanded?: boolean;
-		notice?: string;
-		expandedSections?: (width: number) => Array<string | undefined>;
-		markdownPreview?: (width: number) => RenderComponent | undefined;
-		responseId?: string;
-		padToWidth?: boolean;
-		hasError?: boolean;
-	},
+	options: ToolStackedCardOptions,
 	theme?: RenderTheme,
 ): RenderComponent {
 	return defineResultRenderer({
@@ -263,18 +270,7 @@ export function toolStackedCard(
 }
 
 export function toolResultCard(
-	options: {
-		renderContent?: (width: number) => string;
-		body?: string | ((width: number) => string);
-		summary?: string;
-		expanded?: boolean;
-		notice?: string;
-		expandedSections?: (width: number) => Array<string | undefined>;
-		markdownPreview?: (width: number) => RenderComponent | undefined;
-		responseId?: string;
-		padToWidth?: boolean;
-		hasError?: boolean;
-	},
+	options: ToolResultCardOptions,
 	theme?: RenderTheme,
 ): RenderComponent {
 	return toolStackedCard(
