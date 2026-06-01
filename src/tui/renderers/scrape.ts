@@ -311,6 +311,5 @@ function parseCacheControl(value: string | undefined) {
 
 function formatHttpTime(s: string): string {
 	const d = new Date(s);
-	if (Number.isNaN(d.getTime())) return s;
-	return `${d.toISOString().slice(11, 19)} GMT`;
+	return Number.isNaN(d.getTime()) ? s : `${d.toISOString().slice(11, 19)} GMT`;
 }
