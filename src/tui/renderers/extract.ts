@@ -6,7 +6,7 @@ import { toolResource } from "../tool-resource.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
 import { buildToolResultDetails } from "../tool-result.ts";
 import { toolStatusDot, toolStatus } from "../tool-status.ts";
-import { getMarkdownTheme as toolMarkdownTheme, muted as toolMuted } from "../tui.ts";
+import { getMarkdownTheme as toolMarkdownTheme } from "../tui.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 export function renderWebExtractResult(
@@ -83,10 +83,10 @@ export function renderWebExtractResult(
 				const sections = buildToolResultDetails(details as Record<string, unknown>);
 				if (sections.length > 0) tree = toolResultTree(sections, width, theme);
 			}
-			const id =
-				expanded && details?.responseId && toolMuted(`responseId: ${details.responseId}`, theme);
-			return [loader, body, tree, id].filter(Boolean).join("\n\n");
+			return [loader, body, tree].filter(Boolean).join("\n\n");
 		},
+		expanded,
+		responseId: details?.responseId,
 		padToWidth: true,
 		markdownPreview: hasLongMarkdown
 			? () => new Markdown(preview.slice(0, 800), 0, 0, toolMarkdownTheme(theme))
