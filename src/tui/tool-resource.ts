@@ -56,12 +56,10 @@ export function renderResourceItemList(
 	const lines = [`\u2514\u2500 ${options.header}`];
 	for (const item of items.slice(0, max)) lines.push(...renderResourceItemLines(item));
 	if (items.length > max) lines.push(`… ${items.length - max} more item(s)`);
-	const m = options.metadata;
-	const jobId = typeof m?.jobId === "string" ? m.jobId : undefined;
-	const pkg = typeof m?.packageResponseId === "string" ? m.packageResponseId : undefined;
-	if (jobId || pkg) lines.push("", "Stored handles:");
-	if (jobId) lines.push(`jobId: ${jobId}`);
-	if (pkg) lines.push(`packageResponseId: ${pkg}`);
+	const { jobId, packageResponseId: pkg } = options.metadata ?? {};
+	if (typeof jobId === "string" || typeof pkg === "string") lines.push("", "Stored handles:");
+	if (typeof jobId === "string") lines.push(`jobId: ${jobId}`);
+	if (typeof pkg === "string") lines.push(`packageResponseId: ${pkg}`);
 	return lines.join("\n");
 }
 
