@@ -8,12 +8,7 @@ import {
 import { muted as toolMuted } from "../theme.ts";
 import { renderText as toolText } from "../tool-call.ts";
 import { toolProgressCard } from "../tool-card.ts";
-import {
-	toolErrorLabel,
-	toolExpandHint,
-	toolFreshnessLabel,
-	formatChecklistText as toolChecklistText,
-} from "../tool-labels.ts";
+import { toolErrorLabel, toolExpandHint, toolFreshnessLabel } from "../tool-labels.ts";
 import { toolStatus } from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export function renderWebDiffResult(
@@ -43,20 +38,11 @@ export function renderWebDiffResult(
 		title,
 		...(diff
 			? [
-					{
-						label: "fetched current page",
-						state: diff.current ? ("done" as const) : ("info" as const),
-					},
-					{
-						label: "loaded previous snapshot",
-						state: diff.previous ? ("done" as const) : ("warning" as const),
-					},
-					{ label: "compared normalized content", state: "done" as const },
-					{
-						label: "saved snapshot",
-						state: envelope.responseId ? ("done" as const) : ("info" as const),
-					},
-				].map((c) => toolChecklistText(c))
+					"fetched current page",
+					"loaded previous snapshot",
+					"compared normalized content",
+					"saved snapshot",
+				]
 			: []),
 	];
 	const preview = envelope.answerContext ?? result.content[0]?.text;
