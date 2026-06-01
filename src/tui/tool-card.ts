@@ -276,11 +276,10 @@ export function toolResultCard(
 	},
 	theme?: RenderTheme,
 ): RenderComponent {
-	const { renderContent, body, ...rest } = options;
 	return toolStackedCard(
 		{
-			...rest,
-			body: renderContent ?? body ?? "",
+			...options,
+			body: options.renderContent ?? options.body ?? "",
 		},
 		theme,
 	);
