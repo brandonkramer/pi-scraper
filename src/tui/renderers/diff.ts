@@ -34,17 +34,15 @@ export function renderWebDiffResult(
 			padToWidth: true,
 		});
 	}
-	const lines = [
-		title,
-		...(diff
-			? [
-					"fetched current page",
-					"loaded previous snapshot",
-					"compared normalized content",
-					"saved snapshot",
-				]
-			: []),
-	];
+	const lines = diff
+		? [
+				title,
+				"fetched current page",
+				"loaded previous snapshot",
+				"compared normalized content",
+				"saved snapshot",
+			]
+		: [title];
 	const preview = envelope.answerContext ?? result.content[0]?.text;
 	if (preview) lines.push("", preview.slice(0, 500));
 	if (envelope.responseId) lines.push("", toolMuted(`responseId: ${envelope.responseId}`, theme));
