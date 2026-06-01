@@ -185,24 +185,19 @@ function formatCommentsBlock(
 	theme?: RenderTheme,
 ): string {
 	if (!comments?.length) return "";
-	const preview = comments.slice(0, 5);
-	const lines = ["  comments"];
-	const hasMore = comments.length > preview.length;
-	for (const [i, comment] of preview.entries()) {
-		const isLast = !hasMore && i === preview.length - 1;
-		const connector = isLast ? "\u2514\u2500 " : "\u251C\u2500 ";
+	const preview = comments.slice(0, 5).map((comment, i) => {
 		const text = (comment.text ?? "").replaceAll(/\s+/gu, " ").trim();
-		const value = `${comment.author ? `${comment.author}: ` : `${i + 1}. `}${text.length > 180 ? `${text.slice(0, 180)}…` : text}`;
-		const valueLines = splitValueByWidth(value, Math.max(20, width - 2 - 3));
-		lines.push(`  ${muted(connector, theme)}${valueLines[0] ?? ""}`);
-		for (const line of valueLines.slice(1))
-			lines.push(`  ${muted(isLast ? "   " : "\u2502  ", theme)}${line}`);
-	}
-	if (hasMore)
-		lines.push(
-			`  ${muted("\u2514\u2500 … ", theme)}${comments.length - preview.length} more comments`,
-		);
-	return lines.join("\n");
+		return `${comment.author ? `${comment.author}: ` : `${i + 1}. `}${text.length > 180 ? `${text.slice(0, 180)}…` : text}`;
+	});
+	return formatListBlock(
+		"comments",
+		preview,
+		width,
+		theme,
+		comments.length > preview.length
+			? `${comments.length - preview.length} more comments`
+			: undefined,
+	);
 }
 
 function formatListBlock(
@@ -210,16 +205,19 @@ function formatListBlock(
 	items: string[],
 	width: number,
 	theme?: RenderTheme,
+	moreLabel?: string,
 ): string {
 	if (items.length === 0) return "";
 	const lines = [`  ${name}`];
 	for (let i = 0; i < items.length; i++) {
-		const connector = i === items.length - 1 ? "\u2514\u2500 " : "\u251C\u2500 ";
+		const isLast = !moreLabel && i === items.length - 1;
+		const connector = isLast ? "\u2514\u2500 " : "\u251C\u2500 ";
 		const valueLines = splitValueByWidth(items[i] ?? "", Math.max(20, width - 2 - 3));
 		lines.push(`  ${muted(connector, theme)}${valueLines[0] ?? ""}`);
 		for (const line of valueLines.slice(1))
-			lines.push(`  ${muted(i === items.length - 1 ? "   " : "\u2502  ", theme)}${line}`);
+			lines.push(`  ${muted(isLast ? "   " : "\u2502  ", theme)}${line}`);
 	}
+	if (moreLabel) lines.push(`  ${muted("\u2514\u2500 … ", theme)}${moreLabel}`);
 	return lines.join("\n");
 }
 
