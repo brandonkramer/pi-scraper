@@ -223,10 +223,11 @@ export async function runCrawl(
 			const releaseHost = await injectedHostLimits?.acquire(new URL(item.url).host, signal);
 			let completed = false;
 			try {
-				const pageProxy = options.resolveProxy?.() ?? options.proxy;
+				const { resolveProxy, ...scrapeOptions } = options;
+				const pageProxy = resolveProxy?.() ?? scrapeOptions.proxy;
 				const result = await scrapeUrl(
 					item.url,
-					{ ...options, proxy: pageProxy },
+					{ ...scrapeOptions, proxy: pageProxy },
 					sharedDeps,
 					signal,
 				);
