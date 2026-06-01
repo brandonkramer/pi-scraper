@@ -19,12 +19,12 @@ export function renderWebScrapeResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ToolContext<unknown>>;
-	if (isProgress(details)) {
-		const url = details.url ?? "unknown URL";
+	const envelope = result.details as Partial<ToolContext<Record<string, unknown>>>;
+	if (isProgress(envelope)) {
+		const url = envelope.url ?? "unknown URL";
 		const status =
-			details.state === "error" ? "error" : details.state === "done" ? "done" : "loading";
-		const startedAtMs = progressStartedAtMs(details) ?? Date.now();
+			envelope.state === "error" ? "error" : envelope.state === "done" ? "done" : "loading";
+		const startedAtMs = progressStartedAtMs(envelope) ?? Date.now();
 		return toolResultCard({
 			renderContent(width) {
 				const row = toolResourceStatus({
@@ -36,18 +36,16 @@ export function renderWebScrapeResult(
 					startedAtMs,
 					restoreBg: "toolPendingBg",
 				});
-				const summary = `web_scrape ${details.state}${separator(theme)}${muted(toolExpandHint.text, theme)}`;
+				const summary = `web_scrape ${envelope.state}${separator(theme)}${muted(toolExpandHint.text, theme)}`;
 				const lines = [row, "", summary];
-				if (expanded && details.checklist?.length)
-					lines.push("", ...details.checklist.map(toolChecklistText));
+				if (expanded && envelope.checklist?.length)
+					lines.push("", ...envelope.checklist.map(toolChecklistText));
 				if (status === "loading") lines.push("", `${currentSpinnerFrame()} Working...`);
 				return lines.join("\n");
 			},
 			padToWidth: true,
 		});
 	}
-	const envelope = details as Partial<ToolContext<Record<string, unknown>>>;
-
 	const stale = envelope.cache?.staleness;
 	const sourceLabel = envelope.cache?.cached
 		? activity(`\u21BB cache hit${stale ? ` ${stale}` : ""}`, theme)
