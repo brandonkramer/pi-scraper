@@ -104,8 +104,7 @@ function buildVerticalSections(
 		videoRows.push(["views", data.views.toLocaleString()]);
 	if (typeof data.lengthSeconds === "number") {
 		const m = Math.floor(data.lengthSeconds / 60);
-		const s = data.lengthSeconds % 60;
-		videoRows.push(["duration", `${m}:${s.toString().padStart(2, "0")}`]);
+		videoRows.push(["duration", `${m}:${(data.lengthSeconds % 60).toString().padStart(2, "0")}`]);
 	}
 	sections.push({ name: "video", rows: videoRows });
 	return sections;
