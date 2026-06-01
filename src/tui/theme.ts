@@ -7,8 +7,7 @@ export function inlineThemeText(
 	text: string,
 	theme?: RenderTheme,
 ): string | undefined {
-	const themed = theme?.fg?.(name, text);
-	return themed?.replaceAll("\u001B[0m", "\u001B[39m");
+	return theme?.fg?.(name, text).replaceAll("\u001B[0m", "\u001B[39m");
 }
 
 export function paintFg(theme: RenderTheme | undefined, tone: string, text: string): string {
