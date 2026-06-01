@@ -85,8 +85,7 @@ function renderResourceItemLines(item: ResourceListItem): string[] {
 
 export function formatBytes(bytes: number | undefined): string | undefined {
 	if (typeof bytes !== "number") return;
-	if (bytes < 1024) return `${bytes} B`;
-	return `${(bytes / 1024).toFixed(1)} KB`;
+	return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
 }
 
 export function formatDuration(ms: number | undefined): string | undefined {
