@@ -84,10 +84,7 @@ export function toolBatchResultCard(
 			body: (width) =>
 				renderBatchProgressText(options.progress, width, expanded, theme, "toolSuccessBg"),
 			expanded,
-			expandedSections: (width) => [
-				...(options.preview ? [options.preview] : []),
-				...(options.expandedSections?.(width) ?? []),
-			],
+			expandedSections: (width) => [options.preview, ...(options.expandedSections?.(width) ?? [])],
 		},
 		theme,
 	);
