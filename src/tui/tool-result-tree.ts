@@ -55,15 +55,12 @@ export function splitValueByWidth(value: string, maxChars: number): string[] {
 	if (value.length <= maxChars) return [value];
 	const lines: string[] = [];
 	let remaining = value;
-	while (remaining.length > 0) {
-		if (remaining.length <= maxChars) {
-			lines.push(remaining);
-			break;
-		}
+	while (remaining.length > maxChars) {
 		let breakAt = remaining.lastIndexOf(" ", maxChars);
 		if (breakAt <= 0) breakAt = maxChars;
 		lines.push(remaining.slice(0, breakAt));
 		remaining = remaining.slice(breakAt).trimStart();
 	}
+	if (remaining) lines.push(remaining);
 	return lines;
 }
