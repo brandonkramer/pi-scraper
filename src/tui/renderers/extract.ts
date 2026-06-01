@@ -69,7 +69,7 @@ export function renderWebExtractResult(
 	const hasLongMarkdown = expanded && details?.format === "markdown" && preview.length > 100;
 	const hideExpandedDetails = details?.summary === "Listed deterministic extractor capabilities.";
 	return toolProgressLayout({
-		renderContent(width) {
+		renderContent() {
 			const loaderUrl = details?.finalUrl ?? details?.url;
 			const loader = loaderUrl
 				? toolResource({
@@ -78,14 +78,13 @@ export function renderWebExtractResult(
 						theme,
 					})
 				: "";
-			let tree = "";
-			if (expanded && details && !hideExpandedDetails) {
-				const sections = buildToolResultDetails(details as Record<string, unknown>);
-				if (sections.length > 0) tree = toolResultTree(sections, width, theme);
-			}
-			return [loader, body, tree].filter(Boolean).join("\n\n");
+			return [loader, body].filter(Boolean).join("\n\n");
 		},
 		expanded,
+		expandedSections: (width) =>
+			details && !hideExpandedDetails
+				? [toolResultTree(buildToolResultDetails(details as Record<string, unknown>), width, theme)]
+				: [],
 		responseId: details?.responseId,
 		padToWidth: true,
 		markdownPreview: hasLongMarkdown
