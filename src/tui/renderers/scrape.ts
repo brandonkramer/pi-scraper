@@ -16,11 +16,7 @@ import {
 } from "../tool-labels.ts";
 import { toolResourceStatus, formatBytes, formatDuration } from "../tool-resource.ts";
 import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
-import {
-	toolStatusDot,
-	toolStatus,
-	currentSpinnerFrame as toolCurrentSpinnerFrame,
-} from "../tool-status.ts";
+import { toolStatusDot, toolStatus, currentSpinnerFrame } from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 export function renderWebScrapeResult(
@@ -49,7 +45,7 @@ export function renderWebScrapeResult(
 				const lines = [row, "", summary];
 				if (expanded && details.checklist?.length)
 					lines.push("", ...details.checklist.map(toolChecklistText));
-				if (status === "loading") lines.push("", `${toolCurrentSpinnerFrame()} Working...`);
+				if (status === "loading") lines.push("", `${currentSpinnerFrame()} Working...`);
 				return lines.join("\n");
 			},
 			padToWidth: true,
