@@ -227,9 +227,7 @@ function addHeaderSections(
 	const cc = parseCacheControl(headers["cache-control"]);
 	const cdnCc = parseCacheControl(headers["cdn-cache-control"]);
 	const fmtCc = (maxAge: number, swr: number | undefined) =>
-		swr
-			? `max-age ${formatSeconds(maxAge)}  +swr ${formatSeconds(swr)}`
-			: `max-age ${formatSeconds(maxAge)}`;
+		`max-age ${formatSeconds(maxAge)}${swr ? `  +swr ${formatSeconds(swr)}` : ""}`;
 	const primary = cdnCc ?? cc;
 	if (primary) addScrapeRow(groups, "cache", "cdn", fmtCc(primary.maxAge, primary.swr));
 	if (cc?.maxAge !== undefined && (!cdnCc || cdnCc.maxAge !== cc.maxAge)) {
