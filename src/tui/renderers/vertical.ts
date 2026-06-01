@@ -1,12 +1,8 @@
 import type { PiToolShell } from "../../types.ts";
 import { activity, failure, muted, success } from "../theme.ts";
 import { renderDynamicText } from "../tool-call.ts";
-import {
-	buildToolResultTree,
-	splitValueByWidth,
-	toolResultTree,
-	type ToolResultGroup,
-} from "../tool-result-tree.ts";
+import { buildToolResultTree, splitValueByWidth, toolResultTree } from "../tool-result-tree.ts";
+import type { ToolResultGroup } from "../tool-result-tree.ts";
 import { buildExpandedResultDetails } from "../tool-result.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
