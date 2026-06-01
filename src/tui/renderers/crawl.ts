@@ -5,12 +5,7 @@ import {
 } from "../../batch/progress-state.ts";
 import type { CrawlRunResult } from "../../crawl/runner.ts";
 import { formatCrawlStrategyLabel } from "../../crawl/state.ts";
-import {
-	isProgress,
-	type PiToolShell,
-	type ProgressDetails,
-	type ToolContext,
-} from "../../types.ts";
+import { isProgress, type PiToolShell, type ToolContext } from "../../types.ts";
 import { muted as toolNeutral } from "../theme.ts";
 import {
 	toolBatchProgressCard,
@@ -92,7 +87,7 @@ export function renderWebCrawlResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ToolContext<unknown>> | ProgressDetails;
+	const details = result.details as Partial<ToolContext<unknown>>;
 	if (isProgress(details)) {
 		if (isBatchProgress(details)) return toolBatchProgressCard(details, expanded, theme);
 		return toolProgressCard("web_crawl", details, theme, { allowIcons: true });
