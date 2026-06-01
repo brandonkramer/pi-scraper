@@ -36,8 +36,7 @@ export function batchExpandedSections(
 	width: number,
 	theme?: RenderTheme,
 ): string[] {
-	const groups = items.map((item) => batchItemGroup(item));
-	const result = [toolResultTree(buildToolResultTree(groups), width, theme)];
+	const result = [toolResultTree(buildToolResultTree(items.map(batchItemGroup)), width, theme)];
 	const jobId = typeof m.jobId === "string" ? m.jobId : undefined;
 	const pkg = typeof m.packageResponseId === "string" ? m.packageResponseId : undefined;
 	const ids = toolResultId(
