@@ -28,11 +28,10 @@ export function renderWebMapResult(
 				.map((entry) => toolResource({ url: entry.url, badge: entry.source, width, theme }));
 			if (urls.length > rows.length)
 				rows.push(toolMuted(`… ${urls.length - rows.length} more urls`, theme));
-			const lines = [summary, rows.join("\n")];
-			if (expanded && envelope.responseId)
-				lines.push("", toolMuted(`responseId: ${envelope.responseId}`, theme));
-			return lines.join("\n");
+			return `${summary}\n${rows.join("\n")}`;
 		},
+		expanded,
+		responseId: envelope.responseId,
 		padToWidth: true,
 	});
 }
