@@ -101,13 +101,12 @@ export function renderWebCrawlResult(
 	const data = envelope.data;
 	const metadata = data?.metadata;
 	const strategy = metadata?.strategy;
-	const failed = metadata?.failedCount ?? 0;
 	const summary = envelope.error
 		? toolErrorLabel("web_crawl", envelope.error, { allowIcons: true })
 		: toolStatus(
 				[
 					count.success(metadata?.succeededCount ?? 0, "succeeded", theme),
-					count.failure(failed, "failed", theme),
+					count.failure(metadata?.failedCount ?? 0, "failed", theme),
 					count.activity(metadata?.visitedCount ?? 0, "visited", "◉", theme),
 					toolNeutral(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
 					strategy
