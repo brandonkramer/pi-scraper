@@ -69,13 +69,12 @@ export function renderWebCrawlLookupResult(
 	return toolResultCard({
 		renderContent(width) {
 			const lines = [envelope.summary ?? result.content[0].text];
-			if (expanded) {
-				const sections = buildExpandedResultDetails(envelope as Record<string, unknown>);
-				const tree = toolResultTree(sections, width, theme);
-				if (tree) lines.push("", tree);
-				const ids = toolResultId([{ label: "responseId", id: envelope.responseId ?? "" }], theme);
-				if (ids.length > 0) lines.push("", ...ids);
-			}
+			if (!expanded) return lines.join("\n");
+			const sections = buildExpandedResultDetails(envelope as Record<string, unknown>);
+			const tree = toolResultTree(sections, width, theme);
+			if (tree) lines.push("", tree);
+			const ids = toolResultId([{ label: "responseId", id: envelope.responseId ?? "" }], theme);
+			if (ids.length > 0) lines.push("", ...ids);
 			return lines.join("\n");
 		},
 		padToWidth: true,
