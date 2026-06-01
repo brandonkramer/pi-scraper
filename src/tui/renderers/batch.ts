@@ -5,12 +5,7 @@ import {
 } from "../../batch/progress-state.ts";
 import type { BatchItemResult } from "../../batch/run.ts";
 import { formatLineMatchPreview } from "../../scrape/line-preview.ts";
-import {
-	isProgress,
-	type PiToolShell,
-	type ProgressDetails,
-	type ToolContext,
-} from "../../types.ts";
+import { isProgress, type PiToolShell, type ToolContext } from "../../types.ts";
 import { toolBatchProgressCard, toolBatchResultCard, toolProgressCard } from "../tool-card.ts";
 import {
 	toolContextPackageResponseId,
@@ -36,7 +31,8 @@ export function batchExpandedSections(
 	width: number,
 	theme?: RenderTheme,
 ): string[] {
-	const result = [toolResultTree(buildToolResultTree(items.map(batchItemGroup)), width, theme)];
+	const groups = items.map((item) => batchItemGroup(item));
+	const result = [toolResultTree(buildToolResultTree(groups), width, theme)];
 	const pkg = typeof m.packageResponseId === "string" ? m.packageResponseId : undefined;
 	const ids = toolResultId(
 		[
@@ -77,7 +73,7 @@ export function renderWebBatchResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ToolContext<unknown>> | ProgressDetails;
+	const details = result.details as Partial<ToolContext<unknown>>;
 	if (isProgress(details)) {
 		if (isBatchProgress(details)) return toolBatchProgressCard(details, expanded, theme);
 		return toolProgressCard("web_batch", details, theme, { allowIcons: true });
