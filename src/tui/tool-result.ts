@@ -4,9 +4,8 @@ import type { RenderTheme } from "./types.ts";
 
 export type ToolResultIdEntry = { label: string; id: string };
 
-export function toolResultId(entries: ToolResultIdEntry[], theme?: RenderTheme): string[] {
-	return entries.filter((e) => e.id).map((e) => muted(`${e.label}: ${e.id}`, theme));
-}
+export const toolResultId = (entries: ToolResultIdEntry[], theme?: RenderTheme): string[] =>
+	entries.filter((e) => e.id).map((e) => muted(`${e.label}: ${e.id}`, theme));
 
 export const DEFAULT_HIDDEN_EXPANDED_KEYS = new Set(
 	"_stored __id format contentType fullOutputPath text sources citations sourceNotes modelUsage nextActions assistantGuidance kind snapshotSaved diagnostics cache freshness qualitySignals headers downloadedBytes timing summary answerContext finalUrl error".split(
