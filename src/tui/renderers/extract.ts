@@ -67,7 +67,6 @@ export function renderWebExtractResult(
 				.join("\n")
 		: summary;
 	const hasLongMarkdown = expanded && details?.format === "markdown" && preview.length > 100;
-	const hideExpandedDetails = details?.summary === "Listed deterministic extractor capabilities.";
 	return toolProgressLayout({
 		renderContent() {
 			const loaderUrl = details?.finalUrl ?? details?.url;
@@ -82,7 +81,7 @@ export function renderWebExtractResult(
 		},
 		expanded,
 		expandedSections: (width) =>
-			details && !hideExpandedDetails
+			details && details.summary !== "Listed deterministic extractor capabilities."
 				? [toolResultTree(buildToolResultDetails(details as Record<string, unknown>), width, theme)]
 				: [],
 		responseId: details?.responseId,
