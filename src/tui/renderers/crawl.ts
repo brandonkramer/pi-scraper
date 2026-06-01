@@ -87,12 +87,11 @@ export function renderWebCrawlResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ToolContext<unknown>>;
-	if (isProgress(details)) {
-		if (isBatchProgress(details)) return toolBatchProgressCard(details, expanded, theme);
-		return toolProgressCard("web_crawl", details, theme, { allowIcons: true });
+	const envelope = result.details as Partial<ToolContext<Partial<CrawlRunResult>>>;
+	if (isProgress(envelope)) {
+		if (isBatchProgress(envelope)) return toolBatchProgressCard(envelope, expanded, theme);
+		return toolProgressCard("web_crawl", envelope, theme, { allowIcons: true });
 	}
-	const envelope = details as Partial<ToolContext<Partial<CrawlRunResult>>>;
 	const data = envelope.data;
 	const metadata = data?.metadata;
 	const strategy = metadata?.strategy;
