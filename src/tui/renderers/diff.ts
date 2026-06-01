@@ -5,7 +5,7 @@ import {
 	type ToolContext,
 	type ProgressDetails,
 } from "../../types.ts";
-import { joinSegments as toolJoinSegments, muted as toolMuted } from "../theme.ts";
+import { muted as toolMuted } from "../theme.ts";
 import { renderText as toolText } from "../tool-call.ts";
 import { toolProgressCard } from "../tool-card.ts";
 import {
@@ -14,6 +14,7 @@ import {
 	toolFreshnessLabel,
 	formatChecklistText as toolChecklistText,
 } from "../tool-labels.ts";
+import { toolStatus } from "../tool-status.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export function renderWebDiffResult(
 	result: PiToolShell,
@@ -27,16 +28,20 @@ export function renderWebDiffResult(
 	const diff = envelope.data;
 	const title = envelope.error
 		? toolErrorLabel("web_scrape", envelope.error, { allowIcons: false })
-		: toolJoinSegments([
-				!diff?.previous
-					? "saved baseline"
-					: envelope.summary?.includes("No meaningful") || envelope.summary?.includes("No content")
-						? "no content changes"
-						: `changed: ${diff.diff?.changedCount ?? 0} changed, ${diff.diff?.addedCount ?? 0} added, ${diff.diff?.removedCount ?? 0} removed`,
-				toolFreshnessLabel(envelope),
-			]);
+		: toolStatus(
+				[
+					!diff?.previous
+						? "saved baseline"
+						: envelope.summary?.includes("No meaningful") ||
+							  envelope.summary?.includes("No content")
+							? "no content changes"
+							: `changed: ${diff.diff?.changedCount ?? 0} changed, ${diff.diff?.addedCount ?? 0} added, ${diff.diff?.removedCount ?? 0} removed`,
+					toolFreshnessLabel(envelope),
+				],
+				theme,
+			);
 	if (!expanded) {
-		return toolText(toolJoinSegments([title, toolMuted(toolExpandHint.text, theme)], theme), {
+		return toolText(toolStatus([title, toolMuted(toolExpandHint.text, theme)], theme), {
 			padToWidth: true,
 		});
 	}
