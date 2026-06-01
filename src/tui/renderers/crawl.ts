@@ -97,9 +97,8 @@ export function renderWebCrawlResult(
 					count.failure(metadata?.failedCount ?? 0, "failed", theme),
 					count.activity(metadata?.visitedCount ?? 0, "visited", "◉", theme),
 					toolNeutral(`→ frontier ${metadata?.frontierCount ?? 0}`, theme),
-					strategy
-						? toolNeutral(`· ${formatCrawlStrategyLabel(strategy) ?? strategy} crawl`, theme)
-						: undefined,
+					strategy &&
+						toolNeutral(`· ${formatCrawlStrategyLabel(strategy) ?? strategy} crawl`, theme),
 					!expanded && toolExpandHint,
 				],
 				theme,
