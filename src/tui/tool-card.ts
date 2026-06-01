@@ -217,8 +217,7 @@ export function defineResultRenderer(options: {
 }): RenderComponent {
 	return {
 		render(width: number) {
-			const text = options.renderContent(width);
-			let lines = renderText(text, {
+			let lines = renderText(options.renderContent(width), {
 				padToWidth: options.padToWidth !== false,
 			}).render(width);
 			if (options.mapLines) lines = options.mapLines(lines, width);
