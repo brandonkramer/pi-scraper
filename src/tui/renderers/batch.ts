@@ -59,9 +59,8 @@ function batchItemGroup(item: BatchItem): ToolResultGroup {
 		rows.push(["status", r?.status ? String(r.status) : undefined]);
 		rows.push(["mode", r?.mode]);
 		rows.push(["format", r?.format]);
-		if (r?.downloadedBytes !== undefined) rows.push(["size", fmtBytes(r.downloadedBytes) ?? ""]);
-		if (r?.timing?.durationMs !== undefined)
-			rows.push(["duration", fmtDuration(r.timing.durationMs) ?? ""]);
+		rows.push(["size", fmtBytes(r?.downloadedBytes)]);
+		rows.push(["duration", fmtDuration(r?.timing?.durationMs)]);
 		rows.push(["title", r?.data?.title]);
 		if (r?.data?.matches?.length)
 			rows.push([
