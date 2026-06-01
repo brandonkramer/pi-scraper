@@ -27,8 +27,7 @@ export function toolResultTree(
 
 	const keyColWidth = Math.max(1, ...sections.flatMap((s) => s.rows.map((r) => r.key.length)));
 
-	const valueStart = keyColWidth + 7;
-	const availableWidth = Math.max(20, terminalWidth - valueStart);
+	const availableWidth = Math.max(20, terminalWidth - keyColWidth - 7);
 
 	const lines: string[] = [];
 
