@@ -13,8 +13,7 @@ export function inlineThemeText(
 
 export function paintFg(theme: RenderTheme | undefined, tone: string, text: string): string {
 	if (tone === "accent") return theme?.fg?.("accent", text) ?? text;
-	const target = tone === "danger" ? "error" : tone;
-	return inlineThemeText(target, text, theme) ?? text;
+	return inlineThemeText(tone === "danger" ? "error" : tone, text, theme) ?? text;
 }
 
 export const muted = (text: string, theme?: RenderTheme) => paintFg(theme, "muted", text);
