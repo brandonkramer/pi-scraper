@@ -35,8 +35,8 @@ export function renderVerticalResult(
 	}
 
 	const data = wrapper?.data as Record<string, unknown> | undefined;
-	const blocked = blockedSource(data);
-	if (blocked) return renderBlockedVerticalResult(name, data, blocked, expanded, theme);
+	const blocked = (data as { source?: BlockedSource & { blocked?: boolean } } | undefined)?.source;
+	if (blocked?.blocked) return renderBlockedVerticalResult(name, data, blocked, expanded, theme);
 	const bfFallback = wrapper?.browserFallback as BrowserFallback | undefined;
 	const browserFallback = bfFallback?.used ? bfFallback : undefined;
 	const treeLine = () => {
@@ -251,13 +251,6 @@ function formatListBlock(
 function formatTimestamp(seconds: number): string {
 	const totalSeconds = Math.max(0, Math.floor(seconds));
 	return `${Math.floor(totalSeconds / 60)}:${(totalSeconds % 60).toString().padStart(2, "0")}`;
-}
-
-function blockedSource(data: unknown): BlockedSource | undefined {
-	const source = (data as { source?: unknown } | undefined)?.source;
-	if (!source || typeof source !== "object") return;
-	const typed = source as BlockedSource & { blocked?: boolean };
-	return typed.blocked ? typed : undefined;
 }
 
 function extractorPreview(data: unknown): string {
