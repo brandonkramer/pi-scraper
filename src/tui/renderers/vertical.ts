@@ -6,6 +6,7 @@ import type { ToolResultGroup } from "../tool-result-tree.ts";
 import { buildExpandedResultDetails } from "../tool-result.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
+type VerticalData = Record<string, unknown>;
 type BrowserFallback = { used: boolean; backend: string };
 type VerticalComment = { author?: string; text?: string };
 type TranscriptSegment = { text: string; start: number; duration?: number };
@@ -18,8 +19,8 @@ export function renderVerticalResult(
 	expanded: boolean | undefined,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Record<string, unknown> | undefined;
-	const wrapper = details?.data as Record<string, unknown> | undefined;
+	const details = result.details as VerticalData | undefined;
+	const wrapper = details?.data as VerticalData | undefined;
 	const name = typeof wrapper?.extractor === "string" ? wrapper.extractor : "extractor";
 
 	const error = (wrapper?.error ?? details?.error) as { code?: string } | undefined;
@@ -30,7 +31,7 @@ export function renderVerticalResult(
 			{ padToWidth: true },
 		);
 
-	const data = wrapper?.data as Record<string, unknown> | undefined;
+	const data = wrapper?.data as VerticalData | undefined;
 	const blocked = (data as { source?: BlockedSource & { blocked?: boolean } } | undefined)?.source;
 	if (blocked?.blocked) return renderBlockedVerticalResult(name, data, blocked, expanded, theme);
 	const browserFallback = wrapper?.browserFallback as BrowserFallback | undefined;
@@ -79,7 +80,7 @@ export function renderVerticalResult(
 }
 
 function buildVerticalSections(
-	data: Record<string, unknown>,
+	data: VerticalData,
 	browserFallback?: BrowserFallback,
 ): ToolResultGroup[] {
 	const sections: ToolResultGroup[] = [];
@@ -106,10 +107,7 @@ function buildVerticalSections(
 	return sections;
 }
 
-function buildSourceSections(
-	data: Record<string, unknown>,
-	includeEndpoint = true,
-): ToolResultGroup[] {
+function buildSourceSections(data: VerticalData, includeEndpoint = true): ToolResultGroup[] {
 	const source = data.source as SourceInfo | undefined;
 	const sourceRows: ToolResultGroup["rows"] = [];
 	if (source?.provider) sourceRows.push(["provider", source.provider]);
@@ -121,7 +119,7 @@ function buildSourceSections(
 
 function renderBlockedVerticalResult(
 	name: string,
-	data: Record<string, unknown> | undefined,
+	data: VerticalData | undefined,
 	blocked: BlockedSource,
 	expanded: boolean | undefined,
 	theme?: RenderTheme,
@@ -233,7 +231,7 @@ function formatTimestamp(seconds: number): string {
 }
 
 function extractorPreview(data: unknown): string {
-	const d = data as Record<string, unknown> | undefined;
+	const d = data as VerticalData | undefined;
 	if (!d) return "extracted JSON";
 	const trans = d.transcript as { text?: string; segments?: unknown[] } | undefined;
 	return (
