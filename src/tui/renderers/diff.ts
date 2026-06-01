@@ -11,10 +11,9 @@ export function renderWebDiffResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ToolContext<unknown>>;
-	if (isProgress(details))
-		return toolProgressCard("web_scrape diff", details, theme, { allowIcons: false });
-	const envelope = details as Partial<ToolContext<Partial<SnapshotDiffResult>>>;
+	const envelope = result.details as Partial<ToolContext<Partial<SnapshotDiffResult>>>;
+	if (isProgress(envelope))
+		return toolProgressCard("web_scrape diff", envelope, theme, { allowIcons: false });
 	const diff = envelope.data;
 	const diffState = !diff?.previous
 		? "saved baseline"
