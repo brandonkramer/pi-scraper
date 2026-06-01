@@ -1,14 +1,7 @@
 import { Markdown } from "@earendil-works/pi-tui";
 
 import { isProgress, type Chunk, type PiToolShell, type ToolContext } from "../../types.ts";
-import {
-	activity as toolActivity,
-	failure as toolFailure,
-	getMarkdownTheme as toolMarkdownTheme,
-	muted as toolMuted,
-	separator as toolSeparator,
-	success as toolSuccess,
-} from "../theme.ts";
+import { activity, failure, getMarkdownTheme, muted, separator, success } from "../theme.ts";
 import {
 	toolFileResultCard,
 	toolResultCard,
@@ -56,7 +49,7 @@ export function renderWebScrapeResult(
 					startedAtMs,
 					restoreBg: "toolPendingBg",
 				});
-				const summary = `web_scrape ${details.state}${toolSeparator(theme)}${toolMuted(toolExpandHint.text, theme)}`;
+				const summary = `web_scrape ${details.state}${separator(theme)}${muted(toolExpandHint.text, theme)}`;
 				const lines = [row, "", summary];
 				if (expanded && details.checklist?.length)
 					lines.push("", ...details.checklist.map(toolChecklistText));
@@ -70,8 +63,8 @@ export function renderWebScrapeResult(
 
 	const stale = envelope.cache?.staleness;
 	const sourceLabel = envelope.cache?.cached
-		? toolActivity(`\u21BB cache hit${stale ? ` ${stale}` : ""}`, theme)
-		: toolSuccess("\u21BB fresh fetch", theme);
+		? activity(`\u21BB cache hit${stale ? ` ${stale}` : ""}`, theme)
+		: success("\u21BB fresh fetch", theme);
 
 	const summary = envelope.error
 		? toolStatus([`${envelope.mode ?? ""} mode`, envelope.format ?? ""], theme)
@@ -144,7 +137,7 @@ function markdownPreviewComponent(
 	theme?: RenderTheme,
 ): RenderComponent | undefined {
 	if (format !== "markdown" || !preview || preview.length <= 100) return;
-	return new Markdown(preview.slice(0, 1200), 0, 0, toolMarkdownTheme(theme));
+	return new Markdown(preview.slice(0, 1200), 0, 0, getMarkdownTheme(theme));
 }
 
 function buildScrapeSections(
@@ -192,12 +185,7 @@ function buildScrapeSections(
 
 	if (envelope.error) {
 		const code = envelope.error.code;
-		addScrapeRow(
-			groups,
-			"error",
-			"code",
-			code ? (theme ? toolFailure(code, theme) : code) : undefined,
-		);
+		addScrapeRow(groups, "error", "code", code ? (theme ? failure(code, theme) : code) : undefined);
 		addScrapeRow(groups, "error", "phase", envelope.error.phase);
 		addScrapeRow(groups, "error", "message", envelope.error.message);
 	}
