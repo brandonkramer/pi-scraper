@@ -224,10 +224,9 @@ function addHeaderSections(
 		addScrapeRow(groups, "headers", `${k}:`, v.length > 120 ? `${v.slice(0, 120)}...` : v);
 
 	const respId = envelope.responseId ?? "";
-	if (respId || headerEntries.length > 0) {
-		if (respId) addScrapeRow(groups, "trace", "response", respId.slice(0, 8));
+	if (respId) addScrapeRow(groups, "trace", "response", respId.slice(0, 8));
+	if (respId || headerEntries.length > 0)
 		addScrapeRow(groups, "trace", "headers", `${headerEntries.length} total`);
-	}
 }
 
 function addScrapeRow(
