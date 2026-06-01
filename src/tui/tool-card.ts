@@ -287,7 +287,6 @@ export function toolResultCard(
 		{
 			...rest,
 			body: renderContent ?? body ?? "",
-			summary: rest.summary ?? "",
 		},
 		theme,
 	);
