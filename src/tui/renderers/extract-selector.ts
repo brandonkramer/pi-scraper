@@ -1,4 +1,4 @@
-import type { PiToolShell, ToolContext } from "../../types.ts";
+import type { PiToolShell } from "../../types.ts";
 import { toolResultCard } from "../tool-card.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
@@ -7,12 +7,11 @@ export function renderWebExtractSelectorResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const envelope = result.details as Partial<ToolContext<unknown>> | undefined;
 	return toolResultCard(
 		{
 			body: result.content[0]?.text ?? "",
 			expanded,
-			responseId: envelope?.responseId,
+			responseId: (result.details as { responseId?: string } | undefined)?.responseId,
 			padToWidth: true,
 		},
 		theme,
