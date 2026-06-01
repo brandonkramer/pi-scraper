@@ -44,10 +44,8 @@ export function toolResultTree(
 			const prefix = `${connector}${key.padEnd(keyColWidth)}  `;
 			lines.push(`  ${muted(prefix, theme)}${valueLines[0]}`);
 
-			for (let vi = 1; vi < valueLines.length; vi++) {
-				const contPre = "\u2502 ".padEnd(keyColWidth + 5);
-				lines.push(`  ${muted(contPre, theme)}${valueLines[vi]}`);
-			}
+			for (let vi = 1; vi < valueLines.length; vi++)
+				lines.push(`  ${muted("\u2502 ".padEnd(keyColWidth + 5), theme)}${valueLines[vi]}`);
 		}
 	}
 
