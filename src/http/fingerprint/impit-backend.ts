@@ -43,6 +43,7 @@ export type ImpitConstructor = new (options?: {
 	browser?: Browser;
 	followRedirects?: boolean;
 	maxRedirects?: number;
+	proxyUrl?: string;
 }) => {
 	fetch: (
 		resource: string | URL | Request,
@@ -80,6 +81,7 @@ export async function makeImpitBackend(
 		browser: browserName,
 		followRedirects: false,
 		maxRedirects: 0,
+		proxyUrl: key.proxy,
 		// impit does not expose a cookie jar interface compatible with our
 		// session layer; cookies travel via explicit request headers.
 	});

@@ -1,4 +1,4 @@
-import { ProxyAgent, request, type Dispatcher } from "undici";
+import { request, type Dispatcher } from "undici";
 
 import {
 	DEFAULT_MAX_BYTES,
@@ -14,6 +14,7 @@ import { HttpClientError, httpClientErrorFromUnknown } from "./errors.ts";
 import { createDefaultDispatcher } from "./guarded-agent.ts";
 import { PolitenessController, abortableSleep } from "./politeness.ts";
 import { resolveEnvProxyForUrl } from "./proxy-config.ts";
+import { createProxyDispatcher } from "./proxy-dispatcher.ts";
 import { followRedirects } from "./redirects.ts";
 import { fetchWithRequestPolicy } from "./request-policy.ts";
 import { materializeFetchStreamResponse, type FetchUrlResult } from "./response.ts";
@@ -251,7 +252,9 @@ export class HttpClient {
 			: this.options.dispatcher
 				? undefined
 				: resolveEnvProxyForUrl(url);
-		const effectiveDispatcher = effectiveProxy ? new ProxyAgent(effectiveProxy) : this.dispatcher;
+		const effectiveDispatcher = effectiveProxy
+			? createProxyDispatcher(effectiveProxy)
+			: this.dispatcher;
 
 		try {
 			const response = await request(url, {

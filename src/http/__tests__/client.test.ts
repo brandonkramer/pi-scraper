@@ -421,6 +421,44 @@ describe("HttpClient", () => {
 		const result = await client.fetchUrl("https://example.com/page");
 		expect(result.text).toBe("direct");
 	});
+
+	it("routes socks5:// through SOCKS path", async () => {
+		const client = createHttpClient({ resolveDns: false, retryAttempts: 1 });
+		// Connection to a non-existent SOCKS5 proxy should fail with a connection error
+		await expect(
+			client.fetchUrl("https://example.com/page", { proxy: "socks5://127.0.0.1:59997" }),
+		).rejects.toMatchObject({
+			structured: { code: "HTTP_FETCH_FAILED" },
+		});
+	});
+
+	it("routes socks4:// through SOCKS path", async () => {
+		const client = createHttpClient({ resolveDns: false, retryAttempts: 1 });
+		// Connection to a non-existent SOCKS4 proxy should fail with a connection error
+		await expect(
+			client.fetchUrl("https://example.com/page", { proxy: "socks4://127.0.0.1:59996" }),
+		).rejects.toMatchObject({
+			structured: { code: "HTTP_FETCH_FAILED" },
+		});
+	});
+
+	it("rejects unsupported proxy scheme with structured error", async () => {
+		const client = createHttpClient({ resolveDns: false, retryAttempts: 1 });
+		await expect(
+			client.fetchUrl("https://example.com/page", { proxy: "socks5h://127.0.0.1:1080" }),
+		).rejects.toMatchObject({
+			structured: { code: "UNSUPPORTED_PROXY_SCHEME", phase: "proxy" },
+		});
+	});
+
+	it("http proxy path unchanged", async () => {
+		const client = createHttpClient({ resolveDns: false, retryAttempts: 1 });
+		await expect(
+			client.fetchUrl("https://example.com/page", { proxy: "http://127.0.0.1:59995" }),
+		).rejects.toMatchObject({
+			structured: { code: "HTTP_FETCH_FAILED" },
+		});
+	});
 });
 
 expect.addSnapshotSerializer({
