@@ -228,9 +228,7 @@ export function defineResultRenderer(options: {
 			const md = options.markdownPreview?.(width);
 			return md ? [...lines, "", ...md.render(width)] : lines;
 		},
-		invalidate() {
-			// Tool result cards are static; nothing to invalidate.
-		},
+		invalidate: () => void 0,
 	};
 }
 
