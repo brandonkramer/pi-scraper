@@ -41,8 +41,7 @@ export function toolResultTree(
 
 			const valueLines = splitValueByWidth(value.replaceAll(/\s+/gu, " ").trim(), availableWidth);
 
-			const prefix = `${connector}${key.padEnd(keyColWidth)}  `;
-			lines.push(`  ${muted(prefix, theme)}${valueLines[0]}`);
+			lines.push(`  ${muted(`${connector}${key.padEnd(keyColWidth)}  `, theme)}${valueLines[0]}`);
 
 			for (let vi = 1; vi < valueLines.length; vi++)
 				lines.push(`  ${muted("\u2502 ".padEnd(keyColWidth + 5), theme)}${valueLines[vi]}`);
