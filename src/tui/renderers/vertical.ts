@@ -280,8 +280,7 @@ function extractorPreview(data: unknown): string {
 					: undefined,
 			trans?.segments ? `${trans.segments.length} segments` : undefined,
 			!trans?.text && typeof d.description === "string" && d.description
-				? d.description.replaceAll(/\s+/gu, " ").trim().slice(0, 120) +
-					(d.description.length > 120 ? "\u2026" : "")
+				? `${d.description.replaceAll(/\s+/gu, " ").trim().slice(0, 120)}${d.description.length > 120 ? "\u2026" : ""}`
 				: undefined,
 			Array.isArray(d.comments) && d.comments.length > 0
 				? `${d.comments.length} comments`
