@@ -37,13 +37,10 @@ export function renderVerticalResult(
 	if (blocked?.blocked) return renderBlockedVerticalResult(name, data, blocked, expanded, theme);
 	const browserFallback = wrapper?.browserFallback as BrowserFallback | undefined;
 	const treeLine = () => {
-		const summaryDetails = [
-			extractorPreview(data),
-			browserFallback?.used ? `browser fallback · ${browserFallback.backend}` : undefined,
-		]
-			.filter(Boolean)
-			.join(" \u00B7 ");
-		return `${success("\u2713", theme)} ${name} done${muted(` \u00B7 ${summaryDetails}`, theme)}`;
+		const fallback = browserFallback?.used
+			? ` \u00B7 browser fallback \u00B7 ${browserFallback.backend}`
+			: "";
+		return `${success("\u2713", theme)} ${name} done${muted(` \u00B7 ${extractorPreview(data)}${fallback}`, theme)}`;
 	};
 
 	if (!expanded || !data) return renderVerticalText(treeLine);
