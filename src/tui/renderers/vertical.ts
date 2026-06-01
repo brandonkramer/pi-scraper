@@ -115,9 +115,8 @@ function renderBlockedVerticalResult(
 	expanded: boolean | undefined,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const reason = blocked.reason ?? "structured endpoint unavailable";
 	const treeLine = () =>
-		`${activity("!", theme)} ${name} metadata only${muted(` \u00B7 ${summarizeBlockedReason(reason)}`, theme)}`;
+		`${activity("!", theme)} ${name} metadata only${muted(` \u00B7 ${summarizeBlockedReason(blocked.reason ?? "structured endpoint unavailable")}`, theme)}`;
 	if (!expanded) return renderVerticalText(treeLine);
 	return renderVerticalText(() => {
 		const attemptedBlock = formatListBlock(
