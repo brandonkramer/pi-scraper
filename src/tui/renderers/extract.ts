@@ -33,14 +33,13 @@ export function renderWebExtractResult(
 	if (details?.freshness?.stale) extras.push("freshness: stale; refresh if time-sensitive");
 	const u = details?.modelUsage;
 	if (u) {
-		const cost = formatModelCost(u.costUSD);
 		const parts = [
 			u.provider,
 			u.model,
 			typeof u.inputTokens === "number" ? `${u.inputTokens} in` : undefined,
 			typeof u.outputTokens === "number" ? `${u.outputTokens} out` : undefined,
 			typeof u.totalTokens === "number" ? `${u.totalTokens} total` : undefined,
-			cost,
+			formatModelCost(u.costUSD),
 		].filter(Boolean);
 		if (parts.length > 0) extras.push(`model usage: ${parts.join(" · ")}`);
 	}
