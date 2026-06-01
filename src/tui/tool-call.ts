@@ -21,8 +21,7 @@ export function renderDynamicText(
 }
 
 export function renderText(text: string, options: { padToWidth?: boolean } = {}): Component {
-	const component = new Text(text, 0, 0);
-	return renderTextComponent(component, undefined, options);
+	return renderTextComponent(new Text(text, 0, 0), undefined, options);
 }
 
 function renderTextComponent(
