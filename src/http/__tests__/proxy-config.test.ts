@@ -109,6 +109,13 @@ describe("shouldBypassProxy", () => {
 		expect(shouldBypassProxy("https://example.com:8443", "example.com:443")).toBe(false);
 	});
 
+	it("matches default port for protocol", () => {
+		expect(shouldBypassProxy("https://example.com", "example.com:443")).toBe(true);
+		expect(shouldBypassProxy("http://example.com", "example.com:80")).toBe(true);
+		expect(shouldBypassProxy("https://example.com", "example.com:80")).toBe(false);
+		expect(shouldBypassProxy("http://example.com", "example.com:443")).toBe(false);
+	});
+
 	it("handles comma-separated list", () => {
 		expect(shouldBypassProxy("https://a.com", "a.com,b.com")).toBe(true);
 		expect(shouldBypassProxy("https://b.com", "a.com,b.com")).toBe(true);

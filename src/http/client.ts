@@ -244,9 +244,13 @@ export class HttpClient {
 			lowerHeaders[key.toLowerCase()] = value;
 		}
 
-		// Use explicit proxy, then env-derived proxy, then default dispatcher
-		const effectiveProxy =
-			options.proxy && options.proxy.length > 0 ? options.proxy : resolveEnvProxyForUrl(url);
+		// Use explicit proxy, then env-derived proxy (only when no custom dispatcher was injected), then default dispatcher
+		const hasExplicitProxy = options.proxy && options.proxy.length > 0;
+		const effectiveProxy = hasExplicitProxy
+			? options.proxy
+			: this.options.dispatcher
+				? undefined
+				: resolveEnvProxyForUrl(url);
 		const effectiveDispatcher = effectiveProxy ? new ProxyAgent(effectiveProxy) : this.dispatcher;
 
 		try {

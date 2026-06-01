@@ -4,7 +4,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 
 import { MockAgent } from "undici";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearSharedRobotsCache, createHttpClient, HttpClientError } from "../client.ts";
 
@@ -14,6 +14,7 @@ afterEach(async () => {
 	await Promise.all(agents.map((agent) => agent.close()));
 	agents = [];
 	clearSharedRobotsCache();
+	vi.unstubAllEnvs();
 });
 
 function closeServer(server: ReturnType<typeof createServer>): Promise<void> {
@@ -362,45 +363,29 @@ describe("HttpClient", () => {
 	});
 
 	it("uses env proxy when no explicit proxy is set", async () => {
-		const { agent, client } = mockClient();
-		allowRobots(agent, "https://example.com");
-		agent
-			.get("https://example.com")
-			.intercept({ path: "/page" })
-			.reply(200, "ok", {
-				headers: { "content-type": "text/plain" },
-			});
-
-		process.env.HTTPS_PROXY = "http://127.0.0.1:59999";
-		try {
-			await expect(client.fetchUrl("https://example.com/page")).rejects.toMatchObject({
-				structured: { code: "HTTP_FETCH_FAILED" },
-			});
-		} finally {
-			delete process.env.HTTPS_PROXY;
-		}
+		// Client without custom dispatcher so env proxy is resolved
+		const client = createHttpClient({ resolveDns: false, retryAttempts: 1 });
+		vi.stubEnv("HTTPS_PROXY", "http://127.0.0.1:59999");
+		await expect(client.fetchUrl("https://example.com/page")).rejects.toMatchObject({
+			structured: { code: "HTTP_FETCH_FAILED" },
+		});
 	});
 
 	it("prefers explicit proxy over env proxy", async () => {
-		const { agent, client } = mockClient();
-		allowRobots(agent, "https://example.com");
-		agent
-			.get("https://example.com")
-			.intercept({ path: "/page" })
-			.reply(200, "ok", {
-				headers: { "content-type": "text/plain" },
-			});
-
-		process.env.HTTPS_PROXY = "http://127.0.0.1:59999";
+		// Client without custom dispatcher so env proxy is resolved
+		const client = createHttpClient({ resolveDns: false, retryAttempts: 1 });
+		vi.stubEnv("HTTPS_PROXY", "http://127.0.0.1:59999");
+		let error: unknown;
 		try {
-			await expect(
-				client.fetchUrl("https://example.com/page", { proxy: "http://127.0.0.1:59998" }),
-			).rejects.toMatchObject({
-				structured: { code: "HTTP_FETCH_FAILED" },
-			});
-		} finally {
-			delete process.env.HTTPS_PROXY;
+			await client.fetchUrl("https://example.com/page", { proxy: "http://127.0.0.1:59998" });
+		} catch (e) {
+			error = e;
 		}
+		expect(error).toMatchObject({
+			structured: { code: "HTTP_FETCH_FAILED" },
+		});
+		// Assert the error references the explicit proxy port, not the env proxy port
+		expect(error instanceof Error && error.message).toContain("59998");
 	});
 
 	it("bypasses env proxy for NO_PROXY match", async () => {
@@ -413,15 +398,28 @@ describe("HttpClient", () => {
 				headers: { "content-type": "text/plain" },
 			});
 
-		process.env.HTTPS_PROXY = "http://localhost:9999";
-		process.env.NO_PROXY = "example.com";
-		try {
-			const result = await client.fetchUrl("https://example.com/page");
-			expect(result.text).toBe("direct");
-		} finally {
-			delete process.env.HTTPS_PROXY;
-			delete process.env.NO_PROXY;
-		}
+		vi.stubEnv("HTTPS_PROXY", "http://localhost:9999");
+		vi.stubEnv("NO_PROXY", "example.com");
+		// With a custom dispatcher, env proxy is ignored; NO_PROXY is irrelevant.
+		// The mock agent handles the request directly.
+		const result = await client.fetchUrl("https://example.com/page");
+		expect(result.text).toBe("direct");
+	});
+
+	it("ignores env proxy when a custom dispatcher is injected", async () => {
+		const { agent, client } = mockClient();
+		allowRobots(agent, "https://example.com");
+		agent
+			.get("https://example.com")
+			.intercept({ path: "/page" })
+			.reply(200, "direct", {
+				headers: { "content-type": "text/plain" },
+			});
+
+		vi.stubEnv("HTTPS_PROXY", "http://localhost:9999");
+		// With a custom dispatcher, env proxy is ignored; request goes through the mock agent.
+		const result = await client.fetchUrl("https://example.com/page");
+		expect(result.text).toBe("direct");
 	});
 });
 

@@ -42,25 +42,31 @@ export function resolveEnvProxyForUrl(
  * - `host:port` only matches identical host+port.
  * - IPv6 hosts work with or without brackets.
  */
+function defaultPortForProtocol(protocol: string): string {
+	if (protocol === "https:") return "443";
+	if (protocol === "http:") return "80";
+	return "";
+}
+
 export function shouldBypassProxy(input: string | URL, noProxyValue: string | undefined): boolean {
 	if (!noProxyValue || noProxyValue.length === 0) return false;
 
 	const url = typeof input === "string" ? new URL(input) : input;
 	const hostname = normalizeHost(url.hostname);
-	const explicitPort = url.port;
+	const effectivePort = url.port || defaultPortForProtocol(url.protocol);
 
 	for (const entry of noProxyValue.split(",")) {
 		const rule = entry.trim();
 		if (rule.length === 0) continue;
 		if (rule === "*") return true;
 
-		// Port-scoped rule: "host:port" (exact port only, not default port)
+		// Port-scoped rule: "host:port" matches default port too
 		const colonIdx = rule.lastIndexOf(":");
 		if (colonIdx > 0 && !rule.endsWith("]") && rule.indexOf(":") === colonIdx) {
 			const rulePort = rule.slice(colonIdx + 1);
 			if (/^\d+$/u.test(rulePort)) {
 				const ruleHost = rule.slice(0, colonIdx);
-				if (hostMatches(ruleHost, hostname) && rulePort === explicitPort) return true;
+				if (hostMatches(ruleHost, hostname) && rulePort === effectivePort) return true;
 				continue;
 			}
 		}
