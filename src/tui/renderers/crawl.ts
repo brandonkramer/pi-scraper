@@ -11,7 +11,7 @@ import {
 	type ProgressDetails,
 	type ToolContext,
 } from "../../types.ts";
-import { neutral as toolNeutral } from "../theme.ts";
+import { muted as toolNeutral } from "../theme.ts";
 import {
 	toolBatchProgressCard,
 	toolBatchResultCard,

@@ -2,7 +2,6 @@ import {
 	backgroundText,
 	inlineThemeText,
 	activity,
-	neutral,
 	success,
 	failure,
 	muted,
@@ -51,7 +50,7 @@ export function renderStatusPill(o: {
 			: `${" ".repeat(Math.floor((cw - labelBase.length) / 2))}${labelBase}`.padEnd(cw, " ");
 	const text = `[${inner}]`;
 	const theme = o.theme;
-	if (!theme?.bg) return neutral(text, theme);
+	if (!theme?.bg) return muted(text, theme);
 	const bg =
 		o.state === "done" ? "toolSuccessBg" : o.state === "error" ? "toolErrorBg" : "toolPendingBg";
 	const tail = bgStart(o.restoreBg ?? bg, theme);
@@ -69,9 +68,9 @@ export function renderStatusPill(o: {
 							: 0.1;
 		const filled = text.slice(0, Math.max(1, Math.ceil(text.length * lrRatio)));
 		const rest = text.slice(filled.length);
-		return `${backgroundText("selectedBg", filled, o.theme)}${rest ? backgroundText("toolPendingBg", neutral(rest, o.theme), o.theme) : ""}${tail}`;
+		return `${backgroundText("selectedBg", filled, o.theme)}${rest ? backgroundText("toolPendingBg", muted(rest, o.theme), o.theme) : ""}${tail}`;
 	}
-	return `${backgroundText(bg, o.state === "waiting" ? neutral(text, theme) : text, theme)}${tail}`;
+	return `${backgroundText(bg, o.state === "waiting" ? muted(text, theme) : text, theme)}${tail}`;
 }
 
 export function renderStatusGlyph(state: StatusPillState, theme?: RenderTheme): string {
@@ -94,7 +93,7 @@ export function renderStatusGlyph(state: StatusPillState, theme?: RenderTheme): 
 
 export const countSegments = {
 	success: (count: number, label: string, theme?: RenderTheme) =>
-		count <= 0 ? neutral(`${count} ${label}`, theme) : success(`✓ ${count} ${label}`, theme),
+		count <= 0 ? muted(`${count} ${label}`, theme) : success(`✓ ${count} ${label}`, theme),
 	failure: (count: number, label: string, theme?: RenderTheme) =>
 		failure(`✕ ${count} ${label}`, theme),
 	activity: (count: number, label: string, icon: string, theme?: RenderTheme) =>
@@ -123,7 +122,7 @@ export function toolStatus(
 
 export function toolStatusDot(status: number | undefined, theme?: RenderTheme): string {
 	if (status === undefined) return "\u25CF";
-	return (status < 300 ? success : status < 400 ? neutral : failure)("\u25CF", theme);
+	return (status < 300 ? success : status < 400 ? muted : failure)("\u25CF", theme);
 }
 
-const TONE_FNS = { success, failure, muted, neutral } as const;
+const TONE_FNS = { success, failure, muted, neutral: muted } as const;

@@ -19,7 +19,6 @@ export function paintFg(theme: RenderTheme | undefined, tone: string, text: stri
 
 export const muted = (text: string, theme?: RenderTheme) => paintFg(theme, "muted", text);
 export const accent = (text: string, theme?: RenderTheme) => paintFg(theme, "accent", text);
-export const neutral = muted;
 export const success = (text: string, theme?: RenderTheme) => paintFg(theme, "success", text);
 export const failure = (text: string, theme?: RenderTheme) => paintFg(theme, "error", text);
 export const separator = (theme?: RenderTheme) => muted(" · ", theme);
