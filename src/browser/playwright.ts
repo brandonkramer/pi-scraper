@@ -2,6 +2,7 @@
 
 import { DEFAULT_BROWSER_BACKEND } from "../defaults.ts";
 import { createAbortError } from "../http/abort.ts";
+import { resolveEnvProxyForUrl } from "../http/proxy-config.ts";
 import { assertSafeFetchUrl } from "../http/url-safety.ts";
 import type { BrowserBackend, OutputFormat } from "../types.ts";
 import {
@@ -137,6 +138,7 @@ async function renderWithLoader(
 	const url = safe.normalizedUrl;
 	if (signal?.aborted) throw abortError(url);
 
+	const effectiveProxy = options.proxy ?? resolveEnvProxyForUrl(url);
 	const backend = options.browserBackend ?? DEFAULT_BROWSER_BACKEND;
 	let browser: Browser | undefined;
 	let abortListener: (() => void) | undefined;
@@ -158,7 +160,7 @@ async function renderWithLoader(
 					const pwContext: any = await cloak.launchPersistentContext({
 						userDataDir,
 						headless: true,
-						proxy: options.proxy,
+						proxy: effectiveProxy,
 						timezone: options.timezone,
 						locale: options.locale,
 					});
@@ -176,7 +178,7 @@ async function renderWithLoader(
 					launchContext,
 					safetyCheck,
 					profile: options.browserProfile,
-					proxy: options.proxy,
+					proxy: effectiveProxy,
 				} as Parameters<typeof acquireBrowserSession>[1]);
 				page = s.page as unknown as Page;
 				browser = s.session.browser as unknown as Browser;
@@ -188,12 +190,13 @@ async function renderWithLoader(
 					| Record<string, unknown>
 					| undefined;
 				// oxlint-disable-next-line typescript/no-explicit-any -- bridge local Browser ↔ playwright core types
-				const launchBrowser: any = () => browserLoader(backend, options);
+				const launchBrowser: any = () =>
+					browserLoader(backend, { ...options, proxy: effectiveProxy });
 				const s = await acquireBrowserSession(options.sessionId, {
 					launchBrowser,
 					safetyCheck,
 					profile: options.browserProfile,
-					proxy: options.proxy,
+					proxy: effectiveProxy,
 					headers: options.headers,
 					storageState: storageState ?? undefined,
 				});
@@ -203,7 +206,10 @@ async function renderWithLoader(
 				session = s.session;
 			}
 		} else {
-			browser = (await browserLoader(backend, options)) as unknown as Browser;
+			browser = (await browserLoader(backend, {
+				...options,
+				proxy: effectiveProxy,
+			})) as unknown as Browser;
 			const context = await browser.newContext({
 				extraHTTPHeaders: options.headers,
 				serviceWorkers: "block",

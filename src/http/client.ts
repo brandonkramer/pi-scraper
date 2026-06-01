@@ -13,6 +13,7 @@ import { normalizeHeaders } from "./download.ts";
 import { HttpClientError, httpClientErrorFromUnknown } from "./errors.ts";
 import { createDefaultDispatcher } from "./guarded-agent.ts";
 import { PolitenessController, abortableSleep } from "./politeness.ts";
+import { resolveEnvProxyForUrl } from "./proxy-config.ts";
 import { followRedirects } from "./redirects.ts";
 import { fetchWithRequestPolicy } from "./request-policy.ts";
 import { materializeFetchStreamResponse, type FetchUrlResult } from "./response.ts";
@@ -243,11 +244,10 @@ export class HttpClient {
 			lowerHeaders[key.toLowerCase()] = value;
 		}
 
-		// Use ProxyAgent when a proxy URL is configured
-		const effectiveDispatcher =
-			typeof options.proxy === "string" && options.proxy.length > 0
-				? new ProxyAgent(options.proxy)
-				: this.dispatcher;
+		// Use explicit proxy, then env-derived proxy, then default dispatcher
+		const effectiveProxy =
+			options.proxy && options.proxy.length > 0 ? options.proxy : resolveEnvProxyForUrl(url);
+		const effectiveDispatcher = effectiveProxy ? new ProxyAgent(effectiveProxy) : this.dispatcher;
 
 		try {
 			const response = await request(url, {

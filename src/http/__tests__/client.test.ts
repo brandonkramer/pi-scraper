@@ -360,6 +360,69 @@ describe("HttpClient", () => {
 			text: "“hi”",
 		});
 	});
+
+	it("uses env proxy when no explicit proxy is set", async () => {
+		const { agent, client } = mockClient();
+		allowRobots(agent, "https://example.com");
+		agent
+			.get("https://example.com")
+			.intercept({ path: "/page" })
+			.reply(200, "ok", {
+				headers: { "content-type": "text/plain" },
+			});
+
+		process.env.HTTPS_PROXY = "http://127.0.0.1:59999";
+		try {
+			await expect(client.fetchUrl("https://example.com/page")).rejects.toMatchObject({
+				structured: { code: "HTTP_FETCH_FAILED" },
+			});
+		} finally {
+			delete process.env.HTTPS_PROXY;
+		}
+	});
+
+	it("prefers explicit proxy over env proxy", async () => {
+		const { agent, client } = mockClient();
+		allowRobots(agent, "https://example.com");
+		agent
+			.get("https://example.com")
+			.intercept({ path: "/page" })
+			.reply(200, "ok", {
+				headers: { "content-type": "text/plain" },
+			});
+
+		process.env.HTTPS_PROXY = "http://127.0.0.1:59999";
+		try {
+			await expect(
+				client.fetchUrl("https://example.com/page", { proxy: "http://127.0.0.1:59998" }),
+			).rejects.toMatchObject({
+				structured: { code: "HTTP_FETCH_FAILED" },
+			});
+		} finally {
+			delete process.env.HTTPS_PROXY;
+		}
+	});
+
+	it("bypasses env proxy for NO_PROXY match", async () => {
+		const { agent, client } = mockClient();
+		allowRobots(agent, "https://example.com");
+		agent
+			.get("https://example.com")
+			.intercept({ path: "/page" })
+			.reply(200, "direct", {
+				headers: { "content-type": "text/plain" },
+			});
+
+		process.env.HTTPS_PROXY = "http://localhost:9999";
+		process.env.NO_PROXY = "example.com";
+		try {
+			const result = await client.fetchUrl("https://example.com/page");
+			expect(result.text).toBe("direct");
+		} finally {
+			delete process.env.HTTPS_PROXY;
+			delete process.env.NO_PROXY;
+		}
+	});
 });
 
 expect.addSnapshotSerializer({

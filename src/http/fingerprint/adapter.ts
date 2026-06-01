@@ -5,6 +5,7 @@ import { HttpClient } from "../client.ts";
 import { normalizeHeaders } from "../download.ts";
 import { httpClientErrorFromUnknown } from "../errors.ts";
 import { PolitenessController } from "../politeness.ts";
+import { resolveEnvProxyForUrl } from "../proxy-config.ts";
 import { followRedirects } from "../redirects.ts";
 import { fetchWithRequestPolicy } from "../request-policy.ts";
 import { materializeFetchBufferResponse, materializeFetchStreamResponse } from "../response.ts";
@@ -93,7 +94,8 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
 		const { signal, cleanup } = withTimeout(parentSignal, timeoutMs);
 		try {
-			const backend = await this.backendFor(safe.url.host);
+			const effectiveProxy = options.proxy ?? resolveEnvProxyForUrl(safe.normalizedUrl);
+			const backend = await this.backendFor(safe.url.host, effectiveProxy);
 			const secondSafe = await revalidateDns(safe, this.clientOptions);
 
 			// Load session and merge cookies into outgoing headers
@@ -151,11 +153,12 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		}
 	}
 
-	private backendFor(host: string): Promise<FingerprintRequestBackend> {
+	private backendFor(host: string, proxy?: string): Promise<FingerprintRequestBackend> {
+		const effectiveProxy = proxy ?? this.profile.proxy;
 		const key = JSON.stringify({
 			browserProfile: this.profile.browserProfile ?? "chrome",
 			osProfile: this.profile.osProfile ?? "default",
-			proxy: this.profile.proxy,
+			proxy: effectiveProxy,
 			host,
 		});
 		const existing = this.backends.get(key);
@@ -165,7 +168,7 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 			this.factory({
 				browserProfile: this.profile.browserProfile ?? "chrome",
 				osProfile: this.profile.osProfile ?? "default",
-				proxy: this.profile.proxy,
+				proxy: effectiveProxy,
 				host,
 			}),
 		);
