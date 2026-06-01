@@ -6,23 +6,19 @@ import {
 import type { CrawlRunResult } from "../../crawl/runner.ts";
 import { formatCrawlStrategyLabel } from "../../crawl/state.ts";
 import { isProgress, type PiToolShell, type ToolContext } from "../../types.ts";
-import { muted as toolNeutral } from "../theme.ts";
-import {
-	toolBatchProgressCard,
-	toolBatchResultCard,
-	toolProgressCard,
-	toolResultCard,
-} from "../tool-card.ts";
+import { toolBatchProgress, toolBatchResult } from "../tool-batch.ts";
 import {
 	toolContextPackageResponseId,
 	toolErrorLabel,
 	toolExpandHint,
 	toolSessionNotice,
 } from "../tool-labels.ts";
+import { toolProgressView, toolProgressLayout } from "../tool-progress.ts";
 import { renderResourceItemList as toolResourceList } from "../tool-resource.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
-import { buildExpandedResultDetails, toolResultId } from "../tool-result.ts";
+import { buildToolResultDetails, toolResultId } from "../tool-result.ts";
 import { countSegments as count, toolStatus } from "../tool-status.ts";
+import { muted as toolNeutral } from "../tui.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export type CrawlPageView = Partial<CrawlRunResult["pages"][number]>;
 
@@ -66,11 +62,11 @@ export function renderWebCrawlLookupResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const envelope = result.details as Partial<ToolContext<unknown>>;
-	return toolResultCard({
+	return toolProgressLayout({
 		renderContent(width) {
 			const lines = [envelope.summary ?? result.content[0].text];
 			if (!expanded) return lines.join("\n");
-			const sections = buildExpandedResultDetails(envelope as Record<string, unknown>);
+			const sections = buildToolResultDetails(envelope as Record<string, unknown>);
 			const tree = toolResultTree(sections, width, theme);
 			if (tree) lines.push("", tree);
 			const ids = toolResultId([{ label: "responseId", id: envelope.responseId ?? "" }], theme);
@@ -88,8 +84,8 @@ export function renderWebCrawlResult(
 ): RenderComponent {
 	const envelope = result.details as Partial<ToolContext<Partial<CrawlRunResult>>>;
 	if (isProgress(envelope)) {
-		if (isBatchProgress(envelope)) return toolBatchProgressCard(envelope, expanded, theme);
-		return toolProgressCard("web_crawl", envelope, theme, { allowIcons: true });
+		if (isBatchProgress(envelope)) return toolBatchProgress(envelope, expanded, theme);
+		return toolProgressView("web_crawl", envelope, theme, { allowIcons: true });
 	}
 	const data = envelope.data;
 	const metadata = data?.metadata;
@@ -113,7 +109,7 @@ export function renderWebCrawlResult(
 	const progress = isBatchProgressView(envelope.diagnostics?.batchProgress)
 		? envelope.diagnostics.batchProgress
 		: batchProgressFromCrawlPages(pages);
-	return toolBatchResultCard(
+	return toolBatchResult(
 		{
 			progress,
 			summary,

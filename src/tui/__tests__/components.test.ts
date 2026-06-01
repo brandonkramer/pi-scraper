@@ -9,7 +9,7 @@ import {
 	toolStatus,
 	type RenderTheme,
 } from "../index.ts";
-import { toolResultCard } from "../tool-card.ts";
+import { toolProgressLayout } from "../tool-progress.ts";
 import { buildToolResultTree } from "../tool-result-tree.ts";
 import { countSegments } from "../tool-status.ts";
 
@@ -55,7 +55,7 @@ describe("tool TUI components", () => {
 	});
 
 	it("does not add trailing blank lines to result cards without summaries", () => {
-		const rendered = toolResultCard({ renderContent: () => "done" }).render(20);
+		const rendered = toolProgressLayout({ renderContent: () => "done" }).render(20);
 		expect(rendered).toEqual(["done".padEnd(20)]);
 	});
 

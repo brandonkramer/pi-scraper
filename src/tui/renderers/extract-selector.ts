@@ -1,5 +1,5 @@
 import type { PiToolShell } from "../../types.ts";
-import { toolResultCard } from "../tool-card.ts";
+import { toolProgressLayout } from "../tool-progress.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 export function renderWebExtractSelectorResult(
@@ -7,7 +7,7 @@ export function renderWebExtractSelectorResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	return toolResultCard(
+	return toolProgressLayout(
 		{
 			body: result.content[0]?.text ?? "",
 			expanded,

@@ -1,12 +1,12 @@
 import { Markdown } from "@earendil-works/pi-tui";
 
 import { isProgress, type PiToolShell, type ToolContext } from "../../types.ts";
-import { getMarkdownTheme as toolMarkdownTheme, muted as toolMuted } from "../theme.ts";
-import { toolProgressCard, toolResultCard } from "../tool-card.ts";
+import { toolProgressView, toolProgressLayout } from "../tool-progress.ts";
 import { toolResource } from "../tool-resource.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
-import { buildExpandedResultDetails } from "../tool-result.ts";
+import { buildToolResultDetails } from "../tool-result.ts";
 import { toolStatusDot, toolStatus } from "../tool-status.ts";
+import { getMarkdownTheme as toolMarkdownTheme, muted as toolMuted } from "../tui.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 export function renderWebExtractResult(
@@ -15,7 +15,7 @@ export function renderWebExtractResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const details = result.details as Partial<ToolContext<unknown>> | undefined;
-	if (isProgress(details)) return toolProgressCard("web_extract", details, theme);
+	if (isProgress(details)) return toolProgressView("web_extract", details, theme);
 	const preview = result.content[0]?.text ?? "";
 	const numericStatus = typeof details?.status === "number" ? details.status : undefined;
 	const summary =
@@ -68,7 +68,7 @@ export function renderWebExtractResult(
 		: summary;
 	const hasLongMarkdown = expanded && details?.format === "markdown" && preview.length > 100;
 	const hideExpandedDetails = details?.summary === "Listed deterministic extractor capabilities.";
-	return toolResultCard({
+	return toolProgressLayout({
 		renderContent(width) {
 			const loaderUrl = details?.finalUrl ?? details?.url;
 			const loader = loaderUrl
@@ -80,7 +80,7 @@ export function renderWebExtractResult(
 				: "";
 			let tree = "";
 			if (expanded && details && !hideExpandedDetails) {
-				const sections = buildExpandedResultDetails(details as Record<string, unknown>);
+				const sections = buildToolResultDetails(details as Record<string, unknown>);
 				if (sections.length > 0) tree = toolResultTree(sections, width, theme);
 			}
 			const id =

@@ -1,10 +1,9 @@
 import { isProgress, type PiToolShell, type ToolContext } from "../../types.ts";
-import { muted as toolMuted } from "../theme.ts";
-import { renderText as toolText } from "../tool-call.ts";
-import { toolProgressCard, toolResultCard } from "../tool-card.ts";
+import { toolCallStatus } from "../tool-call.ts";
 import { toolExpandHint } from "../tool-labels.ts";
-import { toolProcess } from "../tool-process.ts";
+import { toolProgressView, toolProgressLayout } from "../tool-progress.ts";
 import { toolResource } from "../tool-resource.ts";
+import { muted as toolMuted, renderText as toolText } from "../tui.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export function renderWebMapResult(
 	result: PiToolShell,
@@ -15,14 +14,14 @@ export function renderWebMapResult(
 		ToolContext<{ urls?: { url: string; source?: string; title?: string }[] }>
 	>;
 	if (isProgress(envelope))
-		return toolProgressCard("web_map", envelope, theme, { allowIcons: false });
+		return toolProgressView("web_map", envelope, theme, { allowIcons: false });
 	const urls = Array.isArray(envelope.data?.urls) ? envelope.data.urls : [];
-	const summary = toolProcess(`${urls.length} URL(s)`, [!expanded && toolExpandHint], theme);
+	const summary = toolCallStatus(`${urls.length} URL(s)`, [!expanded && toolExpandHint], theme);
 	if (urls.length === 0)
 		return toolText(`${summary}\n\n${toolMuted("No URLs discovered.", theme)}`, {
 			padToWidth: true,
 		});
-	return toolResultCard({
+	return toolProgressLayout({
 		renderContent(width) {
 			const rows = urls
 				.slice(0, expanded ? 50 : 12)

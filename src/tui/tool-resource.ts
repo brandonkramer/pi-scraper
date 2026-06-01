@@ -1,5 +1,5 @@
-import { failure, muted, success, inlineThemeText } from "./theme.ts";
 import { type StatusPillState, renderStatusGlyph, renderStatusPill } from "./tool-status.ts";
+import { failure, muted, success, inlineThemeText } from "./tui.ts";
 import type { RenderTheme } from "./types.ts";
 
 function paintAccentUrl(url: string, width: number, theme?: RenderTheme): string {
@@ -12,6 +12,7 @@ function paintAccentUrl(url: string, width: number, theme?: RenderTheme): string
 	return inlineThemeText("accent", t, theme) ?? t;
 }
 
+/** Data model for expanded crawl/batch per-resource detail lists. */
 export interface ResourceListItem {
 	readonly ok: boolean;
 	readonly url: string;
@@ -32,6 +33,17 @@ export interface ResourceListItem {
 	readonly error?: { code?: string; phase?: string; message?: string };
 }
 
+/**
+ * Renders expanded per-resource details for crawl/batch result cards.
+ *
+ * Example output:
+ *
+ * ```txt
+ * └─ Per-page details:
+ * ✓ https://example.com
+ *   status 200 · fast · markdown · 1.2 KB
+ * ```
+ */
 export function renderResourceItemList(
 	items: readonly ResourceListItem[],
 	options: {
@@ -80,11 +92,13 @@ function renderResourceItemLines(item: ResourceListItem): string[] {
 	return lines;
 }
 
+/** Formats bytes as `B` or one-decimal `KB`, returning undefined for missing values. */
 export function formatBytes(bytes: number | undefined): string | undefined {
 	if (typeof bytes !== "number") return;
 	return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
 }
 
+/** Formats durations as rounded milliseconds or one-decimal seconds. */
 export function formatDuration(ms: number | undefined): string | undefined {
 	if (typeof ms !== "number") return;
 	return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`;
@@ -94,6 +108,7 @@ export type ToolResourceStatusState = StatusPillState;
 
 export type ToolResourceState = "ok" | "error" | "pending" | "loading";
 
+/** Inputs for a full-width resource row with status glyph and pill. */
 export interface ToolResourceStatusRow {
 	url: string;
 	state: ToolResourceStatusState;
@@ -105,6 +120,7 @@ export interface ToolResourceStatusRow {
 	restoreBg?: string;
 }
 
+/** Inputs for compact resource rows, badge rows, and full status rows. */
 export interface ToolResourceOptions extends Partial<
 	Omit<ToolResourceStatusRow, "url" | "state" | "restoreBg">
 > {
@@ -114,6 +130,15 @@ export interface ToolResourceOptions extends Partial<
 	detail?: string;
 }
 
+/**
+ * Renders a full-width URL status row with a glyph and right-side pill.
+ *
+ * Example output, with terminal padding omitted:
+ *
+ * ```txt
+ * ✓ https://example.com [ done ]
+ * ```
+ */
 export function toolResourceStatus(row: ToolResourceStatusRow): string {
 	const statusWidth = Math.max(12, Math.min(18, Math.floor(row.width * 0.22)));
 	const box =
@@ -129,6 +154,17 @@ export function toolResourceStatus(row: ToolResourceStatusRow): string {
 	return `${renderStatusGlyph(row.state, row.theme)} ${paintAccentUrl(row.url, Math.max(12, row.width - statusWidth - 3), row.theme)} ${box}`;
 }
 
+/**
+ * Renders the most compact resource form required by the caller.
+ *
+ * Examples:
+ *
+ * ```txt
+ * ✓ https://example.com
+ * https://example.com [ sitemap ]
+ * ✓ https://example.com [ done ]
+ * ```
+ */
 export function toolResource(o: ToolResourceOptions): string {
 	if (o.badge !== undefined && o.width !== undefined) {
 		const badgeText = o.badge ? `[ ${o.badge} ]` : "";

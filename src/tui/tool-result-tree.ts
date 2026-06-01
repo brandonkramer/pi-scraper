@@ -1,12 +1,15 @@
-import { muted } from "./theme.ts";
+import { muted } from "./tui.ts";
 import type { RenderTheme } from "./types.ts";
 
+/** Normalized tree section consumed by `toolResultTree`. */
 export type ToolResultTreeSection = { name: string; rows: Array<{ key: string; value: string }> };
+/** Source group with optional row values before empty rows are filtered out. */
 export type ToolResultGroup = {
 	name: string;
 	rows: Array<[key: string, value: string | undefined]>;
 };
 
+/** Converts grouped key/value rows into non-empty result tree sections. */
 export function buildToolResultTree(groups: ToolResultGroup[]): ToolResultTreeSection[] {
 	const sections: ToolResultTreeSection[] = [];
 	for (const group of groups) {
@@ -18,6 +21,17 @@ export function buildToolResultTree(groups: ToolResultGroup[]): ToolResultTreeSe
 	return sections;
 }
 
+/**
+ * Renders expanded result details as a width-aware tree.
+ *
+ * Example output:
+ *
+ * ```txt
+ *   page
+ *   ├─ title   Example Domain
+ *   └─ status  200
+ * ```
+ */
 export function toolResultTree(
 	sections: ToolResultTreeSection[],
 	terminalWidth: number,
@@ -51,6 +65,7 @@ export function toolResultTree(
 	return lines.join("\n");
 }
 
+/** Splits a normalized value into word-wrapped chunks for tree rows. */
 export function splitValueByWidth(value: string, maxChars: number): string[] {
 	const lines: string[] = [];
 	let remaining = value;

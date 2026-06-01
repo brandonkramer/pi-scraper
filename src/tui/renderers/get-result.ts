@@ -1,8 +1,8 @@
 import type { PiToolShell } from "../../types.ts";
-import { paintFg } from "../theme.ts";
-import { toolStackedCard } from "../tool-card.ts";
+import { toolProgressLayout } from "../tool-progress.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
-import { buildExpandedResultDetails } from "../tool-result.ts";
+import { buildToolResultDetails } from "../tool-result.ts";
+import { paintFg } from "../tui.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 export function renderGetResult(
@@ -12,8 +12,8 @@ export function renderGetResult(
 ): RenderComponent {
 	const details = result.details as Record<string, unknown> | undefined;
 	const hasError = !!details?.error;
-	const sections = buildExpandedResultDetails(details);
-	return toolStackedCard(
+	const sections = buildToolResultDetails(details);
+	return toolProgressLayout(
 		{
 			body: `└─ ${paintFg(theme, hasError ? "error" : "accent", hasError ? "✕ no result" : "✓ result found")}`,
 			expanded,

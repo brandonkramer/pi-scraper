@@ -1,3 +1,4 @@
+import { currentSpinnerFrame } from "./tool-spinner.ts";
 import {
 	backgroundText,
 	inlineThemeText,
@@ -6,7 +7,7 @@ import {
 	failure,
 	muted,
 	separator,
-} from "./theme.ts";
+} from "./tui.ts";
 import type { RenderTheme } from "./types.ts";
 
 function bgStart(name: string, theme?: RenderTheme): string {
@@ -19,6 +20,7 @@ function bgStart(name: string, theme?: RenderTheme): string {
 	}
 }
 
+/** Paints only the first rendered line with a background for error/result emphasis. */
 export function paintFirstLineBg(lines: string[], bgName: string, theme?: RenderTheme): string[] {
 	if (lines.length === 0 || !theme?.bg) return lines;
 	return lines.map((line, index) =>
@@ -26,14 +28,19 @@ export function paintFirstLineBg(lines: string[], bgName: string, theme?: Render
 	);
 }
 
+/** Shared state model for status pills and row glyphs. */
 export type StatusPillState = "waiting" | "loading" | "done" | "error";
 
-export const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-
-export function currentSpinnerFrame(): string {
-	return SPINNER_FRAMES[Math.floor(Date.now() / 80) % SPINNER_FRAMES.length];
-}
-
+/**
+ * Renders a fixed-width status pill, optionally with staged loading fill.
+ *
+ * Example output, with color escapes omitted:
+ *
+ * ```txt
+ * [    loading     ]
+ * [      done      ]
+ * ```
+ */
 export function renderStatusPill(o: {
 	label: string;
 	state: StatusPillState;
@@ -73,6 +80,11 @@ export function renderStatusPill(o: {
 	return `${backgroundText(bg, o.state === "waiting" ? muted(text, theme) : text, theme)}${tail}`;
 }
 
+/**
+ * Renders the status glyph that prefixes URL/resource rows.
+ *
+ * Examples: loading spinner, `✓`, `✕`, or `·`.
+ */
 export function renderStatusGlyph(state: StatusPillState, theme?: RenderTheme): string {
 	const g =
 		state === "loading"
@@ -91,6 +103,11 @@ export function renderStatusGlyph(state: StatusPillState, theme?: RenderTheme): 
 	);
 }
 
+/**
+ * Pre-colored count segment builders for summaries.
+ *
+ * Example outputs: `✓ 2 succeeded`, `✕ 1 failed`, `↻ 1 cache hits`.
+ */
 export const countSegments = {
 	success: (count: number, label: string, theme?: RenderTheme) =>
 		count <= 0 ? muted(`${count} ${label}`, theme) : success(`✓ ${count} ${label}`, theme),
@@ -100,11 +117,21 @@ export const countSegments = {
 		activity(`${icon} ${count} ${label}`, theme),
 } as const;
 
+/** A status segment with optional tone to be joined by `toolStatus`. */
 export interface ToolStatusPart {
 	text: string;
 	tone?: "accent" | "success" | "failure" | "muted" | "neutral";
 }
 
+/**
+ * Joins truthy status segments with the standard muted separator.
+ *
+ * Example output:
+ *
+ * ```txt
+ * ✓ 2 succeeded · ✕ 1 failed · markdown
+ * ```
+ */
 export function toolStatus(
 	parts: Array<string | ToolStatusPart | undefined | false>,
 	theme?: RenderTheme,
@@ -120,6 +147,7 @@ export function toolStatus(
 	return rendered.join(separator(theme));
 }
 
+/** Returns the status dot color for HTTP status summaries. */
 export function toolStatusDot(status: number | undefined, theme?: RenderTheme): string {
 	if (status === undefined) return "\u25CF";
 	return (status < 300 ? success : status < 400 ? muted : failure)("\u25CF", theme);

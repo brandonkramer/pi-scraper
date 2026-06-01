@@ -1,22 +1,18 @@
 import { Markdown } from "@earendil-works/pi-tui";
 
 import { isProgress, type Chunk, type PiToolShell, type ToolContext } from "../../types.ts";
-import { activity, failure, getMarkdownTheme, muted, separator, success } from "../theme.ts";
+import { toolExpandHint, toolFreshnessLabel, toolSessionNotice } from "../tool-labels.ts";
 import {
-	toolFileResultCard,
-	toolResultCard,
-	progressStartedAtMs,
-	stringValue,
-} from "../tool-card.ts";
-import {
-	toolExpandHint,
-	toolFreshnessLabel,
-	toolSessionNotice,
 	formatChecklistText as toolChecklistText,
-} from "../tool-labels.ts";
+	toolProgressLayout,
+	progressStartedAtMs,
+} from "../tool-progress.ts";
 import { toolResourceStatus, formatBytes, formatDuration } from "../tool-resource.ts";
 import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
-import { toolStatusDot, toolStatus, currentSpinnerFrame } from "../tool-status.ts";
+import { toolResultFileDetails, stringValue } from "../tool-result.ts";
+import { currentSpinnerFrame } from "../tool-spinner.ts";
+import { toolStatusDot, toolStatus } from "../tool-status.ts";
+import { activity, failure, getMarkdownTheme, muted, separator, success } from "../tui.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 export function renderWebScrapeResult(
@@ -30,7 +26,7 @@ export function renderWebScrapeResult(
 		const status =
 			envelope.state === "error" ? "error" : envelope.state === "done" ? "done" : "loading";
 		const startedAtMs = progressStartedAtMs(envelope) ?? Date.now();
-		return toolResultCard({
+		return toolProgressLayout({
 			renderContent(width) {
 				const row = toolResourceStatus({
 					url,
@@ -74,7 +70,7 @@ export function renderWebScrapeResult(
 	const preview = stringValue(envelope.answerContext ?? field ?? result.content.at(0)?.text) ?? "";
 	const url = envelope.finalUrl ?? envelope.url ?? "unknown URL";
 	const state = envelope.error ? "error" : "done";
-	return toolResultCard(
+	return toolProgressLayout(
 		{
 			body: (width) =>
 				toolResourceStatus({
@@ -93,7 +89,7 @@ export function renderWebScrapeResult(
 					/^(?:application\/octet-stream|application\/pdf|image\/|audio\/|video\/)/u.test(ct) ||
 					!!(envelope.data && typeof envelope.data === "object" && "fileSize" in envelope.data)
 				)
-					return [toolFileResultCard(envelope, theme).render(width).join("\n")];
+					return [toolResultFileDetails(envelope, theme).render(width).join("\n")];
 				const out = [toolResultTree(buildScrapeSections(envelope, theme), width, theme)];
 				if (preview && !markdownPreviewComponent(envelope.format, preview, theme))
 					out.push(

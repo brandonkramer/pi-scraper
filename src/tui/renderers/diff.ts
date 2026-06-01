@@ -1,10 +1,9 @@
 import type { SnapshotDiffResult } from "../../diff/snapshots.ts";
 import { isProgress, type PiToolShell, type ToolContext } from "../../types.ts";
-import { muted as toolMuted } from "../theme.ts";
-import { renderText as toolText } from "../tool-call.ts";
-import { toolProgressCard } from "../tool-card.ts";
 import { toolErrorLabel, toolExpandHint, toolFreshnessLabel } from "../tool-labels.ts";
+import { toolProgressView } from "../tool-progress.ts";
 import { toolStatus } from "../tool-status.ts";
+import { muted as toolMuted, renderText as toolText } from "../tui.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 export function renderWebDiffResult(
 	result: PiToolShell,
@@ -13,7 +12,7 @@ export function renderWebDiffResult(
 ): RenderComponent {
 	const envelope = result.details as Partial<ToolContext<Partial<SnapshotDiffResult>>>;
 	if (isProgress(envelope))
-		return toolProgressCard("web_scrape diff", envelope, theme, { allowIcons: false });
+		return toolProgressView("web_scrape diff", envelope, theme, { allowIcons: false });
 	const diff = envelope.data;
 	const diffState = !diff?.previous
 		? "saved baseline"

@@ -1,9 +1,8 @@
 import type { PiToolShell } from "../../types.ts";
-import { activity, failure, muted, success } from "../theme.ts";
-import { renderDynamicText } from "../tool-call.ts";
 import { buildToolResultTree, splitValueByWidth, toolResultTree } from "../tool-result-tree.ts";
 import type { ToolResultGroup } from "../tool-result-tree.ts";
-import { buildExpandedResultDetails } from "../tool-result.ts";
+import { buildToolResultDetails } from "../tool-result.ts";
+import { activity, failure, muted, renderDynamicText, success } from "../tui.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
 
 type VerticalData = Record<string, unknown>;
@@ -64,7 +63,7 @@ export function renderVerticalResult(
 			const hasVerticalBlocks = transcriptBlock || commentsBlock || sourceSections.length > 0;
 			if (sections.every((section) => section.name === "extraction") && !hasVerticalBlocks)
 				sections.push(
-					...buildExpandedResultDetails(data, {
+					...buildToolResultDetails(data, {
 						hide: new Set<string>(),
 						sectionName: "data",
 					}),

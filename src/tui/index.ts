@@ -1,5 +1,5 @@
-export { toolCall } from "./tool-call.ts";
-export { toolProcess } from "./tool-process.ts";
+/** Public TUI helper surface exported for renderer tests and tool adapters. */
+export { toolCall, toolCallStatus } from "./tool-call.ts";
 export { toolResource, type ToolResourceOptions, type ToolResourceState } from "./tool-resource.ts";
 export {
 	toolResourceStatus,

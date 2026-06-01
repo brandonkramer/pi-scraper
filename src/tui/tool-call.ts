@@ -1,8 +1,16 @@
-import { type Component, Text, truncateToWidth } from "@earendil-works/pi-tui";
-
-import { paintFg } from "./theme.ts";
+import { toolStatus, type ToolStatusPart } from "./tool-status.ts";
+import { muted, paintFg, renderDynamicText, separator } from "./tui.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 
+/**
+ * Renders the compact call header for a tool invocation.
+ *
+ * Example output:
+ *
+ * ```txt
+ * web_scrape (auto → markdown)
+ * ```
+ */
 export function toolCall(
 	name: string,
 	parts: (string | undefined)[],
@@ -12,37 +20,20 @@ export function toolCall(
 	return renderDynamicText(() => paintFg(theme, "accent", label));
 }
 
-export function renderDynamicText(
-	buildText: () => string,
-	options: { padToWidth?: boolean } = {},
-): Component {
-	const component = new Text(buildText(), 0, 0);
-	return renderTextComponent(component, () => component.setText(buildText()), options);
-}
-
-export function renderText(text: string, options: { padToWidth?: boolean } = {}): Component {
-	return renderTextComponent(new Text(text, 0, 0), undefined, options);
-}
-
-function renderTextComponent(
-	component: Text,
-	refresh: (() => void) | undefined,
-	options: { padToWidth?: boolean },
-): Component {
-	return {
-		render(width: number): string[] {
-			refresh?.();
-			const safeWidth = Math.max(1, Math.floor(width || 80));
-			const rendered = component.render(safeWidth);
-			const lines = rendered.length > 0 ? rendered : [""];
-			return options.padToWidth
-				? lines.map((line) => truncateToWidth(line, safeWidth, "", true))
-				: lines.map((line) => line.replaceAll(/ +$/gu, ""));
-		},
-
-		invalidate(): void {
-			refresh?.();
-			component.invalidate();
-		},
-	};
+/**
+ * Renders a prefixed process/status line for grouped tool work.
+ *
+ * Example output:
+ *
+ * ```txt
+ * └─ web_batch · 1/3 done · ok 1 · err 0
+ * ```
+ */
+export function toolCallStatus(
+	prefix: string,
+	parts: Array<string | ToolStatusPart | undefined | false>,
+	theme?: RenderTheme,
+): string {
+	const body = toolStatus(parts, theme);
+	return `${muted("└─ ", theme)}${prefix}${body ? `${separator(theme)}${body}` : ""}`;
 }

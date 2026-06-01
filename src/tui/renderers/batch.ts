@@ -6,7 +6,7 @@ import {
 import type { BatchItemResult } from "../../batch/run.ts";
 import { formatLineMatchPreview } from "../../scrape/line-preview.ts";
 import { isProgress, type PiToolShell, type ToolContext } from "../../types.ts";
-import { toolBatchProgressCard, toolBatchResultCard, toolProgressCard } from "../tool-card.ts";
+import { toolBatchProgress, toolBatchResult } from "../tool-batch.ts";
 import {
 	toolContextPackageResponseId,
 	toolErrorLabel,
@@ -14,6 +14,7 @@ import {
 	toolFreshnessLabel,
 	toolSessionNotice,
 } from "../tool-labels.ts";
+import { toolProgressView } from "../tool-progress.ts";
 import { formatBytes as fmtBytes, formatDuration as fmtDuration } from "../tool-resource.ts";
 import { buildToolResultTree, toolResultTree, type ToolResultGroup } from "../tool-result-tree.ts";
 import { toolResultId } from "../tool-result.ts";
@@ -75,8 +76,8 @@ export function renderWebBatchResult(
 ): RenderComponent {
 	const envelope = result.details as Partial<ToolContext<BatchItemResult[]>>;
 	if (isProgress(envelope)) {
-		if (isBatchProgress(envelope)) return toolBatchProgressCard(envelope, expanded, theme);
-		return toolProgressCard("web_batch", envelope, theme, { allowIcons: true });
+		if (isBatchProgress(envelope)) return toolBatchProgress(envelope, expanded, theme);
+		return toolProgressView("web_batch", envelope, theme, { allowIcons: true });
 	}
 	const items = Array.isArray(envelope.data) ? envelope.data : [];
 	const succeeded = items.filter((item) => item.ok).length;
@@ -101,7 +102,7 @@ export function renderWebBatchResult(
 		jobId: envelope.diagnostics?.jobId,
 		packageResponseId: toolContextPackageResponseId(envelope),
 	};
-	return toolBatchResultCard(
+	return toolBatchResult(
 		{
 			progress,
 			summary,
