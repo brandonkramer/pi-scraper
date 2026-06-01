@@ -2,12 +2,7 @@ import { Markdown } from "@earendil-works/pi-tui";
 
 import { isProgress, type Chunk, type PiToolShell, type ToolContext } from "../../types.ts";
 import { activity, failure, getMarkdownTheme, muted, separator, success } from "../theme.ts";
-import {
-	toolFileResultCard,
-	toolResultCard,
-	toolStackedCard,
-	progressStartedAtMs as toolProgressStartedAtMs,
-} from "../tool-card.ts";
+import { toolFileResultCard, toolResultCard, progressStartedAtMs } from "../tool-card.ts";
 import {
 	toolExpandHint,
 	toolFreshnessLabel,
@@ -29,7 +24,7 @@ export function renderWebScrapeResult(
 		const url = details.url ?? "unknown URL";
 		const status =
 			details.state === "error" ? "error" : details.state === "done" ? "done" : "loading";
-		const startedAtMs = toolProgressStartedAtMs(details) ?? Date.now();
+		const startedAtMs = progressStartedAtMs(details) ?? Date.now();
 		return toolResultCard({
 			renderContent(width) {
 				const row = toolResourceStatus({
@@ -84,7 +79,7 @@ export function renderWebScrapeResult(
 				: JSON.stringify(previewValue);
 	const url = envelope.finalUrl ?? envelope.url ?? "unknown URL";
 	const state = envelope.error ? "error" : "done";
-	return toolStackedCard(
+	return toolResultCard(
 		{
 			body: (width) =>
 				toolResourceStatus({

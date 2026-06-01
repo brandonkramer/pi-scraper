@@ -273,6 +273,7 @@ export function toolResultCard(
 		markdownPreview?: (width: number) => RenderComponent | undefined;
 		responseId?: string;
 		padToWidth?: boolean;
+		hasError?: boolean;
 	},
 	theme?: RenderTheme,
 ): RenderComponent {
