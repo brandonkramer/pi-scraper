@@ -32,11 +32,9 @@ export function progressStartedAtMs(details: ProgressDetails): number | undefine
 }
 
 function progressPillLabel(state: string): string {
-	return state === "queued"
-		? "waiting"
-		: state === "processing" || state === "connecting"
-			? "loading"
-			: state;
+	if (state === "queued") return "waiting";
+	if (state === "processing" || state === "connecting") return "loading";
+	return state;
 }
 
 /** Maps raw progress states into the smaller pill-state vocabulary. */
