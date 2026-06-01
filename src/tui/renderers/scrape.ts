@@ -2,7 +2,12 @@ import { Markdown } from "@earendil-works/pi-tui";
 
 import { isProgress, type Chunk, type PiToolShell, type ToolContext } from "../../types.ts";
 import { activity, failure, getMarkdownTheme, muted, separator, success } from "../theme.ts";
-import { toolFileResultCard, toolResultCard, progressStartedAtMs } from "../tool-card.ts";
+import {
+	toolFileResultCard,
+	toolResultCard,
+	progressStartedAtMs,
+	stringValue,
+} from "../tool-card.ts";
 import {
 	toolExpandHint,
 	toolFreshnessLabel,
@@ -66,13 +71,7 @@ export function renderWebScrapeResult(
 				theme,
 			);
 	const field = envelope.data?.markdown ?? envelope.data?.text ?? envelope.data?.title;
-	const previewValue = envelope.answerContext ?? field ?? result.content.at(0)?.text ?? "";
-	const preview =
-		typeof previewValue === "string"
-			? previewValue
-			: typeof previewValue === "number" || typeof previewValue === "boolean"
-				? String(previewValue)
-				: JSON.stringify(previewValue);
+	const preview = stringValue(envelope.answerContext ?? field ?? result.content.at(0)?.text) ?? "";
 	const url = envelope.finalUrl ?? envelope.url ?? "unknown URL";
 	const state = envelope.error ? "error" : "done";
 	return toolResultCard(
