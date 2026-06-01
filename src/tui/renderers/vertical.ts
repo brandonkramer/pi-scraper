@@ -180,14 +180,13 @@ function formatCommentsBlock(
 		const text = (comment.text ?? "").replaceAll(/\s+/gu, " ").trim();
 		return `${comment.author ? `${comment.author}: ` : `${i + 1}. `}${text.length > 180 ? `${text.slice(0, 180)}…` : text}`;
 	});
+	const more = comments.length - preview.length;
 	return formatListBlock(
 		"comments",
 		preview,
 		width,
 		theme,
-		comments.length > preview.length
-			? `${comments.length - preview.length} more comments`
-			: undefined,
+		more ? `${more} more comments` : undefined,
 	);
 }
 
