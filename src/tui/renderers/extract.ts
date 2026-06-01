@@ -84,9 +84,7 @@ export function renderWebExtractResult(
 				if (sections.length > 0) tree = toolResultTree(sections, width, theme);
 			}
 			const id =
-				expanded && details?.responseId
-					? toolMuted(`responseId: ${details.responseId}`, theme)
-					: "";
+				expanded && details?.responseId && toolMuted(`responseId: ${details.responseId}`, theme);
 			return [loader, body, tree, id].filter(Boolean).join("\n\n");
 		},
 		padToWidth: true,
