@@ -5,7 +5,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import type { FetchUrlResult } from "../../http/client.ts";
+import type { FetchUrlResult, HttpClient } from "../../http/client.ts";
 import { runCrawl } from "../runner.ts";
 import { loadCrawlMetadata, loadCrawlState } from "../state.ts";
 
@@ -32,7 +32,7 @@ function html(url: string, body: string): FetchUrlResult {
 }
 
 interface CrawlTestDeps {
-	httpClient: { fetchUrl(url: URL): Promise<FetchUrlResult> };
+	httpClient: Pick<HttpClient, "fetchUrl">;
 }
 
 function globalConcurrencyScenario(): { deps: CrawlTestDeps; maxActive: () => number } {
@@ -288,6 +288,177 @@ describe("runCrawl", () => {
 		expect((await loadCrawlState("restart", { rootDir })).seedUrl).toBe(
 			"https://example.com/other",
 		);
+	});
+
+	it("rotates proxies per page when resolveProxy returns an array sequence", async () => {
+		const recordedProxies: (string | undefined)[] = [];
+		const proxyList = ["a", "b", "c"];
+		let callIndex = 0;
+		const resolveProxy = () => {
+			const proxy = proxyList[callIndex % proxyList.length];
+			callIndex += 1;
+			return proxy;
+		};
+		const result = await runCrawl(
+			"https://example.com",
+			{
+				rootDir,
+				crawlId: "rotate",
+				maxPages: 5,
+				maxDepth: 1,
+				resolveProxy,
+			},
+			{
+				httpClient: {
+					fetchUrl: async (url, options?) => {
+						recordedProxies.push(options?.proxy);
+						const value = url.toString();
+						if (value === "https://example.com/") {
+							return html(
+								value,
+								`<html><main>Seed</main><a href="https://example.com/1">1</a><a href="https://example.com/2">2</a><a href="https://example.com/3">3</a><a href="https://example.com/4">4</a></html>`,
+							);
+						}
+						return html(value, `<html><main>${value}</main></html>`);
+					},
+				},
+			},
+		);
+		expect(result.pages).toHaveLength(5);
+		expect(recordedProxies).toEqual(["a", "b", "c", "a", "b"]);
+	});
+
+	it("uses the same proxy for every page when proxy is a single string", async () => {
+		const recordedProxies: (string | undefined)[] = [];
+		const result = await runCrawl(
+			"https://example.com",
+			{
+				rootDir,
+				crawlId: "single-proxy",
+				maxPages: 4,
+				maxDepth: 1,
+				proxy: "single",
+			},
+			{
+				httpClient: {
+					fetchUrl: async (url, options?) => {
+						recordedProxies.push(options?.proxy);
+						const value = url.toString();
+						if (value === "https://example.com/") {
+							return html(
+								value,
+								`<html><main>Seed</main><a href="https://example.com/1">1</a><a href="https://example.com/2">2</a><a href="https://example.com/3">3</a></html>`,
+							);
+						}
+						return html(value, `<html><main>${value}</main></html>`);
+					},
+				},
+			},
+		);
+		expect(result.pages).toHaveLength(4);
+		expect(recordedProxies).toEqual(["single", "single", "single", "single"]);
+	});
+
+	it("uses no proxy when proxy is undefined and resolveProxy is absent", async () => {
+		const recordedProxies: (string | undefined)[] = [];
+		const result = await runCrawl(
+			"https://example.com",
+			{
+				rootDir,
+				crawlId: "no-proxy",
+				maxPages: 3,
+				maxDepth: 1,
+			},
+			{
+				httpClient: {
+					fetchUrl: async (url, options?) => {
+						recordedProxies.push(options?.proxy);
+						const value = url.toString();
+						if (value === "https://example.com/") {
+							return html(
+								value,
+								`<html><main>Seed</main><a href="https://example.com/1">1</a><a href="https://example.com/2">2</a></html>`,
+							);
+						}
+						return html(value, `<html><main>${value}</main></html>`);
+					},
+				},
+			},
+		);
+		expect(result.pages).toHaveLength(3);
+		expect(recordedProxies).toEqual([undefined, undefined, undefined]);
+	});
+
+	it("does not crash with concurrent proxy rotation", async () => {
+		const recordedProxies: (string | undefined)[] = [];
+		const proxyList = ["a", "b", "c"];
+		let callIndex = 0;
+		const resolveProxy = () => {
+			const proxy = proxyList[callIndex % proxyList.length];
+			callIndex += 1;
+			return proxy;
+		};
+		const result = await runCrawl(
+			"https://example.com",
+			{
+				rootDir,
+				crawlId: "concurrent-rotate",
+				maxPages: 6,
+				maxDepth: 1,
+				concurrency: 3,
+				resolveProxy,
+			},
+			{
+				httpClient: {
+					fetchUrl: async (url, options?) => {
+						recordedProxies.push(options?.proxy);
+						const value = url.toString();
+						if (value === "https://example.com/") {
+							return html(
+								value,
+								`<html><main>Seed</main><a href="https://example.com/1">1</a><a href="https://example.com/2">2</a><a href="https://example.com/3">3</a><a href="https://example.com/4">4</a><a href="https://example.com/5">5</a></html>`,
+							);
+						}
+						await sleep(10);
+						return html(value, `<html><main>${value}</main></html>`);
+					},
+				},
+			},
+		);
+		expect(result.pages).toHaveLength(6);
+		expect(recordedProxies).toHaveLength(6);
+		expect(recordedProxies.every((p) => p === "a" || p === "b" || p === "c")).toBe(true);
+	});
+
+	it("propagates undefined when all proxies are in cooldown", async () => {
+		const recordedProxies: (string | undefined)[] = [];
+		const result = await runCrawl(
+			"https://example.com",
+			{
+				rootDir,
+				crawlId: "exhausted",
+				maxPages: 3,
+				maxDepth: 1,
+				resolveProxy: () => undefined,
+			},
+			{
+				httpClient: {
+					fetchUrl: async (url, options?) => {
+						recordedProxies.push(options?.proxy);
+						const value = url.toString();
+						if (value === "https://example.com/") {
+							return html(
+								value,
+								`<html><main>Seed</main><a href="https://example.com/1">1</a><a href="https://example.com/2">2</a></html>`,
+							);
+						}
+						return html(value, `<html><main>${value}</main></html>`);
+					},
+				},
+			},
+		);
+		expect(result.pages).toHaveLength(3);
+		expect(recordedProxies).toEqual([undefined, undefined, undefined]);
 	});
 });
 

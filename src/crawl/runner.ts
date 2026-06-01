@@ -45,6 +45,8 @@ export interface CrawlRunOptions extends CommonScrapeOptions, CrawlStateOptions 
 	concurrency?: number;
 	perHostConcurrency?: number;
 	onProgress?: (progress: CrawlProgress) => void;
+	/** Per-page proxy resolver. When provided, called before each scrape to get a rotating proxy. */
+	resolveProxy?: () => string | undefined;
 }
 
 export interface CrawlRunResult {
@@ -221,7 +223,13 @@ export async function runCrawl(
 			const releaseHost = await injectedHostLimits?.acquire(new URL(item.url).host, signal);
 			let completed = false;
 			try {
-				const result = await scrapeUrl(item.url, options, sharedDeps, signal);
+				const pageProxy = options.resolveProxy?.() ?? options.proxy;
+				const result = await scrapeUrl(
+					item.url,
+					{ ...options, proxy: pageProxy },
+					sharedDeps,
+					signal,
+				);
 				pages.push(result);
 				if (result.error) {
 					counts.failed += 1;

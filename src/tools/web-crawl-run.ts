@@ -50,12 +50,15 @@ export async function crawlRun(params: Params, signal: AbortSignal, onUpdate?: T
 		items: [{ url, status: "queued" }],
 		label: "web_crawl",
 	};
+	const { proxy, ...crawlParams } = params;
+	const proxyResolver = Array.isArray(proxy) ? () => resolveProxyParam(proxy) : undefined;
 	const crawl = await runCrawl(
 		url,
 		{
 			...config.scrapeDefaults,
-			...params,
-			proxy: resolveProxyParam(params.proxy),
+			...crawlParams,
+			proxy: typeof proxy === "string" ? proxy : undefined,
+			resolveProxy: proxyResolver,
 			strategy: params.strategy,
 			mode: params.mode ?? config.scrapeMode,
 			format: config.outputFormat,
