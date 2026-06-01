@@ -188,12 +188,10 @@ function formatTranscriptBlock(
 		for (const line of textLines.slice(1))
 			lines.push(`  ${muted(continuationPrefix, theme)}${line}`);
 	}
-	if (hasMore) {
-		const remaining = segments.length - preview.length;
+	if (hasMore)
 		lines.push(
-			`  ${muted(`\u2514\u2500 ${"…".padStart(timeWidth)}  `, theme)}${remaining} more segments`,
+			`  ${muted(`\u2514\u2500 ${"…".padStart(timeWidth)}  `, theme)}${segments.length - preview.length} more segments`,
 		);
-	}
 	return lines.join("\n");
 }
 
