@@ -40,16 +40,14 @@ export function crawlExpandedDetails(
 		pages.map((page) => {
 			const url = page.finalUrl ?? page.url ?? "unknown URL";
 			if (page.error) return { ok: false, url, fields: {}, error: page.error };
+			const excerpt = [page.data?.description, page.data?.markdown, page.data?.text].find(Boolean);
 			return {
 				ok: true,
 				url,
 				finalUrl:
 					page.finalUrl && page.url && page.finalUrl !== page.url ? page.finalUrl : undefined,
 				title: page.data?.title,
-				excerpt: (() => {
-					const v = [page.data?.description, page.data?.markdown, page.data?.text].find(Boolean);
-					return v ? v.replaceAll(/\s+/gu, " ").trim().slice(0, cap) : undefined;
-				})(),
+				excerpt: excerpt ? excerpt.replaceAll(/\s+/gu, " ").trim().slice(0, cap) : undefined,
 				fields: {
 					status: page.status,
 					mode: page.mode,
