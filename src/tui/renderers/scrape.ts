@@ -125,47 +125,43 @@ function buildScrapeSections(
 	const headers = envelope.headers;
 	const hasHeaders = !!headers && Object.keys(headers).length > 0;
 	const groups = new Map<string, ToolResultGroup["rows"]>();
+	const add = addScrapeRow.bind(undefined, groups);
 	const t = envelope.data?.title;
 	const d = envelope.data?.description;
 
-	addScrapeRow(groups, "page", "title", typeof t === "string" && t ? t : undefined);
+	add("page", "title", typeof t === "string" && t ? t : undefined);
 	if (hasHeaders) {
 		const url = envelope.finalUrl ?? envelope.url;
 		const host =
 			typeof url === "string" && URL.canParse(url)
 				? new URL(url).hostname.replace(/^www\./iu, "")
 				: undefined;
-		addScrapeRow(groups, "page", "site", host);
+		add("page", "site", host);
 	}
-	addScrapeRow(groups, "page", "description", typeof d === "string" && d ? d : undefined);
+	add("page", "description", typeof d === "string" && d ? d : undefined);
 
-	addScrapeRow(groups, "details", "url", envelope.url);
+	add("details", "url", envelope.url);
 	if (envelope.finalUrl && envelope.finalUrl !== envelope.url)
-		addScrapeRow(groups, "details", "final", envelope.finalUrl);
-	addScrapeRow(groups, "details", "status", envelope.status ? String(envelope.status) : undefined);
-	addScrapeRow(groups, "details", "mode", envelope.mode);
-	addScrapeRow(groups, "details", "format", envelope.format);
-	addScrapeRow(groups, "details", "size", formatBytes(envelope.downloadedBytes));
-	addScrapeRow(groups, "details", "duration", formatDuration(envelope.timing?.durationMs));
-	addScrapeRow(groups, "details", "type", envelope.contentType);
-	addScrapeRow(groups, "details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
+		add("details", "final", envelope.finalUrl);
+	add("details", "status", envelope.status ? String(envelope.status) : undefined);
+	add("details", "mode", envelope.mode);
+	add("details", "format", envelope.format);
+	add("details", "size", formatBytes(envelope.downloadedBytes));
+	add("details", "duration", formatDuration(envelope.timing?.durationMs));
+	add("details", "type", envelope.contentType);
+	add("details", "source", envelope.cache?.cached ? "cache hit" : "fresh fetch");
 
 	const chunks = envelope.data?.chunks as Chunk[] | undefined;
 	if (chunks?.length) {
-		addScrapeRow(groups, "chunks", "count", String(chunks.length));
-		addScrapeRow(
-			groups,
-			"chunks",
-			"tokens",
-			`${chunks.reduce((sum, chunk) => sum + chunk.tokenCount, 0)} total`,
-		);
+		add("chunks", "count", String(chunks.length));
+		add("chunks", "tokens", `${chunks.reduce((sum, chunk) => sum + chunk.tokenCount, 0)} total`);
 	}
 
 	if (envelope.error) {
 		const code = envelope.error.code;
-		addScrapeRow(groups, "error", "code", code ? (theme ? failure(code, theme) : code) : undefined);
-		addScrapeRow(groups, "error", "phase", envelope.error.phase);
-		addScrapeRow(groups, "error", "message", envelope.error.message);
+		add("error", "code", code ? (theme ? failure(code, theme) : code) : undefined);
+		add("error", "phase", envelope.error.phase);
+		add("error", "message", envelope.error.message);
 	}
 
 	if (hasHeaders) addHeaderSections(groups, envelope, headers);
@@ -177,37 +173,37 @@ function addHeaderSections(
 	envelope: Partial<ToolContext<Record<string, unknown>>>,
 	headers: Record<string, string>,
 ): void {
-	addScrapeRow(groups, "cache", "status", headers["cf-cache-status"]);
+	const add = addScrapeRow.bind(undefined, groups);
+	add("cache", "status", headers["cf-cache-status"]);
 	if (headers["age"]) {
 		const n = Number(headers["age"]);
 		const sec = Number.isFinite(n) && n >= 0 ? n : undefined;
-		addScrapeRow(groups, "cache", "age", sec !== undefined ? formatSeconds(sec) : headers["age"]);
+		add("cache", "age", sec !== undefined ? formatSeconds(sec) : headers["age"]);
 	}
 	const cc = parseCacheControl(headers["cache-control"]);
 	const cdnCc = parseCacheControl(headers["cdn-cache-control"]);
 	const fmtCc = (maxAge: number, swr: number | undefined) =>
 		`max-age ${formatSeconds(maxAge)}${swr ? `  +swr ${formatSeconds(swr)}` : ""}`;
 	const primary = cdnCc ?? cc;
-	if (primary) addScrapeRow(groups, "cache", "cdn", fmtCc(primary.maxAge, primary.swr));
+	if (primary) add("cache", "cdn", fmtCc(primary.maxAge, primary.swr));
 	if (cc?.maxAge !== undefined && (!cdnCc || cdnCc.maxAge !== cc.maxAge)) {
 		const swr = cc.swr && (!cdnCc || cdnCc.swr !== cc.swr) ? cc.swr : undefined;
-		addScrapeRow(groups, "cache", "browser", fmtCc(cc.maxAge, swr));
+		add("cache", "browser", fmtCc(cc.maxAge, swr));
 	}
 
-	addScrapeRow(groups, "server", "vendor", headers["server"]);
+	add("server", "vendor", headers["server"]);
 	if (headers["cf-ray"]) {
 		const di = headers["cf-ray"].lastIndexOf("-");
 		const ray = di !== -1 ? headers["cf-ray"].slice(0, di) : headers["cf-ray"];
 		const loc = di !== -1 ? headers["cf-ray"].slice(di + 1) : "";
-		addScrapeRow(groups, "server", "ray", `${ray}${loc ? `  \u2192  ${loc}` : ""}`);
+		add("server", "ray", `${ray}${loc ? `  \u2192  ${loc}` : ""}`);
 	}
 
-	if (headers["date"]) addScrapeRow(groups, "time", "fetched", formatHttpTime(headers["date"]));
+	if (headers["date"]) add("time", "fetched", formatHttpTime(headers["date"]));
 	if (headers["last-modified"]) {
 		const now = new Date(headers["date"] ?? Date.now()).getTime();
 		const diffSec = Math.floor((now - new Date(headers["last-modified"]).getTime()) / 1000);
-		addScrapeRow(
-			groups,
+		add(
 			"time",
 			"modified",
 			`${formatHttpTime(headers["last-modified"])}${diffSec > 0 ? `  (${formatSeconds(diffSec)} ago)` : ""}`,
@@ -216,12 +212,11 @@ function addHeaderSections(
 
 	const headerEntries = Object.entries(headers).filter(([, v]) => typeof v === "string");
 	for (const [k, v] of headerEntries)
-		addScrapeRow(groups, "headers", `${k}:`, v.length > 120 ? `${v.slice(0, 120)}...` : v);
+		add("headers", `${k}:`, v.length > 120 ? `${v.slice(0, 120)}...` : v);
 
 	const respId = envelope.responseId ?? "";
-	if (respId) addScrapeRow(groups, "trace", "response", respId.slice(0, 8));
-	if (respId || headerEntries.length > 0)
-		addScrapeRow(groups, "trace", "headers", `${headerEntries.length} total`);
+	if (respId) add("trace", "response", respId.slice(0, 8));
+	if (respId || headerEntries.length > 0) add("trace", "headers", `${headerEntries.length} total`);
 }
 
 function addScrapeRow(
