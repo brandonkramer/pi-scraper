@@ -11,14 +11,12 @@ export type ToolResultGroup = {
 
 /** Converts grouped key/value rows into non-empty result tree sections. */
 export function buildToolResultTree(groups: ToolResultGroup[]): ToolResultTreeSection[] {
-	const sections: ToolResultTreeSection[] = [];
-	for (const group of groups) {
+	return groups.flatMap((group) => {
 		const rows = group.rows
 			.filter(([, value]) => value !== undefined && value !== "")
 			.map(([key, value]) => ({ key, value: value as string }));
-		if (rows.length > 0) sections.push({ name: group.name, rows });
-	}
-	return sections;
+		return rows.length > 0 ? [{ name: group.name, rows }] : [];
+	});
 }
 
 /**
