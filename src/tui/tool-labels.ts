@@ -5,13 +5,11 @@ export const toolExpandHint = { text: "(ctrl+o to expand)", tone: "muted" as con
 export const formatChecklistText = (item: { label: string; detail?: string }): string =>
 	`${item.label}${item.detail ? ` — ${item.detail}` : ""}`;
 
-export function toolErrorLabel(
+export const toolErrorLabel = (
 	tool: string,
 	error: StructuredError,
 	options?: { allowIcons?: boolean },
-): string {
-	return `${options?.allowIcons ? "✕ " : ""}${tool} ${error.code}: ${error.message}`;
-}
+): string => `${options?.allowIcons ? "✕ " : ""}${tool} ${error.code}: ${error.message}`;
 
 export function toolFreshnessLabel(envelope: Partial<ToolContext<unknown>>): string | undefined {
 	return envelope.freshness?.stale ? "⚠ stale" : undefined;
