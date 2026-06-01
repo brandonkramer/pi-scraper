@@ -250,11 +250,10 @@ export function toolStackedCard(
 			const body = typeof options.body === "function" ? options.body(width) : options.body;
 			const lines = options.summary ? [body, "", options.summary] : [body];
 			if (options.notice) lines.push("", muted(options.notice, theme));
-			if (options.expanded) {
-				for (const section of options.expandedSections?.(width) ?? [])
-					if (section) lines.push("", section);
-				if (options.responseId) lines.push("", muted(`responseId: ${options.responseId}`, theme));
-			}
+			if (!options.expanded) return lines.join("\n");
+			for (const section of options.expandedSections?.(width) ?? [])
+				if (section) lines.push("", section);
+			if (options.responseId) lines.push("", muted(`responseId: ${options.responseId}`, theme));
 			return lines.join("\n");
 		},
 		mapLines: options.hasError
