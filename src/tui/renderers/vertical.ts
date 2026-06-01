@@ -183,9 +183,8 @@ function formatTranscriptBlock(
 		const text = (preview[i]?.text ?? "").replaceAll(/\s+/gu, " ").trim();
 		const textLines = splitValueByWidth(text, availableWidth);
 		lines.push(`  ${muted(`${connector}${time}  `, theme)}${textLines[0] ?? ""}`);
-		const continuationPrefix = (isLast ? "  " : "\u2502 ").padEnd(3 + timeWidth + 2);
 		for (const line of textLines.slice(1))
-			lines.push(`  ${muted(continuationPrefix, theme)}${line}`);
+			lines.push(`  ${muted((isLast ? "  " : "\u2502 ").padEnd(3 + timeWidth + 2), theme)}${line}`);
 	}
 	if (hasMore)
 		lines.push(
