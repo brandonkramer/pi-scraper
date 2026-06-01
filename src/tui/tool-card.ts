@@ -59,8 +59,7 @@ export function toolBatchProgressCard(
 				? renderBatchProgressText(batch, width, expanded, theme, "toolPendingBg")
 				: muted("No batch progress available.", theme);
 			const isDone = batch ? batch.completed >= batch.total : false;
-			const lines = text.split("\n");
-			return isDone ? lines.join("\n") : withSpinnerFooter(lines, details.data?.spinnerTick);
+			return isDone ? text : withSpinnerFooter(text.split("\n"), details.data?.spinnerTick);
 		},
 	});
 }
