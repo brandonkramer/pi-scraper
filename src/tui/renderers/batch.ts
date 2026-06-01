@@ -87,14 +87,13 @@ export function renderWebBatchResult(
 	const envelope = details as Partial<ToolContext<BatchItemResult[]>>;
 	const items = Array.isArray(envelope.data) ? envelope.data : [];
 	const succeeded = items.filter((item) => item.ok).length;
-	const failed = items.length - succeeded;
 	const cacheHits = items.filter((item) => item.ok && item["result"]?.cache?.cached).length;
 	const summary = envelope.error
 		? toolErrorLabel("web_batch", envelope.error, { allowIcons: true })
 		: toolStatus(
 				[
 					count.success(succeeded, "succeeded", theme),
-					count.failure(failed, "failed", theme),
+					count.failure(items.length - succeeded, "failed", theme),
 					count.activity(cacheHits, "cache hits", "\u21BB", theme),
 					toolFreshnessLabel(envelope),
 					!expanded && toolExpandHint,
