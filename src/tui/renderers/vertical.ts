@@ -111,7 +111,7 @@ function buildSourceSections(data: VerticalData, includeEndpoint = true): ToolRe
 	if (source?.videoUrl) sourceRows.push(["url", source.videoUrl]);
 	if (includeEndpoint && source?.endpoint) sourceRows.push(["endpoint", source.endpoint]);
 	if (typeof data.permalink === "string") sourceRows.push(["url", data.permalink]);
-	return sourceRows.length > 0 ? [{ name: "source", rows: sourceRows }] : [];
+	return [{ name: "source", rows: sourceRows }];
 }
 
 function renderBlockedVerticalResult(
