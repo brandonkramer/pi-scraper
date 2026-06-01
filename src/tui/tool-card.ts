@@ -240,9 +240,8 @@ type ToolStackedCardOptions = {
 	hasError?: boolean;
 };
 
-type ToolResultCardOptions = Omit<ToolStackedCardOptions, "body"> & {
+type ToolResultCardOptions = Partial<ToolStackedCardOptions> & {
 	renderContent?: (width: number) => string;
-	body?: ToolStackedCardOptions["body"];
 };
 
 export function toolStackedCard(
