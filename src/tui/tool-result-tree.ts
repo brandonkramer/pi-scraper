@@ -47,8 +47,7 @@ export function toolResultTree(
 		if (lines.length > 0) lines.push("");
 		lines.push(`  ${section.name}`);
 
-		for (let ri = 0; ri < section.rows.length; ri++) {
-			const { key, value } = section.rows[ri];
+		for (const [ri, { key, value }] of section.rows.entries()) {
 			const connector = ri === section.rows.length - 1 ? "\u2514\u2500 " : "\u251C\u2500 ";
 
 			const valueLines = splitValueByWidth(value.replaceAll(/\s+/gu, " ").trim(), availableWidth);
