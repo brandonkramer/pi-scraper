@@ -185,7 +185,8 @@ function formatTranscriptBlock(
 		const isLast = !hasMore && i === preview.length - 1;
 		const connector = isLast ? "\u2514\u2500 " : "\u251C\u2500 ";
 		const time = timestamps[i]?.padStart(timeWidth) ?? "".padStart(timeWidth);
-		const textLines = splitValueByWidth(normalizePreviewText(preview[i]?.text), availableWidth);
+		const text = (preview[i]?.text ?? "").replaceAll(/\s+/gu, " ").trim();
+		const textLines = splitValueByWidth(text, availableWidth);
 		lines.push(`  ${muted(`${connector}${time}  `, theme)}${textLines[0] ?? ""}`);
 		const continuationPrefix = (isLast ? "  " : "\u2502 ").padEnd(3 + timeWidth + 2);
 		for (const line of textLines.slice(1))
@@ -213,7 +214,7 @@ function formatCommentsBlock(
 		const isLast = !hasMore && i === preview.length - 1;
 		const connector = isLast ? "\u2514\u2500 " : "\u251C\u2500 ";
 		const label = comment.author ? `${comment.author}: ` : `${i + 1}. `;
-		const text = normalizePreviewText(comment.text);
+		const text = (comment.text ?? "").replaceAll(/\s+/gu, " ").trim();
 		const value = `${label}${text.length > 180 ? `${text.slice(0, 180)}…` : text}`;
 		const valueLines = splitValueByWidth(value, Math.max(20, width - 2 - 3));
 		lines.push(`  ${muted(connector, theme)}${valueLines[0] ?? ""}`);
@@ -250,10 +251,6 @@ function formatListBlock(
 function formatTimestamp(seconds: number): string {
 	const totalSeconds = Math.max(0, Math.floor(seconds));
 	return `${Math.floor(totalSeconds / 60)}:${(totalSeconds % 60).toString().padStart(2, "0")}`;
-}
-
-function normalizePreviewText(value: string | undefined): string {
-	return (value ?? "").replaceAll(/\s+/gu, " ").trim();
 }
 
 function blockedSource(data: unknown): BlockedSource | undefined {
