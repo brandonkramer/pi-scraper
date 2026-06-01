@@ -37,13 +37,11 @@ export function toolResultTree(
 
 		for (let ri = 0; ri < section.rows.length; ri++) {
 			const { key, value } = section.rows[ri];
-			const isLast = ri === section.rows.length - 1;
-			const connector = isLast ? "\u2514\u2500 " : "\u251C\u2500 ";
-			const paddedKey = key.padEnd(keyColWidth);
+			const connector = ri === section.rows.length - 1 ? "\u2514\u2500 " : "\u251C\u2500 ";
 
 			const valueLines = splitValueByWidth(value.replaceAll(/\s+/gu, " ").trim(), availableWidth);
 
-			const prefix = `${connector}${paddedKey}  `;
+			const prefix = `${connector}${key.padEnd(keyColWidth)}  `;
 			lines.push(`  ${muted(prefix, theme)}${valueLines[0]}`);
 
 			for (let vi = 1; vi < valueLines.length; vi++) {
