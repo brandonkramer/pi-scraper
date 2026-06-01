@@ -230,27 +230,26 @@ function formatTimestamp(seconds: number): string {
 	return `${Math.floor(totalSeconds / 60)}:${(totalSeconds % 60).toString().padStart(2, "0")}`;
 }
 
-function extractorPreview(data: unknown): string {
-	const d = data as VerticalData | undefined;
-	if (!d) return "extracted JSON";
-	const trans = d.transcript as { text?: string; segments?: unknown[] } | undefined;
+function extractorPreview(data: VerticalData | undefined): string {
+	if (!data) return "extracted JSON";
+	const trans = data.transcript as { text?: string; segments?: unknown[] } | undefined;
 	return (
 		[
-			typeof d.title === "string" && d.title ? d.title : undefined,
-			typeof d.views === "number" && d.views > 0
-				? `${(d.views / 1000000).toFixed(d.views >= 100000000 ? 0 : 1)}M views`
-				: typeof d.views === "string" && d.views
-					? `${d.views} views`
+			typeof data.title === "string" && data.title ? data.title : undefined,
+			typeof data.views === "number" && data.views > 0
+				? `${(data.views / 1000000).toFixed(data.views >= 100000000 ? 0 : 1)}M views`
+				: typeof data.views === "string" && data.views
+					? `${data.views} views`
 					: undefined,
 			trans?.segments ? `${trans.segments.length} segments` : undefined,
-			!trans?.text && typeof d.description === "string" && d.description
-				? `${d.description.replaceAll(/\s+/gu, " ").trim().slice(0, 120)}${d.description.length > 120 ? "\u2026" : ""}`
+			!trans?.text && typeof data.description === "string" && data.description
+				? `${data.description.replaceAll(/\s+/gu, " ").trim().slice(0, 120)}${data.description.length > 120 ? "\u2026" : ""}`
 				: undefined,
-			Array.isArray(d.comments) && d.comments.length > 0
-				? `${d.comments.length} comments`
+			Array.isArray(data.comments) && data.comments.length > 0
+				? `${data.comments.length} comments`
 				: undefined,
-			Array.isArray(d.transcriptTracks) && d.transcriptTracks.length > 1
-				? `${d.transcriptTracks.length} languages`
+			Array.isArray(data.transcriptTracks) && data.transcriptTracks.length > 1
+				? `${data.transcriptTracks.length} languages`
 				: undefined,
 		]
 			.filter(Boolean)
