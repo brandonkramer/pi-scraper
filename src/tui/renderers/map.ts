@@ -11,12 +11,11 @@ export function renderWebMapResult(
 	expanded = false,
 	theme?: RenderTheme,
 ): RenderComponent {
-	const details = result.details as Partial<ToolContext<unknown>>;
-	if (isProgress(details))
-		return toolProgressCard("web_map", details, theme, { allowIcons: false });
-	const envelope = details as Partial<
+	const envelope = result.details as Partial<
 		ToolContext<{ urls?: { url: string; source?: string; title?: string }[] }>
 	>;
+	if (isProgress(envelope))
+		return toolProgressCard("web_map", envelope, theme, { allowIcons: false });
 	const urls = Array.isArray(envelope.data?.urls) ? envelope.data.urls : [];
 	const summary = toolProcess(`${urls.length} URL(s)`, [!expanded && toolExpandHint], theme);
 	if (urls.length === 0)
