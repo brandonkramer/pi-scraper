@@ -33,14 +33,7 @@ export function renderWebExtractResult(
 	if (details?.freshness?.stale) extras.push("freshness: stale; refresh if time-sensitive");
 	const u = details?.modelUsage;
 	if (u) {
-		const cost =
-			typeof u.costUSD === "number"
-				? u.costUSD === 0
-					? "$0"
-					: u.costUSD < 0.0001
-						? `~$${u.costUSD.toExponential(1)}`
-						: `$${u.costUSD.toFixed(u.costUSD < 1 ? 4 : 2)}`
-				: undefined;
+		const cost = formatModelCost(u.costUSD);
 		const parts = [
 			u.provider,
 			u.model,
@@ -86,4 +79,10 @@ export function renderWebExtractResult(
 			? () => new Markdown(preview.slice(0, 800), 0, 0, toolMarkdownTheme(theme))
 			: undefined,
 	});
+}
+
+function formatModelCost(cost: number | undefined): string | undefined {
+	if (typeof cost !== "number") return;
+	if (cost === 0) return "$0";
+	return cost < 0.0001 ? `~$${cost.toExponential(1)}` : `$${cost.toFixed(cost < 1 ? 4 : 2)}`;
 }
