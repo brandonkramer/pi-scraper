@@ -140,13 +140,11 @@ function renderBlockedVerticalResult(
 				80,
 				theme,
 			);
-			const sourceBlock = data
-				? toolResultTree(
-						buildToolResultTree(buildSourceSections(data, { includeEndpoint: false })),
-						80,
-						theme,
-					)
-				: "";
+			const sourceBlock = toolResultTree(
+				buildToolResultTree(buildSourceSections(data ?? {}, { includeEndpoint: false })),
+				80,
+				theme,
+			);
 			return [treeLine(), attemptedBlock, sourceBlock].filter(Boolean).join("\n\n");
 		},
 		{ padToWidth: true },
