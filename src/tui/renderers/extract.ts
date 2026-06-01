@@ -17,16 +17,12 @@ export function renderWebExtractResult(
 	const details = result.details as Partial<ToolContext<unknown>> | undefined;
 	if (isProgress(details)) return toolProgressView("web_extract", details, theme);
 	const preview = result.content[0]?.text ?? "";
-	const numericStatus = typeof details?.status === "number" ? details.status : undefined;
+	const status = details?.status;
 	const summary =
 		details?.summary ??
 		toolStatus(
 			[
-				numericStatus !== undefined
-					? `${toolStatusDot(numericStatus, theme)} ${numericStatus}`
-					: details?.status
-						? String(details.status)
-						: "done",
+				status !== undefined ? `${toolStatusDot(status, theme)} ${status}` : "done",
 				details?.finalUrl ?? details?.url,
 				details?.responseId ? `responseId: ${details.responseId}` : undefined,
 				details?.freshness?.stale ? "stale" : undefined,
