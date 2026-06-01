@@ -16,7 +16,7 @@ import {
 import { toolProgressView, toolProgressLayout } from "../tool-progress.ts";
 import { renderResourceItemList as toolResourceList } from "../tool-resource.ts";
 import { toolResultTree } from "../tool-result-tree.ts";
-import { buildToolResultDetails, toolResultId } from "../tool-result.ts";
+import { buildToolResultDetails } from "../tool-result.ts";
 import { countSegments as count, toolStatus } from "../tool-status.ts";
 import { muted as toolNeutral } from "../tui.ts";
 import type { RenderComponent, RenderTheme } from "../types.ts";
@@ -62,19 +62,18 @@ export function renderWebCrawlLookupResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const envelope = result.details as Partial<ToolContext<unknown>>;
-	return toolProgressLayout({
-		renderContent(width) {
-			const lines = [envelope.summary ?? result.content[0].text];
-			if (!expanded) return lines.join("\n");
-			const sections = buildToolResultDetails(envelope as Record<string, unknown>);
-			const tree = toolResultTree(sections, width, theme);
-			if (tree) lines.push("", tree);
-			const ids = toolResultId([{ label: "responseId", id: envelope.responseId ?? "" }], theme);
-			if (ids.length > 0) lines.push("", ...ids);
-			return lines.join("\n");
+	return toolProgressLayout(
+		{
+			body: envelope.summary ?? result.content[0].text,
+			expanded,
+			expandedSections: (width) => [
+				toolResultTree(buildToolResultDetails(envelope as Record<string, unknown>), width, theme),
+			],
+			responseId: envelope.responseId,
+			padToWidth: true,
 		},
-		padToWidth: true,
-	});
+		theme,
+	);
 }
 
 export function renderWebCrawlResult(
