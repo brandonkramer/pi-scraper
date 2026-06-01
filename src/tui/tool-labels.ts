@@ -11,9 +11,8 @@ export const toolErrorLabel = (
 	options?: { allowIcons?: boolean },
 ): string => `${options?.allowIcons ? "✕ " : ""}${tool} ${error.code}: ${error.message}`;
 
-export function toolFreshnessLabel(envelope: Partial<ToolContext<unknown>>): string | undefined {
-	return envelope.freshness?.stale ? "⚠ stale" : undefined;
-}
+export const toolFreshnessLabel = (envelope: Partial<ToolContext<unknown>>): string | undefined =>
+	envelope.freshness?.stale ? "⚠ stale" : undefined;
 
 export function toolSessionNotice(envelope: Partial<ToolContext<unknown>>): string | undefined {
 	const notice = envelope.diagnostics?.sessionNotice;
