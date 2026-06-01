@@ -58,14 +58,12 @@ export function renderWebExtractResult(
 	return toolProgressLayout({
 		renderContent() {
 			const loaderUrl = details?.finalUrl ?? details?.url;
-			const loader = loaderUrl
-				? toolResource({
-						url: loaderUrl,
-						state: details?.error ? "error" : "done",
-						theme,
-					})
-				: "";
-			return [loader, body].filter(Boolean).join("\n\n");
+			if (!loaderUrl) return body;
+			return `${toolResource({
+				url: loaderUrl,
+				state: details?.error ? "error" : "done",
+				theme,
+			})}\n\n${body}`;
 		},
 		expanded,
 		expandedSections: (width) =>
