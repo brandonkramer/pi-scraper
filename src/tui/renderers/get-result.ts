@@ -11,13 +11,12 @@ export function renderGetResult(
 	theme?: RenderTheme,
 ): RenderComponent {
 	const details = result.details as Record<string, unknown> | undefined;
-	const hasError = !!details?.error;
 	return toolProgressLayout(
 		{
-			body: `└─ ${paintFg(theme, hasError ? "error" : "accent", hasError ? "✕ no result" : "✓ result found")}`,
+			body: `└─ ${paintFg(theme, details?.error ? "error" : "accent", details?.error ? "✕ no result" : "✓ result found")}`,
 			expanded,
 			expandedSections: (width) => [toolResultTree(buildToolResultDetails(details), width, theme)],
-			hasError,
+			hasError: !!details?.error,
 		},
 		theme,
 	);
