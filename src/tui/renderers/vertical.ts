@@ -108,14 +108,13 @@ function buildVerticalSections(
 
 function buildSourceSections(
 	data: Record<string, unknown>,
-	options: { includeEndpoint?: boolean } = {},
+	includeEndpoint = true,
 ): ToolResultGroup[] {
 	const source = data.source as SourceInfo | undefined;
 	const sourceRows: ToolResultGroup["rows"] = [];
 	if (source?.provider) sourceRows.push(["provider", source.provider]);
 	if (source?.videoUrl) sourceRows.push(["url", source.videoUrl]);
-	if (options.includeEndpoint !== false && source?.endpoint)
-		sourceRows.push(["endpoint", source.endpoint]);
+	if (includeEndpoint && source?.endpoint) sourceRows.push(["endpoint", source.endpoint]);
 	if (typeof data.permalink === "string") sourceRows.push(["url", data.permalink]);
 	return sourceRows.length > 0 ? [{ name: "source", rows: sourceRows }] : [];
 }
@@ -140,7 +139,7 @@ function renderBlockedVerticalResult(
 				theme,
 			);
 			const sourceBlock = toolResultTree(
-				buildToolResultTree(buildSourceSections(data ?? {}, { includeEndpoint: false })),
+				buildToolResultTree(buildSourceSections(data ?? {}, false)),
 				80,
 				theme,
 			);
