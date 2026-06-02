@@ -20,7 +20,7 @@ Read a single URL or content.
 | `include` | array | CSS selectors for extraction |
 | `exclude` | array | CSS selectors to remove |
 | `onlyMainContent` | boolean | Strip nav/ads/sidebars |
-| `proxy` | string \\| string[] | Single proxy or round-robin rotation |
+| `proxy` | string \\| string[] | Explicit proxy URL; arrays resolve one proxy for this scrape call |
 | `sessionId` | string | Stateful flows (cookies, login, consent) |
 | `saveSession` | boolean | Persist session |
 | `clearSession` | boolean | Reset session state |
@@ -65,11 +65,17 @@ web_scrape url="https://example.com" diff={"snapshotName":"homepage"}
 # Compare against latest baseline (any name)
 web_scrape url="https://example.com" diff=true
 
-# Proxy rotation
+# Single HTTP proxy
+web_scrape url="https://example.com" proxy="http://proxy:8080"
+
+# SOCKS5 proxy in static mode
+web_scrape url="https://example.com" mode=fast proxy="socks5://127.0.0.1:9050"
+
+# Proxy array: one proxy is selected for this scrape call
 web_scrape url="https://example.com" proxy=["http://proxy1:8080","http://proxy2:8080","http://proxy3:8080"]
 
-# Single proxy
-web_scrape url="https://example.com" proxy="http://proxy:8080"
+# Env proxy auto-config when proxy= is omitted
+HTTPS_PROXY=http://127.0.0.1:8080 NO_PROXY=localhost,127.0.0.1,.internal.example pi
 
 # RAG: token-budgeted markdown chunks
 web_scrape url="https://example.com" chunks=true maxTokens=500 overlapTokens=50
@@ -94,12 +100,14 @@ When `chunks=true`, `web_scrape` returns `chunks[]` alongside the full markdown 
 - `overlapTokens` (default 50) duplicated at chunk boundaries for context continuity
 - Shape: `{ text, tokenCount, index }[]`
 
-## Proxy Pools & Health Tracking
+## Proxy configuration
 
-To bypass rate limits, geo-blocks, and IP bans, `pi-scraper` supports a robust proxy pool across both `web_scrape` and `web_crawl`:
-- **Syntax**: Pass a single proxy string or an array of string URLs: `proxy=["http://proxy1:8080", "http://proxy2:8080"]`.
-- **Health Management**: The built-in proxy pool rotates addresses round-robin. It actively monitors request status; any failed request initiates a **60-second cooldown** for that proxy, and **3 consecutive failures** flags the proxy as unhealthy, removing it from rotation.
-- **TLS Fingerprint Integration**: Proxy pools and rotation are fully compatible with bot-bypass TLS fingerprinting (`mode=fingerprint`).
+- **Explicit proxy wins**: `proxy="http://proxy:8080"` overrides environment variables.
+- **Env auto-config**: when `proxy` is omitted, `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` are used based on the target scheme. `NO_PROXY` bypasses env-derived proxies.
+- **Static-mode schemes**: `fast` and `readable` support `http://`, `https://`, `socks5://`, `socks://`, and `socks4://` proxy URLs.
+- **Local DNS for SOCKS**: SOCKS target hostnames are resolved locally before CONNECT so SSRF checks still see the destination IPs. `socks5h://` and `socks4a://` are rejected because they require proxy-side DNS.
+- **Fingerprint caveat**: `mode=fingerprint` works with HTTP(S) proxies. SOCKS proxies are only accepted for literal-IP targets; hostname targets fail closed.
+- **Arrays**: `web_scrape proxy=[...]` picks one proxy for this single scrape call. Use `web_crawl proxy=[...]` for per-page rotation.
 
 ## Rules
 

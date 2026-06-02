@@ -25,7 +25,7 @@ Inferred from params or explicit `action=`.
 | `seedSitemap` | boolean | Seed from sitemap URLs |
 | `mode` | enum | Scrape mode for each page |
 | `strategy` | enum | `bfs` (default), `dfs`, or `best-first` |
-| `proxy` | string \| string[] | Single proxy or rotate across multiple |
+| `proxy` | string \| string[] | Single proxy for whole crawl, or array rotated per page |
 | `include` | string[] | URL patterns to include |
 | `exclude` | string[] | URL patterns to exclude |
 | `extract` | string | `api-surface` to build API module index |
@@ -51,8 +51,11 @@ web_crawl url="https://example.com/docs" maxPages=50 strategy=best-first maxDept
 # DFS crawl (depth-first)
 web_crawl url="https://example.com" maxPages=20 strategy=dfs
 
-# Proxy rotation
+# Per-page proxy rotation: page requests use proxy1, proxy2, proxy1, proxy2...
 web_crawl url="https://example.com" maxPages=20 proxy=["http://proxy1:8080","http://proxy2:8080"]
+
+# SOCKS proxy in static modes
+web_crawl url="https://example.com" maxPages=20 mode=fast proxy=["socks5://127.0.0.1:9050","http://proxy2:8080"]
 
 # With API surface extraction
 web_crawl url="https://example.com/docs" maxPages=20 extract=api-surface
@@ -79,12 +82,14 @@ When using `web_crawl` to explore websites and build local datasets or context p
 
 The active crawl strategy is displayed directly in the TUI progress status line.
 
-## Proxy Pools & Health Tracking
+## Proxy configuration
 
-To bypass rate limits, geo-blocks, and IP bans, `pi-scraper` supports a robust proxy pool across both `web_scrape` and `web_crawl`:
-- **Syntax**: Pass a single proxy string or an array of string URLs: `proxy=["http://proxy1:8080", "http://proxy2:8080"]`.
-- **Health Management**: The built-in proxy pool rotates addresses round-robin. It actively monitors request status; any failed request initiates a **60-second cooldown** for that proxy, and **3 consecutive failures** flags the proxy as unhealthy, removing it from rotation.
-- **TLS Fingerprint Integration**: Proxy pools and rotation are fully compatible with bot-bypass TLS fingerprinting (`mode=fingerprint`).
+- **Single proxy**: `proxy="http://proxy:8080"` uses the same explicit proxy for every page.
+- **Per-page rotation**: `proxy=["a", "b", "c"]` resolves before each page scrape, producing `a, b, c, a, b` over five pages.
+- **Env auto-config**: when `proxy` is omitted, each page can use `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` based on target scheme; `NO_PROXY` bypasses env-derived proxies.
+- **Static-mode schemes**: `fast` and `readable` support `http://`, `https://`, `socks5://`, `socks://`, and `socks4://` proxy URLs.
+- **Local DNS for SOCKS**: SOCKS target hostnames are resolved locally before CONNECT for SSRF validation. `socks5h://` and `socks4a://` are rejected.
+- **Fingerprint caveat**: prefer HTTP(S) proxies in `mode=fingerprint`; SOCKS hostname targets fail closed.
 
 ## Rules
 
@@ -94,5 +99,5 @@ To bypass rate limits, geo-blocks, and IP bans, `pi-scraper` supports a robust p
 - Use `extract=api-surface` for documentation sites to build a module index.
 - `strategy=best-first` prioritizes pages with the highest structural/index value using a custom structural scoring algorithm.
 - `strategy=dfs` goes deep before wide (LIFO/stack frontier); useful for nested documentation trees.
-- `proxy` can be a single URL (`"http://proxy:8080"`) or an array for round-robin rotation with failure-based cooldown and health filtering.
+- `proxy` can be a single URL (`"http://proxy:8080"`) for the whole crawl or an array for per-page round-robin rotation.
 - Crawl progress text now shows the active strategy (BFS, DFS, best-first).

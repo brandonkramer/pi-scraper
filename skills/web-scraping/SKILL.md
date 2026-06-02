@@ -31,6 +31,15 @@ Each tool has a reference with full args, examples, and rules.
 | `web_extract` | Vertical/pattern/selector/strategy/adhoc extraction | [ref](references/tools/web_extract.md) |
 | `web_get_result` | Retrieve stored result by responseId/jobId/snapshot | [ref](references/tools/web_get_result.md) |
 
+## Proxy quick rules
+
+- Omit `proxy` to use standard environment variables: `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY`; `NO_PROXY` bypasses env-derived proxies.
+- Explicit `proxy` always wins over env vars.
+- Static fetch modes (`fast`, `readable`) support `http://`, `https://`, `socks5://`, `socks://`, and `socks4://` proxy URLs. SOCKS targets are resolved locally before CONNECT for SSRF validation.
+- Reject `socks5h://`/`socks4a://`; proxy-side DNS would bypass local DNS/SSRF checks.
+- `web_crawl proxy=[...]` rotates per page (`a,b,c,a,b`). `web_scrape proxy=[...]` resolves one proxy for that single scrape call.
+- `mode=fingerprint` works with HTTP(S) proxies; SOCKS proxies are only safe for literal-IP targets, so hostname targets fail closed with guidance.
+
 ## Vertical extractors
 
 Use `web_extract action=vertical extractor=<name> url=<url>` — bypasses HTML scraping via site APIs.

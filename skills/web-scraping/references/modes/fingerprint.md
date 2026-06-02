@@ -37,6 +37,13 @@ web_scrape url="https://example.com/consent" mode=fingerprint sessionId="my-site
 web_scrape url="https://example.com/dashboard" mode=fingerprint sessionId="my-site"
 ```
 
+## Proxy notes
+
+- HTTP(S) proxies work in `mode=fingerprint`.
+- SOCKS proxies are accepted only for literal-IP targets. Hostname targets fail closed because fingerprint mode would require proxy-side DNS there.
+- If you need SOCKS for hostname targets, use `mode=fast` or `mode=readable`; those modes resolve target DNS locally before CONNECT and preserve SSRF validation.
+- `socks5h://` and `socks4a://` are intentionally rejected.
+
 ## Limitations
 
 - No JS execution — SPAs still need `browser` mode

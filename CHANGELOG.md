@@ -2,6 +2,24 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [0.11.0] - 2026-06-02
+
+### Added
+
+- **Env-var proxy auto-config** — `web_scrape`, `web_crawl`, static scraping, browser, and fingerprint paths can derive proxies from `HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`, and lowercase variants when no explicit `proxy` parameter is provided. `NO_PROXY` supports wildcard, domain/subdomain, port-scoped, and IPv6 bypass rules.
+- **Per-page crawl proxy rotation** — `web_crawl proxy=[...]` now resolves a proxy before each page scrape, so crawl pages rotate `a, b, c, a, b` instead of pinning one proxy for the whole crawl.
+- **SOCKS proxy support for static fetches** — `fast` and `readable` modes support `socks5://`, `socks://`, and `socks4://` proxies in addition to HTTP(S) proxies.
+
+### Changed
+
+- **Proxy documentation and bundled skill guidance** — README and `web-scraping` skill references now describe env proxy auto-config, per-page crawl rotation, SOCKS support, and fingerprint-mode SOCKS caveats.
+
+### Fixed
+
+- **Proxy SSRF/DNS hardening** — SOCKS target hostnames are resolved locally before CONNECT so connect-time SSRF validation sees destination IPs; proxy-side DNS schemes (`socks5h://`, `socks4a://`) are rejected.
+- **Fingerprint SOCKS fail-closed behavior** — fingerprint mode rejects SOCKS proxies for hostname targets before constructing the backend, avoiding unvalidated proxy-side DNS.
+- **Env proxy precedence** — env-derived proxies no longer override injected dispatchers, explicit `proxy` still wins, and `NO_PROXY` host:default-port rules are honored.
+
 ## [0.10.1] - 2026-06-01
 
 ### Added
