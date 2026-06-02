@@ -1,11 +1,14 @@
 /** @file Http fingerprint-adapter module. */
+import { isIP } from "node:net";
+
 import { DEFAULT_MAX_BYTES, DEFAULT_TIMEOUT_SECONDS, DEFAULT_USER_AGENT } from "../../defaults.ts";
 import type { FetchUrlResult, HttpClientOptions } from "../client.ts";
 import { HttpClient } from "../client.ts";
 import { normalizeHeaders } from "../download.ts";
-import { httpClientErrorFromUnknown } from "../errors.ts";
+import { HttpClientError, httpClientErrorFromUnknown } from "../errors.ts";
 import { PolitenessController } from "../politeness.ts";
 import { resolveEnvProxyForUrl } from "../proxy-config.ts";
+import { isSocksProxyUrl, validateProxyUrl } from "../proxy-dispatcher.ts";
 import { followRedirects } from "../redirects.ts";
 import { fetchWithRequestPolicy } from "../request-policy.ts";
 import { materializeFetchBufferResponse, materializeFetchStreamResponse } from "../response.ts";
@@ -94,7 +97,9 @@ export class SafeFingerprintAdapter implements FingerprintFetchAdapter {
 		const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
 		const { signal, cleanup } = withTimeout(parentSignal, timeoutMs);
 		try {
-			const effectiveProxy = options.proxy ?? resolveEnvProxyForUrl(safe.normalizedUrl);
+			const requestedProxy =
+				options.proxy ?? resolveEnvProxyForUrl(safe.normalizedUrl) ?? this.profile.proxy;
+			const effectiveProxy = validateFingerprintProxy(requestedProxy, safe.url);
 			const backend = await this.backendFor(safe.url.host, effectiveProxy);
 			const secondSafe = await revalidateDns(safe, this.clientOptions);
 
@@ -236,6 +241,43 @@ function fingerprintFetchError(error: unknown, url: string, options: Fingerprint
 		phase: "fingerprint",
 		message: "Fingerprint fetch failed",
 	});
+}
+
+function validateFingerprintProxy(proxy: string | undefined, targetUrl: URL): string | undefined {
+	if (!proxy) {
+		return undefined;
+	}
+	const proxyUrl = validateProxyUrl(proxy);
+	if (!isSocksProxyUrl(proxyUrl)) {
+		return proxy;
+	}
+
+	const targetHost = stripIpv6Brackets(targetUrl.hostname);
+	const targetFamily = isIP(targetHost);
+	if (targetFamily === 0) {
+		throw new HttpClientError({
+			code: "UNSUPPORTED_PROXY_SCHEME",
+			phase: "proxy",
+			message:
+				"SOCKS proxies in fingerprint mode require proxy-side DNS for hostname targets; use mode: 'fast'/'readable' or an HTTP(S) proxy.",
+			retryable: false,
+			url: targetUrl.toString(),
+		});
+	}
+	if (proxyUrl.protocol === "socks4:" && targetFamily !== 4) {
+		throw new HttpClientError({
+			code: "UNSUPPORTED_PROXY_SCHEME",
+			phase: "proxy",
+			message: "SOCKS4 proxies in fingerprint mode only support IPv4 target URLs.",
+			retryable: false,
+			url: targetUrl.toString(),
+		});
+	}
+	return proxy;
+}
+
+function stripIpv6Brackets(hostname: string): string {
+	return hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
 }
 
 function browserHeaders(

@@ -28,6 +28,11 @@ function allowRobots(agent: MockAgent, origin: string): void {
 	agent.get(origin).intercept({ path: "/robots.txt" }).reply(404, "");
 }
 
+function resolverResultAt<T>(values: readonly [T, T], index: number): T {
+	const [first, second] = values;
+	return index <= 0 ? first : second;
+}
+
 describe("fingerprint fetch adapter", () => {
 	it("uses an injected single-hop backend and pools it by profile and host", async () => {
 		const agent = mockAgent();
@@ -81,7 +86,8 @@ describe("fingerprint fetch adapter", () => {
 		const dummy = registerFingerprintBackendFactory(() => {
 			throw new Error("should not be called");
 		});
-		dummy(); // Remove the auto-registered impit backend
+		// Remove the auto-registered impit backend.
+		dummy();
 		expect(() => getFingerprintFetchAdapter()).toThrow(
 			expect.objectContaining({
 				structured: expect.objectContaining({
@@ -136,6 +142,36 @@ describe("fingerprint fetch adapter", () => {
 			respectRobots: false,
 		});
 		expect(result.status).toBe(200);
+	});
+
+	it("rejects unsupported proxy schemes before invoking fingerprint backend", async () => {
+		const backend = { fetchOnce: vi.fn() };
+		const adapter = createFingerprintFetchAdapter(() => backend, {}, { resolveDns: false });
+
+		await expect(
+			adapter.fetch("https://example.com/", {
+				proxy: "socks5h://127.0.0.1:1080",
+				respectRobots: false,
+			}),
+		).rejects.toMatchObject({
+			structured: { code: "UNSUPPORTED_PROXY_SCHEME", phase: "proxy" },
+		});
+		expect(backend.fetchOnce).not.toHaveBeenCalled();
+	});
+
+	it("rejects SOCKS fingerprint proxies for hostname targets before invoking backend", async () => {
+		const backend = { fetchOnce: vi.fn() };
+		const adapter = createFingerprintFetchAdapter(() => backend, {}, { resolveDns: false });
+
+		await expect(
+			adapter.fetch("https://example.com/", {
+				proxy: "socks5://127.0.0.1:1080",
+				respectRobots: false,
+			}),
+		).rejects.toMatchObject({
+			structured: { code: "UNSUPPORTED_PROXY_SCHEME", phase: "proxy" },
+		});
+		expect(backend.fetchOnce).not.toHaveBeenCalled();
 	});
 
 	it("blocks unsafe initial URLs before invoking the backend", async () => {
@@ -207,7 +243,18 @@ describe("fingerprint fetch adapter", () => {
 	});
 
 	it("detects DNS rebinding when injected resolver returns different IPs", async () => {
-		let callCount = 0;
+		let resolverIndex = 0;
+		const publicSafeUrl = {
+			url: new URL("https://rebinding.example/"),
+			normalizedUrl: "https://rebinding.example/",
+			checkedAddresses: ["93.184.216.34"],
+		};
+		const privateSafeUrl = {
+			url: new URL("https://rebinding.example/"),
+			normalizedUrl: "https://rebinding.example/",
+			checkedAddresses: ["127.0.0.1"],
+		};
+		const resolverResults = [publicSafeUrl, privateSafeUrl] as const;
 		const backend: FingerprintRequestBackend = {
 			fetchOnce: vi.fn(async () => ({
 				status: 200,
@@ -221,21 +268,7 @@ describe("fingerprint fetch adapter", () => {
 			{
 				resolveDns: true,
 				allowPrivateNetwork: false,
-				resolver: async () => {
-					callCount++;
-					if (callCount === 1) {
-						return {
-							url: new URL("https://rebinding.example/"),
-							normalizedUrl: "https://rebinding.example/",
-							checkedAddresses: ["93.184.216.34"],
-						};
-					}
-					return {
-						url: new URL("https://rebinding.example/"),
-						normalizedUrl: "https://rebinding.example/",
-						checkedAddresses: ["127.0.0.1"],
-					};
-				},
+				resolver: async () => resolverResultAt(resolverResults, resolverIndex++),
 			},
 		);
 

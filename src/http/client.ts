@@ -211,52 +211,52 @@ export class HttpClient {
 		const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
 		const { signal, cleanup } = withTimeout(parentSignal, timeoutMs);
 
-		// Session support: load cookies for this request
-		const session = options.sessionId
-			? await getOrCreateSession(options.sessionId, this.options.storage)
-			: undefined;
-		const urlObj = new URL(url);
-		const cookieHeader = options.cookies
-			? Object.entries(options.cookies)
-					.map(([name, value]) => `${name}=${value}`)
-					.join("; ")
-			: "";
-		const mergedHeaders = mergeSessionHeaders(
-			session,
-			urlObj.hostname,
-			urlObj.pathname,
-			urlObj.protocol === "https:" ? "https" : "http",
-			options.headers,
-		);
-		if (cookieHeader) {
-			mergedHeaders["cookie"] = mergedHeaders["cookie"]
-				? `${mergedHeaders["cookie"]}; ${cookieHeader}`
-				: cookieHeader;
-		}
-
-		// Normalize all header keys to lowercase to prevent HTTP/2
-		// ERR_HTTP2_HEADER_SINGLE_VALUE when user-supplied headers use different
-		// casing (e.g. "User-Agent") than the default lowercased keys. The spread
-		// only deduplicates identical keys in the JavaScript object, but "user-agent"
-		// and "User-Agent" are distinct JS keys — HTTP/2 lowercases them both,
-		// producing a duplicate header value.
-		const lowerHeaders: Record<string, string> = {};
-		for (const [key, value] of Object.entries(mergedHeaders)) {
-			lowerHeaders[key.toLowerCase()] = value;
-		}
-
-		// Use explicit proxy, then env-derived proxy (only when no custom dispatcher was injected), then default dispatcher
-		const hasExplicitProxy = options.proxy && options.proxy.length > 0;
-		const effectiveProxy = hasExplicitProxy
-			? options.proxy
-			: this.options.dispatcher
-				? undefined
-				: resolveEnvProxyForUrl(url);
-		const effectiveDispatcher = effectiveProxy
-			? createProxyDispatcher(effectiveProxy)
-			: this.dispatcher;
-
 		try {
+			// Session support: load cookies for this request
+			const session = options.sessionId
+				? await getOrCreateSession(options.sessionId, this.options.storage)
+				: undefined;
+			const urlObj = new URL(url);
+			const cookieHeader = options.cookies
+				? Object.entries(options.cookies)
+						.map(([name, value]) => `${name}=${value}`)
+						.join("; ")
+				: "";
+			const mergedHeaders = mergeSessionHeaders(
+				session,
+				urlObj.hostname,
+				urlObj.pathname,
+				urlObj.protocol === "https:" ? "https" : "http",
+				options.headers,
+			);
+			if (cookieHeader) {
+				mergedHeaders["cookie"] = mergedHeaders["cookie"]
+					? `${mergedHeaders["cookie"]}; ${cookieHeader}`
+					: cookieHeader;
+			}
+
+			// Normalize all header keys to lowercase to prevent HTTP/2
+			// ERR_HTTP2_HEADER_SINGLE_VALUE when user-supplied headers use different
+			// casing (e.g. "User-Agent") than the default lowercased keys. The spread
+			// only deduplicates identical keys in the JavaScript object, but "user-agent"
+			// and "User-Agent" are distinct JS keys — HTTP/2 lowercases them both,
+			// producing a duplicate header value.
+			const lowerHeaders: Record<string, string> = {};
+			for (const [key, value] of Object.entries(mergedHeaders)) {
+				lowerHeaders[key.toLowerCase()] = value;
+			}
+
+			// Use explicit proxy, then env-derived proxy (only when no custom dispatcher was injected), then default dispatcher
+			const hasExplicitProxy = options.proxy && options.proxy.length > 0;
+			const effectiveProxy = hasExplicitProxy
+				? options.proxy
+				: this.options.dispatcher
+					? undefined
+					: resolveEnvProxyForUrl(url);
+			const effectiveDispatcher = effectiveProxy
+				? createProxyDispatcher(effectiveProxy, this.options)
+				: this.dispatcher;
+
 			const response = await request(url, {
 				method: options.method ?? "GET",
 				body: options.body,

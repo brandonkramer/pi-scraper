@@ -1,7 +1,11 @@
 /** @file Impit backend for mode: "fingerprint". */
 
+import { isIP } from "node:net";
+
 import { Impit, type Browser } from "impit";
 
+import { HttpClientError } from "../errors.ts";
+import { isSocksProxyUrl, validateProxyUrl } from "../proxy-dispatcher.ts";
 import {
 	UnsupportedFingerprintOptionError,
 	type FingerprintBackendFactory,
@@ -76,12 +80,13 @@ export async function makeImpitBackend(
 	createImpit?: ImpitConstructor,
 ): Promise<FingerprintRequestBackend> {
 	const browserName = resolveBrowserProfile(key.browserProfile);
+	const proxyUrl = validateImpitProxy(key.proxy, key.host);
 	const ImpitCtor = (createImpit ?? Impit) as ImpitConstructor;
 	const impit = new ImpitCtor({
 		browser: browserName,
 		followRedirects: false,
 		maxRedirects: 0,
-		proxyUrl: key.proxy,
+		proxyUrl,
 		// impit does not expose a cookie jar interface compatible with our
 		// session layer; cookies travel via explicit request headers.
 	});
@@ -109,6 +114,48 @@ export async function makeImpitBackend(
 }
 
 export const impitBackendFactory: FingerprintBackendFactory = (key) => makeImpitBackend(key);
+
+function validateImpitProxy(proxy: string | undefined, targetHost: string): string | undefined {
+	if (!proxy) {
+		return undefined;
+	}
+	const proxyUrl = validateProxyUrl(proxy);
+	if (!isSocksProxyUrl(proxyUrl)) {
+		return proxy;
+	}
+
+	const targetFamily = isIP(stripIpv6Brackets(hostnameFromKeyHost(targetHost)));
+	if (targetFamily === 0) {
+		throw new HttpClientError({
+			code: "UNSUPPORTED_PROXY_SCHEME",
+			phase: "proxy",
+			message:
+				"SOCKS proxies in fingerprint mode require proxy-side DNS for hostname targets; use mode: 'fast'/'readable' or an HTTP(S) proxy.",
+			retryable: false,
+		});
+	}
+	if (proxyUrl.protocol === "socks4:" && targetFamily !== 4) {
+		throw new HttpClientError({
+			code: "UNSUPPORTED_PROXY_SCHEME",
+			phase: "proxy",
+			message: "SOCKS4 proxies in fingerprint mode only support IPv4 target URLs.",
+			retryable: false,
+		});
+	}
+	return proxy;
+}
+
+function hostnameFromKeyHost(host: string): string {
+	try {
+		return new URL(`https://${host}`).hostname;
+	} catch {
+		return host;
+	}
+}
+
+function stripIpv6Brackets(hostname: string): string {
+	return hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
+}
 
 function resolveBrowserProfile(profile: string): Browser {
 	const mapped = BROWSER_PROFILE_MAP[profile];

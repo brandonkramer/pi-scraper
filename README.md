@@ -77,7 +77,7 @@ Ask naturally; Pi can choose the right web tool automatically:
 | **Extract** | `action`, `extractor`, `prompt`, `schema`, `selector`, `selectorType`, `attribute`, `adaptive`, `bullets`, `sentences`, `identifier`, `autoSave`, `threshold`, `extractSchema` | Vertical, ad-hoc (with `grounded[]` source spans), and selector extraction. |
 | **Patterns** | `markers`, `contains`, `excerpts`, `regexes`, `sections`, `jsonPaths`, `sourceFormat`, `length` | Deterministic inspection: strings, regex, and ranges. |
 | **Strategy Extraction** | `selectors` (field→selector map), `query`, `topN`, `minScore`, `flags` | New: css-extract, xpath-extract, regex-extract, cosine |
-| **Proxy** | `proxy` | String (single) or string[] (round-robin rotation) |
+| **Proxy** | `proxy`; `HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY`; `NO_PROXY` | Explicit proxy URL, proxy arrays for crawl rotation, or env-var auto-config when `proxy` is omitted. |
 | **Map** | `url`, `maxSitemaps` | Site-wide discovery of robots.txt and sitemaps. |
 | **Storage** | `saveToFile` | `true` or `{dir, filename, maxBytes}` for disk storage. |
 | **Retrieval** | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag` | Retrieve stored payloads and job manifests. |
@@ -101,26 +101,64 @@ web_scrape({ url: "https://example.com/dashboard", sessionId: "user-1" })
 
 ---
 
-## 🛡️ Proxy Pools & Health Tracking
+## 🛡️ Proxy Configuration
 
-To bypass rate limits, geographic restrictions, and target blocks, `pi-scraper` features a built-in proxy pool engine that manages rotating request routing across both `web_scrape` and `web_crawl`:
+`pi-scraper` can route requests through explicit proxy URLs or standard proxy environment variables. SSRF protection still runs before network I/O and on redirects; SOCKS target hostnames are resolved locally before CONNECT so private/reserved addresses can still be blocked.
 
-- **Array-Based Rotation**: Pass a single proxy string or an array of multiple proxy strings: `proxy=["http://proxy1:8080", "http://proxy2:8080"]`. Requests are automatically distributed round-robin.
-- **Failover Cooldowns**: When a proxy encounter a network error or block, the engine immediately initiates a **60-second cooldown** for that proxy, preventing it from being used and letting other proxies take over.
-- **Unhealthy Pruning**: If a proxy experiences **3 consecutive failures**, it is flagged as unhealthy and removed from the active rotation entirely.
-- **TLS Fingerprint Compatibility**: Rotating proxies work seamlessly with TLS fingerprinting (`mode="fingerprint"`) for robust, light-weight anti-bot bypasses.
+### Explicit `proxy`
+
+Pass `proxy` when you want a specific route for a call:
 
 ```text
-// Example: Scrape using rotating proxies with built-in health tracking
 web_scrape({
   url: "https://example.com",
+  proxy: "http://proxy.example:8080"
+})
+```
+
+Supported proxy URL schemes for static fetch modes (`fast` and `readable`):
+
+- `http://` and `https://` HTTP proxy URLs.
+- `socks5://` and `socks://` SOCKS5 proxy URLs.
+- `socks4://` SOCKS4 proxy URLs. SOCKS4 requires an IPv4 DNS result for the target.
+
+`pi-scraper` intentionally rejects `socks5h://` and `socks4a://`: those schemes require proxy-side DNS, which would bypass local DNS/SSRF validation.
+
+`mode: "fingerprint"` can use HTTP(S) proxies. SOCKS proxies are accepted only for literal-IP targets; hostname targets fail closed with guidance to use `fast`/`readable` or an HTTP(S) proxy.
+
+### Env-var proxy auto-config
+
+When `proxy` is omitted, `pi-scraper` automatically checks standard environment variables:
+
+- `https://` targets: `HTTPS_PROXY` → `https_proxy` → `ALL_PROXY` → `all_proxy`.
+- `http://` targets: `HTTP_PROXY` → `http_proxy` → `ALL_PROXY` → `all_proxy`.
+
+`NO_PROXY` / `no_proxy` bypasses env-derived proxies. It supports `*`, comma-separated host rules, domains and subdomains (`example.com`, `.example.com`), `host:port` including default ports, and IPv6 hosts with or without brackets.
+
+```bash
+HTTPS_PROXY=http://127.0.0.1:8080 \
+NO_PROXY=localhost,127.0.0.1,.internal.example \
+pi
+```
+
+An explicit `proxy` parameter always wins over env vars.
+
+### Per-page crawl proxy rotation
+
+`web_crawl` accepts a proxy array and resolves a proxy before each page scrape. For example, five pages with `proxy: ["a", "b", "c"]` use `a, b, c, a, b`.
+
+```text
+web_crawl({
+  url: "https://docs.example.com",
+  maxPages: 25,
   proxy: [
     "http://proxy-us.example:8080",
-    "http://proxy-eu.example:8080",
-    "http://proxy-as.example:8080"
+    "socks5://127.0.0.1:9050"
   ]
 })
 ```
+
+Single-string `proxy` keeps one proxy for the crawl. Omitting `proxy` uses env-var auto-config when available, otherwise direct fetches.
 
 ---
 
@@ -249,7 +287,7 @@ To persist an authenticated login flow:
 |--------|------|-------------|
 | `timezone` | string | IANA timezone (e.g. `"America/New_York"`). Set via binary flag — undetectable. |
 | `locale` | string | BCP 47 locale (e.g. `"en-US"`). Set via `--lang` binary flag. |
-| `proxy` | string | HTTP or SOCKS5 proxy URL. |
+| `proxy` | string | Browser backend proxy URL. Static fetch proxy schemes and env-var behavior are documented in the Proxy Configuration section above. |
 
 These are safe to set even with the Playwright backend (ignored or applied via JS patches).
 

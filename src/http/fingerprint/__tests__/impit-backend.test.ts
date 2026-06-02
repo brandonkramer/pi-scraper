@@ -254,4 +254,52 @@ describe("impit backend factory", () => {
 			}),
 		).rejects.toBeInstanceOf(UnsupportedFingerprintOptionError);
 	});
+
+	it("rejects unsupported proxy schemes before constructing Impit", async () => {
+		const mock = makeMockImpit({
+			status: 200,
+			statusText: "OK",
+			headers: new Headers(),
+			body: streamFromString("ok"),
+			url: "https://example.com/",
+		});
+
+		await expect(
+			makeImpitBackend(
+				{
+					browserProfile: "chrome",
+					osProfile: "default",
+					host: "example.com",
+					proxy: "socks5h://127.0.0.1:1080",
+				},
+				mock,
+			),
+		).rejects.toMatchObject({
+			structured: { code: "UNSUPPORTED_PROXY_SCHEME", phase: "proxy" },
+		});
+	});
+
+	it("rejects SOCKS proxies for hostname targets before constructing Impit", async () => {
+		const mock = makeMockImpit({
+			status: 200,
+			statusText: "OK",
+			headers: new Headers(),
+			body: streamFromString("ok"),
+			url: "https://example.com/",
+		});
+
+		await expect(
+			makeImpitBackend(
+				{
+					browserProfile: "chrome",
+					osProfile: "default",
+					host: "example.com",
+					proxy: "socks5://127.0.0.1:1080",
+				},
+				mock,
+			),
+		).rejects.toMatchObject({
+			structured: { code: "UNSUPPORTED_PROXY_SCHEME", phase: "proxy" },
+		});
+	});
 });
