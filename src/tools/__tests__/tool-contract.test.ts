@@ -13,13 +13,15 @@ const expectedNames = [
 	"web_get_result",
 ] as const;
 
+// Ceilings ratcheted to measured actuals + ~10% headroom so contract creep trips
+// CI. Re-baseline here only with a matching eval run when a contract intentionally grows.
 const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
-	web_scrape: 500,
-	web_crawl: 330,
-	web_map: 180,
-	web_batch: 230,
-	web_extract: 860,
-	web_get_result: 160,
+	web_scrape: 260,
+	web_crawl: 175,
+	web_map: 60,
+	web_batch: 165,
+	web_extract: 430,
+	web_get_result: 70,
 };
 
 const scrapeOnlyFields = [
@@ -60,7 +62,7 @@ describe("web tool contracts", () => {
 			tokens: approximateTokens(serializeContract(tool).length),
 		}));
 		const totalTokens = contractStats.reduce((total, stat) => total + stat.tokens, 0);
-		expect(totalTokens).toBeLessThanOrEqual(2220);
+		expect(totalTokens).toBeLessThanOrEqual(1080);
 		for (const stat of contractStats) {
 			const name = stat.name as (typeof expectedNames)[number];
 			expect(stat.tokens).toBeLessThanOrEqual(perToolTokenCeilings[name]);

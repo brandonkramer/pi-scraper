@@ -16,7 +16,8 @@ async function main() {
 	const inputText = await readStdin();
 	const input = parseInput(inputText);
 	const toolNames = input.tools.map((tool) => tool.name);
-	const prompt = buildPrompt(input, toolNames);
+	const noCues = Boolean(process.env.PI_TOOL_SELECTION_NO_CUES);
+	const prompt = buildPrompt(input, toolNames, noCues);
 	const result = spawnSync(piBinary(), piArgs(prompt), {
 		cwd: process.cwd(),
 		encoding: "utf8",
@@ -62,27 +63,28 @@ function parseInput(text) {
 	}
 }
 
-function buildPrompt(input, toolNames) {
+function buildPrompt(input, toolNames, noCues) {
 	const actualToolHint = Array.isArray(toolNames)
 		? toolNames.map(String).join(" | ")
 		: String(toolNames);
-	return `You are evaluating pi-scraper tool selection.
+	const header = `You are evaluating pi-scraper tool selection.
 Choose at most one tool for each fixture. Do not execute tools.
 Choose by user intent even when a fixture says "this site", "this page", "homepage", or "arbitrary page" without an explicit URL.
 Use null for multi-source search/research, open-ended research, or unrelated prompts.
 Return ONLY valid JSON, no markdown, in this shape:
-{"predictions":[{"id":"fixture id","actualTool":"${actualToolHint} | null","actualArgs":{}}]}
+{"predictions":[{"id":"fixture id","actualTool":"${actualToolHint} | null","actualArgs":{}}]}`;
+	// Routing cues leak the answer; cues-off mode measures contract quality alone.
+	const cues = `
 
 Routing cues:
-- web_scrape: read/fetch/extract one URL page.
-- web_summarize: summarize one URL or provided page content; not multi-source research.
+- web_scrape: read/fetch/extract one URL page; diff a URL against a saved snapshot.
 - web_crawl: crawl/follow links, read pages, depth, crawl status/list/resume.
 - web_map: robots/sitemaps/llms URL discovery only; no page body reading.
 - web_batch: multiple independent URLs and per-URL failures.
-- web_diff: compare a URL/page with a saved snapshot.
-- web_extract: vertical deterministic known-site/docsite extraction, arbitrary adhoc JSON/schema extraction, regex, excerpts, markers.
+- web_extract: vertical deterministic known-site/docsite extraction; adhoc JSON/schema extraction; pattern regex/excerpts/markers; selector/css/xpath/regex/cosine field extraction; api surface; page summaries.
 - web_get_result: retrieve responseId or jobId.
-For web_extract actualArgs.action: vertical for deterministic docs/docsite/MDN/Docusaurus/GitHub/npm known-site pages; pattern for regex/excerpts/markers; adhoc only for arbitrary custom schema extraction; list for listing extractors.
+For web_extract actualArgs.action: vertical for deterministic docs/docsite/MDN/Docusaurus/GitHub/npm known-site pages; pattern for regex/excerpts/markers; selector/css-extract/xpath-extract/regex-extract for selector-based field extraction; cosine for semantic passage ranking; surface for api signatures; summarize for page summaries; adhoc only for arbitrary custom schema extraction; list for listing extractors.`;
+	return `${header}${noCues ? "" : cues}
 
 Eval input JSON:
 ${JSON.stringify(input)}`;

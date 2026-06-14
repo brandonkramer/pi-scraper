@@ -73,6 +73,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Tool contract + selection gate
+        run: npm run test:selection
+
       - name: Tool smoke
         run: npm run test:tools
 

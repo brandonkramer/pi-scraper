@@ -497,6 +497,121 @@
 		]
 	},
 	{
+		"id": "extract-selector-css-title",
+		"prompt": "Extract every article title from https://example.com/blog using the CSS selector h2.post-title.",
+		"expectedTool": "web_extract",
+		"expectedArgs": {
+			"action": "selector",
+			"selector": "h2.post-title",
+			"url": "https://example.com/blog"
+		},
+		"rationale": "A single CSS/XPath selector against one page is deterministic selector extraction, so use web_extract action=selector instead of adhoc model JSON.",
+		"tags": [
+			"extract",
+			"selector",
+			"css",
+			"deterministic",
+			"one-page",
+			"url",
+			"contrast:web_scrape"
+		]
+	},
+	{
+		"id": "extract-surface-api",
+		"prompt": "Extract the API surface — endpoints and function signatures — from this SDK reference page: https://example.com/api/reference.",
+		"expectedTool": "web_extract",
+		"expectedArgs": {
+			"action": "surface",
+			"url": "https://example.com/api/reference"
+		},
+		"rationale": "Pulling endpoint and signature API surface from a reference page is deterministic web_extract action=surface, not flat scrape or adhoc JSON.",
+		"tags": [
+			"extract",
+			"surface",
+			"api",
+			"signatures",
+			"deterministic",
+			"url",
+			"contrast:web_scrape"
+		]
+	},
+	{
+		"id": "extract-css-map",
+		"prompt": "Extract fields from https://example.com/product using this CSS map: title -> h1, price -> span.price.",
+		"expectedTool": "web_extract",
+		"expectedArgs": {
+			"action": "css-extract",
+			"url": "https://example.com/product",
+			"selectors": { "title": "h1", "price": "span.price" }
+		},
+		"rationale": "A named CSS selector map over one page is deterministic field extraction via web_extract action=css-extract, not adhoc LLM JSON.",
+		"tags": [
+			"extract",
+			"css-extract",
+			"selectors",
+			"map",
+			"deterministic",
+			"url",
+			"contrast:web_scrape"
+		]
+	},
+	{
+		"id": "extract-xpath-nodes",
+		"prompt": "Extract nodes by XPath //h1 and //span[@class='price'] from https://example.com/product.",
+		"expectedTool": "web_extract",
+		"expectedArgs": {
+			"action": "xpath-extract",
+			"url": "https://example.com/product"
+		},
+		"rationale": "XPath node selection over one page is deterministic web_extract action=xpath-extract, not adhoc model extraction.",
+		"tags": [
+			"extract",
+			"xpath-extract",
+			"selectors",
+			"deterministic",
+			"url",
+			"contrast:web_scrape"
+		]
+	},
+	{
+		"id": "extract-regex-emails",
+		"prompt": "Extract all email addresses from https://example.com/contact with a regex.",
+		"expectedTool": "web_extract",
+		"expectedArgs": {
+			"action": "regex-extract",
+			"url": "https://example.com/contact"
+		},
+		"rationale": "Pulling all regex matches as structured output from one page is web_extract action=regex-extract, not pattern inspection or adhoc JSON.",
+		"tags": [
+			"extract",
+			"regex-extract",
+			"regex",
+			"deterministic",
+			"url",
+			"contrast:web_scrape"
+		]
+	},
+	{
+		"id": "extract-cosine-passages",
+		"prompt": "Find the paragraphs on https://example.com/policy most semantically similar to 'refund window'.",
+		"expectedTool": "web_extract",
+		"expectedArgs": {
+			"action": "cosine",
+			"url": "https://example.com/policy",
+			"query": "refund window"
+		},
+		"rationale": "Ranking page passages by semantic similarity to a query is web_extract action=cosine, not regex or adhoc extraction.",
+		"tags": [
+			"extract",
+			"cosine",
+			"semantic",
+			"similarity",
+			"query",
+			"url",
+			"contrast:web_scrape"
+		]
+	},
+	{
 		"id": "negative-research-scrapers",
 		"prompt": "Research the best web scrapers across multiple sources.",
 		"expectedTool": null,

@@ -6,6 +6,7 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 
 const rootDir = path.resolve(import.meta.dirname, "../..");
+const DISCRIMINATOR_ARG_KEYS = ["action", "task", "extractor", "format", "jsonPaths"];
 await main();
 
 async function main() {
@@ -43,6 +44,7 @@ async function main() {
 	await writeFile(path.join(outDir, "latest.md"), `${markdown}\n`);
 	console.log(markdown);
 	console.log("\nJSON:", path.join(outDir, "latest.json"));
+	enforceThresholds(report);
 }
 
 async function loadWebTools() {
@@ -126,13 +128,24 @@ function buildReport({ contracts, fixtures, predictions, predictionsPath }) {
 			id: fixture.id,
 			actualTool: null,
 		};
+		const actualTool = prediction.actualTool ?? null;
+		const actualArgs = prediction.actualArgs ?? {};
+		const passed = actualTool === fixture.expectedTool;
+		const expectedDiscriminators = discriminatorArgs(fixture.expectedArgs ?? {});
+		// Invocation is only scorable once the tool itself is right and the fixture
+		// pins at least one discriminator arg (action/task/extractor/format/jsonPaths).
+		const scorableArgs = passed && Object.keys(expectedDiscriminators).length > 0;
+		const argsPassed = scorableArgs && argsMatch(expectedDiscriminators, actualArgs);
 		return {
 			id: fixture.id,
 			prompt: fixture.prompt,
 			expectedTool: fixture.expectedTool,
-			actualTool: prediction.actualTool ?? null,
-			actualArgs: prediction.actualArgs ?? {},
-			passed: (prediction.actualTool ?? null) === fixture.expectedTool,
+			actualTool,
+			actualArgs,
+			passed,
+			expectedDiscriminators,
+			scorableArgs,
+			argsPassed,
 			tags: fixture.tags,
 		};
 	});
@@ -147,6 +160,19 @@ function buildReport({ contracts, fixtures, predictions, predictionsPath }) {
 		negatives.length,
 	);
 	const criticalConfusions = rows.filter((row) => isCriticalConfusion(row));
+	const invocationScorable = rows.filter((row) => row.scorableArgs);
+	const invocationAccuracy = ratio(
+		invocationScorable.filter((row) => row.argsPassed).length,
+		invocationScorable.length,
+	);
+	const contractTokenByTool = contracts.map((contract) => ({
+		name: contract.name,
+		tokens: Math.ceil(JSON.stringify(contract).length / 4),
+	}));
+	const contractTokenEstimate = contractTokenByTool.reduce(
+		(sum, entry) => sum + entry.tokens,
+		0,
+	);
 	return {
 		kind: "tool-selection-eval",
 		generatedAt: new Date().toISOString(),
@@ -158,14 +184,14 @@ function buildReport({ contracts, fixtures, predictions, predictionsPath }) {
 		modelCommand: process.env.PI_TOOL_SELECTION_EVAL_COMMAND
 			? "set"
 			: undefined,
-		contractTokenEstimate: contracts.reduce(
-			(sum, contract) => sum + Math.ceil(JSON.stringify(contract).length / 4),
-			0,
-		),
+		contractTokenEstimate,
+		contractTokenByTool,
 		thresholds: {
 			positiveExactToolAccuracy: 0.9,
 			negativeNoToolPrecision: 0.9,
+			invocationExactArgAccuracy: 0.9,
 			criticalConfusions: 0,
+			contractTokenBudget: 1080,
 		},
 		metrics: {
 			total: rows.length,
@@ -173,10 +199,20 @@ function buildReport({ contracts, fixtures, predictions, predictionsPath }) {
 			failed: rows.filter((row) => !row.passed).length,
 			positiveAccuracy,
 			negativePrecision,
+			invocationAccuracy,
+			invocationScorable: invocationScorable.length,
+			invocationPassed: invocationScorable.filter((row) => row.argsPassed).length,
 			criticalConfusions: criticalConfusions.length,
 		},
 		confusionMatrix: confusionMatrix(rows),
 		failures: rows.filter((row) => !row.passed),
+		invocationFailures: invocationScorable
+			.filter((row) => !row.argsPassed)
+			.map((row) => ({
+				id: row.id,
+				expected: row.expectedDiscriminators,
+				actual: pick(row.actualArgs, Object.keys(row.expectedDiscriminators)),
+			})),
 		criticalConfusions,
 	};
 }
@@ -185,12 +221,12 @@ function isCriticalConfusion(row) {
 	const prompt = String(row.prompt).toLowerCase();
 	const tags = row.tags.join(" ");
 	if (
-		["web_scrape", "web_summarize"].includes(row.actualTool) &&
+		["web_scrape", "web_extract"].includes(row.actualTool) &&
 		/multi-source|citations/u.test([prompt, tags].join(" "))
 	)
 		return true;
 	if (
-		["web_scrape", "web_summarize", "web_crawl"].includes(row.actualTool) &&
+		["web_scrape", "web_extract", "web_crawl"].includes(row.actualTool) &&
 		/research|recent articles|open-ended/u.test([prompt, tags].join(" ")) &&
 		!/https?:\/\//u.test(prompt)
 	)
@@ -221,21 +257,35 @@ function confusionMatrix(rows) {
 }
 
 function renderMarkdown(report) {
+	const m = report.metrics;
+	const failures = gateFailures(report);
 	return [
 		"# tool-selection eval",
 		"",
 		`Generated: ${String(report.generatedAt)}`,
 		`Mode: ${String(report.predictionMode)}`,
-		`Contract estimate: ${String(report.contractTokenEstimate)} tokens`,
+		`Contract estimate: ${String(report.contractTokenEstimate)} tokens (budget ${String(report.thresholds.contractTokenBudget)})`,
 		"",
 		"## Summary",
 		"",
-		`Passed: ${String(report.metrics.passed)}/${String(report.metrics.total)}`,
-		`Positive exact tool accuracy: ${(report.metrics.positiveAccuracy * 100).toFixed(1)}%`,
-		`Negative no-tool precision: ${(report.metrics.negativePrecision * 100).toFixed(1)}%`,
-		`Critical confusions: ${String(report.metrics.criticalConfusions)}`,
+		`Verdict: ${failures.length === 0 ? "PASS" : "FAIL"}`,
+		`Passed: ${String(m.passed)}/${String(m.total)}`,
+		`Positive exact tool accuracy: ${pct(m.positiveAccuracy)}`,
+		`Negative no-tool precision: ${pct(m.negativePrecision)}`,
+		`Invocation exact-arg accuracy: ${pct(m.invocationAccuracy)} (${String(m.invocationPassed)}/${String(m.invocationScorable)} scorable)`,
+		`Critical confusions: ${String(m.criticalConfusions)}`,
 		"",
-		"## Failures",
+		"## Contract tokens by tool",
+		"",
+		report.contractTokenByTool
+			.map((entry) => `- ${String(entry.name)}: ${String(entry.tokens)}`)
+			.join("\n"),
+		"",
+		"## Gate failures",
+		"",
+		failures.length > 0 ? failures.map((line) => `- ${line}`).join("\n") : "None.",
+		"",
+		"## Selection failures",
 		"",
 		report.failures.length > 0
 			? report.failures
@@ -245,7 +295,76 @@ function renderMarkdown(report) {
 					)
 					.join("\n")
 			: "None.",
+		"",
+		"## Invocation failures",
+		"",
+		report.invocationFailures.length > 0
+			? report.invocationFailures
+					.map(
+						(row) =>
+							`- ${String(row.id)}: expected ${JSON.stringify(row.expected)}, got ${JSON.stringify(row.actual)}`,
+					)
+					.join("\n")
+			: "None.",
 	].join("\n");
+}
+
+function discriminatorArgs(expectedArgs) {
+	const out = {};
+	for (const key of DISCRIMINATOR_ARG_KEYS)
+		if (expectedArgs?.[key] !== undefined) out[key] = expectedArgs[key];
+	return out;
+}
+
+function argsMatch(expected, actual) {
+	return Object.entries(expected).every(
+		([key, value]) => JSON.stringify(actual?.[key]) === JSON.stringify(value),
+	);
+}
+
+function pick(source, keys) {
+	const out = {};
+	for (const key of keys) out[key] = source?.[key];
+	return out;
+}
+
+function pct(value) {
+	return `${(value * 100).toFixed(1)}%`;
+}
+
+function gateFailures(report) {
+	const { metrics: m, thresholds: t } = report;
+	const failures = [];
+	if (m.positiveAccuracy < t.positiveExactToolAccuracy)
+		failures.push(
+			`positive tool accuracy ${pct(m.positiveAccuracy)} < ${pct(t.positiveExactToolAccuracy)}`,
+		);
+	if (m.negativePrecision < t.negativeNoToolPrecision)
+		failures.push(
+			`negative no-tool precision ${pct(m.negativePrecision)} < ${pct(t.negativeNoToolPrecision)}`,
+		);
+	if (m.invocationAccuracy < t.invocationExactArgAccuracy)
+		failures.push(
+			`invocation arg accuracy ${pct(m.invocationAccuracy)} < ${pct(t.invocationExactArgAccuracy)}`,
+		);
+	if (m.criticalConfusions > t.criticalConfusions)
+		failures.push(`critical confusions ${String(m.criticalConfusions)} > ${String(t.criticalConfusions)}`);
+	if (report.contractTokenEstimate > t.contractTokenBudget)
+		failures.push(
+			`contract tokens ${String(report.contractTokenEstimate)} > budget ${String(t.contractTokenBudget)}`,
+		);
+	return failures;
+}
+
+function enforceThresholds(report) {
+	const failures = gateFailures(report);
+	if (failures.length === 0) {
+		console.log("\nVERDICT: PASS");
+		return;
+	}
+	console.error("\nVERDICT: FAIL");
+	for (const line of failures) console.error(`  - ${line}`);
+	process.exitCode = 1;
 }
 
 function ratio(numerator, denominator) {
