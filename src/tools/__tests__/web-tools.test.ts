@@ -11,7 +11,6 @@ import type { PiToolRegistrar, WebTool } from "../infra/define.ts";
 import { registerWebTools } from "../infra/register.ts";
 import { createWebExtractTool, webExtractTool } from "../web-extract.ts";
 import { webGetResultTool } from "../web-get-result.ts";
-import { createWebScrapeTool } from "../web-scrape.ts";
 
 function summarizeOrExtractAdapter(request: ModelRequest): string | { ok: boolean } {
 	return request.task === "summarize" ? "registered summary" : { ok: true };
@@ -310,7 +309,7 @@ describe("selected web tool handlers", () => {
 		expect(requests[0]?.input).toContain("Fixture Heading");
 	});
 
-	it("registers model-backed extract and scrape-summary paths", async () => {
+	it("registers model-backed extract and summarize paths", async () => {
 		const registered: WebTool[] = [];
 		const registrar = {
 			registerTool(tool: WebTool) {
@@ -333,51 +332,12 @@ describe("selected web tool handlers", () => {
 			true,
 		);
 
-		const summarized = await createWebScrapeTool({ modelAdapter: adapter }).execute(
-			"call",
-			{ task: "summarize", content: "content", sentences: 1 },
-			signal,
-		);
-		expect(summarized.content[0]?.text).toBe("registered summary");
-
 		const summarizedDirectly = await createWebExtractTool({ modelAdapter: adapter }).execute(
 			"call",
 			{ action: "summarize", content: "content", sentences: 1 },
 			signal,
 		);
 		expect(summarizedDirectly.content[0]?.text).toBe("registered summary");
-	});
-
-	it("runs provided-content and URL-backed summarization with an injected model adapter", async () => {
-		const tool = createWebScrapeTool({
-			modelAdapter: fakeModelAdapter(fixtureHeadingAdapter),
-			scrapeDeps: fakeScrapeDeps(),
-		});
-
-		const provided = await tool.execute(
-			"call",
-			{ task: "summarize", content: "Provided content", sentences: 1 },
-			signal,
-		);
-		expect(provided.content[0]?.text).toBe("Summary from provided content.");
-
-		const scraped = await tool.execute(
-			"call",
-			{
-				task: "summarize",
-				url: "https://example.com/page",
-				bullets: 2,
-				mode: "fast",
-			},
-			signal,
-		);
-		const envelope = scraped.details as ToolContext<{
-			summary: string;
-			input: { source: string };
-		}>;
-		expect(envelope.error).toBeUndefined();
-		expect(envelope.data?.summary).toBe("Summary from scraped page.");
-		expect(envelope.data?.input.source).toBe("scrape");
 	});
 
 	it("runs dedicated provided-content and URL-backed summarization", async () => {

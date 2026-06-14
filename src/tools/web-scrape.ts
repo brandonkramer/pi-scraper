@@ -8,7 +8,6 @@ import {
 	type SnapshotDiffResult,
 	updateSnapshotReference,
 } from "../diff/snapshots.ts";
-import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import { saveBodyToDownloads } from "../http/download-storage.ts";
 import { resolveProxyParam } from "../http/proxy-pool.ts";
 import { getOrCreateSession } from "../http/session.ts";
@@ -16,7 +15,7 @@ import { describeScrapeResult, formatAge } from "../scrape/describe.ts";
 import { filterLines } from "../scrape/line-filter.ts";
 import { formatLineMatchPreview } from "../scrape/line-preview.ts";
 import { resolveScrapeOptions } from "../scrape/options.ts";
-import type { ScrapePipelineDeps, ScrapeResult } from "../scrape/pipeline.ts";
+import type { ScrapeResult } from "../scrape/pipeline.ts";
 import { freshnessFromTimestamp } from "../storage/cache/freshness.ts";
 import { storeResponseWithId } from "../storage/responses/store.ts";
 import { toolCall } from "../tui/index.ts";
@@ -25,30 +24,17 @@ import { renderWebScrapeResult } from "../tui/renderers/scrape.ts";
 import { qualityFromCache, refreshUrlAction, storedTraceContext } from "./infra/agentic-context.ts";
 import { defineWebTool, type WebTool } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
-import {
-	inputErrorResult,
-	missingModelResult,
-	toolErrorResult,
-	toolResult,
-} from "./infra/result.ts";
+import { inputErrorResult, toolResult } from "./infra/result.ts";
 import {
 	outputFormatSchema,
 	scrapeModeOptionSchema,
 	sessionOptionSchema,
 	urlProperty,
 } from "./infra/schemas.ts";
-import { buildSummarizeToolContext } from "./infra/scrape-input-result.ts";
 import { sessionLifecycle } from "./infra/session-lifecycle.ts";
 
-const scrapeTasks = ["read", "summarize"] as const;
-const scrapeTaskSchema = Type.Unsafe<"read" | "summarize">({ enum: ["read", "summarize"] });
-
 export const webScrapeSchema = Type.Object({
-	task: Type.Optional(scrapeTaskSchema),
 	url: Type.Optional(urlProperty()),
-	content: Type.Optional(Type.Unsafe<string>({})),
-	sentences: Type.Optional(Type.Unsafe<number>({})),
-	bullets: Type.Optional(Type.Unsafe<number>({})),
 	...scrapeModeOptionSchema,
 	format: Type.Optional(outputFormatSchema),
 	include: Type.Optional(Type.Unsafe<string[]>({})),
@@ -57,9 +43,7 @@ export const webScrapeSchema = Type.Object({
 	timeoutSeconds: Type.Optional(Type.Unsafe<number>({})),
 	maxBytes: Type.Optional(Type.Unsafe<number>({})),
 	maxChars: Type.Optional(Type.Unsafe<number>({})),
-	headers: Type.Optional(
-		Type.Unsafe<Record<string, string>>({}),
-	),
+	headers: Type.Optional(Type.Unsafe<Record<string, string>>({})),
 	proxy: Type.Optional(Type.Unsafe<string | string[]>({ type: ["string", "array"] })),
 	respectRobots: Type.Optional(Type.Unsafe<boolean>({})),
 	refresh: Type.Optional(Type.Unsafe<boolean>({})),
@@ -105,24 +89,14 @@ export const webScrapeSchema = Type.Object({
 
 type Params = Static<typeof webScrapeSchema>;
 type DiffParams = Exclude<Params["diff"], boolean | undefined>;
-type ScrapeTask = (typeof scrapeTasks)[number];
 
-export interface WebScrapeToolOptions {
-	modelAdapter?: ModelAdapter;
-	scrapeDeps?: ScrapePipelineDeps;
-}
-
-export function createWebScrapeTool(
-	options: WebScrapeToolOptions = {},
-): WebTool<typeof webScrapeSchema> {
+export function createWebScrapeTool(): WebTool<typeof webScrapeSchema> {
 	return defineWebTool({
 		name: "web_scrape",
 		label: "Scrape",
 		description: "Read URL",
 		parameters: webScrapeSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate) {
-			const task = inferScrapeTask(params);
-			if (task === "summarize") return await summarizeScrape(params, options, signal);
 			if (params.diff !== undefined) return await diffScrape(params, signal, onUpdate);
 			return await readScrape(params, signal, onUpdate);
 		},
@@ -138,25 +112,7 @@ export function createWebScrapeTool(
 
 export const webScrapeTool = createWebScrapeTool();
 
-function inferScrapeTask(params: Params): ScrapeTask {
-	if (params.task) return params.task;
-	if (params.content && !params.url) return "summarize";
-	return "read";
-}
-
 function renderScrapeCallParts(params: Params): string[] {
-	const task = inferScrapeTask(params);
-	if (task === "summarize") {
-		return [
-			"summarize",
-			params.url ?? "provided content",
-			params.bullets
-				? `${String(params.bullets)} bullets`
-				: params.sentences
-					? `${String(params.sentences)} sentences`
-					: undefined,
-		].filter(Boolean) as string[];
-	}
 	return [`(${params.mode ?? "auto"} → ${params.format ?? "markdown"})`];
 }
 
@@ -338,37 +294,6 @@ async function readScrape(
 		diagnostics: toolSessionNotice ? { toolSessionNotice } : undefined,
 		...shaped,
 	});
-}
-
-async function summarizeScrape(params: Params, options: WebScrapeToolOptions, signal: AbortSignal) {
-	if (!options.modelAdapter) {
-		return missingModelResult(
-			"summarize",
-			params.url,
-			"web_scrape task=summarize requires a model-backed adapter; use task=read for source text.",
-		);
-	}
-	try {
-		const { loadEffectiveConfig } = await import("../config.ts");
-		const { summarizePage } = await import("../extract/summarize.ts");
-		const config = await loadEffectiveConfig();
-		const summaryParams = { ...params, proxy: resolveProxyParam(params.proxy) };
-		const result = await summarizePage(
-			{
-				...config.scrapeDefaults,
-				...summaryParams,
-				mode: params.mode ?? config.scrapeMode,
-				format: params.format ?? config.outputFormat,
-			},
-			options.modelAdapter,
-			options.scrapeDeps ?? {},
-			signal,
-		);
-		await sessionLifecycle(params);
-		return buildSummarizeToolContext(result, params.url);
-	} catch (error) {
-		return toolErrorResult(error, "SUMMARIZE_FAILED", "summarize", params.url);
-	}
 }
 
 async function diffScrape(

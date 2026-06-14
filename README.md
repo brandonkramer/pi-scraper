@@ -67,14 +67,14 @@ Ask naturally; Pi can choose the right web tool automatically:
 | Area | Parameters | Description |
 | :--- | :--- | :--- |
 | **Shared** | `sessionId`, `saveSession`, `clearSession`, `stealth`, `autoWait`, `browserBackend`, `proxy`, `headers`, `provider` | Sessions, browser controls, and LLM provider selection. |
-| **Scrape** | `url`, `urls`, `content`, `task`, `mode`, `format`, `refresh`, `respectRobots`, `timeoutSeconds` | Targets, tasks (`read`/`summarize`), and fetch behavior. |
+| **Scrape** | `url`, `urls`, `mode`, `format`, `refresh`, `respectRobots`, `timeoutSeconds` | Targets and fetch behavior. Summarize moved to `web_extract action=summarize`. |
 | **Limits** | `maxBytes`, `maxChars`, `onlyMainContent` | Size limits and content cleaning. |
 | **RAG chunks** | `chunks`, `maxTokens`, `overlapTokens` | `chunks=true` returns paragraph-bounded `chunks[]` alongside full markdown. |
 | **Filtering** | `include`, `exclude`, `linesMatching`, `contextLines`, `caseSensitive` | Glob patterns and line-based content filtering. |
 | **Redirection**| `followAlternates`, `followMetaRefresh` | Controls for non-standard redirects. |
 | **Snapshots** | `snapshotName`, `snapshotTag`, `diff`, `compareTag`, `maxSnapshotAgeSeconds` | Versioning and diffing baselines. |
 | **Crawl** | `action`, `maxPages`, `maxDepth`, `sameOrigin`, `concurrency`, `resume`, `crawlId`, `compile`, `seed`, `seedSitemap`, `status`, `limit`, `extract`, `strategy` | BFS/DFS/best-first discovery, limits, and state management. Strategy shown in progress output. |
-| **Extract** | `action`, `extractor`, `prompt`, `schema`, `selector`, `selectorType`, `attribute`, `adaptive`, `bullets`, `sentences`, `identifier`, `autoSave`, `threshold`, `extractSchema` | Vertical, ad-hoc (with `grounded[]` source spans), and selector extraction. |
+| **Extract** | `action`, `extractor`, `prompt`, `schema`, `selector`, `selectorType`, `attribute`, `adaptive`, `bullets`, `sentences`, `identifier`, `autoSave`, `threshold`, `extractSchema` | Vertical, ad-hoc (with `grounded[]` source spans), selector, and summarize (`action=summarize`, `sentences`/`bullets`) extraction. |
 | **Patterns** | `markers`, `contains`, `excerpts`, `regexes`, `sections`, `jsonPaths`, `sourceFormat`, `length` | Deterministic inspection: strings, regex, and ranges. |
 | **Strategy Extraction** | `selectors` (field→selector map), `query`, `topN`, `minScore`, `flags` | New: css-extract, xpath-extract, regex-extract, cosine |
 | **Proxy** | `proxy`; `HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY`; `NO_PROXY` | Explicit proxy URL, proxy arrays for crawl rotation, or env-var auto-config when `proxy` is omitted. |
