@@ -2,6 +2,13 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [0.11.1] - 2026-06-14
+
+### Fixed
+
+- **Lazy-load Node SQLite at runtime** — storage DB initialization now imports `node:sqlite` dynamically so installs on Node builds without the built-in SQLite module no longer fail at extension load time.
+- **TUI status glyph and zero-count rendering** — failure/activity counts render muted at `<= 0` so clean runs no longer show red `✕ 0 failed`; unified `statusPillWidth` and `renderStatusGlyph` across tool-progress, tool-resource, and tool-batch so done `✓` uses accent styling consistently.
+
 ## [0.11.0] - 2026-06-02
 
 ### Added
