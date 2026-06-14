@@ -1,8 +1,8 @@
 /** @file Parse htmlparser2-dom-adapter module. */
 import { selectAll } from "css-select";
 import renderDom from "dom-serializer";
-import type { AnyNode, Document } from "domhandler";
-import { getAttributeValue, isTag, removeElement, textContent } from "domutils";
+import { type AnyNode, type Document, isTag } from "domhandler";
+import { getAttributeValue, removeElement, textContent } from "domutils";
 import { parseDocument } from "htmlparser2";
 
 import type { DomAdapter, DomNode, DomSelection } from "../dom/adapter.ts";

@@ -1,7 +1,7 @@
 /** @file Generic YAML extraction-rule primitives for text, HTML, and JSON recipes. */
 import { selectAll, selectOne } from "css-select";
-import type { AnyNode, Element } from "domhandler";
-import { getAttributeValue, isTag, textContent } from "domutils";
+import { type AnyNode, type Element, isTag } from "domhandler";
+import { getAttributeValue, textContent } from "domutils";
 import { parseDocument } from "htmlparser2";
 
 import {

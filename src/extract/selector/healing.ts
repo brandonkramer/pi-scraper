@@ -7,8 +7,8 @@
  */
 
 import { ElementType } from "domelementtype";
-import type { Document, Element } from "domhandler";
-import { getElementsByTagType, isTag, textContent } from "domutils";
+import { type Document, type Element, isTag } from "domhandler";
+import { getElementsByTagType, textContent } from "domutils";
 
 import { lineSimilarity } from "../../diff/compare.ts";
 import type { ElementFingerprint } from "../../parse/adaptive/fingerprint.ts";

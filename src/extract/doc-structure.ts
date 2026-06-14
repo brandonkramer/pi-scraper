@@ -1,7 +1,7 @@
 /** @file Shared document-section extraction for docs and API surfaces. */
 import { selectAll, selectOne } from "css-select";
-import type { AnyNode, Element } from "domhandler";
-import { getAttributeValue, isTag, textContent } from "domutils";
+import { type AnyNode, type Element, isTag } from "domhandler";
+import { getAttributeValue, textContent } from "domutils";
 
 import { cleanText, stripUndefined, truncateText } from "./text.ts";
 

@@ -5,8 +5,8 @@
  *   to relocate an element after markup changes.
  * @file Serialize htmlparser2/domhandler nodes into stable element fingerprints.
  */
-import type { AnyNode, Element } from "domhandler";
-import { innerText, isTag, textContent } from "domutils";
+import { type AnyNode, type Element, isTag } from "domhandler";
+import { innerText, textContent } from "domutils";
 
 /** Attributes that change frequently and should be ignored by default. */
 const VOLATILE_ATTRS = new Set([

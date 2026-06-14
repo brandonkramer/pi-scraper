@@ -7,8 +7,8 @@
  */
 import { selectAll } from "css-select";
 import { ElementType } from "domelementtype";
-import type { Document, Element } from "domhandler";
-import { getElementsByTagType, isTag, textContent } from "domutils";
+import { type Document, type Element, isTag } from "domhandler";
+import { getElementsByTagType, textContent } from "domutils";
 
 import { healSelectorMatch } from "../../extract/selector/healing.ts";
 import { fingerprintElement, type ElementFingerprint } from "./fingerprint.ts";
