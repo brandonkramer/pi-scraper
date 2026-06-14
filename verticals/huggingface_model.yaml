@@ -7,7 +7,6 @@ kind: api-json
 description: Hugging Face model metadata, pipeline, tags, and downloads.
 urlPatterns:
   - https://huggingface.co/:id+
-  - https://huggingface.co/:model
 # Runtime requirements for the scrape host.
 requirements:
   requiresBrowser: false

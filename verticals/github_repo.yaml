@@ -55,7 +55,7 @@ requests:
   # Recursive git tree (filtered in extract).
   tree:
     optional: true
-    urlTemplate: https://api.github.com/repos/{{owner|encodeURIComponent}}/{{repo|encodeURIComponent}}/git/trees/main?recursive=1
+    urlTemplate: https://api.github.com/repos/{{owner|encodeURIComponent}}/{{repo|encodeURIComponent}}/git/trees/HEAD?recursive=1
 # Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
 extract:
   fullName: "@.metadata.full_name"

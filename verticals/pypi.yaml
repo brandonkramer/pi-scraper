@@ -19,9 +19,14 @@ capabilities:
   - version
   - project_urls
 source: builtin
+# Match-time defaults, query captures, and URL exclusions.
+matchOptions:
+  defaults:
+    version: latest
 # HTTP request (api-json / api-xml / text-extract). {{captures}} interpolate into urlTemplate.
 request:
-  urlTemplate: https://pypi.org/pypi/{{project|encodeURIComponent}}/json
+  # version=latest (no :version in URL) → /json; pinned version → /<version>/json.
+  urlTemplate: https://pypi.org/pypi/{{project|encodeURIComponent}}/{{version|encodeURIComponent|switch:latest=json,*=$value/json}}
 # Output projection: api-json uses $.paths; aggregate/chain/workflow use @.scope and |transforms.
 extract:
   name: $.info.name

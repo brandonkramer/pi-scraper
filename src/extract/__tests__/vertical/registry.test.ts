@@ -103,7 +103,7 @@ const context: VerticalExtractorContext = {
 				},
 			} as T;
 		}
-		if (url.includes("crates.io")) {
+		if (url.includes("/api/v1/crates/serde")) {
 			return {
 				crate: {
 					id: "serde",
@@ -217,11 +217,11 @@ describe("vertical extractor registry", () => {
 		expect(
 			listExtractorCapabilities().find((capability) => capability.name === "huggingface_model")
 				?.urlPatterns,
-		).toContain("https://huggingface.co/:model");
+		).toContain("https://huggingface.co/:id+");
 		expect(
 			listExtractorCapabilities().find((capability) => capability.name === "huggingface_dataset")
 				?.urlPatterns,
-		).toContain("https://huggingface.co/datasets/:dataset");
+		).toContain("https://huggingface.co/datasets/:id+");
 	});
 
 	it("runs named API-oriented extractors", async () => {

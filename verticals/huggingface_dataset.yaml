@@ -7,7 +7,6 @@ kind: api-json
 description: Hugging Face dataset metadata, tags, and downloads.
 urlPatterns:
   - https://huggingface.co/datasets/:id+
-  - https://huggingface.co/datasets/:dataset
 # Runtime requirements for the scrape host.
 requirements:
   requiresBrowser: false

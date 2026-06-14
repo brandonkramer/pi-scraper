@@ -126,7 +126,8 @@ function switchValue(value: string, spec: string): string {
 		if (index <= 0) continue;
 		const key = option.slice(0, index);
 		const output = option.slice(index + 1);
-		if (key === value || key === "*") return output.replaceAll("{value}", value);
+		if (key === value || key === "*")
+			return output.replaceAll("{value}", value).replaceAll("$value", value);
 	}
 	return value;
 }
