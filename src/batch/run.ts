@@ -3,8 +3,8 @@ import { randomUUID } from "node:crypto";
 
 import { DEFAULT_CONCURRENCY } from "../defaults.ts";
 import { isAbortError } from "../http/abort.ts";
-import { createHttpClient } from "../http/client.ts";
 import { hasStructuredError } from "../http/retry.ts";
+import { ensureHttpClientDeps } from "../http/scrape-deps.ts";
 import { scrapeUrl, type ScrapePipelineDeps, type ScrapeResult } from "../scrape/pipeline.ts";
 import { resultChars } from "../scrape/result-chars.ts";
 import { normalizeMaybe } from "../storage/db/row-fields.ts";
@@ -87,16 +87,11 @@ export async function runBatchScrape(
 		1,
 		Math.min(options.concurrency ?? DEFAULT_CONCURRENCY.global, urls.length || 1),
 	);
-	const sharedDeps = deps.httpClient
-		? deps
-		: {
-				...deps,
-				httpClient: createHttpClient({
-					globalConcurrency: concurrency,
-					perHostConcurrency: options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
-					retryAttempts: options.retryAttempts,
-				}),
-			};
+	const sharedDeps = ensureHttpClientDeps(deps, {
+		concurrency,
+		perHostConcurrency: options.perHostConcurrency,
+		retryAttempts: options.retryAttempts,
+	});
 
 	options.onProgress?.({ state: "queued", current: 0, total: urls.length });
 	await updateBatchJob("running", 0, 0, undefined, true);

@@ -1,9 +1,9 @@
 /** @file Crawl runner module. */
 import { DEFAULT_CONCURRENCY, DEFAULT_CRAWL_LIMITS } from "../defaults.ts";
 import { isAbortError } from "../http/abort.ts";
-import { createHttpClient } from "../http/client.ts";
 import { KeyedSemaphore } from "../http/politeness.ts";
 import { hasStructuredError } from "../http/retry.ts";
+import { ensureHttpClientDeps } from "../http/scrape-deps.ts";
 import { discoverSiteUrls, type SiteMapDeps } from "../map/discover.ts";
 import { type ScrapePipelineDeps, type ScrapeResult, scrapeUrl } from "../scrape/pipeline.ts";
 import { resultChars } from "../scrape/result-chars.ts";
@@ -95,16 +95,11 @@ export async function runCrawl(
 	const pages: ScrapeResult[] = [];
 	const maxPages = options.maxPages ?? DEFAULT_CRAWL_LIMITS.maxPages;
 	const concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY.global);
-	const sharedDeps = deps.httpClient
-		? deps
-		: {
-				...deps,
-				httpClient: createHttpClient({
-					globalConcurrency: concurrency,
-					perHostConcurrency: options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost,
-					retryAttempts: options.retryAttempts,
-				}),
-			};
+	const sharedDeps = ensureHttpClientDeps(deps, {
+		concurrency,
+		perHostConcurrency: options.perHostConcurrency,
+		retryAttempts: options.retryAttempts,
+	});
 	const injectedHostLimits = deps.httpClient
 		? new KeyedSemaphore(options.perHostConcurrency ?? DEFAULT_CONCURRENCY.perHost)
 		: undefined;
