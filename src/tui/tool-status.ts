@@ -31,6 +31,10 @@ export function paintFirstLineBg(lines: string[], bgName: string, theme?: Render
 /** Shared state model for status pills and row glyphs. */
 export type StatusPillState = "waiting" | "loading" | "done" | "error";
 
+/** Standard right-side status pill width derived from the terminal width. */
+export const statusPillWidth = (width: number): number =>
+	Math.max(12, Math.min(18, Math.floor(width * 0.22)));
+
 /**
  * Renders a fixed-width status pill, optionally with staged loading fill.
  *
@@ -112,9 +116,9 @@ export const countSegments = {
 	success: (count: number, label: string, theme?: RenderTheme) =>
 		count <= 0 ? muted(`${count} ${label}`, theme) : success(`✓ ${count} ${label}`, theme),
 	failure: (count: number, label: string, theme?: RenderTheme) =>
-		failure(`✕ ${count} ${label}`, theme),
+		count <= 0 ? muted(`${count} ${label}`, theme) : failure(`✕ ${count} ${label}`, theme),
 	activity: (count: number, label: string, icon: string, theme?: RenderTheme) =>
-		activity(`${icon} ${count} ${label}`, theme),
+		count <= 0 ? muted(`${count} ${label}`, theme) : activity(`${icon} ${count} ${label}`, theme),
 } as const;
 
 /** A status segment with optional tone to be joined by `toolStatus`. */

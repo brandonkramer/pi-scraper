@@ -240,19 +240,21 @@ describe("web tool renderers", () => {
 		);
 
 		expect(collapsed).not.toContain("\u001B[0m");
-		expect(collapsed).toContain("\u001B[35m✕ 0 failed\u001B[39m");
-		expect(collapsed).toContain("\u001B[35m↻ 0 cache hits\u001B[39m");
+		expect(collapsed).toContain("\u001B[35m0 failed\u001B[39m");
+		expect(collapsed).toContain("\u001B[35m0 cache hits\u001B[39m");
 	});
 
-	it("uses failed icon and color even when failed count is zero", () => {
+	it("mutes failed and cache-hit segments when their counts are zero", () => {
 		const result = toolResult({
 			text: "Batch scrape complete",
 			data: [{ ok: true, url: "https://a.test" }],
 		});
 		const collapsed = text(webBatchTool.renderResult?.(result, { expanded: false }));
 
-		expect(collapsed).toContain("✕ 0 failed");
-		expect(collapsed).toContain("↻ 0 cache hits");
+		expect(collapsed).not.toContain("✕ 0 failed");
+		expect(collapsed).not.toContain("↻ 0 cache hits");
+		expect(collapsed).toContain("0 failed");
+		expect(collapsed).toContain("0 cache hits");
 	});
 
 	it("omits toolSuccess icons when batch and crawl succeeded counts are zero", () => {

@@ -1,5 +1,10 @@
-import { type StatusPillState, renderStatusGlyph, renderStatusPill } from "./tool-status.ts";
-import { failure, muted, success, inlineThemeText } from "./tui.ts";
+import {
+	type StatusPillState,
+	renderStatusGlyph,
+	renderStatusPill,
+	statusPillWidth,
+} from "./tool-status.ts";
+import { muted, inlineThemeText } from "./tui.ts";
 import type { RenderTheme } from "./types.ts";
 
 function paintAccentUrl(url: string, width: number, theme?: RenderTheme): string {
@@ -138,7 +143,7 @@ export interface ToolResourceOptions extends Partial<
  * ```
  */
 export function toolResourceStatus(row: ToolResourceStatusRow): string {
-	const statusWidth = Math.max(12, Math.min(18, Math.floor(row.width * 0.22)));
+	const statusWidth = statusPillWidth(row.width);
 	const box =
 		row.statusBox ??
 		renderStatusPill({
@@ -160,7 +165,6 @@ export function toolResourceStatus(row: ToolResourceStatusRow): string {
  * ```txt
  * ✓ https://example.com
  * https://example.com [ sitemap ]
- * ✓ https://example.com [ done ]
  * ```
  */
 export function toolResource(o: ToolResourceOptions): string {
@@ -171,26 +175,14 @@ export function toolResource(o: ToolResourceOptions): string {
 		const badge = badgeText ? (inlineThemeText("muted", badgeText, o.theme) ?? badgeText) : "";
 		return badge ? `${renderedUrl} ${badge}` : renderedUrl;
 	}
-	if (
-		o.width !== undefined &&
-		(o.label !== undefined || o.startedAtMs !== undefined || o.statusBox !== undefined)
-	) {
-		return toolResourceStatus({
-			url: o.url,
-			state: (o.state ?? "done") as ToolResourceStatusState,
-			width: o.width,
-			theme: o.theme,
-			label: o.label,
-			startedAtMs: o.startedAtMs,
-			statusBox: o.statusBox,
-		});
-	}
 	const state = o.state ?? "pending";
-	const glyph =
+	const glyphState: StatusPillState =
 		state === "ok" || state === "done"
-			? success("✓", o.theme)
+			? "done"
 			: state === "error"
-				? failure("✕", o.theme)
-				: muted("·", o.theme);
-	return `${glyph} ${o.url}${o.detail ? ` ${muted(o.detail, o.theme)}` : ""}`;
+				? "error"
+				: state === "loading"
+					? "loading"
+					: "waiting";
+	return `${renderStatusGlyph(glyphState, o.theme)} ${o.url}${o.detail ? ` ${muted(o.detail, o.theme)}` : ""}`;
 }

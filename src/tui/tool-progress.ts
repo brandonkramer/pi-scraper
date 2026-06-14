@@ -4,6 +4,7 @@ import {
 	renderStatusGlyph,
 	renderStatusPill,
 	paintFirstLineBg,
+	statusPillWidth,
 	countSegments as c,
 } from "./tool-status.ts";
 import { muted, renderText } from "./tui.ts";
@@ -72,7 +73,7 @@ export function toolProgressView(
 			const pill = renderStatusPill({
 				label: progressPillLabel(details.state),
 				state,
-				width: Math.max(12, Math.min(18, Math.floor(width * 0.22))),
+				width: statusPillWidth(width),
 				theme,
 				startedAtMs,
 				restoreBg: "toolPendingBg",

@@ -4,7 +4,7 @@ import { toolCallStatus } from "./tool-call.ts";
 import { defineResultRenderer, progressPillState, toolProgressLayout } from "./tool-progress.ts";
 import { toolResourceStatus } from "./tool-resource.ts";
 import { withSpinnerFooter } from "./tool-spinner.ts";
-import { renderStatusPill } from "./tool-status.ts";
+import { renderStatusPill, statusPillWidth } from "./tool-status.ts";
 import { muted } from "./tui.ts";
 import type { RenderComponent, RenderTheme } from "./types.ts";
 
@@ -91,7 +91,7 @@ function renderBatchProgressText(
 		theme,
 	);
 	const rows = batch.items.slice(0, expanded ? undefined : 12).map((item) => {
-		const sbWidth = Math.max(12, Math.min(18, Math.floor(width * 0.22)));
+		const sbWidth = statusPillWidth(width);
 		const bState = progressPillState(item.status);
 		const statusBox =
 			item.status === "processing" && typeof item.progress === "number"
