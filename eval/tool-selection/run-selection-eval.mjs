@@ -7,6 +7,8 @@ import { pathToFileURL } from "node:url";
 
 const rootDir = path.resolve(import.meta.dirname, "../..");
 const DISCRIMINATOR_ARG_KEYS = ["action", "task", "extractor", "format", "jsonPaths"];
+// Free-form payload args have many valid forms; score presence, not exact value.
+const FREE_FORM_ARG_KEYS = new Set(["jsonPaths"]);
 await main();
 
 async function main() {
@@ -132,10 +134,18 @@ function buildReport({ contracts, fixtures, predictions, predictionsPath }) {
 		const actualArgs = prediction.actualArgs ?? {};
 		const passed = actualTool === fixture.expectedTool;
 		const expectedDiscriminators = discriminatorArgs(fixture.expectedArgs ?? {});
-		// Invocation is only scorable once the tool itself is right and the fixture
-		// pins at least one discriminator arg (action/task/extractor/format/jsonPaths).
-		const scorableArgs = passed && Object.keys(expectedDiscriminators).length > 0;
-		const argsPassed = scorableArgs && argsMatch(expectedDiscriminators, actualArgs);
+		// Only score discriminator keys the model actually provided. An omitted key
+		// is assumed correctly inferred by the tool (crawl->run, extract->adhoc), so
+		// it neither passes nor fails. A row is scorable once the tool is right and
+		// >=1 expected discriminator was actually set, so there is a choice to judge.
+		// ponytail: lenient on omission; a model could pass by setting only the easy
+		// key. Tighten with a per-tool required-arg registry if that ever masks a real
+		// regression.
+		const checkedKeys = Object.keys(expectedDiscriminators).filter(
+			(key) => actualArgs[key] !== undefined,
+		);
+		const scorableArgs = passed && checkedKeys.length > 0;
+		const argsPassed = scorableArgs && argsMatch(expectedDiscriminators, actualArgs, checkedKeys);
 		return {
 			id: fixture.id,
 			prompt: fixture.prompt,
@@ -316,10 +326,16 @@ function discriminatorArgs(expectedArgs) {
 	return out;
 }
 
-function argsMatch(expected, actual) {
-	return Object.entries(expected).every(
-		([key, value]) => JSON.stringify(actual?.[key]) === JSON.stringify(value),
-	);
+function argsMatch(expected, actual, keys) {
+	return keys.every((key) => {
+		if (FREE_FORM_ARG_KEYS.has(key)) return isNonEmpty(actual?.[key]);
+		return JSON.stringify(actual?.[key]) === JSON.stringify(expected[key]);
+	});
+}
+
+function isNonEmpty(value) {
+	if (Array.isArray(value)) return value.length > 0;
+	return value !== undefined && value !== null && value !== "";
 }
 
 function pick(source, keys) {
