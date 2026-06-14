@@ -1,11 +1,31 @@
 import path from "node:path";
 /** @file SQLite metadata index lifecycle — open, pool, close. */
-import { DatabaseSync, type StatementSync } from "node:sqlite";
 
 import { migrateLegacyFiles } from "../migrations/legacy-files.ts";
 // oxlint-disable-next-line import/no-cycle -- vertical extractors and storage modules share type contracts; cycle is resolved at call time
 import { runMigrations } from "../migrations/run.ts";
 import { ensureDir, type ResolveStorageOptions, resolvePiStoragePaths } from "../paths.ts";
+
+interface StatementSync {
+	all(...anonymousParameters: unknown[]): unknown[];
+	get(...anonymousParameters: unknown[]): unknown;
+	run(...anonymousParameters: unknown[]): {
+		changes: number | bigint;
+		lastInsertRowid: number | bigint;
+	};
+}
+
+interface DatabaseSync {
+	close(): void;
+	exec(sql: string): void;
+	prepare(sql: string): StatementSync;
+}
+
+interface SqliteModule {
+	DatabaseSync: new (location: string) => DatabaseSync;
+}
+
+let sqliteModule: Promise<SqliteModule> | undefined;
 
 interface DbEntry {
 	db: DatabaseSync;
@@ -36,6 +56,7 @@ export async function openStorageDb(options: ResolveStorageOptions = {}): Promis
 }
 
 async function openDbEntry(dbPath: string, options: ResolveStorageOptions): Promise<DbEntry> {
+	const { DatabaseSync } = await loadSqliteModule();
 	const db = new DatabaseSync(dbPath);
 	db.exec("PRAGMA journal_mode = WAL");
 	db.exec("PRAGMA synchronous = NORMAL");
@@ -44,6 +65,10 @@ async function openDbEntry(dbPath: string, options: ResolveStorageOptions): Prom
 	const entry: DbEntry = { db, statements: new Map() };
 	await migrateLegacyFiles(wrapEntry(entry), options);
 	return entry;
+}
+
+function loadSqliteModule(): Promise<SqliteModule> {
+	return (sqliteModule ??= import("node:sqlite"));
 }
 
 export async function closeStorageDbs(): Promise<void> {
