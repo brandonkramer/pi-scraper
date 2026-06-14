@@ -25,6 +25,10 @@ interface PiAiModule {
 	calculateCost(model: unknown, _usage: unknown): { total?: number } | undefined;
 }
 
+// Specifier in a const so tsc keeps pi-ai compile-optional (the optional peer is absent in CI's
+// `npm ci`). Same pattern as pdf.ts' PDFJS_IMPORT. Do not inline back to a string literal.
+const PI_AI_IMPORT = "@earendil-works/pi-ai";
+
 /**
  * Try to create a pi-ai ModelAdapter. Returns undefined when: - pi-ai is not installed (import
  * throws) - provider or model is missing - provider/model is not recognized by pi-ai (getModel
@@ -39,7 +43,7 @@ export async function tryCreatePiAiAdapter(
 
 	let piAi: PiAiModule;
 	try {
-		piAi = (await import("@earendil-works/pi-ai")) as unknown as PiAiModule;
+		piAi = (await import(PI_AI_IMPORT)) as unknown as PiAiModule;
 	} catch {
 		return undefined;
 	}
