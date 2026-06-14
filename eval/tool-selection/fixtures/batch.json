@@ -1,0 +1,16 @@
+[
+	{
+		"id": "batch-independent-urls",
+		"prompt": "Fetch these 5 independent URLs and report per-URL failures.",
+		"expectedTool": "web_batch",
+		"rationale": "Multiple independent URLs with per-URL success/failure semantics belong to web_batch.",
+		"tags": [
+			"batch",
+			"fetch",
+			"independent",
+			"urls",
+			"per-url",
+			"contrast:web_scrape"
+		]
+	}
+]

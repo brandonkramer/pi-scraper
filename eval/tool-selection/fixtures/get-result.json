@@ -1,0 +1,20 @@
+[
+	{
+		"id": "retrieve-job-manifest",
+		"prompt": "Retrieve the job manifest for jobId crawl-abc123.",
+		"expectedTool": "web_get_result",
+		"expectedArgs": {
+			"jobId": "crawl-abc123"
+		},
+		"rationale": "Retrieving a stored response or structured job manifest by jobId belongs to web_get_result.",
+		"tags": [
+			"retrieve",
+			"stored",
+			"job",
+			"manifest",
+			"jobId",
+			"audit",
+			"contrast:web_crawl"
+		]
+	}
+]

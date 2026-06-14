@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { extractPdfText } from "../content/pdf.ts";
 
 const rootDir = path.resolve(import.meta.dirname, "../../..");
-const pdfFixture = path.join(rootDir, "eval/fixtures/pdf-document.pdf");
+const pdfFixture = path.join(rootDir, "eval/extraction-quality/pages/pdf-document.pdf");
 
 describe("extractPdfText", () => {
 	it("extracts text and page metadata from a text-bearing PDF", async () => {

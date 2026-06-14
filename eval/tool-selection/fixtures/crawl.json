@@ -1,0 +1,153 @@
+[
+	{
+		"id": "natural-crawl-max-pages",
+		"prompt": "Crawl https://example.com, up to 25 pages.",
+		"expectedTool": "web_crawl",
+		"expectedArgs": {
+			"action": "run",
+			"url": "https://example.com",
+			"maxPages": 25
+		},
+		"rationale": "The user asks to crawl and read linked pages with a page limit, so use web_crawl.",
+		"tags": [
+			"crawl",
+			"run",
+			"linked",
+			"pages",
+			"maxPages",
+			"url",
+			"contrast:web_map"
+		]
+	},
+	{
+		"id": "crawl-docs-depth",
+		"prompt": "Crawl this docs site to depth 2 and collect linked pages.",
+		"expectedTool": "web_crawl",
+		"expectedArgs": {
+			"action": "run",
+			"maxDepth": 2
+		},
+		"rationale": "The user asks to crawl linked pages and read page bodies, not just discover URL inventories.",
+		"tags": [
+			"crawl",
+			"run",
+			"linked",
+			"pages",
+			"depth",
+			"seed-url",
+			"contrast:web_map"
+		]
+	},
+	{
+		"id": "crawl-status-id",
+		"prompt": "Check crawl status for crawlId docs-123.",
+		"expectedTool": "web_crawl",
+		"expectedArgs": {
+			"action": "status",
+			"crawlId": "docs-123"
+		},
+		"rationale": "Prior crawl status metadata is now handled by web_crawl action=status.",
+		"tags": [
+			"crawl",
+			"status",
+			"crawlId",
+			"prior",
+			"metadata",
+			"contrast:web_map"
+		]
+	},
+	{
+		"id": "crawl-list-prior-seed",
+		"prompt": "List prior crawls for this docs seed.",
+		"expectedTool": "web_crawl",
+		"expectedArgs": {
+			"action": "list"
+		},
+		"rationale": "Listing prior local crawls by seed/status belongs to web_crawl action=list.",
+		"tags": [
+			"crawl",
+			"list",
+			"prior",
+			"local",
+			"seed",
+			"status",
+			"contrast:web_map"
+		]
+	},
+	{
+		"id": "crawl-resume-id",
+		"prompt": "Resume crawl docs-123.",
+		"expectedTool": "web_crawl",
+		"expectedArgs": {
+			"action": "run",
+			"crawlId": "docs-123",
+			"resume": true
+		},
+		"rationale": "Resuming stored crawl work is a web_crawl action=run request with crawlId and resume.",
+		"tags": [
+			"crawl",
+			"run",
+			"resume",
+			"crawlId",
+			"stored",
+			"contrast:web_map"
+		]
+	},
+	{
+		"id": "ambiguous-list-pages-read",
+		"prompt": "List pages on this site by following links and reading pages to depth 1.",
+		"expectedTool": "web_crawl",
+		"expectedArgs": {
+			"action": "run",
+			"maxDepth": 1
+		},
+		"rationale": "Following links and reading pages is a crawl run, not discovery-only web_map.",
+		"tags": [
+			"ambiguous",
+			"crawl",
+			"run",
+			"linked",
+			"read-pages",
+			"depth",
+			"seed-url",
+			"contrast:web_map"
+		]
+	},
+	{
+		"id": "crawl-run-depth-3",
+		"prompt": "Crawl https://docs.example.com following links to depth 3.",
+		"expectedTool": "web_crawl",
+		"expectedArgs": {
+			"action": "run",
+			"url": "https://docs.example.com",
+			"maxDepth": 3
+		},
+		"rationale": "Following links and reading linked pages to a depth is a web_crawl action=run.",
+		"tags": [
+			"crawl",
+			"run",
+			"linked",
+			"depth",
+			"url",
+			"contrast:web_map"
+		]
+	},
+	{
+		"id": "crawl-status-job",
+		"prompt": "What is the status of crawl job site-789?",
+		"expectedTool": "web_crawl",
+		"expectedArgs": {
+			"action": "status",
+			"crawlId": "site-789"
+		},
+		"rationale": "Checking a prior crawl's status by crawlId is web_crawl action=status.",
+		"tags": [
+			"crawl",
+			"status",
+			"crawlId",
+			"prior",
+			"metadata",
+			"contrast:web_map"
+		]
+	}
+]

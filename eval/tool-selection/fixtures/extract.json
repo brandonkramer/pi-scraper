@@ -1,186 +1,5 @@
 [
 	{
-		"id": "scrape-markdown-url",
-		"prompt": "Scrape https://example.com and return markdown.",
-		"expectedTool": "web_scrape",
-		"expectedArgs": {
-			"url": "https://example.com",
-			"format": "markdown"
-		},
-		"rationale": "Single URL fetch/extract request with an explicit output format belongs to web_scrape.",
-		"tags": [
-			"scrape",
-			"fetch",
-			"extract",
-			"one-url",
-			"url",
-			"markdown",
-			"contrast:web_batch",
-			"contrast:web_summarize",
-			"contrast:web_get_result"
-		]
-	},
-	{
-		"id": "natural-read-markdown-url",
-		"prompt": "Read https://example.com as markdown.",
-		"expectedTool": "web_scrape",
-		"expectedArgs": {
-			"url": "https://example.com",
-			"format": "markdown"
-		},
-		"rationale": "Natural single URL read request with markdown output belongs to web_scrape.",
-		"tags": [
-			"scrape",
-			"read",
-			"one-url",
-			"url",
-			"markdown",
-			"contrast:web_summarize"
-		]
-	},
-	{
-		"id": "natural-map-url-inventory",
-		"prompt": "List the URLs available from https://example.com.",
-		"expectedTool": "web_map",
-		"expectedArgs": {
-			"url": "https://example.com"
-		},
-		"rationale": "Listing URLs available from a site is URL inventory/discovery, so use web_map instead of reading pages.",
-		"tags": [
-			"map",
-			"discover",
-			"urls",
-			"inventory",
-			"seed-url",
-			"no-content",
-			"contrast:web_crawl"
-		]
-	},
-	{
-		"id": "natural-crawl-max-pages",
-		"prompt": "Crawl https://example.com, up to 25 pages.",
-		"expectedTool": "web_crawl",
-		"expectedArgs": {
-			"action": "run",
-			"url": "https://example.com",
-			"maxPages": 25
-		},
-		"rationale": "The user asks to crawl and read linked pages with a page limit, so use web_crawl.",
-		"tags": [
-			"crawl",
-			"run",
-			"linked",
-			"pages",
-			"maxPages",
-			"url",
-			"contrast:web_map"
-		]
-	},
-	{
-		"id": "natural-diff-homepage-snapshot",
-		"prompt": "Compare https://example.com against my homepage snapshot.",
-		"expectedTool": "web_scrape",
-		"expectedArgs": {
-			"url": "https://example.com",
-			"diff": {
-				"snapshotName": "homepage"
-			}
-		},
-		"rationale": "Comparing a URL against a named homepage snapshot uses web_scrape with diff param.",
-		"tags": [
-			"diff",
-			"compare",
-			"snapshot",
-			"homepage",
-			"url"
-		]
-	},
-	{
-		"id": "crawl-docs-depth",
-		"prompt": "Crawl this docs site to depth 2 and collect linked pages.",
-		"expectedTool": "web_crawl",
-		"expectedArgs": {
-			"action": "run",
-			"maxDepth": 2
-		},
-		"rationale": "The user asks to crawl linked pages and read page bodies, not just discover URL inventories.",
-		"tags": [
-			"crawl",
-			"run",
-			"linked",
-			"pages",
-			"depth",
-			"seed-url",
-			"contrast:web_map"
-		]
-	},
-	{
-		"id": "map-discovery-no-content",
-		"prompt": "Find URLs from robots.txt, sitemaps, and llms.txt without reading page content.",
-		"expectedTool": "web_map",
-		"rationale": "Discovery-only robots/sitemaps/llms inventory maps URLs and does not fetch page content.",
-		"tags": [
-			"map",
-			"discover",
-			"robots",
-			"sitemaps",
-			"llms",
-			"no-content",
-			"seed-url",
-			"contrast:web_crawl"
-		]
-	},
-	{
-		"id": "batch-independent-urls",
-		"prompt": "Fetch these 5 independent URLs and report per-URL failures.",
-		"expectedTool": "web_batch",
-		"rationale": "Multiple independent URLs with per-URL success/failure semantics belong to web_batch.",
-		"tags": [
-			"batch",
-			"fetch",
-			"independent",
-			"urls",
-			"per-url",
-			"contrast:web_scrape"
-		]
-	},
-	{
-		"id": "retrieve-job-manifest",
-		"prompt": "Retrieve the job manifest for jobId crawl-abc123.",
-		"expectedTool": "web_get_result",
-		"expectedArgs": {
-			"jobId": "crawl-abc123"
-		},
-		"rationale": "Retrieving a stored response or structured job manifest by jobId belongs to web_get_result.",
-		"tags": [
-			"retrieve",
-			"stored",
-			"job",
-			"manifest",
-			"jobId",
-			"audit",
-			"contrast:web_crawl"
-		]
-	},
-	{
-		"id": "diff-homepage-snapshot",
-		"prompt": "Compare the homepage against the saved homepage snapshot.",
-		"expectedTool": "web_scrape",
-		"expectedArgs": {
-			"diff": {
-				"snapshotName": "homepage"
-			}
-		},
-		"rationale": "Comparing current content with a named saved snapshot uses web_scrape with diff param.",
-		"tags": [
-			"diff",
-			"compare",
-			"snapshot",
-			"homepage",
-			"url"
-		]
-	},
-	{
 		"id": "extract-list-capabilities",
 		"prompt": "List supported deterministic extractors and URL patterns.",
 		"expectedTool": "web_extract",
@@ -313,8 +132,15 @@
 			"action": "pattern",
 			"url": "https://raw.githubusercontent.com/openai/openai-cookbook/main/examples/How_to_count_tokens_with_tiktoken.ipynb",
 			"sourceFormat": "json",
-			"jsonPaths": ["$.cells[*].source"],
-			"excerpts": [{"needle": "tool calls", "after": 2500}]
+			"jsonPaths": [
+				"$.cells[*].source"
+			],
+			"excerpts": [
+				{
+					"needle": "tool calls",
+					"after": 2500
+				}
+			]
 		},
 		"rationale": "Deterministic JSONPath field selection and excerpt search over a notebook or API JSON payload belongs to web_extract action=pattern with sourceFormat=json and jsonPaths, replacing one-off Python scripts.",
 		"tags": [
@@ -367,61 +193,6 @@
 		]
 	},
 	{
-		"id": "crawl-status-id",
-		"prompt": "Check crawl status for crawlId docs-123.",
-		"expectedTool": "web_crawl",
-		"expectedArgs": {
-			"action": "status",
-			"crawlId": "docs-123"
-		},
-		"rationale": "Prior crawl status metadata is now handled by web_crawl action=status.",
-		"tags": [
-			"crawl",
-			"status",
-			"crawlId",
-			"prior",
-			"metadata",
-			"contrast:web_map"
-		]
-	},
-	{
-		"id": "crawl-list-prior-seed",
-		"prompt": "List prior crawls for this docs seed.",
-		"expectedTool": "web_crawl",
-		"expectedArgs": {
-			"action": "list"
-		},
-		"rationale": "Listing prior local crawls by seed/status belongs to web_crawl action=list.",
-		"tags": [
-			"crawl",
-			"list",
-			"prior",
-			"local",
-			"seed",
-			"status",
-			"contrast:web_map"
-		]
-	},
-	{
-		"id": "crawl-resume-id",
-		"prompt": "Resume crawl docs-123.",
-		"expectedTool": "web_crawl",
-		"expectedArgs": {
-			"action": "run",
-			"crawlId": "docs-123",
-			"resume": true
-		},
-		"rationale": "Resuming stored crawl work is a web_crawl action=run request with crawlId and resume.",
-		"tags": [
-			"crawl",
-			"run",
-			"resume",
-			"crawlId",
-			"stored",
-			"contrast:web_map"
-		]
-	},
-	{
 		"id": "ambiguous-summarize-url",
 		"prompt": "Summarize https://example.com.",
 		"expectedTool": "web_extract",
@@ -458,42 +229,6 @@
 			"known-site",
 			"url",
 			"contrast:web_scrape"
-		]
-	},
-	{
-		"id": "ambiguous-list-pages-discovery",
-		"prompt": "List pages on this site from sitemap files only, without reading page bodies.",
-		"expectedTool": "web_map",
-		"rationale": "Discovery-only listing from sitemap files should map URLs and avoid page-content fetches.",
-		"tags": [
-			"ambiguous",
-			"list",
-			"pages",
-			"sitemap",
-			"discovery",
-			"no-content",
-			"seed-url",
-			"contrast:web_crawl"
-		]
-	},
-	{
-		"id": "ambiguous-list-pages-read",
-		"prompt": "List pages on this site by following links and reading pages to depth 1.",
-		"expectedTool": "web_crawl",
-		"expectedArgs": {
-			"action": "run",
-			"maxDepth": 1
-		},
-		"rationale": "Following links and reading pages is a crawl run, not discovery-only web_map.",
-		"tags": [
-			"ambiguous",
-			"crawl",
-			"run",
-			"linked",
-			"read-pages",
-			"depth",
-			"seed-url",
-			"contrast:web_map"
 		]
 	},
 	{
@@ -542,7 +277,10 @@
 		"expectedArgs": {
 			"action": "css-extract",
 			"url": "https://example.com/product",
-			"selectors": { "title": "h1", "price": "span.price" }
+			"selectors": {
+				"title": "h1",
+				"price": "span.price"
+			}
 		},
 		"rationale": "A named CSS selector map over one page is deterministic field extraction via web_extract action=css-extract, not adhoc LLM JSON.",
 		"tags": [
@@ -612,199 +350,162 @@
 		]
 	},
 	{
-		"id": "scrape-html-format",
-		"prompt": "Fetch https://example.com and return the raw HTML.",
-		"expectedTool": "web_scrape",
-		"expectedArgs": { "url": "https://example.com", "format": "html" },
-		"rationale": "A single URL fetch with an explicit HTML output format is web_scrape with format=html.",
-		"tags": ["scrape", "fetch", "html", "format", "one-url", "url", "contrast:web_extract"]
-	},
-	{
-		"id": "scrape-text-format",
-		"prompt": "Read https://example.com/article as plain text.",
-		"expectedTool": "web_scrape",
-		"expectedArgs": { "url": "https://example.com/article", "format": "text" },
-		"rationale": "A single URL read with a plain-text output format is web_scrape with format=text.",
-		"tags": ["scrape", "read", "text", "format", "one-url", "url", "contrast:web_extract"]
-	},
-	{
-		"id": "crawl-run-depth-3",
-		"prompt": "Crawl https://docs.example.com following links to depth 3.",
-		"expectedTool": "web_crawl",
-		"expectedArgs": { "action": "run", "url": "https://docs.example.com", "maxDepth": 3 },
-		"rationale": "Following links and reading linked pages to a depth is a web_crawl action=run.",
-		"tags": ["crawl", "run", "linked", "depth", "url", "contrast:web_map"]
-	},
-	{
-		"id": "crawl-status-job",
-		"prompt": "What is the status of crawl job site-789?",
-		"expectedTool": "web_crawl",
-		"expectedArgs": { "action": "status", "crawlId": "site-789" },
-		"rationale": "Checking a prior crawl's status by crawlId is web_crawl action=status.",
-		"tags": ["crawl", "status", "crawlId", "prior", "metadata", "contrast:web_map"]
-	},
-	{
 		"id": "extract-vertical-youtube",
 		"prompt": "Get typed metadata for this YouTube video: https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 		"expectedTool": "web_extract",
-		"expectedArgs": { "action": "vertical", "extractor": "youtube", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+		"expectedArgs": {
+			"action": "vertical",
+			"extractor": "youtube",
+			"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+		},
 		"rationale": "A known YouTube watch URL is deterministic typed extraction via web_extract action=vertical extractor=youtube, not adhoc JSON.",
-		"tags": ["extract", "vertical", "youtube", "known-site", "typed", "url", "contrast:web_scrape"]
+		"tags": [
+			"extract",
+			"vertical",
+			"youtube",
+			"known-site",
+			"typed",
+			"url",
+			"contrast:web_scrape"
+		]
 	},
 	{
 		"id": "extract-vertical-pypi",
 		"prompt": "Get typed PyPI package metadata for https://pypi.org/project/requests/.",
 		"expectedTool": "web_extract",
-		"expectedArgs": { "action": "vertical", "extractor": "pypi", "url": "https://pypi.org/project/requests/" },
+		"expectedArgs": {
+			"action": "vertical",
+			"extractor": "pypi",
+			"url": "https://pypi.org/project/requests/"
+		},
 		"rationale": "A known PyPI project URL is deterministic typed extraction via web_extract action=vertical extractor=pypi.",
-		"tags": ["extract", "vertical", "pypi", "known-site", "typed", "url", "contrast:web_scrape"]
+		"tags": [
+			"extract",
+			"vertical",
+			"pypi",
+			"known-site",
+			"typed",
+			"url",
+			"contrast:web_scrape"
+		]
 	},
 	{
 		"id": "extract-vertical-arxiv",
 		"prompt": "Extract typed paper metadata from https://arxiv.org/abs/1706.03762.",
 		"expectedTool": "web_extract",
-		"expectedArgs": { "action": "vertical", "extractor": "arxiv", "url": "https://arxiv.org/abs/1706.03762" },
+		"expectedArgs": {
+			"action": "vertical",
+			"extractor": "arxiv",
+			"url": "https://arxiv.org/abs/1706.03762"
+		},
 		"rationale": "A known arXiv abstract URL is deterministic typed extraction via web_extract action=vertical extractor=arxiv.",
-		"tags": ["extract", "vertical", "arxiv", "known-site", "typed", "url", "contrast:web_scrape"]
+		"tags": [
+			"extract",
+			"vertical",
+			"arxiv",
+			"known-site",
+			"typed",
+			"url",
+			"contrast:web_scrape"
+		]
 	},
 	{
 		"id": "extract-vertical-hackernews",
 		"prompt": "Get structured metadata for this Hacker News thread: https://news.ycombinator.com/item?id=12345678",
 		"expectedTool": "web_extract",
-		"expectedArgs": { "action": "vertical", "extractor": "hackernews", "url": "https://news.ycombinator.com/item?id=12345678" },
+		"expectedArgs": {
+			"action": "vertical",
+			"extractor": "hackernews",
+			"url": "https://news.ycombinator.com/item?id=12345678"
+		},
 		"rationale": "A known Hacker News item URL is deterministic typed extraction via web_extract action=vertical extractor=hackernews.",
-		"tags": ["extract", "vertical", "hackernews", "known-site", "typed", "url", "contrast:web_scrape"]
+		"tags": [
+			"extract",
+			"vertical",
+			"hackernews",
+			"known-site",
+			"typed",
+			"url",
+			"contrast:web_scrape"
+		]
 	},
 	{
 		"id": "extract-vertical-hf-model",
 		"prompt": "Get typed model card metadata for https://huggingface.co/bert-base-uncased.",
 		"expectedTool": "web_extract",
-		"expectedArgs": { "action": "vertical", "extractor": "huggingface_model", "url": "https://huggingface.co/bert-base-uncased" },
+		"expectedArgs": {
+			"action": "vertical",
+			"extractor": "huggingface_model",
+			"url": "https://huggingface.co/bert-base-uncased"
+		},
 		"rationale": "A known Hugging Face model URL is deterministic typed extraction via web_extract action=vertical extractor=huggingface_model.",
-		"tags": ["extract", "vertical", "huggingface", "model", "known-site", "typed", "url", "contrast:web_scrape"]
+		"tags": [
+			"extract",
+			"vertical",
+			"huggingface",
+			"model",
+			"known-site",
+			"typed",
+			"url",
+			"contrast:web_scrape"
+		]
 	},
 	{
 		"id": "extract-pattern-changelog-markers",
 		"prompt": "From this raw changelog, pull 200 characters around each BREAKING marker: https://raw.githubusercontent.com/example/repo/main/CHANGELOG.md",
 		"expectedTool": "web_extract",
-		"expectedArgs": { "action": "pattern", "url": "https://raw.githubusercontent.com/example/repo/main/CHANGELOG.md", "sourceFormat": "text" },
+		"expectedArgs": {
+			"action": "pattern",
+			"url": "https://raw.githubusercontent.com/example/repo/main/CHANGELOG.md",
+			"sourceFormat": "text"
+		},
 		"rationale": "Bounded excerpts around deterministic text markers is web_extract action=pattern, not adhoc model extraction.",
-		"tags": ["extract", "pattern", "excerpts", "markers", "deterministic", "url", "contrast:web_scrape"]
+		"tags": [
+			"extract",
+			"pattern",
+			"excerpts",
+			"markers",
+			"deterministic",
+			"url",
+			"contrast:web_scrape"
+		]
 	},
 	{
 		"id": "extract-summarize-sentences",
 		"prompt": "Summarize this page in 3 sentences: https://example.com/post",
 		"expectedTool": "web_extract",
-		"expectedArgs": { "action": "summarize", "url": "https://example.com/post", "sentences": 3 },
+		"expectedArgs": {
+			"action": "summarize",
+			"url": "https://example.com/post",
+			"sentences": 3
+		},
 		"rationale": "A one-page sentence-count summary is web_extract action=summarize, not multi-source research.",
-		"tags": ["extract", "summarize", "one-page", "sentences", "url", "contrast:web_scrape"]
+		"tags": [
+			"extract",
+			"summarize",
+			"one-page",
+			"sentences",
+			"url",
+			"contrast:web_scrape"
+		]
 	},
 	{
 		"id": "extract-adhoc-author-date",
 		"prompt": "From this arbitrary blog page, pull the author and publish date as JSON: https://example.com/blog/post-1",
 		"expectedTool": "web_extract",
-		"expectedArgs": { "action": "adhoc", "url": "https://example.com/blog/post-1" },
+		"expectedArgs": {
+			"action": "adhoc",
+			"url": "https://example.com/blog/post-1"
+		},
 		"rationale": "Arbitrary-page custom JSON/schema extraction with no deterministic vertical is web_extract action=adhoc.",
-		"tags": ["extract", "adhoc", "json", "schema", "arbitrary", "llm", "url", "contrast:web_scrape"]
-	},
-	{
-		"id": "negative-research-scrapers",
-		"prompt": "Research the best web scrapers across multiple sources.",
-		"expectedTool": null,
-		"rationale": "Multi-source research should use a companion search/research extension, not pi-scraper scraping tools.",
 		"tags": [
-			"negative",
-			"research",
-			"multi-source",
-			"companion-extension",
-			"contrast:web_scrape",
-			"contrast:web_crawl",
-			"contrast:web_batch"
-		]
-	},
-	{
-		"id": "negative-recent-articles",
-		"prompt": "Find recent articles about AI agents.",
-		"expectedTool": null,
-		"rationale": "Open-ended discovery/search without a concrete URL belongs to search/research, not web_map.",
-		"tags": [
-			"negative",
-			"search",
-			"recent",
-			"articles",
-			"no-url",
-			"contrast:web_map"
-		]
-	},
-	{
-		"id": "negative-multisource-summary",
-		"prompt": "Summarize these five sources into a report with citations.",
-		"expectedTool": null,
-		"rationale": "Multi-source synthesis with citations is research/reporting, not page-scoped web_extract action=summarize.",
-		"tags": [
-			"negative",
-			"multi-source",
-			"citations",
-			"report",
-			"contrast:web_scrape",
-			"contrast:web_batch",
-			"contrast:web_summarize"
-		]
-	},
-	{
-		"id": "negative-monitor-future",
-		"prompt": "Monitor the web for future changes.",
-		"expectedTool": null,
-		"rationale": "Future monitoring is not a single scrape/diff action unless the user provides a URL and snapshot target.",
-		"tags": [
-			"negative",
-			"monitor",
-			"future",
-			"no-url",
-			"contrast:web_crawl"
-		]
-	},
-	{
-		"id": "negative-translate-paragraph",
-		"prompt": "Translate this paragraph.",
-		"expectedTool": null,
-		"rationale": "Translation is unrelated to scraping, extraction, crawling, mapping, diffing, or page summaries.",
-		"tags": [
-			"negative",
-			"unrelated",
-			"translation",
-			"contrast:web_extract",
-			"contrast:web_scrape"
-		]
-	},
-	{
-		"id": "negative-site-visual-assets-no-source",
-		"prompt": "Extract the site logo, colors, fonts, favicons, and Open Graph assets.",
-		"expectedTool": null,
-		"rationale": "The request does not provide a URL or content source; do not call a scraper or extractor without an input page.",
-		"tags": [
-			"negative",
-			"logo",
-			"colors",
-			"fonts",
-			"favicons",
-			"site-assets",
-			"no-url",
-			"contrast:web_extract"
-		]
-	},
-	{
-		"id": "negative-stored-search",
-		"prompt": "Search stored scrape text for pricing table.",
-		"expectedTool": null,
-		"rationale": "Stored local full-text search is no longer public and is not broad web search.",
-		"tags": [
-			"negative",
-			"stored",
-			"scrapes",
-			"search",
-			"fts",
-			"not-public",
+			"extract",
+			"adhoc",
+			"json",
+			"schema",
+			"arbitrary",
+			"llm",
+			"url",
 			"contrast:web_scrape"
 		]
 	}

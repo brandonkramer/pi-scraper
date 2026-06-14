@@ -12,7 +12,7 @@ import { type ScrapePipelineDeps, scrapeUrl } from "../pipeline.ts";
 
 const URL = "https://example.com/page";
 const rootDir = path.resolve(import.meta.dirname, "../../..");
-const pdfFixture = path.join(rootDir, "eval/fixtures/pdf-document.pdf");
+const pdfFixture = path.join(rootDir, "eval/extraction-quality/pages/pdf-document.pdf");
 
 describe("scrapeUrl", () => {
 	it("scrapes static HTML without browser escalation", async () => {

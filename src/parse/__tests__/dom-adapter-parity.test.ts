@@ -1,18 +1,14 @@
-/**
- * @fileoverview parse __tests__ dom-adapter-parity.test module.
- */
+/** @file Parse **tests** dom-adapter-parity.test module. */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
+
 import { htmlToMarkdown } from "../../serialize/markdown.ts";
 import { discoverAlternateLinksFromDom } from "../discovery/alternates.ts";
 import { loadDom } from "../dom/adapter.ts";
-import {
-	extractFastPage,
-	extractFastPageFromDom,
-	type FastExtractOptions,
-} from "../page/fast.ts";
 import { loadHtmlparser2Dom } from "../dom/htmlparser2.ts";
+import { extractFastPage, extractFastPageFromDom, type FastExtractOptions } from "../page/fast.ts";
 
 const baseUrl = "https://example.com/docs/page";
 
@@ -50,10 +46,7 @@ const cases: Array<{
 ];
 
 describe("DOM adapter production parity", () => {
-	it.each(cases)("matches production fast extraction for $name", ({
-		file,
-		options,
-	}) => {
+	it.each(cases)("matches production fast extraction for $name", ({ file, options }) => {
 		const html = fixture(file);
 		const production = projectFast(extractFastPage(html, baseUrl, options));
 		const htmlparser2Dom = projectFast(
@@ -66,9 +59,9 @@ describe("DOM adapter production parity", () => {
 	it("runs alternate-link discovery through the htmlparser2 adapter", () => {
 		const html = fixture("github-data-island-parity.html");
 
-		expect(
-			discoverAlternateLinksFromDom(loadHtmlparser2Dom(html), baseUrl),
-		).toEqual(discoverAlternateLinksFromDom(loadDom(html), baseUrl));
+		expect(discoverAlternateLinksFromDom(loadHtmlparser2Dom(html), baseUrl)).toEqual(
+			discoverAlternateLinksFromDom(loadDom(html), baseUrl),
+		);
 	});
 });
 
@@ -87,5 +80,5 @@ function projectFast(result: ReturnType<typeof extractFastPage>) {
 }
 
 function fixture(name: string): string {
-	return readFileSync(join(process.cwd(), "eval", "fixtures", name), "utf8");
+	return readFileSync(join(process.cwd(), "eval", "extraction-quality", "pages", name), "utf8");
 }

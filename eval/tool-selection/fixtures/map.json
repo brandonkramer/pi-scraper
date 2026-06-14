@@ -1,0 +1,52 @@
+[
+	{
+		"id": "natural-map-url-inventory",
+		"prompt": "List the URLs available from https://example.com.",
+		"expectedTool": "web_map",
+		"expectedArgs": {
+			"url": "https://example.com"
+		},
+		"rationale": "Listing URLs available from a site is URL inventory/discovery, so use web_map instead of reading pages.",
+		"tags": [
+			"map",
+			"discover",
+			"urls",
+			"inventory",
+			"seed-url",
+			"no-content",
+			"contrast:web_crawl"
+		]
+	},
+	{
+		"id": "map-discovery-no-content",
+		"prompt": "Find URLs from robots.txt, sitemaps, and llms.txt without reading page content.",
+		"expectedTool": "web_map",
+		"rationale": "Discovery-only robots/sitemaps/llms inventory maps URLs and does not fetch page content.",
+		"tags": [
+			"map",
+			"discover",
+			"robots",
+			"sitemaps",
+			"llms",
+			"no-content",
+			"seed-url",
+			"contrast:web_crawl"
+		]
+	},
+	{
+		"id": "ambiguous-list-pages-discovery",
+		"prompt": "List pages on this site from sitemap files only, without reading page bodies.",
+		"expectedTool": "web_map",
+		"rationale": "Discovery-only listing from sitemap files should map URLs and avoid page-content fetches.",
+		"tags": [
+			"ambiguous",
+			"list",
+			"pages",
+			"sitemap",
+			"discovery",
+			"no-content",
+			"seed-url",
+			"contrast:web_crawl"
+		]
+	}
+]

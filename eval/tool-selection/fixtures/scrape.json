@@ -1,0 +1,116 @@
+[
+	{
+		"id": "scrape-markdown-url",
+		"prompt": "Scrape https://example.com and return markdown.",
+		"expectedTool": "web_scrape",
+		"expectedArgs": {
+			"url": "https://example.com",
+			"format": "markdown"
+		},
+		"rationale": "Single URL fetch/extract request with an explicit output format belongs to web_scrape.",
+		"tags": [
+			"scrape",
+			"fetch",
+			"extract",
+			"one-url",
+			"url",
+			"markdown",
+			"contrast:web_batch",
+			"contrast:web_summarize",
+			"contrast:web_get_result"
+		]
+	},
+	{
+		"id": "natural-read-markdown-url",
+		"prompt": "Read https://example.com as markdown.",
+		"expectedTool": "web_scrape",
+		"expectedArgs": {
+			"url": "https://example.com",
+			"format": "markdown"
+		},
+		"rationale": "Natural single URL read request with markdown output belongs to web_scrape.",
+		"tags": [
+			"scrape",
+			"read",
+			"one-url",
+			"url",
+			"markdown",
+			"contrast:web_summarize"
+		]
+	},
+	{
+		"id": "natural-diff-homepage-snapshot",
+		"prompt": "Compare https://example.com against my homepage snapshot.",
+		"expectedTool": "web_scrape",
+		"expectedArgs": {
+			"url": "https://example.com",
+			"diff": {
+				"snapshotName": "homepage"
+			}
+		},
+		"rationale": "Comparing a URL against a named homepage snapshot uses web_scrape with diff param.",
+		"tags": [
+			"diff",
+			"compare",
+			"snapshot",
+			"homepage",
+			"url"
+		]
+	},
+	{
+		"id": "diff-homepage-snapshot",
+		"prompt": "Compare the homepage against the saved homepage snapshot.",
+		"expectedTool": "web_scrape",
+		"expectedArgs": {
+			"diff": {
+				"snapshotName": "homepage"
+			}
+		},
+		"rationale": "Comparing current content with a named saved snapshot uses web_scrape with diff param.",
+		"tags": [
+			"diff",
+			"compare",
+			"snapshot",
+			"homepage",
+			"url"
+		]
+	},
+	{
+		"id": "scrape-html-format",
+		"prompt": "Fetch https://example.com and return the raw HTML.",
+		"expectedTool": "web_scrape",
+		"expectedArgs": {
+			"url": "https://example.com",
+			"format": "html"
+		},
+		"rationale": "A single URL fetch with an explicit HTML output format is web_scrape with format=html.",
+		"tags": [
+			"scrape",
+			"fetch",
+			"html",
+			"format",
+			"one-url",
+			"url",
+			"contrast:web_extract"
+		]
+	},
+	{
+		"id": "scrape-text-format",
+		"prompt": "Read https://example.com/article as plain text.",
+		"expectedTool": "web_scrape",
+		"expectedArgs": {
+			"url": "https://example.com/article",
+			"format": "text"
+		},
+		"rationale": "A single URL read with a plain-text output format is web_scrape with format=text.",
+		"tags": [
+			"scrape",
+			"read",
+			"text",
+			"format",
+			"one-url",
+			"url",
+			"contrast:web_extract"
+		]
+	}
+]

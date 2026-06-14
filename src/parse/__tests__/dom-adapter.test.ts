@@ -1,9 +1,9 @@
-/**
- * @fileoverview parse __tests__ dom-adapter.test module.
- */
+/** @file Parse **tests** dom-adapter.test module. */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
+
 import { loadDom } from "../dom/adapter.ts";
 
 const staticHtml = `<!doctype html><html><head>
@@ -24,9 +24,7 @@ describe("DOM adapter", () => {
 		expect(dom.tagName(firstAlternate)).toBe("link");
 		expect(dom.text(dom.select("main"))).toContain("Body link");
 		expect(dom.html(dom.select("main"))).toContain("<h1>Heading</h1>");
-		expect(
-			dom.text(dom.selection(dom.nodes(dom.select("main,aside")))),
-		).toContain("Noise");
+		expect(dom.text(dom.selection(dom.nodes(dom.select("main,aside"))))).toContain("Noise");
 	});
 
 	it("supports scoped selection and explicit removal", () => {
@@ -78,5 +76,5 @@ describe("DOM adapter", () => {
 });
 
 function fixture(name: string): string {
-	return readFileSync(join(process.cwd(), "eval", "fixtures", name), "utf8");
+	return readFileSync(join(process.cwd(), "eval", "extraction-quality", "pages", name), "utf8");
 }

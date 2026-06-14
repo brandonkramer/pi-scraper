@@ -1,5 +1,5 @@
 /** @file Tools **tests** tool-selection-fixtures.test module. */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
@@ -15,9 +15,14 @@ interface ToolSelectionFixture {
 	tags: string[];
 }
 
-const fixtures = JSON.parse(
-	readFileSync(new URL("../../../eval/tool-selection/prompts.json", import.meta.url), "utf8"),
-) as ToolSelectionFixture[];
+const fixturesDir = new URL("../../../eval/tool-selection/fixtures/", import.meta.url);
+const fixtures = readdirSync(fixturesDir)
+	.filter((name) => name.endsWith(".json"))
+	.sort()
+	.flatMap(
+		(name) =>
+			JSON.parse(readFileSync(new URL(name, fixturesDir), "utf8")) as ToolSelectionFixture[],
+	);
 
 const toolsByName = new Map(webTools.map((tool) => [tool.name, tool]));
 

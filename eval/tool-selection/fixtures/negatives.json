@@ -1,0 +1,103 @@
+[
+	{
+		"id": "negative-research-scrapers",
+		"prompt": "Research the best web scrapers across multiple sources.",
+		"expectedTool": null,
+		"rationale": "Multi-source research should use a companion search/research extension, not pi-scraper scraping tools.",
+		"tags": [
+			"negative",
+			"research",
+			"multi-source",
+			"companion-extension",
+			"contrast:web_scrape",
+			"contrast:web_crawl",
+			"contrast:web_batch"
+		]
+	},
+	{
+		"id": "negative-recent-articles",
+		"prompt": "Find recent articles about AI agents.",
+		"expectedTool": null,
+		"rationale": "Open-ended discovery/search without a concrete URL belongs to search/research, not web_map.",
+		"tags": [
+			"negative",
+			"search",
+			"recent",
+			"articles",
+			"no-url",
+			"contrast:web_map"
+		]
+	},
+	{
+		"id": "negative-multisource-summary",
+		"prompt": "Summarize these five sources into a report with citations.",
+		"expectedTool": null,
+		"rationale": "Multi-source synthesis with citations is research/reporting, not page-scoped web_extract action=summarize.",
+		"tags": [
+			"negative",
+			"multi-source",
+			"citations",
+			"report",
+			"contrast:web_scrape",
+			"contrast:web_batch",
+			"contrast:web_summarize"
+		]
+	},
+	{
+		"id": "negative-monitor-future",
+		"prompt": "Monitor the web for future changes.",
+		"expectedTool": null,
+		"rationale": "Future monitoring is not a single scrape/diff action unless the user provides a URL and snapshot target.",
+		"tags": [
+			"negative",
+			"monitor",
+			"future",
+			"no-url",
+			"contrast:web_crawl"
+		]
+	},
+	{
+		"id": "negative-translate-paragraph",
+		"prompt": "Translate this paragraph.",
+		"expectedTool": null,
+		"rationale": "Translation is unrelated to scraping, extraction, crawling, mapping, diffing, or page summaries.",
+		"tags": [
+			"negative",
+			"unrelated",
+			"translation",
+			"contrast:web_extract",
+			"contrast:web_scrape"
+		]
+	},
+	{
+		"id": "negative-site-visual-assets-no-source",
+		"prompt": "Extract the site logo, colors, fonts, favicons, and Open Graph assets.",
+		"expectedTool": null,
+		"rationale": "The request does not provide a URL or content source; do not call a scraper or extractor without an input page.",
+		"tags": [
+			"negative",
+			"logo",
+			"colors",
+			"fonts",
+			"favicons",
+			"site-assets",
+			"no-url",
+			"contrast:web_extract"
+		]
+	},
+	{
+		"id": "negative-stored-search",
+		"prompt": "Search stored scrape text for pricing table.",
+		"expectedTool": null,
+		"rationale": "Stored local full-text search is no longer public and is not broad web search.",
+		"tags": [
+			"negative",
+			"stored",
+			"scrapes",
+			"search",
+			"fts",
+			"not-public",
+			"contrast:web_scrape"
+		]
+	}
+]
