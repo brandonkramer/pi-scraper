@@ -612,6 +612,102 @@
 		]
 	},
 	{
+		"id": "scrape-html-format",
+		"prompt": "Fetch https://example.com and return the raw HTML.",
+		"expectedTool": "web_scrape",
+		"expectedArgs": { "url": "https://example.com", "format": "html" },
+		"rationale": "A single URL fetch with an explicit HTML output format is web_scrape with format=html.",
+		"tags": ["scrape", "fetch", "html", "format", "one-url", "url", "contrast:web_extract"]
+	},
+	{
+		"id": "scrape-text-format",
+		"prompt": "Read https://example.com/article as plain text.",
+		"expectedTool": "web_scrape",
+		"expectedArgs": { "url": "https://example.com/article", "format": "text" },
+		"rationale": "A single URL read with a plain-text output format is web_scrape with format=text.",
+		"tags": ["scrape", "read", "text", "format", "one-url", "url", "contrast:web_extract"]
+	},
+	{
+		"id": "crawl-run-depth-3",
+		"prompt": "Crawl https://docs.example.com following links to depth 3.",
+		"expectedTool": "web_crawl",
+		"expectedArgs": { "action": "run", "url": "https://docs.example.com", "maxDepth": 3 },
+		"rationale": "Following links and reading linked pages to a depth is a web_crawl action=run.",
+		"tags": ["crawl", "run", "linked", "depth", "url", "contrast:web_map"]
+	},
+	{
+		"id": "crawl-status-job",
+		"prompt": "What is the status of crawl job site-789?",
+		"expectedTool": "web_crawl",
+		"expectedArgs": { "action": "status", "crawlId": "site-789" },
+		"rationale": "Checking a prior crawl's status by crawlId is web_crawl action=status.",
+		"tags": ["crawl", "status", "crawlId", "prior", "metadata", "contrast:web_map"]
+	},
+	{
+		"id": "extract-vertical-youtube",
+		"prompt": "Get typed metadata for this YouTube video: https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+		"expectedTool": "web_extract",
+		"expectedArgs": { "action": "vertical", "extractor": "youtube", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+		"rationale": "A known YouTube watch URL is deterministic typed extraction via web_extract action=vertical extractor=youtube, not adhoc JSON.",
+		"tags": ["extract", "vertical", "youtube", "known-site", "typed", "url", "contrast:web_scrape"]
+	},
+	{
+		"id": "extract-vertical-pypi",
+		"prompt": "Get typed PyPI package metadata for https://pypi.org/project/requests/.",
+		"expectedTool": "web_extract",
+		"expectedArgs": { "action": "vertical", "extractor": "pypi", "url": "https://pypi.org/project/requests/" },
+		"rationale": "A known PyPI project URL is deterministic typed extraction via web_extract action=vertical extractor=pypi.",
+		"tags": ["extract", "vertical", "pypi", "known-site", "typed", "url", "contrast:web_scrape"]
+	},
+	{
+		"id": "extract-vertical-arxiv",
+		"prompt": "Extract typed paper metadata from https://arxiv.org/abs/1706.03762.",
+		"expectedTool": "web_extract",
+		"expectedArgs": { "action": "vertical", "extractor": "arxiv", "url": "https://arxiv.org/abs/1706.03762" },
+		"rationale": "A known arXiv abstract URL is deterministic typed extraction via web_extract action=vertical extractor=arxiv.",
+		"tags": ["extract", "vertical", "arxiv", "known-site", "typed", "url", "contrast:web_scrape"]
+	},
+	{
+		"id": "extract-vertical-hackernews",
+		"prompt": "Get structured metadata for this Hacker News thread: https://news.ycombinator.com/item?id=12345678",
+		"expectedTool": "web_extract",
+		"expectedArgs": { "action": "vertical", "extractor": "hackernews", "url": "https://news.ycombinator.com/item?id=12345678" },
+		"rationale": "A known Hacker News item URL is deterministic typed extraction via web_extract action=vertical extractor=hackernews.",
+		"tags": ["extract", "vertical", "hackernews", "known-site", "typed", "url", "contrast:web_scrape"]
+	},
+	{
+		"id": "extract-vertical-hf-model",
+		"prompt": "Get typed model card metadata for https://huggingface.co/bert-base-uncased.",
+		"expectedTool": "web_extract",
+		"expectedArgs": { "action": "vertical", "extractor": "huggingface_model", "url": "https://huggingface.co/bert-base-uncased" },
+		"rationale": "A known Hugging Face model URL is deterministic typed extraction via web_extract action=vertical extractor=huggingface_model.",
+		"tags": ["extract", "vertical", "huggingface", "model", "known-site", "typed", "url", "contrast:web_scrape"]
+	},
+	{
+		"id": "extract-pattern-changelog-markers",
+		"prompt": "From this raw changelog, pull 200 characters around each BREAKING marker: https://raw.githubusercontent.com/example/repo/main/CHANGELOG.md",
+		"expectedTool": "web_extract",
+		"expectedArgs": { "action": "pattern", "url": "https://raw.githubusercontent.com/example/repo/main/CHANGELOG.md", "sourceFormat": "text" },
+		"rationale": "Bounded excerpts around deterministic text markers is web_extract action=pattern, not adhoc model extraction.",
+		"tags": ["extract", "pattern", "excerpts", "markers", "deterministic", "url", "contrast:web_scrape"]
+	},
+	{
+		"id": "extract-summarize-sentences",
+		"prompt": "Summarize this page in 3 sentences: https://example.com/post",
+		"expectedTool": "web_extract",
+		"expectedArgs": { "action": "summarize", "url": "https://example.com/post", "sentences": 3 },
+		"rationale": "A one-page sentence-count summary is web_extract action=summarize, not multi-source research.",
+		"tags": ["extract", "summarize", "one-page", "sentences", "url", "contrast:web_scrape"]
+	},
+	{
+		"id": "extract-adhoc-author-date",
+		"prompt": "From this arbitrary blog page, pull the author and publish date as JSON: https://example.com/blog/post-1",
+		"expectedTool": "web_extract",
+		"expectedArgs": { "action": "adhoc", "url": "https://example.com/blog/post-1" },
+		"rationale": "Arbitrary-page custom JSON/schema extraction with no deterministic vertical is web_extract action=adhoc.",
+		"tags": ["extract", "adhoc", "json", "schema", "arbitrary", "llm", "url", "contrast:web_scrape"]
+	},
+	{
 		"id": "negative-research-scrapers",
 		"prompt": "Research the best web scrapers across multiple sources.",
 		"expectedTool": null,

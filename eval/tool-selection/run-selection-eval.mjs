@@ -31,12 +31,17 @@ async function main() {
 		description: tool.description,
 		parameters: tool.parameters,
 	}));
-	const predictions = await loadPredictions({
-		predictionsPath,
-		contracts,
-		fixtures,
-	});
-	const report = buildReport({ contracts, fixtures, predictions, predictionsPath });
+	// Only the model command produces independent samples; static/predictions
+	// modes are deterministic, so repeating them adds nothing. Average N model
+	// runs to keep the gate verdict above per-run noise.
+	const modelMode = Boolean(process.env.PI_TOOL_SELECTION_EVAL_COMMAND) && !predictionsPath;
+	const runs = modelMode ? resolveRuns(args) : 1;
+	const reports = [];
+	for (let i = 0; i < runs; i++) {
+		const predictions = await loadPredictions({ predictionsPath, contracts, fixtures });
+		reports.push(buildReport({ contracts, fixtures, predictions, predictionsPath }));
+	}
+	const report = runs > 1 ? aggregateReports(reports) : reports[0];
 	const markdown = renderMarkdown(report);
 	await mkdir(outDir, { recursive: true });
 	await writeFile(
@@ -215,6 +220,13 @@ function buildReport({ contracts, fixtures, predictions, predictionsPath }) {
 			criticalConfusions: criticalConfusions.length,
 		},
 		confusionMatrix: confusionMatrix(rows),
+		perFixture: rows.map((row) => ({
+			id: row.id,
+			expectedTool: row.expectedTool,
+			passed: row.passed,
+			scorableArgs: row.scorableArgs,
+			argsPassed: row.argsPassed,
+		})),
 		failures: rows.filter((row) => !row.passed),
 		invocationFailures: invocationScorable
 			.filter((row) => !row.argsPassed)
@@ -269,54 +281,126 @@ function confusionMatrix(rows) {
 function renderMarkdown(report) {
 	const m = report.metrics;
 	const failures = gateFailures(report);
-	return [
-		"# tool-selection eval",
-		"",
-		`Generated: ${String(report.generatedAt)}`,
-		`Mode: ${String(report.predictionMode)}`,
+	const multi = (report.runs ?? 1) > 1;
+	const ranges = report.metricRanges;
+	const acc = (value, key) =>
+		multi && ranges?.[key]
+			? `${pct(value)} (range ${pct(ranges[key][0])}–${pct(ranges[key][1])})`
+			: pct(value);
+	const lines = ["# tool-selection eval", "", `Generated: ${String(report.generatedAt)}`, `Mode: ${String(report.predictionMode)}`];
+	if (multi) lines.push(`Runs: ${String(report.runs)} (gate on mean)`);
+	lines.push(
 		`Contract estimate: ${String(report.contractTokenEstimate)} tokens (budget ${String(report.thresholds.contractTokenBudget)})`,
 		"",
 		"## Summary",
 		"",
 		`Verdict: ${failures.length === 0 ? "PASS" : "FAIL"}`,
-		`Passed: ${String(m.passed)}/${String(m.total)}`,
-		`Positive exact tool accuracy: ${pct(m.positiveAccuracy)}`,
-		`Negative no-tool precision: ${pct(m.negativePrecision)}`,
-		`Invocation exact-arg accuracy: ${pct(m.invocationAccuracy)} (${String(m.invocationPassed)}/${String(m.invocationScorable)} scorable)`,
-		`Critical confusions: ${String(m.criticalConfusions)}`,
+		`Positive exact tool accuracy: ${acc(m.positiveAccuracy, "positiveAccuracy")}`,
+		`Negative no-tool precision: ${acc(m.negativePrecision, "negativePrecision")}`,
+		`Invocation exact-arg accuracy: ${acc(m.invocationAccuracy, "invocationAccuracy")} (~${String(Math.round(m.invocationScorable))} scorable)`,
+		`Critical confusions: ${multi ? m.criticalConfusions.toFixed(1) : String(m.criticalConfusions)}`,
 		"",
 		"## Contract tokens by tool",
 		"",
-		report.contractTokenByTool
-			.map((entry) => `- ${String(entry.name)}: ${String(entry.tokens)}`)
-			.join("\n"),
+		report.contractTokenByTool.map((entry) => `- ${String(entry.name)}: ${String(entry.tokens)}`).join("\n"),
 		"",
 		"## Gate failures",
 		"",
 		failures.length > 0 ? failures.map((line) => `- ${line}`).join("\n") : "None.",
-		"",
-		"## Selection failures",
-		"",
-		report.failures.length > 0
-			? report.failures
-					.map(
-						(row) =>
-							`- ${String(row.id)}: expected ${String(row.expectedTool ?? "none")}, got ${String(row.actualTool ?? "none")}`,
-					)
-					.join("\n")
-			: "None.",
-		"",
-		"## Invocation failures",
-		"",
-		report.invocationFailures.length > 0
-			? report.invocationFailures
-					.map(
-						(row) =>
-							`- ${String(row.id)}: expected ${JSON.stringify(row.expected)}, got ${JSON.stringify(row.actual)}`,
-					)
-					.join("\n")
-			: "None.",
-	].join("\n");
+	);
+	if (multi) {
+		lines.push(
+			"",
+			`## Flaky selection (< 100% across ${String(report.runs)} runs)`,
+			"",
+			report.flakySelection.length > 0
+				? report.flakySelection.map((f) => `- ${String(f.id)}: ${pct(f.passRate)}`).join("\n")
+				: "None.",
+			"",
+			"## Flaky invocation",
+			"",
+			report.flakyInvocation.length > 0
+				? report.flakyInvocation.map((f) => `- ${String(f.id)}: ${pct(f.passRate)}`).join("\n")
+				: "None.",
+		);
+	} else {
+		lines.push(
+			"",
+			"## Selection failures",
+			"",
+			report.failures.length > 0
+				? report.failures
+						.map((row) => `- ${String(row.id)}: expected ${String(row.expectedTool ?? "none")}, got ${String(row.actualTool ?? "none")}`)
+						.join("\n")
+				: "None.",
+			"",
+			"## Invocation failures",
+			"",
+			report.invocationFailures.length > 0
+				? report.invocationFailures
+						.map((row) => `- ${String(row.id)}: expected ${JSON.stringify(row.expected)}, got ${JSON.stringify(row.actual)}`)
+						.join("\n")
+				: "None.",
+		);
+	}
+	return lines.join("\n");
+}
+
+function resolveRuns(args) {
+	const raw = valueFlag(args, "--runs") ?? process.env.PI_TOOL_SELECTION_RUNS;
+	const n = Number.parseInt(String(raw ?? "1"), 10);
+	return Number.isFinite(n) && n > 0 ? n : 1;
+}
+
+function aggregateReports(reports) {
+	const runs = reports.length;
+	const base = reports[0];
+	const mean = (selectMetric) => reports.reduce((sum, r) => sum + selectMetric(r), 0) / runs;
+	const range = (selectMetric) => [
+		Math.min(...reports.map(selectMetric)),
+		Math.max(...reports.map(selectMetric)),
+	];
+	const flakySelection = [];
+	const flakyInvocation = [];
+	for (const { id } of base.perFixture) {
+		const samples = reports.map((r) => r.perFixture.find((f) => f.id === id));
+		if (samples[0].expectedTool !== null) {
+			const rate = samples.filter((f) => f.passed).length / runs;
+			if (rate < 1) flakySelection.push({ id, passRate: rate });
+		}
+		const scorable = samples.filter((f) => f.scorableArgs);
+		if (scorable.length > 0) {
+			const rate = scorable.filter((f) => f.argsPassed).length / scorable.length;
+			if (rate < 1) flakyInvocation.push({ id, passRate: rate });
+		}
+	}
+	return {
+		...base,
+		runs,
+		metrics: {
+			total: base.metrics.total,
+			positiveAccuracy: mean((r) => r.metrics.positiveAccuracy),
+			negativePrecision: mean((r) => r.metrics.negativePrecision),
+			invocationAccuracy: mean((r) => r.metrics.invocationAccuracy),
+			invocationScorable: mean((r) => r.metrics.invocationScorable),
+			invocationPassed: mean((r) => r.metrics.invocationPassed),
+			criticalConfusions: mean((r) => r.metrics.criticalConfusions),
+		},
+		metricRanges: {
+			positiveAccuracy: range((r) => r.metrics.positiveAccuracy),
+			negativePrecision: range((r) => r.metrics.negativePrecision),
+			invocationAccuracy: range((r) => r.metrics.invocationAccuracy),
+		},
+		perRunMetrics: reports.map((r) => ({
+			positiveAccuracy: r.metrics.positiveAccuracy,
+			invocationAccuracy: r.metrics.invocationAccuracy,
+			criticalConfusions: r.metrics.criticalConfusions,
+		})),
+		flakySelection,
+		flakyInvocation,
+		failures: [],
+		invocationFailures: [],
+	};
 }
 
 function discriminatorArgs(expectedArgs) {
