@@ -5,7 +5,9 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { BrowserActionResult } from "../../browser/playwright.ts";
+import { browserEvaluate, browserScreenshot } from "../../browser/capture.ts";
+import { browserAct, type BrowserActionResult } from "../../browser/playwright.ts";
+import { resolveProxyParam } from "../../http/proxy-pool.ts";
 import {
 	BROWSER_CAPTURE_KIND,
 	buildBrowserCapturePayload,
@@ -118,6 +120,33 @@ describe("webBrowserTool validation", () => {
 			signal,
 		);
 		expect((result.details as ToolContext).error?.code).toBe("BROWSER_URL_MISSING");
+	});
+
+	it("navigate defaults to the outline map; roles drill into the interactive list", async () => {
+		const act = vi.mocked(browserAct);
+
+		act.mockClear();
+		await webBrowserTool.execute(
+			"test",
+			{ action: "navigate", sessionId: "s1", url: "https://example.com" } as never,
+			signal,
+		);
+		expect(act.mock.calls[0]?.[0]).toMatchObject({ action: "navigate", detail: "outline" });
+
+		act.mockClear();
+		await webBrowserTool.execute(
+			"test",
+			{
+				action: "navigate",
+				sessionId: "s1",
+				url: "https://example.com",
+				roles: ["textbox"],
+			} as never,
+			signal,
+		);
+		const narrowed = act.mock.calls[0]?.[0];
+		expect(narrowed?.detail).toBeUndefined(); // narrowed → interactive list, not outline
+		expect(narrowed?.roles).toEqual(["textbox"]);
 	});
 
 	it("requires selector for click", async () => {
@@ -295,10 +324,110 @@ describe("web_browser read action", () => {
 		);
 		const details = result.details as ToolContext;
 		expect(details.responseId).toBeTruthy();
-		expect(result.content[0]?.text).toContain("read (markdown)");
+		expect(result.content[0]?.text).toContain("read (markdown · map)");
 		const stored = await readResponse(details.responseId!, { rootDir });
 		expect(isBrowserCapturePayload(stored.value)).toBe(false);
 		expect((stored.value as { kind: string }).kind).toBe("browser_live_capture");
+	});
+
+	it("returns an orientation digest (not the body) when read has no needles", async () => {
+		const result = await webBrowserTool.execute(
+			"test",
+			{ action: "read", sessionId: "checkout", format: "markdown" } as never,
+			signal,
+		);
+		const text = result.content[0]?.text ?? "";
+		expect(text).toContain("read (markdown · map)");
+		expect(text).toContain("outline:");
+		expect(text).toContain("# Account  (line 1)");
+		expect(text).toContain("→ linesMatching:");
+		// Body past the headings is not dumped inline — that's the whole point.
+		expect(text).not.toContain("Plan: Pro");
+
+		const data = (result.details as ToolContext<{ digest?: string }>).data;
+		expect(data?.digest).toContain("outline:");
+
+		// Status line: code leads, action carries the rung — "● 200 · read (map) · …".
+		const collapsed =
+			webBrowserTool.renderResult?.(result, { expanded: false }).render(120).join("\n") ?? "";
+		expect(collapsed).toContain("read (map)");
+		expect(collapsed.indexOf("200")).toBeLessThan(collapsed.indexOf("read (map)"));
+	});
+
+	it("includes landmark counts in the read digest", async () => {
+		const { browserLiveCapture } = await import("../../browser/capture.ts");
+		vi.mocked(browserLiveCapture).mockResolvedValueOnce({
+			url: "https://example.com/app",
+			finalUrl: "https://example.com/app",
+			status: 200,
+			backend: "playwright",
+			format: "markdown",
+			durationMs: 5,
+			data: {
+				route: "html",
+				extractionPath: ["browser"],
+				markdown: "# Dashboard\n## Billing\nbody",
+			},
+			landmarks: { nav: true, main: true, forms: 2, buttons: 14, links: 38 },
+		});
+		const result = await webBrowserTool.execute(
+			"test",
+			{ action: "read", sessionId: "checkout", format: "markdown" } as never,
+			signal,
+		);
+		const text = result.content[0]?.text ?? "";
+		expect(text).toContain("38 links");
+		expect(text).toContain("## Billing  (line 2)");
+		expect(text).toContain("landmarks: nav, main, 2 forms, 14 buttons");
+	});
+
+	it("greps page content to matching snippets when linesMatching is set", async () => {
+		const result = await webBrowserTool.execute(
+			"test",
+			{
+				action: "read",
+				sessionId: "checkout",
+				format: "markdown",
+				linesMatching: ["Plan"],
+			} as never,
+			signal,
+		);
+		const text = result.content[0]?.text ?? "";
+		expect(text).toContain("read (markdown · 1 match)");
+		expect(text).toContain("Matching line snippets (1 match):");
+		expect(text).toContain("> 2: Plan: Pro");
+		// Non-matching heading line is filtered out of the inline body.
+		expect(text).not.toContain("# Account");
+
+		const data = (result.details as ToolContext<{ matches?: unknown[]; needles?: string[] }>).data;
+		expect(data?.matches).toHaveLength(1);
+		expect(data?.needles).toEqual(["Plan"]);
+
+		// Expanded view surfaces the needles used plus the snippet block.
+		const expanded =
+			webBrowserTool.renderResult?.(result, { expanded: true }).render(120).join("\n") ?? "";
+		expect(expanded).toContain('needles: "Plan"');
+		expect(expanded).toContain("Plan: Pro");
+	});
+
+	it("coerces a string linesMatching to an array (no char-split, no render crash)", async () => {
+		const result = await webBrowserTool.execute(
+			"test",
+			// Bare string, not an array — Type.Unsafe lets it through at runtime.
+			{ action: "read", sessionId: "checkout", format: "markdown", linesMatching: "Plan" } as never,
+			signal,
+		);
+		const text = result.content[0]?.text ?? "";
+		expect(text).toContain("> 2: Plan: Pro");
+
+		const data = (result.details as ToolContext<{ matches?: unknown[]; needles?: unknown }>).data;
+		expect(data?.matches).toHaveLength(1);
+		expect(data?.needles).toEqual(["Plan"]);
+
+		// Render must not throw on the (now array) needles.
+		const expanded =
+			webBrowserTool.renderResult?.(result, { expanded: true }).render(120).join("\n") ?? "";
+		expect(expanded).toContain('needles: "Plan"');
 	});
 
 	it("stores screenshot with responseId and text-only content", async () => {
@@ -368,5 +497,81 @@ describe("browser capture payload helpers", () => {
 			data: { route: "html", extractionPath: ["browser"], markdown: "hi" },
 		});
 		expect(live.kind).toBe("browser_live_capture");
+	});
+});
+
+describe("web_browser session context options", () => {
+	const ctx = {
+		sessionId: "ctx",
+		timezone: "Europe/Paris",
+		locale: "fr-FR",
+		browserProfile: "UA/1.0",
+	};
+
+	it("threads timezone/locale/browserProfile to browserAct (navigate/inspect)", async () => {
+		const act = vi.mocked(browserAct);
+		act.mockClear();
+		await webBrowserTool.execute("test", { action: "inspect", ...ctx } as never, signal);
+		expect(act.mock.calls[0]?.[0]).toMatchObject({
+			timezone: "Europe/Paris",
+			locale: "fr-FR",
+			browserProfile: "UA/1.0",
+		});
+	});
+
+	it("threads timezone/locale/browserProfile to read (browserLiveCapture)", async () => {
+		const { browserLiveCapture } = await import("../../browser/capture.ts");
+		const cap = vi.mocked(browserLiveCapture);
+		cap.mockClear();
+		await webBrowserTool.execute("test", { action: "read", ...ctx } as never, signal);
+		expect(cap.mock.calls[0]?.[0]).toMatchObject({
+			timezone: "Europe/Paris",
+			locale: "fr-FR",
+			browserProfile: "UA/1.0",
+		});
+	});
+
+	it("threads timezone/locale/browserProfile to screenshot", async () => {
+		const shot = vi.mocked(browserScreenshot);
+		shot.mockClear();
+		await webBrowserTool.execute("test", { action: "screenshot", ...ctx } as never, signal);
+		expect(shot.mock.calls[0]?.[0]).toMatchObject({
+			timezone: "Europe/Paris",
+			locale: "fr-FR",
+			browserProfile: "UA/1.0",
+		});
+	});
+
+	it("threads timezone/locale/browserProfile to evaluate", async () => {
+		const ev = vi.mocked(browserEvaluate);
+		ev.mockClear();
+		await webBrowserTool.execute(
+			"test",
+			{ action: "evaluate", script: "1+1", ...ctx } as never,
+			signal,
+		);
+		expect(ev.mock.calls[0]?.[0]).toMatchObject({
+			timezone: "Europe/Paris",
+			locale: "fr-FR",
+			browserProfile: "UA/1.0",
+		});
+	});
+
+	it("resolves a proxy array to a single rotated entry passed to browserAct", async () => {
+		const act = vi.mocked(browserAct);
+		const pool = ["http://p1:8080", "http://p2:8080"];
+		act.mockClear();
+		await webBrowserTool.execute(
+			"test",
+			{ action: "inspect", sessionId: "ctx", proxy: pool } as never,
+			signal,
+		);
+		const used = act.mock.calls[0]?.[0]?.proxy;
+		expect(typeof used).toBe("string");
+		expect(pool).toContain(used);
+		// resolveProxyParam rotates round-robin over the same array via a shared pool.
+		const next = resolveProxyParam(pool);
+		expect(pool).toContain(next);
+		expect(next).not.toBe(used);
 	});
 });

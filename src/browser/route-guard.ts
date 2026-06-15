@@ -216,6 +216,7 @@ export interface Page {
 	selectOption(selector: string, value: string | string[]): Promise<string[]>;
 	locator(selector: string): {
 		screenshot(options?: { timeout?: number }): Promise<Buffer | Uint8Array>;
+		first(): { ariaSnapshot(options?: { mode?: "ai" | "default" }): Promise<string> };
 	};
 	screenshot(options?: { fullPage?: boolean; timeout?: number }): Promise<Buffer | Uint8Array>;
 	context(): BrowserContext;

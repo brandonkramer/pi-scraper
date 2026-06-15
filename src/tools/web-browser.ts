@@ -6,8 +6,13 @@ import {
 	browserExportCookies,
 	browserLiveCapture,
 	browserScreenshot,
+	type PageLandmarks,
 } from "../browser/capture.ts";
 import { browserAct } from "../browser/playwright.ts";
+import { resolveProxyParam } from "../http/proxy-pool.ts";
+import { extractMarkdownHeadings } from "../parse/markup/doc.ts";
+import { filterLines } from "../scrape/line-filter.ts";
+import { formatLineMatchPreview } from "../scrape/line-preview.ts";
 import {
 	buildBrowserCapturePayload,
 	buildBrowserEvaluatePayload,
@@ -15,8 +20,10 @@ import {
 	buildBrowserScreenshotPayload,
 } from "../storage/browser-capture.ts";
 import { storeResponse } from "../storage/responses/store.ts";
-import { toolCall } from "../tui/index.ts";
 import { renderWebBrowserResult } from "../tui/renderers/browser.ts";
+import { defineResultRenderer } from "../tui/tool-progress.ts";
+import { toolResourceStatus } from "../tui/tool-resource.ts";
+import { accent, muted, renderDynamicText } from "../tui/tui.ts";
 import type { OutputFormat } from "../types.ts";
 import {
 	browserCookieBridgeGuidance,
@@ -50,14 +57,14 @@ const actionSchema = Type.Unsafe<
 	],
 });
 
-/** Per-action glyph for the call header: `web_browser <glyph> <action>`. */
+/** Per-action glyph for the call header: `web_browser > <glyph> <action>`. */
 const ACTION_GLYPH: Record<string, string> = {
 	navigate: "🧭",
 	click: "🖱️",
 	fill: "📝",
 	select: "🔽",
-	inspect: "💾",
-	read: "📌",
+	inspect: "🔎",
+	read: "🧠",
 	exportCookies: "🍪",
 	screenshot: "📸",
 	evaluate: "⏳",
@@ -69,8 +76,7 @@ export const webBrowserSchema = Type.Object({
 	url: Type.Optional(urlProperty()),
 	selector: Type.Optional(
 		Type.Unsafe<string>({
-			description:
-				"CSS selector, or @eN ref from the latest inspect (stale after the page changes)",
+			description: "@eN ref from the latest inspect, or CSS",
 		}),
 	),
 	value: Type.Optional(Type.Unsafe<string>({ description: "Value (fill/select)" })),
@@ -78,13 +84,42 @@ export const webBrowserSchema = Type.Object({
 	browserBackend: Type.Optional(
 		Type.Unsafe<"cloak" | "playwright">({ description: "cloak|playwright" }),
 	),
-	proxy: Type.Optional(Type.Unsafe<string>({})),
-	saveSession: Type.Optional(Type.Unsafe<boolean>({})),
-	storeCapture: Type.Optional(Type.Unsafe<boolean>({})),
+	// Array rotates round-robin per call, but the proxy binds at session-context creation
+	// (session-pool pins it) → "next proxy per new sessionId", not a mid-session IP swap.
+	proxy: Type.Optional(
+		Type.Unsafe<string | string[]>({
+			type: ["string", "array"],
+			description: "proxy URL(s); array rotates per new sessionId",
+		}),
+	),
+	// timezone/locale/browserProfile bind at session creation only; new sessionId to change.
+	timezone: Type.Optional(Type.Unsafe<string>({ description: "IANA tz at session start" })),
+	locale: Type.Optional(Type.Unsafe<string>({ description: "BCP-47 locale at session start" })),
+	browserProfile: Type.Optional(Type.Unsafe<string>({ description: "UA at session start" })),
+	saveSession: Type.Optional(Type.Unsafe<boolean>({ description: "persist session to disk" })),
+	storeCapture: Type.Optional(
+		Type.Unsafe<boolean>({ description: "store full body → responseId" }),
+	),
 	capture: Type.Optional(Type.Unsafe<{ store?: boolean; ttlSeconds?: number }>({})),
 	format: Type.Optional(outputFormatSchema),
-	syncCookiesToHttpSession: Type.Optional(Type.Unsafe<boolean>({})),
-	targetSessionId: Type.Optional(Type.Unsafe<string>({})),
+	linesMatching: Type.Optional(
+		Type.Unsafe<string[]>({ description: "read: grep patterns → snippets" }),
+	),
+	contextLines: Type.Optional(Type.Unsafe<number>({ description: "lines around each match" })),
+	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
+	detail: Type.Optional(
+		Type.Unsafe<"interactive" | "outline" | "full">({
+			description: "inspect/navigate: outline|interactive|full",
+		}),
+	),
+	scope: Type.Optional(Type.Unsafe<string>({ description: "inspect: subtree to scan (@eN/CSS)" })),
+	roles: Type.Optional(Type.Unsafe<string[]>({ description: "inspect: filter to ARIA roles" })),
+	syncCookiesToHttpSession: Type.Optional(
+		Type.Unsafe<boolean>({ description: "copy cookies → fast/fingerprint jar" }),
+	),
+	targetSessionId: Type.Optional(
+		Type.Unsafe<string>({ description: "exportCookies: destination sessionId" }),
+	),
 	scopeUrl: Type.Optional(urlProperty()),
 	fullPage: Type.Optional(Type.Unsafe<boolean>({ description: "Full-page (default viewport)" })),
 	script: Type.Optional(Type.Unsafe<string>({ description: "evaluate JS" })),
@@ -96,9 +131,13 @@ export const webBrowserTool = defineWebTool({
 	name: "web_browser",
 	label: "Browser",
 	description:
-		"Drive a live page (sessionId required): navigate · click/fill/select · inspect (re-read @eN refs to drive) · read (page content) · screenshot · evaluate · exportCookies.",
+		"Drive a live page over steps; sessionId required (one-shot read → web_scrape mode=browser). Loop: navigate/inspect → read @eN refs → act by @eN/CSS → re-inspect (refs go stale after the page changes). Actions: navigate · click · fill · select · inspect · read · screenshot · evaluate · exportCookies. Reuse the sessionId in web_scrape/web_extract (mode=browser) for chunking/saveToFile/verticals.",
 	parameters: webBrowserSchema,
 	async execute(_id, params: Params, signal) {
+		// Resolve once per call: an array rotates round-robin (global pointer in proxy-pool). The
+		// chosen proxy binds at session-context creation (session-pool pins it) → an array yields
+		// "next proxy per new sessionId", not a mid-session IP swap. New sessionId for a fresh IP.
+		const resolvedProxy = resolveProxyParam(params.proxy);
 		if (!params.sessionId)
 			return inputErrorResult(
 				"BROWSER_SESSION_MISSING",
@@ -130,16 +169,16 @@ export const webBrowserTool = defineWebTool({
 
 		try {
 			if (params.action === "exportCookies") {
-				return await runExportCookies(params);
+				return await runExportCookies(params, resolvedProxy);
 			}
 			if (params.action === "read") {
-				return await runCapture(params, signal);
+				return await runCapture(params, resolvedProxy, signal);
 			}
 			if (params.action === "screenshot") {
-				return await runScreenshot(params, signal);
+				return await runScreenshot(params, resolvedProxy, signal);
 			}
 			if (params.action === "evaluate") {
-				return await runEvaluate(params, signal);
+				return await runEvaluate(params, resolvedProxy, signal);
 			}
 
 			// Tool-facing "inspect" maps to the internal browser "snapshot" primitive (a11y tree).
@@ -153,8 +192,14 @@ export const webBrowserTool = defineWebTool({
 					value: params.value,
 					timeoutSeconds: params.timeoutSeconds,
 					browserBackend: params.browserBackend,
-					proxy: params.proxy,
+					proxy: resolvedProxy,
 					saveSession: params.saveSession,
+					locale: params.locale,
+					timezone: params.timezone,
+					browserProfile: params.browserProfile,
+					detail: snapshotDetail(params),
+					scope: params.scope,
+					roles: params.roles,
 				},
 				signal,
 			);
@@ -165,7 +210,10 @@ export const webBrowserTool = defineWebTool({
 					targetSessionId: params.targetSessionId,
 					scopeUrl: params.scopeUrl,
 					browserBackend: params.browserBackend,
-					proxy: params.proxy,
+					proxy: resolvedProxy,
+					locale: params.locale,
+					timezone: params.timezone,
+					browserProfile: params.browserProfile,
 				});
 				cookieNotice = `\n\n---\nAuth carry-over only: exported ${exported.cookieCount} cookie(s) for ${exported.scopeUrl} to HTTP session "${exported.targetSessionId}" (${exported.domains.join(", ") || "none"}).`;
 			}
@@ -214,38 +262,139 @@ export const webBrowserTool = defineWebTool({
 			return toolErrorResult(e, "BROWSER_ACTION_FAILED", "browser", params.url);
 		}
 	},
-	renderCall: (args, theme) =>
-		// ponytail: url omitted — the result line already shows finalUrl; keep selector (click/fill/select).
-		toolCall(
-			"web_browser",
-			[`${ACTION_GLYPH[args.action] ?? ""} ${args.action}`.trim(), args.selector ?? ""].filter(
-				Boolean,
-			),
-			theme,
-		),
+	renderCall: (args, theme, context) => {
+		// ponytail: url omitted from the header — the loading/result bar carries it; keep selector.
+		const glyph = ACTION_GLYPH[args.action];
+		// VS16 emoji (e.g. 🖱️) are drawn 2 cols but counted as 1 by terminals, eating the
+		// trailing space — pad them so every action shows one gap before its name.
+		const gap = [...glyph].length > 1 ? "  " : " ";
+		// read carries its mode rung in the header: needles present → "needle", else "map".
+		// (match count is result-only; the result status line shows "read (N matches)".)
+		const rawMatching = args.linesMatching as unknown;
+		const hasNeedles =
+			(Array.isArray(rawMatching) && rawMatching.length > 0) ||
+			(typeof rawMatching === "string" && rawMatching.length > 0);
+		const label = args.action === "read" ? `read > ${hasNeedles ? "needle" : "map"}` : args.action;
+		const action = glyph ? `> ${glyph}${gap}${label}` : label;
+		// name in accent like every other tool; the action segment muted.
+		const header = [
+			accent("web_browser", theme),
+			muted(action, theme),
+			args.selector ? accent(args.selector, theme) : "",
+		]
+			.filter(Boolean)
+			.join(" ");
+		// While navigating, show a loading bar with the URL — mirrors the done bar instead of a bare header.
+		if (context?.isPartial && args.url) {
+			const url = args.url;
+			return defineResultRenderer({
+				renderContent: (width) =>
+					`${header}\n${toolResourceStatus({ url, state: "loading", width, theme })}`,
+			});
+		}
+		return renderDynamicText(() => header);
+	},
 	renderResult: (result, { expanded }, theme) => renderWebBrowserResult(result, expanded, theme),
 });
 
-async function runCapture(params: Params, signal: AbortSignal) {
+/**
+ * Default snapshot detail per action. A bare `navigate` returns a cheap orientation outline (the
+ * map rung); adding `scope`/`roles` (or an explicit `detail`) drills into the interactive list.
+ * Other actions keep the interactive default (undefined → interactive in playwright).
+ */
+function snapshotDetail(params: Params): "interactive" | "outline" | "full" | undefined {
+	if (params.detail) return params.detail;
+	const narrowed = Boolean(params.scope) || (params.roles?.length ?? 0) > 0;
+	return params.action === "navigate" && !narrowed ? "outline" : undefined;
+}
+
+/**
+ * Cheap orientation digest for a needle-less read: word/link counts, heading outline (with line
+ * numbers so the agent can target a section), and landmark summary. Undefined when the page has
+ * neither headings nor landmarks (caller falls back to a short slice).
+ */
+function formatReadDigest(markdown: string, landmarks?: PageLandmarks): string | undefined {
+	const headings = extractMarkdownHeadings(markdown).slice(0, 30);
+	if (headings.length === 0 && !landmarks) return undefined;
+	const words = markdown.trim() ? markdown.trim().split(/\s+/u).length : 0;
+	const lines = [
+		`${words.toLocaleString()} words · ${(landmarks?.links ?? 0).toLocaleString()} links`,
+	];
+	if (headings.length > 0) {
+		lines.push("outline:");
+		for (const h of headings) {
+			const indent = "  ".repeat(Math.min(h.level - 1, 3));
+			lines.push(`${indent}${"#".repeat(h.level)} ${h.text}  (line ${h.line})`);
+		}
+	}
+	if (landmarks) {
+		const parts = [
+			landmarks.nav ? "nav" : undefined,
+			landmarks.main ? "main" : undefined,
+			landmarks.forms > 0 ? `${landmarks.forms} forms` : undefined,
+			landmarks.buttons > 0 ? `${landmarks.buttons} buttons` : undefined,
+		].filter(Boolean);
+		if (parts.length > 0) lines.push(`landmarks: ${parts.join(", ")}`);
+	}
+	lines.push("→ linesMatching:[…] to read a section · responseId for full body");
+	return lines.join("\n");
+}
+
+async function runCapture(params: Params, resolvedProxy: string | undefined, signal: AbortSignal) {
 	const format = (params.format ?? "markdown") as OutputFormat;
 	const captured = await browserLiveCapture(
 		{
 			sessionId: params.sessionId,
 			format,
 			browserBackend: params.browserBackend,
-			proxy: params.proxy,
+			proxy: resolvedProxy,
 			saveSession: params.saveSession,
 			timeoutSeconds: params.timeoutSeconds,
+			locale: params.locale,
+			timezone: params.timezone,
+			browserProfile: params.browserProfile,
 		},
 		signal,
 	);
 	const textBody = captured.data.markdown ?? captured.data.text ?? captured.data.html ?? "";
-	const baseText = `read (${format}) → ${captured.url}\n\n${textBody.slice(0, 4000)}`;
+	// Schema is Type.Unsafe (no runtime check) — a model may pass a bare string; coerce to array so
+	// filterLines doesn't iterate it character-by-character and the renderer can .map() it safely.
+	const rawMatching = params.linesMatching as unknown;
+	const needles = Array.isArray(rawMatching)
+		? (rawMatching as string[])
+		: typeof rawMatching === "string" && rawMatching
+			? [rawMatching]
+			: undefined;
+	const matches =
+		needles && needles.length > 0
+			? filterLines(textBody, needles, params.contextLines, params.caseSensitive)
+			: undefined;
+	const matchPreview = matches?.length
+		? formatLineMatchPreview(matches, { maxChars: 4_000 })
+		: undefined;
+	// Needle-less read returns a cheap orientation digest (outline + landmarks), not the page body:
+	// the agent reads that to pick needles, then reads targeted. Full body stays on responseId.
+	const digest =
+		needles && needles.length > 0 ? undefined : formatReadDigest(textBody, captured.landmarks);
+	const snippet =
+		needles && needles.length > 0
+			? (matchPreview ?? `No lines matched: ${needles.map((n) => `"${n}"`).join(", ")}`)
+			: (digest ?? textBody.slice(0, 800));
+	// Tag the rung so the agent sees at a glance which mode it got: map (orientation), N matches
+	// (targeted), or no match. Full body is a separate responseId retrieval.
+	const readMode =
+		needles && needles.length > 0
+			? matches && matches.length > 0
+				? `${matches.length} match${matches.length === 1 ? "" : "es"}`
+				: "no match"
+			: "map";
+	const baseText = `read (${format} · ${readMode}) → ${captured.url}\n\n${snippet}`;
+	const excerpt = matchPreview ?? textBody;
 
 	if (!shouldStoreCapture(params)) {
 		return toolResult({
 			text: baseText,
-			data: { ...captured, action: "read" },
+			data: { ...captured, action: "read", matches, needles, digest },
 			url: captured.url,
 			finalUrl: captured.finalUrl,
 			status: captured.status,
@@ -256,7 +405,7 @@ async function runCapture(params: Params, signal: AbortSignal) {
 				responseId: "n/a",
 				url: captured.url,
 				captureKind: "browser_live_capture",
-				excerpt: textBody,
+				excerpt,
 			}).assistantGuidance,
 		});
 	}
@@ -275,11 +424,11 @@ async function runCapture(params: Params, signal: AbortSignal) {
 		responseId: stored.responseId,
 		url: captured.url,
 		captureKind: "browser_live_capture",
-		excerpt: textBody,
+		excerpt,
 	});
 	return toolResult({
 		text: `${baseText}\n\nresponseId: ${stored.responseId}`,
-		data: { ...captured, action: "read", storedCapture: payload },
+		data: { ...captured, action: "read", storedCapture: payload, matches, needles, digest },
 		url: captured.url,
 		finalUrl: captured.finalUrl,
 		status: captured.status,
@@ -292,13 +441,16 @@ async function runCapture(params: Params, signal: AbortSignal) {
 	});
 }
 
-async function runExportCookies(params: Params) {
+async function runExportCookies(params: Params, resolvedProxy: string | undefined) {
 	const exported = await browserExportCookies({
 		sessionId: params.sessionId,
 		targetSessionId: params.targetSessionId,
 		scopeUrl: params.scopeUrl!,
 		browserBackend: params.browserBackend,
-		proxy: params.proxy,
+		proxy: resolvedProxy,
+		locale: params.locale,
+		timezone: params.timezone,
+		browserProfile: params.browserProfile,
 	});
 	const text = `exportCookies → HTTP session "${exported.targetSessionId}" for ${exported.scopeUrl}: ${exported.cookieCount} cookie(s) across ${exported.domains.join(", ") || "no domains"}. Auth carry-over only.`;
 	return toolResult({
@@ -312,16 +464,23 @@ async function runExportCookies(params: Params) {
 	});
 }
 
-async function runScreenshot(params: Params, signal: AbortSignal) {
+async function runScreenshot(
+	params: Params,
+	resolvedProxy: string | undefined,
+	signal: AbortSignal,
+) {
 	const shot = await browserScreenshot(
 		{
 			sessionId: params.sessionId,
 			fullPage: params.fullPage,
 			selector: params.selector,
 			browserBackend: params.browserBackend,
-			proxy: params.proxy,
+			proxy: resolvedProxy,
 			saveSession: params.saveSession,
 			timeoutSeconds: params.timeoutSeconds,
+			locale: params.locale,
+			timezone: params.timezone,
+			browserProfile: params.browserProfile,
 		},
 		signal,
 	);
@@ -353,15 +512,18 @@ async function runScreenshot(params: Params, signal: AbortSignal) {
 	});
 }
 
-async function runEvaluate(params: Params, signal: AbortSignal) {
+async function runEvaluate(params: Params, resolvedProxy: string | undefined, signal: AbortSignal) {
 	const ev = await browserEvaluate(
 		{
 			sessionId: params.sessionId,
 			script: params.script!,
 			browserBackend: params.browserBackend,
-			proxy: params.proxy,
+			proxy: resolvedProxy,
 			saveSession: params.saveSession,
 			timeoutSeconds: params.timeoutSeconds,
+			locale: params.locale,
+			timezone: params.timezone,
+			browserProfile: params.browserProfile,
 		},
 		signal,
 	);

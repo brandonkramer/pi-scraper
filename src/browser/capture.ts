@@ -21,6 +21,19 @@ export interface BrowserLiveCaptureInput {
 	proxy?: string;
 	saveSession?: boolean;
 	timeoutSeconds?: number;
+	// ponytail: bind at session-context creation only; ignored on reuse of an existing sessionId.
+	locale?: string;
+	timezone?: string;
+	browserProfile?: string;
+}
+
+/** Whole-page structural counts for the needle-less read orientation digest. */
+export interface PageLandmarks {
+	nav: boolean;
+	main: boolean;
+	forms: number;
+	buttons: number;
+	links: number;
 }
 
 export interface BrowserLiveCaptureResult {
@@ -31,6 +44,19 @@ export interface BrowserLiveCaptureResult {
 	format: OutputFormat;
 	durationMs: number;
 	data: Awaited<ReturnType<typeof responseScrape>>["data"];
+	landmarks?: PageLandmarks;
+}
+
+/** Cheap structural counts from the full page HTML (before main-content stripping). */
+function countLandmarks(html: string): PageLandmarks {
+	const count = (re: RegExp) => (html.match(re) ?? []).length;
+	return {
+		nav: /<nav[\s>]/iu.test(html),
+		main: /<main[\s>]/iu.test(html),
+		forms: count(/<form[\s>]/giu),
+		buttons: count(/<button[\s>]/giu),
+		links: count(/<a\s[^>]*href/giu),
+	};
 }
 
 export interface BrowserExportCookiesInput {
@@ -39,6 +65,10 @@ export interface BrowserExportCookiesInput {
 	scopeUrl: string;
 	browserBackend?: BrowserBackend;
 	proxy?: string;
+	// ponytail: bind at session-context creation only; ignored on reuse of an existing sessionId.
+	locale?: string;
+	timezone?: string;
+	browserProfile?: string;
 }
 
 export interface BrowserExportCookiesResult {
@@ -57,6 +87,10 @@ export interface BrowserScreenshotInput {
 	proxy?: string;
 	saveSession?: boolean;
 	timeoutSeconds?: number;
+	// ponytail: bind at session-context creation only; ignored on reuse of an existing sessionId.
+	locale?: string;
+	timezone?: string;
+	browserProfile?: string;
 }
 
 export interface BrowserScreenshotResult {
@@ -78,6 +112,10 @@ export interface BrowserEvaluateInput {
 	proxy?: string;
 	saveSession?: boolean;
 	timeoutSeconds?: number;
+	// ponytail: bind at session-context creation only; ignored on reuse of an existing sessionId.
+	locale?: string;
+	timezone?: string;
+	browserProfile?: string;
 }
 
 export interface BrowserEvaluateResult {
@@ -104,6 +142,9 @@ export async function browserLiveCapture(
 		saveSession: input.saveSession,
 		browserBackend: backend,
 		proxy: effectiveProxy,
+		locale: input.locale,
+		timezone: input.timezone,
+		browserProfile: input.browserProfile,
 	};
 	const browserLoader = deps.browserLoader;
 
@@ -120,6 +161,7 @@ export async function browserLiveCapture(
 
 	await pierceShadowRoots(page);
 	const html = await page.content();
+	const landmarks = countLandmarks(html);
 	// reusePage:true means this is the persistent session page. Strip the wrappers
 	// pierceShadowRoots injected, else repeat captures compound duplicated shadow content
 	// and pollute later click/fill/snapshot actions.
@@ -149,6 +191,7 @@ export async function browserLiveCapture(
 		format,
 		durationMs: Date.now() - startedAt,
 		data: scrape.data,
+		landmarks,
 	};
 }
 
@@ -171,6 +214,9 @@ export async function browserExportCookies(
 			sessionId: input.sessionId,
 			browserBackend: backend,
 			proxy: input.proxy ?? effectiveProxy,
+			locale: input.locale,
+			timezone: input.timezone,
+			browserProfile: input.browserProfile,
 		},
 		backend,
 		safetyCheck: assertSafeFetchUrl,
@@ -242,6 +288,9 @@ export async function browserScreenshot(
 			saveSession: input.saveSession,
 			browserBackend: backend,
 			proxy: effectiveProxy,
+			locale: input.locale,
+			timezone: input.timezone,
+			browserProfile: input.browserProfile,
 		},
 		backend,
 		safetyCheck,
@@ -306,6 +355,9 @@ export async function browserEvaluate(
 			saveSession: input.saveSession,
 			browserBackend: backend,
 			proxy: effectiveProxy,
+			locale: input.locale,
+			timezone: input.timezone,
+			browserProfile: input.browserProfile,
 		},
 		backend,
 		safetyCheck,

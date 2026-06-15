@@ -6,6 +6,7 @@ import type { ToolRenderContext } from "../../tools/infra/define.ts";
 import { progressShell } from "../../tools/infra/progress.ts";
 import { toolResult } from "../../tools/infra/result.ts";
 import { webBatchTool } from "../../tools/web-batch.ts";
+import { webBrowserTool } from "../../tools/web-browser.ts";
 import { webCrawlTool } from "../../tools/web-crawl.ts";
 import { webExtractTool } from "../../tools/web-extract.ts";
 import { webGetResultTool } from "../../tools/web-get-result.ts";
@@ -574,6 +575,7 @@ describe("web tool renderers", () => {
 		expect(collapsed).toContain("navigate");
 		expect(collapsed).toContain("200");
 		expect(collapsed).toContain("cloak mode");
+		expect(collapsed).toMatch(/~\d+ tok/u); // token estimate of the agent-facing text
 		expect(collapsed).toContain("(ctrl+o to expand)");
 		expect(collapsed).not.toContain("[ref=e3]"); // snapshot hidden until expanded
 
@@ -584,6 +586,18 @@ describe("web tool renderers", () => {
 		expect(expanded).not.toContain("backend"); // metadata not repeated (already on status line)
 		expect(expanded).not.toContain("(ctrl+o to expand)");
 		expect(terminalWidthSafe(renderWebBrowserResult(result, true), 48)).toBe(true);
+	});
+
+	it("shows a loading bar with the URL while navigating, bare header otherwise", () => {
+		const params = { action: "navigate" as const, sessionId: "s1", url: "https://example.com" };
+		const loading = text(webBrowserTool.renderCall?.(params, undefined, partialContext as never));
+		expect(loading).toContain("web_browser");
+		expect(loading).toContain("navigate");
+		expect(loading).toContain("https://example.com"); // url visible during the load
+
+		const done = text(webBrowserTool.renderCall?.(params, undefined, { isPartial: false }));
+		expect(done).toContain("web_browser");
+		expect(done).not.toContain("https://example.com"); // header omits url; the result bar carries it
 	});
 
 	it("renders web_browser screenshot image facts (path/type+dims/size/mode), no 'No snapshot.'", () => {

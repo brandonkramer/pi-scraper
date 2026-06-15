@@ -5,6 +5,8 @@ import type { SafeUrlResult } from "../../http/url-safety.ts";
 import {
 	browserAct,
 	createPlaywrightRenderer,
+	interactiveSnapshot,
+	outlineSnapshot,
 	type BrowserBackend,
 	type Browser,
 	type BrowserRenderOptions,
@@ -405,6 +407,34 @@ describe("browserAct", () => {
 		expect(seen.pageClosed).toBeUndefined();
 	});
 
+	it("binds locale/timezone/browserProfile into the session-acquire launch options", async () => {
+		const seen: Record<string, unknown> = {};
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) => {
+			seen.loaderOptions = opts;
+			return Promise.resolve(fakeInteractiveBrowser(backend, opts, seen));
+		};
+
+		await browserAct(
+			{
+				action: "navigate",
+				sessionId: SESSION,
+				url: URL,
+				browserBackend: "playwright",
+				locale: "fr-FR",
+				timezone: "Europe/Paris",
+				browserProfile: "UA/1.0",
+			},
+			undefined,
+			{ browserLoader: loader },
+		);
+
+		expect(seen.loaderOptions).toMatchObject({
+			locale: "fr-FR",
+			timezone: "Europe/Paris",
+			browserProfile: "UA/1.0",
+		});
+	});
+
 	it("blocks unsafe navigate URLs", async () => {
 		const seen: Record<string, unknown> = {};
 		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
@@ -547,6 +577,99 @@ describe("browserAct", () => {
 		expect(result.snapshot).toContain("- main [ref=e1]");
 		expect(result.snapshot).toContain('button "Submit"');
 	});
+
+	it("scopes the snapshot to a region via the locator", async () => {
+		const seen: Record<string, unknown> = {};
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
+			Promise.resolve(fakeInteractiveBrowser(backend, opts, seen));
+
+		const result = await browserAct(
+			{ action: "snapshot", sessionId: SESSION, browserBackend: "playwright", scope: "#search" },
+			undefined,
+			{ browserLoader: loader },
+		);
+
+		expect(seen.scopeLocator).toBe("#search");
+		expect(seen.scopedAriaOptions).toEqual({ mode: "ai" });
+		expect(result.snapshot).toContain('button "Go"'); // from the scoped region
+		expect(result.snapshot).not.toContain("Submit"); // page-level tree not used
+	});
+
+	it("returns an orientation outline when detail is outline", async () => {
+		const seen: Record<string, unknown> = {};
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
+			Promise.resolve(fakeInteractiveBrowser(backend, opts, seen));
+
+		const result = await browserAct(
+			{ action: "snapshot", sessionId: SESSION, browserBackend: "playwright", detail: "outline" },
+			undefined,
+			{ browserLoader: loader },
+		);
+
+		expect(result.snapshot).toContain("landmarks: main");
+		expect(result.snapshot).toContain("button 1");
+		expect(result.snapshot).not.toContain("[ref="); // no refs in the outline
+	});
+});
+
+describe("snapshot shaping", () => {
+	it("trims link URLs (query + fragment) and dedupes repeats, keeping the first ref", () => {
+		const yaml = [
+			"- navigation [ref=e1]:",
+			'  - link "Home" [ref=e2]:',
+			"    - /url: https://x.com/home?utm=abc#frag",
+			'  - link "Home" [ref=e9]:',
+			"    - /url: https://x.com/home?utm=zzz",
+			'  - button "Menu" [ref=e3] [cursor=pointer]',
+		].join("\n");
+		const out = interactiveSnapshot(yaml);
+		expect(out).toContain('link "Home" [ref=e2] https://x.com/home');
+		expect(out).not.toContain("utm=");
+		expect(out).not.toContain("#frag");
+		expect(out).not.toContain("[ref=e9]"); // exact duplicate collapsed
+		expect(out).not.toContain("cursor=pointer");
+		expect(out).toContain('button "Menu" [ref=e3]');
+	});
+
+	it("caps the interactive list and summarises the overflow", () => {
+		const yaml = Array.from(
+			{ length: 170 },
+			(_unused, i) => `- link "Item ${i}" [ref=e${i}]:\n  - /url: https://x.com/i${i}`,
+		).join("\n");
+		const out = interactiveSnapshot(yaml).split("\n");
+		expect(out).toHaveLength(151); // 150 shown + 1 summary line
+		expect(out[150]).toContain("+20 more");
+	});
+
+	it("narrows the interactive list to the requested roles", () => {
+		const yaml =
+			'- main [ref=e1]:\n  - textbox "Email" [ref=e2]\n  - button "Submit" [ref=e3]\n  - link "Home" [ref=e4]';
+		expect(interactiveSnapshot(yaml, ["textbox", "button"])).toBe(
+			'textbox "Email" [ref=e2]\nbutton "Submit" [ref=e3]',
+		);
+	});
+
+	it("builds an orientation outline: landmarks, role counts, headings, no refs", () => {
+		const yaml = [
+			"- banner [ref=e1]:",
+			'  - heading "Top Stories" [level=1] [ref=e2]',
+			'  - link "A" [ref=e3]',
+			"- navigation [ref=e4]:",
+			'  - link "B" [ref=e5]',
+			'  - link "C" [ref=e6]',
+			"- main [ref=e7]:",
+			'  - heading "Sports" [level=2] [ref=e8]',
+			'  - button "Play" [ref=e9]',
+		].join("\n");
+		const out = outlineSnapshot(yaml);
+		expect(out).toContain("landmarks: banner, navigation, main");
+		expect(out).toContain("link 3");
+		expect(out).toContain("button 1");
+		expect(out).toContain("# Top Stories");
+		expect(out).toContain("## Sports");
+		expect(out).not.toContain("[ref=");
+		expect(out).toContain('detail:"full"');
+	});
 });
 
 // ── Test helpers ───────────────────────────────────────────
@@ -658,6 +781,17 @@ function fakeInteractiveBrowser(
 							const filled =
 								values.length > 0 ? `  - textbox "${values.join(", ")}" [ref=e2]\n` : "";
 							return `- main [ref=e1]:\n${filled}  - button "Submit" [ref=e3]\n`;
+						},
+						locator: (selector: string) => {
+							seen.scopeLocator = selector;
+							return {
+								first: () => ({
+									ariaSnapshot: async (axOptions?: { mode?: string }) => {
+										seen.scopedAriaOptions = axOptions;
+										return '- form [ref=e8]:\n  - searchbox "Search" [ref=e9]\n  - button "Go" [ref=e10]\n';
+									},
+								}),
+							};
 						},
 					};
 					sharedPage = page;

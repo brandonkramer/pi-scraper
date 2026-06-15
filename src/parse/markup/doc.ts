@@ -162,7 +162,7 @@ function parseYamlScalar(value: string): string | boolean | number | string[] {
 	return trimmed;
 }
 
-function extractMarkdownHeadings(text: string): MarkupHeading[] {
+export function extractMarkdownHeadings(text: string): MarkupHeading[] {
 	return text.split("\n").flatMap((line, index) => {
 		const match = line.match(/^(#{1,6})\s+(.+?)\s*#*$/u);
 		return match

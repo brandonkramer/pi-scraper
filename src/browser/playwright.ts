@@ -88,8 +88,20 @@ export interface BrowserActionInput {
 	browserBackend?: BrowserBackend;
 	proxy?: string;
 	saveSession?: boolean;
-	/** Snapshot detail. "interactive" (default) = flat interactive list; "full" = whole AI tree. */
-	detail?: "interactive" | "full";
+	// ponytail: locale/timezone/browserProfile bind at session-context CREATION only. session-pool
+	// reuses an existing context and ignores these on reuse — use a new sessionId to change them.
+	locale?: string;
+	timezone?: string;
+	browserProfile?: string;
+	/**
+	 * Snapshot detail. "interactive" (default) = flat interactive list; "outline" = orientation map
+	 * (landmarks + role counts + headings, no refs); "full" = whole AI tree.
+	 */
+	detail?: "interactive" | "outline" | "full";
+	/** CSS selector to limit the snapshot to one region (e.g. a form) instead of the whole page. */
+	scope?: string;
+	/** Narrow the interactive list to these roles, e.g. ["textbox","button"] for form-filling. */
+	roles?: string[];
 }
 
 export interface BrowserActionResult {
@@ -296,6 +308,10 @@ export async function browserAct(
 		saveSession: input.saveSession,
 		browserBackend: backend,
 		proxy: effectiveProxy,
+		// Bind at session-context creation; ignored on reuse of an existing sessionId (session-pool).
+		locale: input.locale,
+		timezone: input.timezone,
+		browserProfile: input.browserProfile,
 	};
 	const browserLoader = deps.browserLoader ?? defaultBrowserLoader;
 
@@ -353,10 +369,13 @@ export async function browserAct(
 	if (blocked) throw blocked;
 
 	// NOTE: deliberately NOT closing the page. The pool owns its lifecycle.
+	const tree = input.scope
+		? await page.locator(input.scope).first().ariaSnapshot({ mode: "ai" })
+		: await page.ariaSnapshot({ mode: "ai" });
 	return {
 		action: input.action,
 		url: page.url(),
-		snapshot: snapshotFor(input.detail, await page.ariaSnapshot({ mode: "ai" })),
+		snapshot: snapshotFor(input, tree),
 		status,
 		backend,
 		durationMs: Date.now() - startedAt,
@@ -488,28 +507,93 @@ export function selectorOf(selector: string | undefined): string {
 const INTERACTIVE =
 	/^(link|button|textbox|searchbox|combobox|checkbox|radio|switch|slider|spinbutton|menuitem|menuitemcheckbox|menuitemradio|tab|option|listbox|treeitem|heading)\b/;
 
+// Container/landmark roles, for the orientation outline.
+const LANDMARK = /^(banner|navigation|main|contentinfo|complementary|search|form|region)\b/;
+
+// Cap on interactive elements in one snapshot — bounds token cost on link-heavy pages (a news
+// homepage emits hundreds of links). Overflow is summarised, not dumped.
+const MAX_INTERACTIVE = 150;
+const OUTLINE_HEADINGS = 25;
+
+/** Drop query + fragment (trackers, session ids); the model drives by @eN ref, not the href. */
+function trimUrl(url: string): string {
+	const cut = url.search(/[?#]/);
+	return cut >= 0 ? url.slice(0, cut) : url;
+}
+
 /**
- * Flatten the AI-mode ARIA YAML to a one-per-line interactive list. Output-only and ref-safe:
- * `aria-ref=eN` resolves against the ref map Playwright builds during the ariaSnapshot call, not
- * against the string we trim. Drops nesting (the ref targets, the name disambiguates) and
- * `[cursor=pointer]` noise; appends a link's `/url:` child.
+ * Flatten the AI-mode ARIA YAML to a deduped, capped, interactive-only list. Output-only and
+ * ref-safe: `aria-ref=eN` resolves against the ref map Playwright builds during the ariaSnapshot
+ * call, not against the string we trim. Drops nesting (the ref targets, the name disambiguates) and
+ * `[cursor=pointer]` noise; trims a link's `/url:` child to origin+path. `roles`, when set, narrows
+ * to that subset (e.g. ["textbox","button"] for form-filling).
  */
-function interactiveSnapshot(snapshot: string): string {
+export function interactiveSnapshot(snapshot: string, roles?: string[]): string {
+	const allow = roles && roles.length > 0 ? new Set(roles) : undefined;
 	const lines = snapshot.split("\n");
-	const out: string[] = [];
+	const seen = new Set<string>();
+	const unique: string[] = [];
 	for (let i = 0; i < lines.length; i++) {
 		const m = /^\s*-\s+(.*)$/.exec(lines[i]);
 		if (!m) continue;
 		const content = m[1].replace(/:\s*$/, "").replaceAll(" [cursor=pointer]", "");
 		if (!INTERACTIVE.test(content)) continue;
+		if (allow && !allow.has(/^\S+/.exec(content)?.[0] ?? "")) continue;
 		const url = /^\s*-\s*\/url:\s*(.*)$/.exec(lines[i + 1] ?? "");
-		out.push(content + (url ? ` ${url[1].trim()}` : ""));
+		const line = content + (url ? ` ${trimUrl(url[1].trim())}` : "");
+		// Dedupe by content (e.g. a nav link repeated in the footer); keep the first ref.
+		const key = line.replace(/\s*\[ref=[^\]]+\]/, "");
+		if (seen.has(key)) continue;
+		seen.add(key);
+		unique.push(line);
 	}
+	const shown = unique.slice(0, MAX_INTERACTIVE);
+	if (unique.length > shown.length) {
+		shown.push(`… +${unique.length - shown.length} more (scope=<css> or roles=[…] to narrow)`);
+	}
+	return shown.join("\n");
+}
+
+/**
+ * Cheap orientation map of a page: landmark roles present, interactive-role counts, and the top
+ * headings — so the model knows what to drive without ingesting every link. Mirrors read's `map`.
+ */
+export function outlineSnapshot(snapshot: string): string {
+	const counts = new Map<string, number>();
+	const landmarks = new Set<string>();
+	const headings: string[] = [];
+	for (const raw of snapshot.split("\n")) {
+		const m = /^\s*-\s+(.*)$/.exec(raw);
+		if (!m) continue;
+		const content = m[1].replace(/:\s*$/, "").replaceAll(" [cursor=pointer]", "");
+		const role = /^\S+/.exec(content)?.[0] ?? "";
+		if (LANDMARK.test(role)) landmarks.add(role);
+		if (role === "heading") {
+			const name = /"([^"]*)"/.exec(content)?.[1];
+			const level = Number(/\[level=(\d+)\]/.exec(content)?.[1] ?? "1");
+			if (name && headings.length < OUTLINE_HEADINGS) {
+				headings.push(`${"  ".repeat(Math.min(level - 1, 3))}${"#".repeat(level)} ${name}`);
+			}
+		} else if (INTERACTIVE.test(content)) {
+			counts.set(role, (counts.get(role) ?? 0) + 1);
+		}
+	}
+	const out: string[] = [];
+	if (landmarks.size > 0) out.push(`landmarks: ${[...landmarks].join(", ")}`);
+	const roleSummary = [...counts.entries()]
+		.toSorted((a, b) => b[1] - a[1])
+		.map(([role, n]) => `${role} ${n}`)
+		.join(" · ");
+	if (roleSummary) out.push(roleSummary);
+	if (headings.length > 0) out.push("outline:", ...headings);
+	out.push('→ scope=<css> or roles=[…] for interactive refs · detail:"full" for the raw tree');
 	return out.join("\n");
 }
 
-function snapshotFor(detail: BrowserActionInput["detail"], full: string): string {
-	return detail === "full" ? full : interactiveSnapshot(full);
+function snapshotFor(input: BrowserActionInput, full: string): string {
+	if (input.detail === "full") return full;
+	if (input.detail === "outline") return outlineSnapshot(full);
+	return interactiveSnapshot(full, input.roles);
 }
 
 async function renderWithLoader(
