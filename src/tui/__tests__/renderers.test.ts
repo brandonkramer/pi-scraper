@@ -1,17 +1,19 @@
 /** @file Renderer contract tests for Pi web tool cards. */
 import { describe, expect, it } from "vitest";
 
-import type { RenderComponent } from "../../tui/index.ts";
-import { renderWebBrowserResult } from "../../tui/renderers/browser.ts";
-import { renderWebExtractResult } from "../../tui/renderers/extract.ts";
-import { renderVerticalResult } from "../../tui/renderers/vertical.ts";
-import type { ToolRenderContext } from "../infra/define.ts";
-import { progressShell } from "../infra/progress.ts";
-import { toolResult } from "../infra/result.ts";
-import { webBatchTool } from "../web-batch.ts";
-import { webCrawlTool } from "../web-crawl.ts";
-import { webExtractTool } from "../web-extract.ts";
-import { webScrapeTool } from "../web-scrape.ts";
+import { signal } from "../../tools/__tests__/fixtures.ts";
+import type { ToolRenderContext } from "../../tools/infra/define.ts";
+import { progressShell } from "../../tools/infra/progress.ts";
+import { toolResult } from "../../tools/infra/result.ts";
+import { webBatchTool } from "../../tools/web-batch.ts";
+import { webCrawlTool } from "../../tools/web-crawl.ts";
+import { webExtractTool } from "../../tools/web-extract.ts";
+import { webGetResultTool } from "../../tools/web-get-result.ts";
+import { webScrapeTool } from "../../tools/web-scrape.ts";
+import { toolCall, type RenderComponent, type RenderTheme } from "../index.ts";
+import { renderWebBrowserResult } from "../renderers/browser.ts";
+import { renderWebExtractResult } from "../renderers/extract.ts";
+import { renderVerticalResult } from "../renderers/vertical.ts";
 
 const partialContext = {
 	expanded: false,
@@ -425,6 +427,75 @@ describe("web tool renderers", () => {
 		expect(rendered).not.toContain("├─ 1");
 	});
 
+	it("formats Dev.to articles and comments in expanded view", () => {
+		const result = toolResult({
+			text: "ok",
+			data: {
+				extractor: "devto",
+				data: {
+					title: "Building a Dev.to Extractor",
+					body: "# Building a Dev.to Extractor\n\nUse the Forem API.",
+					bodyMarkdown: "# Building a Dev.to Extractor\n\nUse the Forem API.",
+					tags: ["webdev", "api"],
+					readablePublishedDate: "Jun 15",
+					readingTimeMinutes: 4,
+					commentsCount: 2,
+					author: { name: "Jane Developer", username: "jane" },
+					comments: [{ author: "Reader", username: "reader", bodyHtml: "<p>Great article.</p>" }],
+					source: {
+						provider: "devto",
+						articleEndpoint: "https://dev.to/api/articles/jane/building-a-devto-extractor",
+						commentsEndpoint: "https://dev.to/api/comments?a_id=12345",
+					},
+				},
+			},
+		});
+
+		const rendered = text(renderVerticalResult(result, true));
+		expect(rendered).toContain("article");
+		expect(rendered).toContain("Jane Developer (@jane)");
+		expect(rendered).toContain("4 min");
+		expect(rendered).toContain("Use the Forem API");
+		expect(rendered).toContain("Reader: Great article.");
+		expect(rendered).toContain("articleEndpoint");
+		expect(rendered).toContain("commentsEndpoint");
+		expect(rendered).not.toContain("video");
+	});
+
+	it("formats Reddit posts and top comments in expanded view", () => {
+		const result = toolResult({
+			text: "ok",
+			data: {
+				extractor: "reddit",
+				data: {
+					title: "Reddit API changes",
+					subreddit: "announcements",
+					author: "reddit",
+					selfText: "API update details.",
+					score: 1200,
+					upvoteRatio: 0.82,
+					commentCount: 99,
+					flairText: "Admin Post",
+					topComments: [{ author: "octo", body: "Thanks for the details.", score: 7 }],
+					source: {
+						provider: "reddit",
+						endpoint:
+							"https://www.reddit.com/r/announcements/comments/14f4h6s.json?limit=50&raw_json=1",
+					},
+				},
+			},
+		});
+
+		const rendered = text(renderVerticalResult(result, true));
+		expect(rendered).toContain("post");
+		expect(rendered).toContain("r/announcements");
+		expect(rendered).toContain("82%");
+		expect(rendered).toContain("API update details.");
+		expect(rendered).toContain("top comments");
+		expect(rendered).toContain("octo: Thanks for the details.");
+		expect(rendered).not.toContain("video");
+	});
+
 	it("renders blocked vertical metadata without generic result details", () => {
 		const result = toolResult({
 			text: "reddit returned URL metadata only",
@@ -536,6 +607,64 @@ describe("web tool renderers", () => {
 		expect(expanded).toContain('"hello"');
 		// "truncated" row is dropped when false.
 		expect(expanded).not.toContain("truncated");
+	});
+
+	it("renders compact web_extract calls and expanded results", async () => {
+		const result = await webExtractTool.execute("call", { action: "list" }, signal);
+		expect(text(webExtractTool.renderCall?.({ action: "list" }, undefined))).toBe(
+			"web_extract list",
+		);
+		expect(text(webExtractTool.renderResult?.(result, { expanded: true }, undefined))).toContain(
+			"extractor",
+		);
+	});
+
+	it("renders web_get_result collapsed status for found and missing results", async () => {
+		const missingResult = await webGetResultTool.execute("call", { jobId: "missing-job" }, signal);
+		expect(missingResult.isError).toBe(true);
+
+		const theme: RenderTheme = {
+			fg: (name, value) => `<fg:${name}>${value}</fg:${name}>`,
+			bg: (name, value) => `<bg:${name}>${value}</bg:${name}>`,
+		};
+		const found = text(
+			webGetResultTool.renderResult?.(
+				{
+					content: [{ type: "text", text: "Stored result abc: 1 field" }],
+					details: { data: { ok: true }, truncated: false },
+				},
+				{ expanded: false },
+				theme,
+			),
+		);
+		const missing = text(
+			webGetResultTool.renderResult?.(
+				{
+					content: [{ type: "text", text: "missing" }],
+					details: {
+						truncated: false,
+						error: {
+							code: "STORED_RESULT_NOT_FOUND",
+							phase: "retrieve",
+							message: "missing",
+							retryable: false,
+						},
+					},
+				},
+				{ expanded: false },
+				theme,
+			),
+		);
+
+		expect(found).toContain("<fg:accent>✓ result found</fg:accent>");
+		expect(missing).toContain("<bg:toolErrorBg>");
+		expect(missing).toContain("✕ no result");
+	});
+
+	it("wraps long custom renderer lines to the requested terminal width", () => {
+		const lines = toolCall("x".repeat(150), []).render(40);
+		expect(lines.length).toBeGreaterThan(1);
+		expect(lines.every((line) => line.length <= 40)).toBe(true);
 	});
 });
 

@@ -1,0 +1,101 @@
+# Vertical manifest v1; `kind` selects the runtime in src/extract/vertical/.
+version: 1
+order: 14
+name: devto
+kind: http-workflow
+description: Dev.to article metadata, body markdown, author, and comments via the Forem API.
+urlPatterns:
+  - https://dev.to/:username/:slug/:commentId
+  - https://dev.to/:username/:slug
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+capabilities:
+  - article_metadata
+  - body_markdown
+  - author
+  - comments
+source: builtin
+steps:
+  - tryJson:
+      as: article
+      endpointAs: articleEndpoint
+      finalUrlAs: articleFinalUrl
+      optional: true
+      continueOnError: true
+      endpoints:
+        - url: https://dev.to/api/articles/{{username|encodeURIComponent}}/{{slug|encodeURIComponent}}
+  - tryJson:
+      as: commentsResponse
+      endpointAs: commentsEndpoint
+      finalUrlAs: commentsFinalUrl
+      optional: true
+      continueOnError: true
+      endpoints:
+        - when: article.id
+          url: https://dev.to/api/comments?a_id={{article.id|encodeURIComponent}}
+  - fetchText:
+      as: pageHtml
+      url: "{{url}}"
+      preferPage: true
+      optional: true
+      unless: article.body_markdown
+  - readable:
+      from: pageHtml
+      as: readable
+      optional: true
+      when: pageHtml
+  - extract:
+      id: "@.article.id|number"
+      username: "{{username}}"
+      slug: "{{slug}}"
+      commentId: "{{commentId}}"
+      title: "@.article.title || @.readable.title"
+      description: "@.article.description || @.readable.excerpt"
+      body: "@.article.body_markdown || @.readable.textContent"
+      bodyMarkdown: "@.article.body_markdown"
+      bodyText: "@.readable.textContent"
+      tags: "@.article.tag_list"
+      publishedAt: "@.article.published_at"
+      readablePublishedDate: "@.article.readable_publish_date"
+      readingTimeMinutes: "@.article.reading_time_minutes|number"
+      url: "@.article.url || {{url}}"
+      canonicalUrl: "@.article.canonical_url"
+      coverImage: "@.article.cover_image || @.article.social_image"
+      commentsCount: "@.article.comments_count|number"
+      author:
+        object:
+          username: "@.article.user.username || {{username}}"
+          name: "@.article.user.name"
+          profileUrl: "@.article.user.website_url"
+          profileImage: "@.article.user.profile_image"
+          twitterUsername: "@.article.user.twitter_username"
+          githubUsername: "@.article.user.github_username"
+      comments:
+        jsonWalk:
+          from: commentsResponse
+          collect:
+            - walkObjects:
+                when:
+                  has: body_html
+                emit:
+                  id: id_code
+                  bodyHtml: body_html
+                  createdAt: created_at
+                  userId: user.user_id
+                  username: user.username
+                  author: user.name
+                  profileImage: user.profile_image
+          dedupeBy:
+            - id
+          maxItems: 100
+      source:
+        object:
+          provider:
+            value: devto
+          articleEndpoint: "@.articleEndpoint"
+          articleFinalUrl: "@.articleFinalUrl"
+          commentsEndpoint: "@.commentsEndpoint"
+          commentsFinalUrl: "@.commentsFinalUrl"
+          fallback: "@.readable.ok|trueOnly"

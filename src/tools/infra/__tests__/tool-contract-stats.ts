@@ -1,6 +1,6 @@
 /**
- * @file Tool contract token stats — used by autoresearch to measure schema token usage.
- *   NOT a test file (no test runner dependency). Run: npx tsx src/tools/__tests__/tool-contract-stats.ts
+ * @file Tool contract token stats — used by autoresearch to measure schema token usage. NOT a test
+ *   file (no test runner dependency). Run: npx tsx src/tools/**tests**/tool-contract-stats.ts
  */
 import { webTools } from "../infra/register.ts";
 
