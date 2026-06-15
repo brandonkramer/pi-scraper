@@ -47,8 +47,7 @@
 		"prepublishOnly": "npm run typecheck"
 	},
 	"dependencies": {
-		"@earendil-works/pi-coding-agent": "^0.79.3",
-		"@earendil-works/pi-tui": "^0.79.3",
+		"@earendil-works/pi-tui": "^0.79.4",
 		"@mozilla/readability": "^0.6.0",
 		"cloakbrowser": "^0.3.31",
 		"css-select": "^7.0.0",
@@ -68,6 +67,7 @@
 		"yaml": "^2.9.0"
 	},
 	"devDependencies": {
+		"@earendil-works/pi-coding-agent": "^0.79.4",
 		"@types/node": "latest",
 		"@types/turndown": "^5.0.6",
 		"cheerio": "^1.2.0",
@@ -83,7 +83,7 @@
 		"vitest": "^4.1.8"
 	},
 	"peerDependencies": {
-		"@earendil-works/pi-ai": "^0.79.3"
+		"@earendil-works/pi-ai": "^0.79.4"
 	},
 	"peerDependenciesMeta": {
 		"@earendil-works/pi-ai": {
