@@ -200,7 +200,8 @@ export const webBrowserTool = defineWebTool({
 		}
 	},
 	renderCall: (args, theme) =>
-		toolCall("web_browser", [args.action, args.selector ?? args.url ?? ""].filter(Boolean), theme),
+		// ponytail: url omitted — the result line already shows finalUrl; keep selector (click/fill/select).
+		toolCall("web_browser", [args.action, args.selector ?? ""].filter(Boolean), theme),
 	renderResult: (result, { expanded }, theme) => renderWebBrowserResult(result, expanded, theme),
 });
 
