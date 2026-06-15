@@ -50,13 +50,13 @@ Ask naturally; Pi can choose the right web tool automatically:
 
 | Tool | Capability | Best For... | Contract ≈ |
 | :--- | :--- | :--- | :---: |
-| `web_scrape` | 🏠 Local | Reading a single URL as Markdown, Text, or HTML. | 268 tokens |
-| `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 179 tokens |
-| `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 51 tokens |
-| `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 151 tokens |
-| `web_browser` | 🖱️ Interactive | Driving a live page over steps: navigate, click, fill, select, inspect, read, screenshot, evaluate (stateful `@eN` refs). | 532 tokens |
-| `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 407 tokens |
-| `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 55 tokens |
+| `web_scrape` | 🏠 Local | Reading a single URL as Markdown, Text, or HTML. | 268 |
+| `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 179 |
+| `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 51 |
+| `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 151 |
+| `web_browser` | 🖱️ Interactive | Driving a live page over steps: navigate, click, fill, select, inspect, read, screenshot, evaluate (stateful `@eN` refs). | 493 |
+| `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 407 |
+| `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 55 |
 
 > [!NOTE]
 > **Contract** is the total tokens for the tool declaration.
