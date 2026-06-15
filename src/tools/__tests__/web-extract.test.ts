@@ -176,6 +176,40 @@ describe("web_extract — action=vertical", () => {
 		expect(opened?.browserBackend).toBe("cloak");
 		expect(opened?.sessionId).toMatch(/^vertical-/u);
 	});
+
+	it("rejects an extractor/url mismatch with a suggestion before opening a browser", async () => {
+		let opened = false;
+		const tool = createWebExtractTool({
+			openBrowserFetchSession: async (input) => {
+				opened = true;
+				return {
+					rendered: { url: input.url, finalUrl: input.url, status: 200, html: "" },
+					pageFetch: async () => ({
+						status: 200,
+						text: "[]",
+						finalUrl: input.url,
+						contentType: "application/json",
+					}),
+					close: async () => {
+						/* no-op */
+					},
+				};
+			},
+		});
+		const result = await tool.execute(
+			"call",
+			{
+				action: "vertical",
+				extractor: "reddit",
+				url: "https://www.reddit.com/r/typescript",
+			},
+			signal,
+		);
+		const error = (result.details as ToolContext).error;
+		expect(error?.code).toBe("EXTRACTOR_URL_MISMATCH");
+		expect(error?.message).toContain("reddit_listing");
+		expect(opened).toBe(false);
+	});
 });
 
 // ---------------------------------------------------------------------------

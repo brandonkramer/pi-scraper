@@ -7,6 +7,7 @@ import type {
 } from "../extract/vertical/capabilities.ts";
 import type { ManifestRegistry } from "../extract/vertical/manifest-registry.ts";
 import type { ManifestDiagnostic } from "../extract/vertical/manifest-types.ts";
+import { matchManifestUrl } from "../extract/vertical/matcher.ts";
 import type {
 	createBrowserReadClient as createBrowserReadClientFn,
 	listExtractorCapabilities as listExtractorCapabilitiesFn,
@@ -99,6 +100,8 @@ export async function runDeterministicExtractor(
 	}
 	const extractor: string = params.extractor;
 	const url: string = params.url;
+	const mismatch = await suggestExtractorForUrl(extractor, url);
+	if (mismatch) return mismatch;
 	const effectiveParams = await resolveVerticalBrowserParams(params, extractor);
 	const config = await loadEffectiveConfig();
 	await emitProgress(onUpdate, {
@@ -160,6 +163,54 @@ export async function runDeterministicExtractor(
 	}
 }
 
+/**
+ * Guard against the agent pairing an extractor with a URL it cannot handle (e.g. extractor:"reddit"
+ * with a subreddit listing URL, which belongs to reddit_listing). Runs before browser escalation so
+ * a mismatch never pays for a cloaked-browser navigation. Only suggests a sibling that matches the
+ * URL on a _literal_ host, so greedy wildcard-host manifests (e.g. gitlab's
+ * https://:host/:owner/:repo) can't claim unrelated URLs; anything else falls through to the normal
+ * not-found/unsupported errors.
+ */
+async function suggestExtractorForUrl(extractor: string, url: string) {
+	let parsed: URL;
+	try {
+		parsed = new URL(url);
+	} catch {
+		return;
+	}
+	const { buildManifestRegistry } = await loadVerticalRegistry();
+	const registry = await buildManifestRegistry();
+	const requested = registry.get(extractor);
+	if (requested && matchManifestUrl(requested.manifest, parsed)) return;
+	const host = parsed.hostname.toLowerCase();
+	const alt = registry.entries.find(
+		(entry) =>
+			entry.manifest.name !== extractor &&
+			manifestLiteralHosts(entry.manifest).has(host) &&
+			matchManifestUrl(entry.manifest, parsed),
+	);
+	if (!alt) return;
+	const patterns = alt.manifest.urlPatterns.join(", ");
+	return inputErrorResult(
+		"EXTRACTOR_URL_MISMATCH",
+		"vertical_extract",
+		`extractor="${extractor}" does not match this URL. Use extractor="${alt.manifest.name}" — it matches: ${patterns}`,
+	);
+}
+
+/**
+ * Concrete (non-wildcard) hosts a manifest's patterns pin to, for high-confidence sibling
+ * suggestions.
+ */
+function manifestLiteralHosts(manifest: { urlPatterns: string[] }): Set<string> {
+	const hosts = new Set<string>();
+	for (const pattern of manifest.urlPatterns) {
+		const host = pattern.replace(/^https?:\/\//u, "").split("/")[0] ?? "";
+		if (host && !host.includes(":") && !host.includes("*")) hosts.add(host.toLowerCase());
+	}
+	return hosts;
+}
+
 interface VerticalBrowserSession {
 	prerenderedPage: VerticalExtractorPage;
 	client: Pick<HttpClient, "fetchUrl">;
@@ -199,7 +250,6 @@ async function maybeOpenVerticalBrowser(
 	if (params.mode !== "browser") return;
 	await emitProgress(onUpdate, {
 		state: "loading",
-		url,
 		message: "opening browser session for vertical fetch",
 	});
 	const openBrowserFetchSession =
