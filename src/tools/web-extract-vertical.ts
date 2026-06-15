@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { loadEffectiveConfig } from "../config.ts";
 import type {
 	VerticalExtractionResult,
@@ -6,10 +8,11 @@ import type {
 import type { ManifestRegistry } from "../extract/vertical/manifest-registry.ts";
 import type { ManifestDiagnostic } from "../extract/vertical/manifest-types.ts";
 import type {
+	createBrowserReadClient as createBrowserReadClientFn,
 	listExtractorCapabilities as listExtractorCapabilitiesFn,
 	runVerticalExtractor as runVerticalExtractorFn,
 } from "../extract/vertical/registry.ts";
-import { scrapeUrl, type ScrapePipelineDeps } from "../scrape/pipeline.ts";
+import type { HttpClient } from "../http/client.ts";
 import type { ExtractorCapability } from "../types.ts";
 /**
  * @file Web_extract action="vertical" and action="list" handlers — deterministic extractor
@@ -29,6 +32,7 @@ interface VerticalBrowserFallbackMetadata {
 
 type VerticalResultWithMetadata = VerticalExtractionResult & VerticalBrowserFallbackMetadata;
 type VerticalRegistryModule = {
+	createBrowserReadClient: typeof createBrowserReadClientFn;
 	listExtractorCapabilities: typeof listExtractorCapabilitiesFn;
 	runVerticalExtractor: typeof runVerticalExtractorFn;
 	buildManifestRegistry: (includeProject?: boolean) => Promise<ManifestRegistry>;
@@ -101,96 +105,106 @@ export async function runDeterministicExtractor(
 		url,
 		message: `extractor ${extractor}`,
 	});
-	const prerenderedPage = await maybePrerenderVerticalPage(
-		url,
-		params,
-		options.scrapeDeps,
-		signal,
-		onUpdate,
-	);
-	const { runVerticalExtractor } = await loadVerticalRegistry();
-	const result = await runVerticalExtractor(
-		extractor,
-		url,
-		{
-			prerenderedPage,
-			requestOptions: {
-				cacheTtlSeconds: config.scrapeDefaults.cacheTtlSeconds,
-				maxAgeSeconds: config.scrapeDefaults.maxAgeSeconds,
-				refresh: config.scrapeDefaults.refresh,
-				respectRobots: params.respectRobots,
-			},
-			onProgress: onUpdate
-				? (progress) =>
-						emitProgress(onUpdate, {
-							state: progress.state as "waiting" | "loading" | "processing" | "done" | "error",
-							message: progress.message,
-							url: progress.url,
-						})
-				: undefined,
-		},
-		signal,
-	);
-	const resultWithMetadata: VerticalResultWithMetadata = prerenderedPage
-		? {
-				...result,
-				browserFallback: {
-					used: true,
-					backend: params.browserBackend ?? "cloak",
-				},
-			}
-		: result;
-	return toolResult({
-		text: verticalExtractorText(extractor, resultWithMetadata),
-		data: resultWithMetadata,
-		url,
-		format: "json",
-		sources: result.sources,
-		summary: verticalExtractorSummary(extractor, resultWithMetadata),
-		error: result.error && {
-			...result.error,
-			phase: "vertical_extract",
+	const browser = await maybeOpenVerticalBrowser(url, params, options, signal, onUpdate);
+	try {
+		const { runVerticalExtractor } = await loadVerticalRegistry();
+		const result = await runVerticalExtractor(
+			extractor,
 			url,
-		},
-		assistantGuidance: verticalExtractorGuidance(resultWithMetadata),
-	});
+			{
+				prerenderedPage: browser?.prerenderedPage,
+				httpClient: browser?.client,
+				requestOptions: {
+					cacheTtlSeconds: config.scrapeDefaults.cacheTtlSeconds,
+					maxAgeSeconds: config.scrapeDefaults.maxAgeSeconds,
+					refresh: config.scrapeDefaults.refresh,
+					respectRobots: params.respectRobots,
+				},
+				onProgress: onUpdate
+					? (progress) =>
+							emitProgress(onUpdate, {
+								state: progress.state as "waiting" | "loading" | "processing" | "done" | "error",
+								message: progress.message,
+								url: progress.url,
+							})
+					: undefined,
+			},
+			signal,
+		);
+		const resultWithMetadata: VerticalResultWithMetadata = browser
+			? {
+					...result,
+					browserFallback: {
+						used: true,
+						backend: params.browserBackend ?? "cloak",
+					},
+				}
+			: result;
+		return toolResult({
+			text: verticalExtractorText(extractor, resultWithMetadata),
+			data: resultWithMetadata,
+			url,
+			format: "json",
+			sources: result.sources,
+			summary: verticalExtractorSummary(extractor, resultWithMetadata),
+			error: result.error && {
+				...result.error,
+				phase: "vertical_extract",
+				url,
+			},
+			assistantGuidance: verticalExtractorGuidance(resultWithMetadata),
+		});
+	} finally {
+		await browser?.close();
+	}
 }
 
-async function maybePrerenderVerticalPage(
+interface VerticalBrowserSession {
+	prerenderedPage: VerticalExtractorPage;
+	client: Pick<HttpClient, "fetchUrl">;
+	close(): Promise<void>;
+}
+
+/**
+ * For mode:"browser", open one browser session and navigate to the vertical URL so the page carries
+ * cookies + the JS-challenge pass, then return a browser-backed fetch client + the rendered page.
+ * Vertical API/page fetches run via in-page fetch() and beat fingerprint/JS blocks (e.g. Reddit
+ * 403). Propagates if the browser backend is unavailable — mode:"browser" is an explicit request
+ * for it.
+ */
+async function maybeOpenVerticalBrowser(
 	url: string,
 	params: Params,
-	scrapeDeps: ScrapePipelineDeps | undefined,
+	options: WebExtractToolOptions,
 	signal: AbortSignal,
 	onUpdate?: ToolUpdate,
-): Promise<VerticalExtractorPage | undefined> {
+): Promise<VerticalBrowserSession | undefined> {
 	if (params.mode !== "browser") return;
 	await emitProgress(onUpdate, {
 		state: "loading",
 		url,
-		message: "rendering page for vertical fallback",
+		message: "opening browser session for vertical fetch",
 	});
-	const result = await scrapeUrl(
-		url,
-		{
-			mode: "browser",
-			format: "html",
-			browserBackend: params.browserBackend,
-			sessionId: params.sessionId,
-			saveSession: params.saveSession,
-			clearSession: params.clearSession,
-			respectRobots: params.respectRobots,
-		},
-		scrapeDeps,
+	const openBrowserFetchSession =
+		options.openBrowserFetchSession ??
+		(await import("../browser/playwright.ts")).openBrowserFetchSession;
+	const { createBrowserReadClient } = await loadVerticalRegistry();
+	// ponytail: per-call ephemeral session so close() can safely destroy it; wire params.sessionId reuse if auth needed.
+	const session = await openBrowserFetchSession(
+		{ url, sessionId: `vertical-${randomUUID()}`, browserBackend: params.browserBackend },
 		signal,
 	);
-	if (result.error) return;
+	const { rendered } = session;
 	return {
-		requestedUrl: url,
-		finalUrl: result.finalUrl ?? result.url ?? url,
-		status: result.status ?? 200,
-		contentType: result.contentType,
-		text: result.data.html ?? result.data.text ?? result.summary ?? "",
-		html: result.data.html,
+		prerenderedPage: {
+			requestedUrl: url,
+			finalUrl: rendered.finalUrl,
+			status: rendered.status ?? 200,
+			text: rendered.html,
+			html: rendered.html,
+		},
+		client: createBrowserReadClient((req, sig) => session.pageFetch(req, sig)),
+		close: () => session.close(),
 	};
 }
 

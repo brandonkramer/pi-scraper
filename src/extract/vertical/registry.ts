@@ -46,6 +46,45 @@ const fingerprintReadClient: Pick<HttpClient, "fetchUrl"> = {
 		await (await resolveReadClient()).fetchUrl(url, options, signal),
 };
 
+/**
+ * Wrap a browser-backed in-page fetch (from openBrowserFetchSession) into the `fetchUrl` contract
+ * so vertical fetches run inside the navigated browser page — carrying its cookies, fingerprint,
+ * and JS-challenge pass. On in-page failure (e.g. a cross-origin API without CORS) it falls back to
+ * the network clients: impit for GET/HEAD, undici otherwise. Pass the result as `deps.httpClient`
+ * and httpContext routes every vertical fetch (GET + POST) through it.
+ */
+export function createBrowserReadClient(
+	pageFetch: (
+		req: { url: string; method?: string; headers?: Record<string, string>; body?: string },
+		signal?: AbortSignal,
+	) => Promise<{ status: number; text: string; finalUrl: string; contentType?: string }>,
+): Pick<HttpClient, "fetchUrl"> {
+	return {
+		fetchUrl: async (input, options, signal) => {
+			const url = input.toString();
+			const method = options?.method ?? "GET";
+			try {
+				const body = typeof options?.body === "string" ? options.body : undefined;
+				const result = await pageFetch({ url, method, headers: options?.headers, body }, signal);
+				return {
+					url,
+					finalUrl: result.finalUrl || url,
+					status: result.status,
+					headers: result.contentType ? { "content-type": result.contentType } : {},
+					contentType: result.contentType,
+					text: result.text,
+					downloadedBytes: Buffer.byteLength(result.text),
+				};
+			} catch {
+				// In-page fetch failed (cross-origin without CORS, etc.) — fall back to the network clients.
+				const fallback =
+					method === "GET" || method === "HEAD" ? fingerprintReadClient : createHttpClient();
+				return await fallback.fetchUrl(input, options, signal);
+			}
+		},
+	};
+}
+
 export interface VerticalRegistryDeps {
 	context?: VerticalExtractorContext;
 	httpClient?: Pick<HttpClient, "fetchUrl">;

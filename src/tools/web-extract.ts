@@ -1,6 +1,7 @@
 /** @file Pi tool adapter for vertical, pattern, ad hoc, and surface extraction. */
 import { type Static, Type } from "typebox";
 
+import type { OpenBrowserFetchSession } from "../browser/playwright.ts";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
 import type { PatternSectionRequest } from "../extract/pattern/index.ts";
 import type { PatternExcerptRequest, PatternRegexRequest } from "../extract/pattern/types.ts";
@@ -143,6 +144,11 @@ type ExtractAction = (typeof extractActions)[number];
 export interface WebExtractToolOptions {
 	modelAdapter?: ModelAdapter;
 	scrapeDeps?: ScrapePipelineDeps;
+	/**
+	 * Override the browser-fetch session opener used by mode:"browser" verticals (tests inject a
+	 * fake).
+	 */
+	openBrowserFetchSession?: OpenBrowserFetchSession;
 }
 
 export function createWebExtractTool(

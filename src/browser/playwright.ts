@@ -108,6 +108,44 @@ export interface BrowserActDeps {
 	browserLoader?: (backend: BrowserBackend, options: BrowserRenderOptions) => Promise<Browser>;
 }
 
+export interface BrowserPageFetchRequest {
+	url: string;
+	method?: string;
+	headers?: Record<string, string>;
+	body?: string;
+	timeoutMs?: number;
+}
+
+export interface BrowserPageFetchResult {
+	status: number;
+	text: string;
+	finalUrl: string;
+	contentType?: string;
+}
+
+export interface BrowserFetchSession {
+	/**
+	 * Run fetch() inside the navigated page — carries the browser's cookies, fingerprint, and
+	 * JS-challenge pass.
+	 */
+	pageFetch(req: BrowserPageFetchRequest, signal?: AbortSignal): Promise<BrowserPageFetchResult>;
+	/** HTML + metadata captured from the initial navigation, for prerendered-page reuse. */
+	rendered: BrowserRenderResult;
+	/** Destroy the ephemeral session (closes context + browser). */
+	close(): Promise<void>;
+}
+
+export interface OpenBrowserFetchSessionInput {
+	url: string;
+	sessionId: string;
+	browserBackend?: BrowserBackend;
+	proxy?: string;
+	timeoutSeconds?: number;
+}
+
+/** Signature of {@link openBrowserFetchSession}, for dependency-injection overrides in tests. */
+export type OpenBrowserFetchSession = typeof openBrowserFetchSession;
+
 export interface BrowserRenderer {
 	fetchRendered(
 		url: string | URL,
@@ -322,6 +360,120 @@ export async function browserAct(
 		status,
 		backend,
 		durationMs: Date.now() - startedAt,
+	};
+}
+
+interface InPageFetchPayload {
+	url: string;
+	method: string;
+	headers: Record<string, string>;
+	body?: string;
+	timeoutMs: number;
+}
+
+/**
+ * Runs INSIDE the page via page.evaluate — uses the browser's own `fetch` so the request carries
+ * the page's cookies + fingerprint + JS-challenge pass. Must stay self-contained (no closure
+ * capture): Playwright serializes it to run in the browser context.
+ */
+async function inPageFetch(p: InPageFetchPayload): Promise<BrowserPageFetchResult> {
+	const res = await fetch(p.url, {
+		method: p.method,
+		headers: p.headers,
+		body: p.body,
+		credentials: "include",
+		signal: AbortSignal.timeout(p.timeoutMs),
+	});
+	return {
+		status: res.status,
+		text: await res.text(),
+		finalUrl: res.url,
+		contentType: res.headers.get("content-type") ?? undefined,
+	};
+}
+
+/**
+ * Open a pooled browser session, navigate to `url` (establishing cookies + JS-challenge pass on the
+ * target origin), and expose a `pageFetch` that runs `fetch()` _inside_ that page. Same-origin API
+ * calls (e.g. Reddit `.json`) then carry the browser's cookies + fingerprint and return 200 where a
+ * plain HTTP client gets 403. The context route guard validates every in-page fetch host, so this
+ * stays SSRF-safe. The caller MUST `close()` to destroy the ephemeral session.
+ */
+export async function openBrowserFetchSession(
+	input: OpenBrowserFetchSessionInput,
+	signal?: AbortSignal,
+	deps: BrowserActDeps = {},
+): Promise<BrowserFetchSession> {
+	validateSessionId(input.sessionId);
+	const backend = input.browserBackend ?? DEFAULT_BROWSER_BACKEND;
+	const safetyCheck = assertSafeFetchUrl;
+	const effectiveProxy = input.proxy ?? resolveEnvProxyForUrl(input.url);
+	const browserLoader = deps.browserLoader ?? defaultBrowserLoader;
+
+	const { page, guard, session } = await acquireSessionPage({
+		options: { sessionId: input.sessionId, browserBackend: backend, proxy: effectiveProxy },
+		backend,
+		safetyCheck,
+		effectiveProxy,
+		reusePage: true,
+		browserLoader,
+	});
+	const browserSafety: BrowserSafetyState = { check: safetyCheck, checkedHosts: new Map() };
+	guard.setCheckedHostsForPage(page, browserSafety.checkedHosts);
+
+	const navTimeout = (input.timeoutSeconds ?? 30) * 1_000;
+	if (signal?.aborted) {
+		await destroyBrowserSession(session.id);
+		throw abortError(input.url);
+	}
+	const safe = await assertSafeBrowserUrl(input.url, input.url, undefined, browserSafety);
+	let response: { status(): number } | null;
+	try {
+		response = await page.goto(safe.normalizedUrl, {
+			waitUntil: "domcontentloaded",
+			timeout: navTimeout,
+		});
+	} catch (error) {
+		await destroyBrowserSession(session.id);
+		throw guard.consumeError(page, safe.normalizedUrl) ?? error;
+	}
+	const blocked = guard.consumeError(page, safe.normalizedUrl);
+	if (blocked) {
+		await destroyBrowserSession(session.id);
+		throw blocked;
+	}
+	const finalUrl = page.url();
+	await assertSafeBrowserUrl(finalUrl, safe.normalizedUrl, finalUrl, browserSafety);
+	// content() can race a client-side redirect/hydration. The rendered HTML is secondary for
+	// API-fetch verticals (reddit/youtube use pageFetch, not fetchPage), so don't fail the session.
+	const html = await page.content().catch(() => "");
+	const rendered: BrowserRenderResult = {
+		url: safe.normalizedUrl,
+		finalUrl,
+		status: response?.status(),
+		html,
+	};
+
+	return {
+		rendered,
+		pageFetch: async (req, reqSignal) => {
+			if (reqSignal?.aborted || signal?.aborted) throw abortError(req.url);
+			// In-page fetch. The context route guard (set above) validates the request host → SSRF-safe.
+			const payload: InPageFetchPayload = {
+				url: req.url,
+				method: req.method ?? "GET",
+				headers: req.headers ?? {},
+				body: req.body,
+				timeoutMs: req.timeoutMs ?? navTimeout,
+			};
+			return await page.evaluate(
+				inPageFetch as unknown as () => Promise<BrowserPageFetchResult>,
+				payload,
+			);
+		},
+		close: async () => {
+			await destroyBrowserSession(session.id);
+		},
 	};
 }
 

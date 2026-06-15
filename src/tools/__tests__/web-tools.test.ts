@@ -47,16 +47,23 @@ describe("selected web tool handlers", () => {
 
 	it("pre-renders vertical fetchPage input when mode=browser", async () => {
 		const tool = createWebExtractTool({
-			scrapeDeps: {
-				browserRenderer: {
-					fetchRendered: async () => ({
-						url: "https://docs.example.com/docs/intro",
-						finalUrl: "https://docs.example.com/docs/intro",
-						status: 200,
-						html: "<main><h1>Rendered Docs</h1><p>Browser-only content.</p></main>",
-					}),
+			openBrowserFetchSession: async () => ({
+				rendered: {
+					url: "https://docs.example.com/docs/intro",
+					finalUrl: "https://docs.example.com/docs/intro",
+					status: 200,
+					html: "<main><h1>Rendered Docs</h1><p>Browser-only content.</p></main>",
 				},
-			},
+				pageFetch: async () => ({
+					status: 200,
+					text: "",
+					finalUrl: "https://docs.example.com/docs/intro",
+					contentType: "text/html",
+				}),
+				close: async () => {
+					/* no-op */
+				},
+			}),
 		});
 		const result = await tool.execute(
 			"call",
