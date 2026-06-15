@@ -20,6 +20,32 @@ import { matchManifestUrl } from "./matcher.ts";
 
 export const verticalExtractors: readonly VerticalExtractor[] = [];
 
+let readClientPromise: Promise<Pick<HttpClient, "fetchUrl">> | undefined;
+
+/**
+ * Lazily resolve a fingerprint (impit) client for GET reads so vertical API/page fetches carry a
+ * browser-like TLS fingerprint and beat fingerprint-based blocks (e.g. Reddit 403). Falls back to
+ * the plain undici client if the fingerprint backend is unavailable. POST stays on undici — the
+ * fingerprint adapter is GET/HEAD-only and drops request bodies.
+ */
+function resolveReadClient(): Promise<Pick<HttpClient, "fetchUrl">> {
+	readClientPromise ??= (async () => {
+		try {
+			const { getFingerprintFetchAdapter } = await import("../../http/fingerprint/index.ts");
+			const adapter = getFingerprintFetchAdapter();
+			return { fetchUrl: (url, options, signal) => adapter.fetch(url, options, signal) };
+		} catch {
+			return createHttpClient();
+		}
+	})();
+	return readClientPromise;
+}
+
+const fingerprintReadClient: Pick<HttpClient, "fetchUrl"> = {
+	fetchUrl: async (url, options, signal) =>
+		await (await resolveReadClient()).fetchUrl(url, options, signal),
+};
+
 export interface VerticalRegistryDeps {
 	context?: VerticalExtractorContext;
 	httpClient?: Pick<HttpClient, "fetchUrl">;
@@ -245,7 +271,7 @@ function extractionStructuredError(
 }
 
 function httpContext(
-	client: Pick<HttpClient, "fetchUrl"> = createHttpClient(),
+	client: Pick<HttpClient, "fetchUrl"> | undefined,
 	requestOptions: Pick<
 		CommonRequestOptions,
 		"cacheTtlSeconds" | "maxAgeSeconds" | "refresh" | "respectRobots"
@@ -254,10 +280,12 @@ function httpContext(
 	onProgress?: (options: VerticalExtractorProgress) => void | Promise<void>,
 	prerenderedPage?: VerticalExtractorPage,
 ): VerticalExtractorContext {
+	const writeClient = client ?? createHttpClient();
+	const readClient = client ?? fingerprintReadClient;
 	return {
 		fetchJson: async <T>(url: string, signal?: AbortSignal) => {
 			recordVerticalSource(sources, url, "api");
-			const response = await client.fetchUrl(
+			const response = await readClient.fetchUrl(
 				url,
 				{
 					...requestOptions,
@@ -271,7 +299,7 @@ function httpContext(
 		},
 		fetchJsonPost: async <T>(url: string, body: unknown, signal?: AbortSignal) => {
 			recordVerticalSource(sources, url, "api");
-			const response = await client.fetchUrl(
+			const response = await writeClient.fetchUrl(
 				url,
 				{
 					...requestOptions,
@@ -303,11 +331,12 @@ function httpContext(
 				...opts?.headers,
 			};
 			if (opts?.body) headers["content-type"] = "application/json";
-			const response = await client.fetchUrl(
+			const method = opts?.method ?? "GET";
+			const response = await (method === "GET" ? readClient : writeClient).fetchUrl(
 				url,
 				{
 					...requestOptions,
-					method: opts?.method ?? "GET",
+					method,
 					body: opts?.body,
 					forceText: true,
 					respectRobots: false,
@@ -322,7 +351,7 @@ function httpContext(
 		},
 		fetchText: async (url: string, signal?: AbortSignal) => {
 			recordVerticalSource(sources, url, "feed");
-			const response = await client.fetchUrl(
+			const response = await readClient.fetchUrl(
 				url,
 				{ ...requestOptions, forceText: true, respectRobots: false },
 				signal,
@@ -335,7 +364,7 @@ function httpContext(
 				return prerenderedPage;
 			}
 			recordVerticalSource(sources, url, "page");
-			const response = await client.fetchUrl(
+			const response = await readClient.fetchUrl(
 				url,
 				{ ...requestOptions, forceText: true, respectRobots: requestOptions.respectRobots ?? true },
 				signal,
