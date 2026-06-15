@@ -216,6 +216,33 @@ describe("reddit vertical extractor", () => {
 		).toHaveLength(4);
 	});
 
+	it("falls back to URL metadata when structured endpoints are blocked", async () => {
+		const result = await runVerticalExtractor(
+			"reddit",
+			"https://www.reddit.com/r/announcements/comments/14f4h6s/slug/",
+			{ context: contextFor(403, "blocked") },
+		);
+
+		expect(result.error).toBeUndefined();
+		expect(result.data).toMatchObject({
+			id: "14f4h6s",
+			subreddit: "announcements",
+			permalink: "https://www.reddit.com/r/announcements/comments/14f4h6s/",
+			source: {
+				provider: "reddit",
+				blocked: true,
+			},
+		});
+		expect(
+			(result.data as { source?: { attemptedEndpoints?: string[] } }).source?.attemptedEndpoints,
+		).toEqual([
+			"https://www.reddit.com/r/announcements/comments/14f4h6s.json?limit=50&raw_json=1",
+			"https://old.reddit.com/r/announcements/comments/14f4h6s.json?limit=50&raw_json=1",
+			"https://www.reddit.com/comments/14f4h6s.json?limit=50&raw_json=1",
+			"https://old.reddit.com/comments/14f4h6s.json?limit=50&raw_json=1",
+		]);
+	});
+
 	it("extracts subreddit listings through YAML workflow", async () => {
 		const listingJson = JSON.stringify({
 			data: {
@@ -262,14 +289,7 @@ describe("reddit vertical extractor", () => {
 		});
 	});
 
-	it("returns structured errors for blocked and rate-limited Reddit responses", async () => {
-		await expect(
-			runVerticalExtractor("reddit", "https://redd.it/14f4h6s", {
-				context: contextFor(403, "blocked"),
-			}),
-		).resolves.toMatchObject({
-			error: { code: "REDDIT_BLOCKED", retryable: false },
-		});
+	it("returns structured errors for rate-limited Reddit responses", async () => {
 		await expect(
 			runVerticalExtractor("reddit", "https://redd.it/14f4h6s", {
 				context: contextFor(429, "too many requests"),

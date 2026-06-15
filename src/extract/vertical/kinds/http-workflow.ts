@@ -1,5 +1,6 @@
 /** @file Http-workflow manifest runner. */
 import { createStructuredError, hasStructuredError } from "../../../http/errors.ts";
+import { extractReadable } from "../../../parse/page/readable.ts";
 import type { VerticalExtractorContext } from "../capabilities.ts";
 import { evaluateJsonWalkRule } from "../json-walk.ts";
 import type { VerticalManifest } from "../manifest-types.ts";
@@ -24,6 +25,7 @@ export async function runHttpWorkflow(
 	for (const step of steps) {
 		const object = record(step);
 		if (object?.fetchText) await fetchTextStep(object.fetchText, url, scope, context, signal);
+		else if (object?.readable) readableStep(object.readable, url, scope);
 		else if (object?.regex) regexStep(object.regex, scope);
 		else if (object?.postJson) await postJsonStep(object.postJson, url, scope, context, signal);
 		else if (object?.select) selectStep(object.select, scope);
@@ -61,6 +63,7 @@ async function fetchTextStep(
 	signal?: AbortSignal,
 ): Promise<void> {
 	const step = stepConfig(raw);
+	if (!stepEnabled(step, scope)) return;
 	const target = stepUrl(step, url, scope);
 	if (!target) {
 		if (step.optional === true) return;
@@ -77,6 +80,21 @@ async function fetchTextStep(
 		throw new Error("fetchText requires text support");
 	const as = stringValue(step.as);
 	if (as && text !== undefined) scope[as] = text;
+}
+
+function readableStep(raw: unknown, url: URL, scope: Scope): void {
+	const step = stepConfig(raw);
+	if (!stepEnabled(step, scope)) return;
+	const text = stringValue(readPath(scope, stringValue(step.from)));
+	const as = stringValue(step.as);
+	if (!text || !as) {
+		if (step.optional !== true) throw new Error("readable step requires from and as");
+		return;
+	}
+	const sourceUrl = stringValue(readPath(scope, stringValue(step.urlFrom))) || url.toString();
+	const value = extractReadable(text, sourceUrl);
+	if (!value.ok && step.optional === true) return;
+	scope[as] = value;
 }
 
 function regexStep(raw: unknown, scope: Scope): void {
@@ -150,8 +168,8 @@ async function tryJsonStep(
 ): Promise<void> {
 	const step = stepConfig(raw);
 	const endpoints = Array.isArray(step.endpoints) ? step.endpoints : [];
+	const fallback = record(step.fallback);
 	const attempts: string[] = [];
-	const robotsDenied: string[] = [];
 	for (const endpoint of endpoints) {
 		const endpointConfig = stepConfig(endpoint);
 		if (!endpointEnabled(endpointConfig, scope)) continue;
@@ -171,21 +189,22 @@ async function tryJsonStep(
 			return;
 		} catch (error) {
 			if (hasStructuredError(error) && error.structured.code === "ROBOTS_DENIED") {
-				robotsDenied.push(target);
 				continue;
 			}
+			if (shouldUseFallbackForEndpointError(error, fallback)) continue;
+			if (step.continueOnError === true || step.optional === true) continue;
 			throw normalizeWorkflowError(error);
 		}
 	}
-	const fallback = record(step.fallback);
 	if (fallback) {
 		const fallbackScope: Scope = {
 			...scope,
-			attemptedEndpoints: robotsDenied.length > 0 ? robotsDenied : attempts,
+			attemptedEndpoints: attempts,
 		};
 		scope[stringValue(step.as) || "response"] = project(fallback, fallbackScope, url);
 		return;
 	}
+	if (step.optional === true) return;
 	throw new Error(`No endpoint succeeded: ${attempts.join(", ")}`);
 }
 
@@ -254,9 +273,13 @@ function applyTransform(
 }
 
 function endpointEnabled(endpoint: WorkflowObject, scope: Scope): boolean {
-	const when = stringValue(endpoint.when);
+	return stepEnabled(endpoint, scope);
+}
+
+function stepEnabled(step: WorkflowObject, scope: Scope): boolean {
+	const when = stringValue(step.when);
 	if (when && !isPresent(readPath(scope, when))) return false;
-	const unless = stringValue(endpoint.unless);
+	const unless = stringValue(step.unless);
 	return !(unless && isPresent(readPath(scope, unless)));
 }
 
@@ -312,6 +335,16 @@ function throwForStatus(status: number, text: string, onStatus: unknown): void {
 			entry.retryable === true,
 		);
 	if (status >= 400) throw new Error(`HTTP ${status}: ${text.slice(0, 120)}`);
+}
+
+function shouldUseFallbackForEndpointError(
+	error: unknown,
+	fallback: WorkflowObject | undefined,
+): boolean {
+	if (!fallback) return false;
+	if (hasStructuredError(error) && error.structured.phase === "extract")
+		return !error.structured.retryable;
+	return error instanceof SyntaxError;
 }
 
 function normalizeWorkflowError(error: unknown): Error {

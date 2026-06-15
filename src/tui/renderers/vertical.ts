@@ -7,12 +7,28 @@ import type { RenderComponent, RenderTheme } from "../types.ts";
 
 type VerticalData = Record<string, unknown>;
 type BrowserFallback = { used: boolean; backend: string };
-type VerticalComment = { author?: string; owner?: string; text?: string; body?: string };
+type VerticalComment = {
+	author?: string;
+	owner?: string;
+	username?: string;
+	text?: string;
+	body?: string;
+	bodyHtml?: string;
+};
 type VerticalAnswer = { owner?: string; body?: string; score?: number; isAccepted?: boolean };
 type TranscriptSegment = { text: string; start: number; duration?: number };
 type TranscriptPreview = { segments?: TranscriptSegment[]; text?: string };
 type BlockedSource = { reason?: string; attemptedEndpoints?: string[] };
-type SourceInfo = { provider?: string; videoUrl?: string; endpoint?: string };
+type SourceInfo = {
+	provider?: string;
+	videoUrl?: string;
+	endpoint?: string;
+	finalUrl?: string;
+	articleEndpoint?: string;
+	articleFinalUrl?: string;
+	commentsEndpoint?: string;
+	commentsFinalUrl?: string;
+};
 
 const renderVerticalText = (buildText: () => string): RenderComponent =>
 	renderDynamicText(buildText, { padToWidth: true });
@@ -53,10 +69,7 @@ export function renderVerticalResult(
 		const answersBlock = isStackOverflowLike(name, data)
 			? formatAnswersBlock(data.answers as VerticalAnswer[] | undefined, 80, theme)
 			: "";
-		const commentsBlock =
-			isStackOverflowLike(name, data) && Array.isArray(data.answers) && data.answers.length > 0
-				? ""
-				: formatCommentsBlock(data.comments as VerticalComment[] | undefined, 80, theme);
+		const commentsBlock = verticalCommentsBlock(name, data, theme);
 		const sourceSections = buildToolResultTree(buildSourceSections(data));
 		const hasVerticalBlocks = Boolean(
 			transcriptBlock || answersBlock || commentsBlock || sourceSections.length > 0,
@@ -79,9 +92,11 @@ export function renderVerticalResult(
 function isYouTubeLike(extractor: string, data: VerticalData): boolean {
 	return (
 		extractor === "youtube" ||
+		extractor === "youtube_oembed" ||
+		typeof data.videoId === "string" ||
 		typeof data.channel === "string" ||
 		typeof data.lengthSeconds === "number" ||
-		data.transcript !== null ||
+		isTranscriptPreview(data.transcript) ||
 		Array.isArray(data.transcriptTracks)
 	);
 }
@@ -89,6 +104,22 @@ function isYouTubeLike(extractor: string, data: VerticalData): boolean {
 function isStackOverflowLike(extractor: string, data: VerticalData): boolean {
 	return (
 		extractor === "stackoverflow" || (typeof data.body === "string" && Array.isArray(data.answers))
+	);
+}
+
+function isDevToLike(extractor: string, data: VerticalData): boolean {
+	return (
+		extractor === "devto" ||
+		(typeof data.bodyMarkdown === "string" && data.author !== undefined) ||
+		(typeof data.readingTimeMinutes === "number" && typeof data.publishedAt === "string")
+	);
+}
+
+function isRedditPostLike(extractor: string, data: VerticalData): boolean {
+	return (
+		extractor === "reddit" ||
+		(typeof data.subreddit === "string" &&
+			(typeof data.selfText === "string" || Array.isArray(data.topComments)))
 	);
 }
 
@@ -131,6 +162,46 @@ function buildVerticalSections(
 		return sections;
 	}
 
+	if (isDevToLike(extractor, data)) {
+		const articleRows: ToolResultGroup["rows"] = [];
+		if (typeof data.title === "string" && data.title) articleRows.push(["title", data.title]);
+		const author = authorName(data.author);
+		if (author) articleRows.push(["author", author]);
+		if (typeof data.readablePublishedDate === "string" && data.readablePublishedDate)
+			articleRows.push(["published", data.readablePublishedDate]);
+		else if (typeof data.publishedAt === "string" && data.publishedAt)
+			articleRows.push(["published", data.publishedAt]);
+		if (typeof data.readingTimeMinutes === "number")
+			articleRows.push(["reading", `${data.readingTimeMinutes.toLocaleString()} min`]);
+		if (typeof data.commentsCount === "number")
+			articleRows.push(["comments", data.commentsCount.toLocaleString()]);
+		if (Array.isArray(data.tags) && data.tags.length > 0)
+			articleRows.push(["tags", data.tags.map(String).join(", ")]);
+		const body = typeof data.body === "string" ? data.body : data.bodyMarkdown;
+		if (typeof body === "string" && body) articleRows.push(["body", previewPlainText(body, 280)]);
+		sections.push({ name: "article", rows: articleRows });
+		return sections;
+	}
+
+	if (isRedditPostLike(extractor, data)) {
+		const postRows: ToolResultGroup["rows"] = [];
+		if (typeof data.title === "string" && data.title) postRows.push(["title", data.title]);
+		if (typeof data.subreddit === "string" && data.subreddit)
+			postRows.push(["subreddit", `r/${data.subreddit}`]);
+		if (typeof data.author === "string" && data.author) postRows.push(["author", data.author]);
+		if (typeof data.score === "number") postRows.push(["score", data.score.toLocaleString()]);
+		if (typeof data.upvoteRatio === "number")
+			postRows.push(["upvoted", `${Math.round(data.upvoteRatio * 100)}%`]);
+		if (typeof data.commentCount === "number")
+			postRows.push(["comments", data.commentCount.toLocaleString()]);
+		if (typeof data.flairText === "string" && data.flairText)
+			postRows.push(["flair", data.flairText]);
+		if (typeof data.selfText === "string" && data.selfText)
+			postRows.push(["body", previewPlainText(data.selfText, 280)]);
+		sections.push({ name: "post", rows: postRows });
+		return sections;
+	}
+
 	if (!isYouTubeLike(extractor, data)) return sections;
 
 	const videoRows: ToolResultGroup["rows"] = [];
@@ -151,8 +222,16 @@ function buildSourceSections(data: VerticalData, includeEndpoint = true): ToolRe
 	const sourceRows: ToolResultGroup["rows"] = [];
 	if (source?.provider) sourceRows.push(["provider", source.provider]);
 	if (source?.videoUrl) sourceRows.push(["url", source.videoUrl]);
+	else if (typeof data.permalink === "string") sourceRows.push(["url", data.permalink]);
+	else if (typeof data.url === "string") sourceRows.push(["url", data.url]);
 	if (includeEndpoint && source?.endpoint) sourceRows.push(["endpoint", source.endpoint]);
-	if (typeof data.permalink === "string") sourceRows.push(["url", data.permalink]);
+	if (includeEndpoint && source?.articleEndpoint)
+		sourceRows.push(["articleEndpoint", source.articleEndpoint]);
+	if (includeEndpoint && source?.commentsEndpoint)
+		sourceRows.push(["commentsEndpoint", source.commentsEndpoint]);
+	if (source?.finalUrl) sourceRows.push(["finalUrl", source.finalUrl]);
+	if (source?.articleFinalUrl) sourceRows.push(["articleFinalUrl", source.articleFinalUrl]);
+	if (source?.commentsFinalUrl) sourceRows.push(["commentsFinalUrl", source.commentsFinalUrl]);
 	return [{ name: "source", rows: sourceRows }];
 }
 
@@ -242,20 +321,44 @@ function formatCommentsBlock(
 	comments: VerticalComment[] | undefined,
 	width: number,
 	theme?: RenderTheme,
+	name = "comments",
 ): string {
 	if (!comments?.length) return "";
 	const preview = comments.slice(0, 5).map((comment, i) => {
-		const text = previewPlainText(comment.text ?? comment.body ?? "", 180);
-		const author = comment.author ?? comment.owner;
+		const text = previewPlainText(comment.text ?? comment.body ?? comment.bodyHtml ?? "", 180);
+		const author = comment.author ?? comment.owner ?? comment.username;
 		return `${author ? `${author}: ` : `${i + 1}. `}${text}`;
 	});
 	return formatListBlock(
-		"comments",
+		name,
 		preview,
 		width,
 		theme,
 		comments.length > 5 ? `${comments.length - 5} more comments` : undefined,
 	);
+}
+
+function verticalCommentsBlock(name: string, data: VerticalData, theme?: RenderTheme): string {
+	if (isStackOverflowLike(name, data) && Array.isArray(data.answers) && data.answers.length > 0)
+		return "";
+	if (Array.isArray(data.topComments))
+		return formatCommentsBlock(data.topComments as VerticalComment[], 80, theme, "top comments");
+	return formatCommentsBlock(data.comments as VerticalComment[] | undefined, 80, theme);
+}
+
+function isTranscriptPreview(value: unknown): value is TranscriptPreview {
+	if (!value || typeof value !== "object") return false;
+	const transcript = value as TranscriptPreview;
+	return Array.isArray(transcript.segments) || typeof transcript.text === "string";
+}
+
+function authorName(value: unknown): string | undefined {
+	if (!value || typeof value !== "object") return;
+	const author = value as { name?: unknown; username?: unknown };
+	const name = typeof author.name === "string" ? author.name : undefined;
+	const username = typeof author.username === "string" ? author.username : undefined;
+	if (name && username) return `${name} (@${username})`;
+	return name ?? (username ? `@${username}` : undefined);
 }
 
 function formatListBlock(
