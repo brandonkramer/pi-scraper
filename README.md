@@ -307,7 +307,7 @@ For well-known sites, `pi-scraper` uses optimized "vertical" extractors that hit
 | **GitHub Issue** | GitHub | Issue body, comments, participants, labels, status. |
 | **GitHub PR** | GitHub | Pull request body, diff stats, reviews, comments. |
 | **GitHub Release** | GitHub | Release notes, tag info, assets, author metadata. |
-| **GitIngest** | GitHub / gitingest.com | Prompt-friendly codebase digest, directory structure, and full-content download URL. |
+| **GitLab Repo** | GitLab (gitlab.com or self-hosted) | Repo metadata, README, file tree, languages. |
 | **npm Package** | npmjs.com | Manifest JSON, versions, dependencies, README. |
 | **PyPI Package** | pypi.org | Package metadata, versions, author, description. |
 | **crates.io** | crates.io | Rust crate metadata, versions, dependencies. |
@@ -327,7 +327,10 @@ For well-known sites, `pi-scraper` uses optimized "vertical" extractors that hit
 | **Reddit List** | reddit.com | Subreddit listings (hot/new/top) and search results. |
 | **OSS Analytics** | ossinsight.io | Real-time repository metrics, stars, and contribution trends. |
 | **OSS Trending** | ossinsight.io | Daily/weekly trending repositories and collections. |
+| **OSS Collections** | ossinsight.io | Curated collections of repositories by ecosystem/category. |
 | **OSS Rankings** | ossinsight.io | Collection-based rankings and ecosystem comparison data. |
+| **Stack Overflow** | stackoverflow.com | Question body, top answers, score, tags, author metadata. |
+| **Wikipedia** | wikipedia.org | Article summary, sections, infobox data, page metadata. |
 
 ```text
 // Get structured data for an npm package
