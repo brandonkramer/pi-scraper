@@ -117,3 +117,9 @@ When `chunks=true`, `web_scrape` returns `chunks[]` alongside the full markdown 
 - `linesMatching` with `format=raw` is the grep equivalent for source files.
 - SSRF checks run at connect AND redirect time.
 - Robots.txt is respected by default (`respectRobots: true`). Set to `false` only when you own the target.
+
+## When to switch tools
+
+- **Page needs interaction** (login form, click-through, content that only appears after a click)? → drive it with [`web_browser`](web_browser.md). Authenticate there, then return to `web_scrape mode=browser` with the **same `sessionId`** to read the gated pages (shared browser context).
+- **Want structured fields**, not the whole page? → [`web_extract`](web_extract.md) (vertical / selector / pattern / adhoc).
+- **Following links** across a site? → [`web_crawl`](web_crawl.md). **Just a URL inventory?** → [`web_map`](web_map.md). **Many independent URLs?** → [`web_batch`](web_batch.md).

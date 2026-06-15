@@ -20,6 +20,8 @@ export interface BrowserSession {
 	createdAt: number;
 	profile?: string;
 	proxy?: string;
+	/** Persistent page for interaction sessions (reusePage). */
+	page?: Page;
 }
 
 interface BrowserSessionPoolOptions {
@@ -51,6 +53,8 @@ export async function acquireBrowserSession(
 		headers?: Record<string, string>;
 		/** Playwright storageState (object or path) to seed the new context. */
 		storageState?: string | Record<string, unknown>;
+		/** Reuse one Page per session for stateful interaction (web_browser). */
+		reusePage?: boolean;
 	},
 ): Promise<{ page: Page; session: BrowserSession }> {
 	cleanupIdleSessions();
@@ -58,6 +62,12 @@ export async function acquireBrowserSession(
 	let session = sessions.get(id);
 	if (session) {
 		session.lastUsedAt = Date.now();
+		if (options.reusePage) {
+			if (!session.page || session.page.isClosed()) {
+				session.page = await session.context.newPage();
+			}
+			return { page: session.page, session };
+		}
 		const page = await session.context.newPage();
 		return { page, session };
 	}
@@ -103,6 +113,7 @@ export async function acquireBrowserSession(
 	sessions.set(id, session);
 
 	const page = await context.newPage();
+	if (options.reusePage) session.page = page;
 	return { page, session };
 }
 

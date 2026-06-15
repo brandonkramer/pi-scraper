@@ -37,6 +37,8 @@ const inputCuePatterns: Record<string, RegExp> = {
 	web_extract:
 		/https?:\/\/|\bpage\b|\bcontent\b|\bJSON\b|\bschema\b|\bextractors\b|\bnpm\b|\bgithub\b|\bdeepwiki\b|\bregex\b|\bmarkers\b/iu,
 	web_get_result: /\bresponseId\b|\bjobId\b|\bmanifest\b|\bstored result\b/iu,
+	web_browser:
+		/\bclick\b|\bfill\b|\bselect\b|\bsnapshot\b|\bsessionId\b|\blive page\b|\bnavigate\b/iu,
 };
 
 const scrapeIntentWithUrl =

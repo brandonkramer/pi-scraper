@@ -27,6 +27,7 @@ import {
 	loadBrowserSessionStorageState,
 	resolveCloakSessionProfilePath,
 	saveBrowserSessionStorageState,
+	validateSessionId,
 } from "./session.ts";
 import { applyStealthPatches } from "./stealth.ts";
 
@@ -77,6 +78,36 @@ export interface BrowserRenderResult {
 	axTree?: unknown;
 }
 
+export interface BrowserActionInput {
+	action: "navigate" | "click" | "fill" | "select" | "snapshot";
+	sessionId: string;
+	url?: string;
+	selector?: string;
+	value?: string;
+	timeoutSeconds?: number;
+	browserBackend?: BrowserBackend;
+	proxy?: string;
+	saveSession?: boolean;
+	/** Snapshot detail. "interactive" (default) = flat interactive list; "full" = whole AI tree. */
+	detail?: "interactive" | "full";
+}
+
+export interface BrowserActionResult {
+	action: string;
+	url: string;
+	snapshot: string;
+	/** HTTP status from the navigation response; navigate only (other actions have no response). */
+	status?: number;
+	/** Backend that ran the action: "cloak" | "playwright". */
+	backend: BrowserBackend;
+	/** Wall time for the whole action, ms. */
+	durationMs: number;
+}
+
+export interface BrowserActDeps {
+	browserLoader?: (backend: BrowserBackend, options: BrowserRenderOptions) => Promise<Browser>;
+}
+
 export interface BrowserRenderer {
 	fetchRendered(
 		url: string | URL,
@@ -123,6 +154,212 @@ export async function fetchRendered(
 	return await renderWithLoader(input, options, signal, defaultBrowserLoader);
 }
 
+export interface AcquireSessionPageArgs {
+	options: BrowserRenderOptions;
+	backend: BrowserBackend;
+	safetyCheck: BrowserSafetyCheck;
+	effectiveProxy: string | undefined;
+	reusePage?: boolean;
+	browserLoader?: (backend: BrowserBackend, options: BrowserRenderOptions) => Promise<Browser>;
+}
+
+export async function acquireSessionPage({
+	options,
+	backend,
+	safetyCheck,
+	effectiveProxy,
+	reusePage = false,
+	browserLoader = defaultBrowserLoader,
+}: AcquireSessionPageArgs): Promise<{
+	page: Page;
+	browser: Browser;
+	guard: BrowserRouteGuard;
+	session: BrowserSession;
+}> {
+	if (!options.sessionId) {
+		throw new Error("acquireSessionPage requires sessionId");
+	}
+
+	const isCloakPersistent = backend === "cloak" && options.saveSession;
+
+	if (isCloakPersistent) {
+		// Cloak persistent context: cookies/localStorage survive across Pi restarts
+		const launchContext = async () => {
+			const cloak = await import("cloakbrowser");
+			const userDataDir = resolveCloakSessionProfilePath(options.sessionId!);
+			// oxlint-disable-next-line typescript/no-explicit-any -- bridge playwright-core ↔ playwright types
+			const pwContext: any = await cloak.launchPersistentContext({
+				userDataDir,
+				headless: true,
+				proxy: effectiveProxy,
+				timezone: options.timezone,
+				locale: options.locale,
+			});
+			// launchPersistentContext manages the browser internally;
+			// closing the context persists the profile and closes the browser.
+			// oxlint-disable-next-line typescript/no-explicit-any -- bridge local Browser ↔ cloakbrowser types
+			const cloakBrowser: unknown = {
+				close: async () => {
+					await pwContext.close();
+				},
+			};
+			return { browser: cloakBrowser, context: pwContext };
+		};
+		const s = await acquireBrowserSession(options.sessionId, {
+			launchContext,
+			safetyCheck,
+			profile: options.browserProfile,
+			proxy: effectiveProxy,
+			reusePage,
+		} as Parameters<typeof acquireBrowserSession>[1]);
+		return {
+			page: s.page as unknown as Page,
+			browser: s.session.browser as unknown as Browser,
+			guard: s.session.guard,
+			session: s.session,
+		};
+	}
+
+	const storageState = (await loadBrowserSessionStorageState(options.sessionId)) as
+		| string
+		| Record<string, unknown>
+		| undefined;
+	// oxlint-disable-next-line typescript/no-explicit-any -- bridge local Browser ↔ playwright core types
+	const launchBrowser: any = () => browserLoader(backend, { ...options, proxy: effectiveProxy });
+	const s = await acquireBrowserSession(options.sessionId, {
+		launchBrowser,
+		safetyCheck,
+		profile: options.browserProfile,
+		proxy: effectiveProxy,
+		headers: options.headers,
+		storageState: storageState ?? undefined,
+		reusePage,
+	});
+	return {
+		page: s.page as unknown as Page,
+		browser: s.session.browser as unknown as Browser,
+		guard: s.session.guard,
+		session: s.session,
+	};
+}
+
+export async function browserAct(
+	input: BrowserActionInput,
+	signal?: AbortSignal,
+	deps: BrowserActDeps = {},
+): Promise<BrowserActionResult> {
+	const startedAt = Date.now();
+	validateSessionId(input.sessionId);
+	const backend = input.browserBackend ?? DEFAULT_BROWSER_BACKEND;
+	const safetyCheck = assertSafeFetchUrl;
+	const effectiveProxy = input.proxy ?? (input.url ? resolveEnvProxyForUrl(input.url) : undefined);
+	const renderOptions: BrowserRenderOptions = {
+		sessionId: input.sessionId,
+		saveSession: input.saveSession,
+		browserBackend: backend,
+		proxy: effectiveProxy,
+	};
+	const browserLoader = deps.browserLoader ?? defaultBrowserLoader;
+
+	const { page, guard } = await acquireSessionPage({
+		options: renderOptions,
+		backend,
+		safetyCheck,
+		effectiveProxy,
+		reusePage: true,
+		browserLoader,
+	});
+	const browserSafety: BrowserSafetyState = { check: safetyCheck, checkedHosts: new Map() };
+	guard.setCheckedHostsForPage(page, browserSafety.checkedHosts);
+
+	const timeout = (input.timeoutSeconds ?? 30) * 1_000;
+	if (signal?.aborted) throw abortError(input.url ?? page.url());
+
+	let status: number | undefined;
+	switch (input.action) {
+		case "navigate": {
+			if (!input.url) throw new Error("navigate requires url");
+			const safe = await assertSafeBrowserUrl(input.url, input.url, undefined, browserSafety);
+			try {
+				const response = await page.goto(safe.normalizedUrl, {
+					waitUntil: "domcontentloaded",
+					timeout,
+				});
+				status = response?.status();
+			} catch (error) {
+				throw guard.consumeError(page, safe.normalizedUrl) ?? error;
+			}
+			const finalUrl = page.url();
+			await assertSafeBrowserUrl(finalUrl, safe.normalizedUrl, finalUrl, browserSafety);
+			break;
+		}
+		case "click":
+			await page.click(selectorOf(input.selector), { timeout });
+			break;
+		case "fill":
+			await page.fill(selectorOf(input.selector), input.value ?? "", { timeout });
+			break;
+		case "select":
+			await page.selectOption(selectorOf(input.selector), input.value ?? "");
+			break;
+		case "snapshot":
+			break;
+		default:
+			throw new Error(`unknown action: ${String(input.action)}`);
+	}
+
+	// Surface any request the route guard blocked during this action (e.g. a click
+	// that navigated to a private host). The fetch is already aborted; this turns the
+	// silent block into a tool error instead of a misleading snapshot.
+	const blocked = guard.consumeError(page, page.url());
+	if (blocked) throw blocked;
+
+	// NOTE: deliberately NOT closing the page. The pool owns its lifecycle.
+	return {
+		action: input.action,
+		url: page.url(),
+		snapshot: snapshotFor(input.detail, await page.ariaSnapshot({ mode: "ai" })),
+		status,
+		backend,
+		durationMs: Date.now() - startedAt,
+	};
+}
+
+export function selectorOf(selector: string | undefined): string {
+	if (!selector) throw new Error("selector required");
+	// `@eN` targets an element ref from a prior ariaSnapshot({ mode: "ai" }) via
+	// Playwright's aria-ref selector engine. Anything else is a plain CSS selector.
+	return selector.startsWith("@") ? `aria-ref=${selector.slice(1)}` : selector;
+}
+
+// Roles worth handing the model for *driving* a page (plus heading for orientation).
+const INTERACTIVE =
+	/^(link|button|textbox|searchbox|combobox|checkbox|radio|switch|slider|spinbutton|menuitem|menuitemcheckbox|menuitemradio|tab|option|listbox|treeitem|heading)\b/;
+
+/**
+ * Flatten the AI-mode ARIA YAML to a one-per-line interactive list. Output-only and ref-safe:
+ * `aria-ref=eN` resolves against the ref map Playwright builds during the ariaSnapshot call, not
+ * against the string we trim. Drops nesting (the ref targets, the name disambiguates) and
+ * `[cursor=pointer]` noise; appends a link's `/url:` child.
+ */
+function interactiveSnapshot(snapshot: string): string {
+	const lines = snapshot.split("\n");
+	const out: string[] = [];
+	for (let i = 0; i < lines.length; i++) {
+		const m = /^\s*-\s+(.*)$/.exec(lines[i]);
+		if (!m) continue;
+		const content = m[1].replace(/:\s*$/, "").replaceAll(" [cursor=pointer]", "");
+		if (!INTERACTIVE.test(content)) continue;
+		const url = /^\s*-\s*\/url:\s*(.*)$/.exec(lines[i + 1] ?? "");
+		out.push(content + (url ? ` ${url[1].trim()}` : ""));
+	}
+	return out.join("\n");
+}
+
+function snapshotFor(detail: BrowserActionInput["detail"], full: string): string {
+	return detail === "full" ? full : interactiveSnapshot(full);
+}
+
 async function renderWithLoader(
 	input: string | URL,
 	options: BrowserRenderOptions = {},
@@ -149,62 +386,18 @@ async function renderWithLoader(
 	try {
 		// 1) Acquire page: pooled session or fresh browser
 		if (options.sessionId) {
-			const isCloakPersistent = backend === "cloak" && options.saveSession;
-
-			if (isCloakPersistent) {
-				// Cloak persistent context: cookies/localStorage survive across Pi restarts
-				const launchContext = async () => {
-					const cloak = await import("cloakbrowser");
-					const userDataDir = resolveCloakSessionProfilePath(options.sessionId!);
-					// oxlint-disable-next-line typescript/no-explicit-any -- bridge playwright-core ↔ playwright types
-					const pwContext: any = await cloak.launchPersistentContext({
-						userDataDir,
-						headless: true,
-						proxy: effectiveProxy,
-						timezone: options.timezone,
-						locale: options.locale,
-					});
-					// launchPersistentContext manages the browser internally;
-					// closing the context persists the profile and closes the browser.
-					// oxlint-disable-next-line typescript/no-explicit-any -- bridge local Browser ↔ cloakbrowser types
-					const cloakBrowser: unknown = {
-						close: async () => {
-							await pwContext.close();
-						},
-					};
-					return { browser: cloakBrowser, context: pwContext };
-				};
-				const s = await acquireBrowserSession(options.sessionId, {
-					launchContext,
-					safetyCheck,
-					profile: options.browserProfile,
-					proxy: effectiveProxy,
-				} as Parameters<typeof acquireBrowserSession>[1]);
-				page = s.page as unknown as Page;
-				browser = s.session.browser as unknown as Browser;
-				guard = s.session.guard;
-				session = s.session;
-			} else {
-				const storageState = (await loadBrowserSessionStorageState(options.sessionId)) as
-					| string
-					| Record<string, unknown>
-					| undefined;
-				// oxlint-disable-next-line typescript/no-explicit-any -- bridge local Browser ↔ playwright core types
-				const launchBrowser: any = () =>
-					browserLoader(backend, { ...options, proxy: effectiveProxy });
-				const s = await acquireBrowserSession(options.sessionId, {
-					launchBrowser,
-					safetyCheck,
-					profile: options.browserProfile,
-					proxy: effectiveProxy,
-					headers: options.headers,
-					storageState: storageState ?? undefined,
-				});
-				page = s.page as unknown as Page;
-				browser = s.session.browser as unknown as Browser;
-				guard = s.session.guard;
-				session = s.session;
-			}
+			const acquired = await acquireSessionPage({
+				options,
+				backend,
+				safetyCheck,
+				effectiveProxy,
+				reusePage: false,
+				browserLoader,
+			});
+			page = acquired.page;
+			browser = acquired.browser;
+			guard = acquired.guard;
+			session = acquired.session;
 		} else {
 			browser = (await browserLoader(backend, {
 				...options,

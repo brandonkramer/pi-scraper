@@ -11,6 +11,7 @@ const expectedNames = [
 	"web_batch",
 	"web_extract",
 	"web_get_result",
+	"web_browser",
 ];
 
 describe("web tool registration", () => {

@@ -11,6 +11,7 @@ const expectedNames = [
 	"web_batch",
 	"web_extract",
 	"web_get_result",
+	"web_browser",
 ] as const;
 
 // Ceilings ratcheted to measured actuals + ~10% headroom so contract creep trips
@@ -22,6 +23,8 @@ const perToolTokenCeilings: Record<(typeof expectedNames)[number], number> = {
 	web_batch: 165,
 	web_extract: 430,
 	web_get_result: 70,
+	// Measured 242 after screenshot|evaluate actions (2026-03); +~12% headroom.
+	web_browser: 270,
 };
 
 const scrapeOnlyFields = [
@@ -49,6 +52,10 @@ const discriminatorChecks: Record<string, RegExp[]> = {
 	web_batch: [/per-URL/iu],
 	web_extract: [/verticals?|extractors?/iu, /patterns|regex/iu, /JSON\/schema/iu],
 	web_get_result: [/retrieve/iu, /stored response|job manifest/iu],
+	web_browser: [
+		/navigate|click|fill|select|snapshot|capture|screenshot|evaluate/iu,
+		/sessionId|stateful|live page/iu,
+	],
 };
 
 describe("web tool contracts", () => {
@@ -62,7 +69,7 @@ describe("web tool contracts", () => {
 			tokens: approximateTokens(serializeContract(tool).length),
 		}));
 		const totalTokens = contractStats.reduce((total, stat) => total + stat.tokens, 0);
-		expect(totalTokens).toBeLessThanOrEqual(1080);
+		expect(totalTokens).toBeLessThanOrEqual(1250);
 		for (const stat of contractStats) {
 			const name = stat.name as (typeof expectedNames)[number];
 			expect(stat.tokens).toBeLessThanOrEqual(perToolTokenCeilings[name]);
@@ -73,7 +80,10 @@ describe("web tool contracts", () => {
 		for (const tool of webTools) {
 			const fields = schemaProperties(tool);
 			const isScrape = tool.name === "web_scrape";
-			const missing = scrapeOnlyFields.filter((f) => fields.includes(f) === !isScrape);
+			const missing = scrapeOnlyFields.filter((f) => {
+				if (tool.name === "web_browser" && f === "timeoutSeconds") return false;
+				return fields.includes(f) === !isScrape;
+			});
 			expect(missing).toEqual([]);
 		}
 

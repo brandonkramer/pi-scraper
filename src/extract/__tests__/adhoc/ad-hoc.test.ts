@@ -26,6 +26,7 @@ describe("extractAdHoc", () => {
 			{ content: "# Widget\nGreat product", prompt: "Extract product", schema },
 			model,
 		);
+		if ("content" in result) throw new Error("unexpected tool error");
 		expect(result.input.source).toBe("provided");
 		expect(result.data).toEqual({ title: "Widget", prompt: "Extract product", schema });
 	});

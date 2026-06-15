@@ -54,6 +54,7 @@ Ask naturally; Pi can choose the right web tool automatically:
 | `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 179 tokens |
 | `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 51 tokens |
 | `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 151 tokens |
+| `web_browser` | 🖱️ Interactive | Driving a live page: navigate, click, fill, select, snapshot. | 155 tokens |
 | `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 407 tokens |
 | `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 55 tokens |
 
@@ -81,6 +82,7 @@ Ask naturally; Pi can choose the right web tool automatically:
 | **Map** | `url`, `maxSitemaps` | Site-wide discovery of robots.txt and sitemaps. |
 | **Storage** | `saveToFile` | `true` or `{dir, filename, maxBytes}` for disk storage. |
 | **Retrieval** | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag` | Retrieve stored payloads and job manifests. |
+| **Browser** | `action` (navigate/click/fill/select/snapshot), `selector` (CSS or `@eN` ref), `value` | Stateful page driving via `web_browser`; `sessionId` required. |
 
 ---
 
@@ -229,6 +231,8 @@ Configure how the crawler discovers and explores links using the `strategy` para
 ## 🌐 Browser Mode Support
 
 `mode: "browser"` uses **CloakBrowser** by default — a patched Chromium binary with 48 C++-level fingerprint patches.
+
+> **Reading vs driving:** `mode=browser` renders and *reads* one URL (a stateless scrape). To *operate* a page over multiple steps — click, fill, submit — use the stateful [`web_browser`](#-public-tools) tool instead (same CloakBrowser backend, `sessionId`-keyed, drive via `@eN` refs).
 
 ### ⚙️ Backend options
 

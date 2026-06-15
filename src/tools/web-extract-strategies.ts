@@ -5,6 +5,7 @@ import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
  */
 import type { ScrapeMode } from "../types.ts";
 import type { ToolUpdate } from "./infra/define.ts";
+import { resolveExtractSource } from "./infra/extract-source.ts";
 import { emitProgress } from "./infra/progress.ts";
 import { inputErrorResult, toolResult } from "./infra/result.ts";
 
@@ -13,6 +14,7 @@ export interface StrategyParams {
 	action?: string;
 	url?: string;
 	content?: string;
+	responseId?: string;
 	selectors?: Record<string, string>;
 	query?: string;
 	topN?: number;
@@ -198,7 +200,16 @@ async function resolveContent(
 	onUpdate?: ToolUpdate,
 	signal?: AbortSignal,
 ): Promise<string | ReturnType<typeof toolResult>> {
-	if (params.content) return params.content;
+	const resolved = await resolveExtractSource(
+		{ content: params.content, url: params.url, responseId: params.responseId },
+		"strategy-extract",
+	);
+	if ("details" in resolved) return resolved;
+
+	if (resolved.primary === "content" || resolved.primary === "responseId") {
+		return resolved.content;
+	}
+
 	if (params.url) {
 		await emitProgress(onUpdate, {
 			state: "loading",
@@ -230,7 +241,7 @@ async function resolveContent(
 	return inputErrorResult(
 		"STRATEGY_INPUT_MISSING",
 		"strategy-extract",
-		"web_extract requires a url or content parameter.",
-		"Provide url or content for extraction.",
+		"web_extract requires content, url, or responseId.",
+		"Provide content, url, or responseId for extraction.",
 	);
 }

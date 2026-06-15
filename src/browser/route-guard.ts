@@ -210,6 +210,14 @@ export interface Page {
 	title(): Promise<string>;
 	url(): string;
 	close(): Promise<void>;
+	isClosed(): boolean;
+	click(selector: string, options?: { timeout?: number }): Promise<void>;
+	fill(selector: string, value: string, options?: { timeout?: number }): Promise<void>;
+	selectOption(selector: string, value: string | string[]): Promise<string[]>;
+	locator(selector: string): {
+		screenshot(options?: { timeout?: number }): Promise<Buffer | Uint8Array>;
+	};
+	screenshot(options?: { fullPage?: boolean; timeout?: number }): Promise<Buffer | Uint8Array>;
 	context(): BrowserContext;
 	evaluate<T = unknown>(fn: string | (() => T | Promise<T>), ...args: unknown[]): Promise<T>;
 	accessibility: { snapshot(): Promise<unknown> };

@@ -1,5 +1,6 @@
 /** @file Ad-hoc extraction public entrypoint. */
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
+import type { PiToolShell, ToolContext } from "../../types.ts";
 import type { ModelAdapter } from "../adhoc/model.ts";
 import { groundExtractionResult } from "../grounding.ts";
 import { prepareExtractionInput } from "../input.ts";
@@ -17,8 +18,9 @@ export async function extractAdHoc<T = unknown>(
 	model: ModelAdapter,
 	deps: ScrapePipelineDeps = {},
 	signal?: AbortSignal,
-): Promise<AdHocExtractResult<T>> {
+): Promise<AdHocExtractResult<T> | PiToolShell<ToolContext<undefined>>> {
 	const prepared = await prepareExtractionInput(options, deps, signal);
+	if ("details" in prepared) return prepared;
 	const response = await model.run<T>(
 		{
 			task: "extract",
@@ -35,5 +37,6 @@ export async function extractAdHoc<T = unknown>(
 		grounded,
 		raw: response.raw,
 		usage: response.usage,
+		resolution: prepared.resolution,
 	};
 }

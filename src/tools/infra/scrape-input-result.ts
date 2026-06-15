@@ -1,11 +1,11 @@
 import type { ModelUsage } from "../../extract/adhoc/model.ts";
 /** @file Shared result shaping for model-backed scrape-input tools. */
-import type { OutputFormat, ToolContext, TimingInfo } from "../../types.ts";
+import type { AgenticSourceNote, OutputFormat, ToolContext, TimingInfo } from "../../types.ts";
 import { qualityFromCache, storedResultGuidance } from "./agentic-context.ts";
 import { toolResult } from "./result.ts";
 
 interface ScrapeInputSource {
-	source: string;
+	source: "provided" | "scrape" | "stored";
 	url?: string;
 	scrape?: ScrapeInputResult;
 }
@@ -31,6 +31,7 @@ export interface ScrapeInputToolContextOptions<TData> {
 	answerContext: string;
 	formatFallback?: OutputFormat | string;
 	modelUsage?: ModelUsage;
+	sourceNotes?: AgenticSourceNote[];
 }
 
 export function scrapeInputToolContext<TData>({
@@ -42,6 +43,7 @@ export function scrapeInputToolContext<TData>({
 	answerContext,
 	formatFallback,
 	modelUsage,
+	sourceNotes,
 }: ScrapeInputToolContextOptions<TData>) {
 	const scrape = input.scrape;
 	return toolResult({
@@ -60,6 +62,7 @@ export function scrapeInputToolContext<TData>({
 		summary,
 		answerContext,
 		modelUsage,
+		sourceNotes,
 		qualitySignals: qualityFromCache(scrape?.cache),
 		assistantGuidance: storedResultGuidance(),
 	});
@@ -72,6 +75,8 @@ export function scrapeInputSummary(
 	cachedPhrase: string,
 ): string {
 	const scrape = input.scrape;
+	if (input.source === "stored")
+		return `${verb} stored evidence${scrape?.cache?.cached ? cachedPhrase : ""}.`;
 	return `${verb} ${input.source}${scrape?.cache?.cached ? cachedPhrase : scrape ? freshPhrase : " input"}.`;
 }
 

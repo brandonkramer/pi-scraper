@@ -1,6 +1,6 @@
 ---
 name: web-scraping
-description: Use for known URLs/content to scrape/read with fast or browser mode, summarize, map robots/sitemaps/llms, crawl links, batch URLs, diff snapshots, extract JSON/regex/verticals/selector, get YouTube transcripts/captions, get responseId/jobId, not search/research
+description: Use for known URLs/content to scrape/read with fast or browser mode, summarize, map robots/sitemaps/llms, crawl links, batch URLs, diff snapshots, extract JSON/regex/verticals/selector, get YouTube transcripts/captions, get responseId/jobId, drive/operate a live page interactively (navigate/click/fill/select via web_browser), not search/research
 ---
 
 ## How to choose
@@ -13,6 +13,7 @@ description: Use for known URLs/content to scrape/read with fast or browser mode
 6. **Multiple independent URLs?** → `web_batch` for parallel scraping.
 7. **Compare page changes?** → `web_scrape({ url, diff })` against stored snapshots.
 8. **Get a previous result back?** → `web_get_result` by responseId, jobId, or snapshot.
+9. **Operate a page (click/fill/submit, multi-step)?** → `web_browser` — stateful driving via `@eN` refs. *Read* a page once → `mode=browser`; *drive* it over steps → `web_browser`.
 
 ## Tools
 
@@ -30,6 +31,7 @@ Each tool has a reference with full args, examples, and rules.
 | `web_scrape` + `diff` | Diff current content against stored snapshot | [ref](references/tools/web_diff.md) |
 | `web_extract` | Vertical/pattern/selector/strategy/adhoc extraction | [ref](references/tools/web_extract.md) |
 | `web_get_result` | Retrieve stored result by responseId/jobId/snapshot | [ref](references/tools/web_get_result.md) |
+| `web_browser` | Drive a live page: navigate/click/fill/select/snapshot + capture/screenshot/evaluate/exportCookies (stateful, `sessionId` required) | [ref](references/tools/web_browser.md) |
 
 ## Proxy quick rules
 
@@ -85,3 +87,18 @@ Set `mode=<name>` on scrape/crawl tools when fast isn't enough.
 | Need clean article text without chrome | `readable` | [ref](references/modes/readable.md) |
 | JS-rendered SPA or fingerprint also blocked | `browser` | [ref](references/modes/browser.md) |
 | Let it escalate automatically | `auto` | [ref](references/modes/auto.md) |
+
+> **`mode=browser` vs `web_browser`:** `mode=browser` renders and *reads* one URL (a stateless scrape). `web_browser` *drives* a page over multiple steps (stateful session, clickable `@eN` refs). Different tools — read once vs operate.
+
+## Sessions across tools
+
+`sessionId` carries one persistent browser context (cookies/localStorage/sessionStorage) across **every** browser-backed tool. **Authenticate once with `web_browser`, then scrape/extract the gated pages** with the same `sessionId` + `mode=browser`:
+
+```
+web_browser action=navigate sessionId="s1" url=".../login"   # drive the login
+web_browser action=fill ... ; web_browser action=click ...
+web_scrape  url=".../dashboard" mode=browser sessionId="s1"  # same authed context
+web_extract url=".../data" action=adhoc prompt="…" mode=browser sessionId="s1"
+```
+
+`saveSession=true` persists to disk (resume after a restart); `clearSession=true` resets. Continuity holds only within `mode=browser` — `fast`/`fingerprint` use a separate cookie jar keyed by the same id. The handoff shares the **session** (cookies), not the live page's current view; the other tools open a fresh tab and re-navigate.

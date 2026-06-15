@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { RenderComponent } from "../../tui/index.ts";
+import { renderWebBrowserResult } from "../../tui/renderers/browser.ts";
 import { renderWebExtractResult } from "../../tui/renderers/extract.ts";
 import { renderVerticalResult } from "../../tui/renderers/vertical.ts";
 import type { ToolRenderContext } from "../infra/define.ts";
@@ -428,6 +429,79 @@ describe("web tool renderers", () => {
 		expect(rendered).toContain("version");
 		expect(rendered).toContain("5.9.3");
 		expect(rendered).toContain("summary");
+	});
+
+	it("renders web_browser status line and a result tree in expanded view", () => {
+		const result = toolResult({
+			text: 'navigate → https://example.com\n\nbutton "Submit" [ref=e3]',
+			data: {
+				action: "navigate",
+				url: "https://example.com",
+				snapshot: 'button "Submit" [ref=e3]',
+			},
+			url: "https://example.com",
+			status: 200,
+			mode: "cloak",
+			timing: { durationMs: 333 },
+		});
+
+		const collapsed = text(renderWebBrowserResult(result, false));
+		expect(collapsed).toContain("navigate");
+		expect(collapsed).toContain("200");
+		expect(collapsed).toContain("cloak mode");
+		expect(collapsed).toContain("(ctrl+o to expand)");
+		expect(collapsed).not.toContain("[ref=e3]"); // snapshot hidden until expanded
+
+		const expanded = text(renderWebBrowserResult(result, true));
+		expect(expanded).toContain("snapshot"); // snapshot rendered as a result tree
+		expect(expanded).toContain("@e3"); // ref is the tree key
+		expect(expanded).toContain('button "Submit"'); // role/name is the value
+		expect(expanded).not.toContain("backend"); // metadata not repeated (already on status line)
+		expect(expanded).not.toContain("(ctrl+o to expand)");
+		expect(terminalWidthSafe(renderWebBrowserResult(result, true), 48)).toBe(true);
+	});
+
+	it("renders web_browser screenshot image facts (path/type+dims/size/mode), no 'No snapshot.'", () => {
+		const result = toolResult({
+			text: "screenshot → https://example.com [viewport] saved: /blobs/3b/x.png",
+			data: {
+				action: "screenshot",
+				url: "https://example.com",
+				blobPath: "/blobs/3b/x.png",
+				byteLength: 1234,
+				width: 1280,
+				height: 720,
+				fullPage: false,
+			},
+			url: "https://example.com",
+			mode: "cloak",
+			timing: { durationMs: 80 },
+		});
+
+		const expanded = text(renderWebBrowserResult(result, true));
+		expect(expanded).toContain("image");
+		expect(expanded).toContain("/blobs/3b/x.png");
+		expect(expanded).toContain("image/png · 1280×720");
+		expect(expanded).toContain("1.2 KB");
+		expect(expanded).toContain("viewport");
+		expect(expanded).not.toContain("No snapshot.");
+		expect(expanded).not.toContain("No details.");
+	});
+
+	it("renders web_browser evaluate result in expanded view", () => {
+		const result = toolResult({
+			text: 'evaluate → https://example.com\n\n"hello"',
+			data: { action: "evaluate", url: "https://example.com", result: '"hello"', truncated: false },
+			url: "https://example.com",
+			mode: "cloak",
+			timing: { durationMs: 8 },
+		});
+
+		const expanded = text(renderWebBrowserResult(result, true));
+		expect(expanded).toContain("result");
+		expect(expanded).toContain('"hello"');
+		// "truncated" row is dropped when false.
+		expect(expanded).not.toContain("truncated");
 	});
 });
 

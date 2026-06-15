@@ -29,6 +29,7 @@ export type PatternSectionRequest = SectionRangeRequest;
 export interface PatternInspectOptions extends Omit<CommonScrapeOptions, "include"> {
 	url?: string;
 	content?: string;
+	responseId?: string;
 	sourceFormat?: PatternSourceFormat;
 	jsonPaths?: string[];
 	length?: boolean;
@@ -45,7 +46,7 @@ export interface PatternInspectResult {
 	source: {
 		url?: string;
 		finalUrl?: string;
-		source: "provided" | "scrape";
+		source: "provided" | "scrape" | "stored";
 		sourceFormat: PatternSourceFormat;
 		length: number;
 		inspectedLength: number;

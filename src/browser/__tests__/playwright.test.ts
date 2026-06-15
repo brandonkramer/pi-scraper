@@ -1,8 +1,9 @@
 /** @file Browser **tests** playwright.test module. */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import type { SafeUrlResult } from "../../http/url-safety.ts";
 import {
+	browserAct,
 	createPlaywrightRenderer,
 	type BrowserBackend,
 	type Browser,
@@ -355,6 +356,199 @@ describe("createPlaywrightRenderer", () => {
 	});
 });
 
+describe("browserAct", () => {
+	const SESSION = "browser-act-test";
+
+	afterEach(async () => {
+		const { destroyBrowserSession } = await import("../session-pool.ts");
+		await destroyBrowserSession(SESSION);
+	});
+
+	it("persists fill state across calls with the same sessionId", async () => {
+		const seen: Record<string, unknown> = {};
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
+			Promise.resolve(fakeInteractiveBrowser(backend, opts, seen));
+
+		await browserAct(
+			{
+				action: "navigate",
+				sessionId: SESSION,
+				url: URL,
+				browserBackend: "playwright",
+			},
+			undefined,
+			{ browserLoader: loader },
+		);
+		await browserAct(
+			{
+				action: "fill",
+				sessionId: SESSION,
+				selector: "#email",
+				value: "user@example.com",
+				browserBackend: "playwright",
+			},
+			undefined,
+			{ browserLoader: loader },
+		);
+		const snapshot = await browserAct(
+			{
+				action: "snapshot",
+				sessionId: SESSION,
+				browserBackend: "playwright",
+			},
+			undefined,
+			{ browserLoader: loader },
+		);
+
+		expect(snapshot.snapshot).toContain("user@example.com");
+		expect(seen.ariaSnapshotOptions).toEqual({ mode: "ai" });
+		expect(seen.pageClosed).toBeUndefined();
+	});
+
+	it("blocks unsafe navigate URLs", async () => {
+		const seen: Record<string, unknown> = {};
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
+			Promise.resolve(fakeInteractiveBrowser(backend, opts, seen));
+
+		await expect(
+			browserAct(
+				{
+					action: "navigate",
+					sessionId: SESSION,
+					url: "http://127.0.0.1/admin",
+					browserBackend: "playwright",
+				},
+				undefined,
+				{ browserLoader: loader },
+			),
+		).rejects.toMatchObject({
+			name: "BrowserRenderError",
+			structured: { code: "BROWSER_BLOCKED_PRIVATE_URL" },
+		});
+	});
+
+	it("surfaces a subresource blocked by the route guard", async () => {
+		const seen: Record<string, unknown> = {};
+		const privateUrl = "http://127.0.0.1/admin";
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
+			Promise.resolve(
+				fakeInteractiveBrowser(backend, opts, seen, { requestUrls: [URL, privateUrl] }),
+			);
+
+		await expect(
+			browserAct(
+				{ action: "navigate", sessionId: SESSION, url: URL, browserBackend: "playwright" },
+				undefined,
+				{ browserLoader: loader },
+			),
+		).rejects.toMatchObject({
+			name: "BrowserRenderError",
+			structured: { code: "BROWSER_BLOCKED_PRIVATE_URL", finalUrl: privateUrl },
+		});
+	});
+
+	it("works with cloak backend", async () => {
+		const seen: Record<string, unknown> = {};
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
+			Promise.resolve(fakeInteractiveBrowser(backend, opts, seen));
+
+		const result = await browserAct(
+			{
+				action: "snapshot",
+				sessionId: SESSION,
+				browserBackend: "cloak",
+			},
+			undefined,
+			{ browserLoader: loader },
+		);
+
+		expect(result.action).toBe("snapshot");
+		expect(result.snapshot).toContain("Submit");
+	});
+
+	it("translates an @eN ref to the aria-ref selector engine", async () => {
+		const seen: Record<string, unknown> = {};
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
+			Promise.resolve(fakeInteractiveBrowser(backend, opts, seen));
+
+		await browserAct(
+			{ action: "click", sessionId: SESSION, selector: "@e5", browserBackend: "playwright" },
+			undefined,
+			{ browserLoader: loader },
+		);
+
+		expect(seen.clicked).toBe("aria-ref=e5");
+	});
+
+	it("passes a plain CSS selector through unchanged", async () => {
+		const seen: Record<string, unknown> = {};
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
+			Promise.resolve(fakeInteractiveBrowser(backend, opts, seen));
+
+		await browserAct(
+			{
+				action: "fill",
+				sessionId: SESSION,
+				selector: "#email",
+				value: "x",
+				browserBackend: "playwright",
+			},
+			undefined,
+			{ browserLoader: loader },
+		);
+
+		expect(seen.filled).toEqual({ selector: "#email", value: "x" });
+	});
+
+	it("reports status, backend and duration for the status line", async () => {
+		const seen: Record<string, unknown> = {};
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
+			Promise.resolve(fakeInteractiveBrowser(backend, opts, seen));
+
+		const result = await browserAct(
+			{ action: "navigate", sessionId: SESSION, url: URL, browserBackend: "playwright" },
+			undefined,
+			{ browserLoader: loader },
+		);
+
+		expect(result.status).toBe(204);
+		expect(result.backend).toBe("playwright");
+		expect(typeof result.durationMs).toBe("number");
+	});
+
+	it("filters the snapshot to a flat interactive-only list by default", async () => {
+		const seen: Record<string, unknown> = {};
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
+			Promise.resolve(fakeInteractiveBrowser(backend, opts, seen));
+
+		const result = await browserAct(
+			{ action: "snapshot", sessionId: SESSION, browserBackend: "playwright" },
+			undefined,
+			{ browserLoader: loader },
+		);
+
+		expect(result.snapshot).toContain('button "Submit"');
+		expect(result.snapshot).toContain("[ref=e3]"); // refs preserved
+		expect(result.snapshot).not.toContain("main"); // non-interactive container dropped
+		expect(result.snapshot).not.toContain("- "); // flattened, no YAML nesting
+	});
+
+	it("returns the full tree when detail is full", async () => {
+		const seen: Record<string, unknown> = {};
+		const loader = (backend: BrowserBackend, opts: BrowserRenderOptions) =>
+			Promise.resolve(fakeInteractiveBrowser(backend, opts, seen));
+
+		const result = await browserAct(
+			{ action: "snapshot", sessionId: SESSION, browserBackend: "playwright", detail: "full" },
+			undefined,
+			{ browserLoader: loader },
+		);
+
+		expect(result.snapshot).toContain("- main [ref=e1]");
+		expect(result.snapshot).toContain('button "Submit"');
+	});
+});
+
 // ── Test helpers ───────────────────────────────────────────
 
 interface FakeBrowserOptions {
@@ -391,7 +585,18 @@ function fakeBrowser(
 	seen: Record<string, unknown>,
 	options: FakeBrowserOptions = {},
 ): Browser {
+	return fakeInteractiveBrowser(_backend, _opts, seen, options);
+}
+
+function fakeInteractiveBrowser(
+	_backend: BrowserBackend,
+	_opts: BrowserRenderOptions,
+	seen: Record<string, unknown>,
+	options: FakeBrowserOptions = {},
+): Browser {
 	let routeHandler: ((route: FakeRoute) => Promise<void>) | undefined;
+	let sharedPage: unknown;
+	const fillValues = new Map<string, string>();
 	const browser: any = {
 		newContext: async (contextOptions: Record<string, unknown>) => {
 			seen.context = contextOptions;
@@ -411,7 +616,13 @@ function fakeBrowser(
 					/* no-op */
 				},
 				newPage: async () => {
+					if (sharedPage) {
+						seen.reusedPage = true;
+						return sharedPage;
+					}
+					let closed = false;
 					const page: any = {
+						isClosed: () => closed,
 						goto: async (requestUrl: string, gotoOptions: Record<string, unknown>) => {
 							seen.goto = gotoOptions;
 							for (const url of options.requestUrls ?? [requestUrl]) {
@@ -424,11 +635,32 @@ function fakeBrowser(
 						context: () => browserContext,
 						url: () => options.finalUrl ?? `${URL}#rendered`,
 						close: async () => {
+							closed = true;
 							seen.pageClosed = true;
 						},
+						click: async (selector: string) => {
+							seen.clicked = selector;
+						},
+						fill: async (selector: string, value: string) => {
+							fillValues.set(selector, value);
+							seen.filled = { selector, value };
+						},
+						selectOption: async (selector: string, value: string) => {
+							fillValues.set(selector, value);
+							seen.selected = { selector, value };
+							return [value];
+						},
 						evaluate: async () => undefined,
-						ariaSnapshot: async () => "rootWebArea\n",
+						ariaSnapshot: async (axOptions?: { mode?: string }) => {
+							seen.ariaSnapshotOptions = axOptions;
+							if (axOptions?.mode !== "ai") return "rootWebArea\n"; // ax-tree path (format:"ax-tree")
+							const values = [...fillValues.values()];
+							const filled =
+								values.length > 0 ? `  - textbox "${values.join(", ")}" [ref=e2]\n` : "";
+							return `- main [ref=e1]:\n${filled}  - button "Submit" [ref=e3]\n`;
+						},
 					};
+					sharedPage = page;
 					return page;
 				},
 			};

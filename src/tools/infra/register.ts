@@ -4,6 +4,7 @@ import type { ExtensionAPI, ToolDefinition } from "@earendil-works/pi-coding-age
 import { cleanupOldDownloads } from "../../http/download-storage.ts";
 import { tryCreatePiAiAdapter } from "../../model-adapter/pi-ai-adapter.ts";
 import { webBatchTool } from "../web-batch.ts";
+import { webBrowserTool } from "../web-browser.ts";
 import { webCrawlTool } from "../web-crawl.ts";
 import { webExtractTool } from "../web-extract.ts";
 import { webGetResultTool } from "../web-get-result.ts";
@@ -19,6 +20,7 @@ export const webTools: readonly WebTool[] = [
 	webBatchTool,
 	webExtractTool,
 	webGetResultTool,
+	webBrowserTool,
 ];
 
 export async function registerWebTools(pi: ExtensionAPI | PiToolRegistrar): Promise<void> {

@@ -17,6 +17,7 @@ describe("summarizePage", () => {
 			{ content: "A long page about local-first scraping.", bullets: 2 },
 			model,
 		);
+		if ("content" in result) throw new Error("unexpected tool error");
 		expect(result.input.source).toBe("provided");
 		expect(result.summary).toContain("2 bullets");
 	});

@@ -1,5 +1,6 @@
 /** @file Pattern source preparation — scrape or use provided content. */
 import { type ScrapePipelineDeps, type ScrapeResult, scrapeUrl } from "../../scrape/pipeline.ts";
+import { resolveExtractSource } from "../../tools/infra/extract-source.ts";
 import type { OutputFormat } from "../../types.ts";
 import {
 	evaluateJsonPaths,
@@ -51,9 +52,38 @@ export async function preparePatternSource(
 			source: { url: options.url, source: "provided", sourceFormat },
 		};
 	}
+	const resolved = await resolveExtractSource(
+		{ content: options.content, url: options.url, responseId: options.responseId },
+		"pattern",
+	);
+	if ("details" in resolved) {
+		const err = (resolved.details as { error?: { message?: string; code?: string } }).error;
+		throw new PatternInspectError(
+			err?.message ?? "Invalid extraction source.",
+			err?.code ?? "MISSING_INPUT",
+			options.url,
+		);
+	}
+	if (resolved.primary === "responseId") {
+		if (sourceFormat === "json") {
+			return prepareJsonSource(resolved.content, {
+				url: resolved.url,
+				jsonPaths: options.jsonPaths,
+				source: "stored",
+			});
+		}
+		return {
+			content: resolved.content,
+			source: {
+				url: resolved.url,
+				source: "stored",
+				sourceFormat,
+			},
+		};
+	}
 	if (!options.url) {
 		throw new PatternInspectError(
-			"web_extract action=pattern requires url or content.",
+			"web_extract action=pattern requires url, content, or responseId.",
 			"MISSING_INPUT",
 		);
 	}
@@ -103,7 +133,7 @@ function prepareJsonSource(
 		url?: string;
 		finalUrl?: string;
 		jsonPaths?: string[];
-		source: "provided" | "scrape";
+		source: "provided" | "scrape" | "stored";
 		mode?: string;
 		status?: number;
 		contentType?: string;

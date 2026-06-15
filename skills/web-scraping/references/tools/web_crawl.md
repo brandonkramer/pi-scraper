@@ -101,3 +101,9 @@ The active crawl strategy is displayed directly in the TUI progress status line.
 - `strategy=dfs` goes deep before wide (LIFO/stack frontier); useful for nested documentation trees.
 - `proxy` can be a single URL (`"http://proxy:8080"`) for the whole crawl or an array for per-page round-robin rotation.
 - Crawl progress text now shows the active strategy (BFS, DFS, best-first).
+
+## When to switch tools
+
+- **Site is behind a login**? → authenticate with [`web_browser`](web_browser.md), then `web_crawl mode=browser` with the **same `sessionId`** to crawl the gated pages (shared browser context).
+- **Just want a URL inventory**, not page bodies? → [`web_map`](web_map.md). **A single page?** → [`web_scrape`](web_scrape.md).
+- **Structured fields per page**? → [`web_extract`](web_extract.md), or `web_crawl extract=api-surface` for a docs module index.

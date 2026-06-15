@@ -85,6 +85,7 @@ export const webExtractSchema = Type.Object({
 	),
 	url: Type.Optional(urlProperty()),
 	content: Type.Optional(Type.Unsafe<string>({})),
+	responseId: Type.Optional(Type.Unsafe<string>({})),
 	prompt: Type.Optional(Type.Unsafe<string>({})),
 	schema: Type.Optional(Type.Any()),
 	sentences: Type.Optional(Type.Unsafe<number>({})),
@@ -190,7 +191,7 @@ function inferExtractAction(params: Params): ExtractAction {
 	if (params.selector) return "selector";
 	if (params.selectors && typeof params.selectors === "object" && !Array.isArray(params.selectors))
 		return "css-extract";
-	if (!params.url && !params.content && !params.extractor) return "list";
+	if (!params.url && !params.content && !params.responseId && !params.extractor) return "list";
 	if (params.extract === "api-surface") return "surface";
 	if (params.extractor) return "vertical";
 	if (hasPatternRequest(params)) return "pattern";

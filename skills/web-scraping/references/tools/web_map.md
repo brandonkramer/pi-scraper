@@ -28,3 +28,9 @@ web_map url="https://developer.mozilla.org/en-US/"
 - Discovers robots.txt, sitemap.xml, and `llms.txt` automatically.
 - Returns a responseId for storing/referencing the map.
 - Perfect for inventory before deciding what to scrape or crawl.
+
+## When to switch tools
+
+- **Read the mapped URLs**: one page → [`web_scrape`](web_scrape.md); follow links → [`web_crawl`](web_crawl.md); many independent URLs → [`web_batch`](web_batch.md).
+- **Structured fields** from those URLs? → [`web_extract`](web_extract.md).
+- **Pages behind a login**? → authenticate with [`web_browser`](web_browser.md) first, then crawl/scrape `mode=browser` with the **same `sessionId`**.

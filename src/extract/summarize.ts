@@ -1,20 +1,31 @@
 import { type ScrapePipelineDeps, type ScrapeResult, scrapeUrl } from "../scrape/pipeline.ts";
-import type { CommonScrapeOptions } from "../types.ts";
+import {
+	resolveExtractSource,
+	type ExtractSourceResolution,
+} from "../tools/infra/extract-source.ts";
+import type { CommonScrapeOptions, PiToolShell, ToolContext } from "../types.ts";
 /** @file Summarize page module. */
 import type { ModelAdapter, ModelUsage } from "./adhoc/model.ts";
 
 export interface PageSummaryOptions extends CommonScrapeOptions {
 	url?: string;
 	content?: string;
+	responseId?: string;
 	sentences?: number;
 	bullets?: number;
 }
 
 export interface PageSummaryResult {
-	input: { url?: string; source: "provided" | "scrape"; scrape?: ScrapeResult };
+	input: {
+		url?: string;
+		source: "provided" | "scrape" | "stored";
+		scrape?: ScrapeResult;
+		responseId?: string;
+	};
 	summary: string;
 	raw?: unknown;
 	usage?: ModelUsage;
+	resolution?: ExtractSourceResolution;
 }
 
 export async function summarizePage(
@@ -22,8 +33,9 @@ export async function summarizePage(
 	model: ModelAdapter,
 	deps: ScrapePipelineDeps = {},
 	signal?: AbortSignal,
-): Promise<PageSummaryResult> {
+): Promise<PageSummaryResult | PiToolShell<ToolContext<undefined>>> {
 	const prepared = await prepareSummaryInput(options, deps, signal);
+	if ("details" in prepared) return prepared;
 	const response = await model.run<string>(
 		{
 			task: "summarize",
@@ -39,6 +51,7 @@ export async function summarizePage(
 		summary: response.text ?? response.data ?? "",
 		raw: response.raw,
 		usage: response.usage,
+		resolution: prepared.resolution,
 	};
 }
 
@@ -46,15 +59,44 @@ async function prepareSummaryInput(
 	options: PageSummaryOptions,
 	deps: ScrapePipelineDeps,
 	signal?: AbortSignal,
-): Promise<{ content: string; input: PageSummaryResult["input"] }> {
-	if (options.content?.trim()) {
-		return {
+): Promise<
+	| {
+			content: string;
+			input: PageSummaryResult["input"];
+			resolution?: ExtractSourceResolution;
+	  }
+	| PiToolShell<ToolContext<undefined>>
+> {
+	const resolved = await resolveExtractSource(
+		{
 			content: options.content,
-			input: { url: options.url, source: "provided" },
+			url: options.url,
+			responseId: options.responseId,
+		},
+		"summarize",
+	);
+	if ("details" in resolved) {
+		const code = (resolved.details as { error?: { code?: string } }).error?.code;
+		if (code === "EXTRACT_INPUT_MISSING")
+			throw new Error("summarizePage requires url, content, or responseId");
+		return resolved;
+	}
+
+	if (resolved.primary === "content" || resolved.primary === "responseId") {
+		return {
+			content: resolved.content,
+			input: {
+				url: resolved.url ?? options.url,
+				source: resolved.primary === "responseId" ? "stored" : "provided",
+				scrape: resolved.scrape,
+				responseId: resolved.responseId,
+			},
+			resolution: resolved,
 		};
 	}
+
 	if (!options.url) {
-		throw new Error("summarizePage requires url or content");
+		throw new Error("summarizePage requires url, content, or responseId");
 	}
 	const scrape = await scrapeUrl(options.url, { ...options, format: "markdown" }, deps, signal);
 	return {

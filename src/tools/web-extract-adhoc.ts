@@ -2,7 +2,9 @@
 import { loadEffectiveConfig } from "../config.ts";
 import { extractAdHoc, MissingExtractInputError } from "../extract/adhoc/index.ts";
 import type { GroundedField } from "../extract/grounding.ts";
+import { sourceNote } from "./infra/agentic-context.ts";
 import type { ToolExecutionContext } from "./infra/define.ts";
+import { storedSourceNote } from "./infra/extract-source.ts";
 import {
 	resolveAdapterFromRegistry,
 	resolveModelAdapterFromContext,
@@ -80,21 +82,39 @@ export async function runAdHocExtraction(
 			options.scrapeDeps ?? {},
 			signal,
 		);
+		if (!("input" in result)) return result;
 		const summary = scrapeInputSummary(
 			"Extracted structured data from",
 			result.input,
 			" using fresh scrape input",
 			" using cached scrape input",
 		);
+		const stored =
+			result.input.source === "stored" && result.resolution
+				? storedSourceNote(result.resolution)
+				: undefined;
 		return scrapeInputToolContext({
 			text: summarizeExtraction(result.data, result.grounded),
 			data: result,
 			input: result.input,
-			fallbackUrl: params.url,
+			fallbackUrl: params.url ?? result.input.url,
 			summary,
 			answerContext:
-				"Refresh the source page before extraction when the requested facts are time-sensitive.",
+				result.input.source === "stored"
+					? "Extraction used stored evidence without re-fetching the URL."
+					: "Refresh the source page before extraction when the requested facts are time-sensitive.",
 			modelUsage: result.usage,
+			sourceNotes: stored
+				? [
+						sourceNote({
+							id: params.responseId!,
+							title: stored.label,
+							uri: result.input.url,
+							relevance: stored.description,
+							sourceType: "browser",
+						}),
+					]
+				: undefined,
 		});
 	} catch (error) {
 		return toolErrorResult(

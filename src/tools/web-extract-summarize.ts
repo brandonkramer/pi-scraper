@@ -1,7 +1,9 @@
 /** @file Web_extract action="summarize" handler — model-backed page summarization. */
 import { loadEffectiveConfig } from "../config.ts";
 import { summarizePage } from "../extract/summarize.ts";
+import { sourceNote } from "./infra/agentic-context.ts";
 import type { ToolExecutionContext } from "./infra/define.ts";
+import { storedSourceNote } from "./infra/extract-source.ts";
 import {
 	resolveAdapterFromRegistry,
 	resolveModelAdapterFromContext,
@@ -88,7 +90,28 @@ export async function runSummarize(
 			options.scrapeDeps ?? {},
 			signal,
 		);
-		return buildSummarizeToolContext(result, params.url);
+		if (!("summary" in result)) return result;
+		const ctx = buildSummarizeToolContext(result, params.url ?? result.input.url);
+		if (result.input.source === "stored" && result.resolution && params.responseId) {
+			const note = storedSourceNote(result.resolution);
+			return {
+				...ctx,
+				details: {
+					...ctx.details,
+					sourceNotes: [
+						sourceNote({
+							id: params.responseId,
+							title: note.label,
+							uri: result.input.url,
+							relevance: note.description,
+							sourceType: "browser",
+						}),
+					],
+					answerContext: "Summarized stored evidence without re-fetching the URL.",
+				},
+			};
+		}
+		return ctx;
 	} catch (error) {
 		return toolErrorResult(error, "SUMMARIZE_FAILED", "summarize", params.url);
 	}

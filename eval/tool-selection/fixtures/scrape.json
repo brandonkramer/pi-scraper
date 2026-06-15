@@ -17,7 +17,9 @@
 			"markdown",
 			"contrast:web_batch",
 			"contrast:web_summarize",
-			"contrast:web_get_result"
+			"contrast:web_get_result",
+			"contrast:web_browser",
+			"contrast:web_browser"
 		]
 	},
 	{

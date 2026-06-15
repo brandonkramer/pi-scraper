@@ -1,0 +1,23 @@
+[
+	{
+		"id": "browser-fill-login-form",
+		"prompt": "In session auth-flow, fill the email field #email with user@example.com and snapshot the live page.",
+		"expectedTool": "web_browser",
+		"expectedArgs": {
+			"action": "fill",
+			"sessionId": "auth-flow",
+			"selector": "#email",
+			"value": "user@example.com"
+		},
+		"rationale": "Stateful browser interaction on a live page with sessionId, fill, and snapshot belongs to web_browser.",
+		"tags": [
+			"browser",
+			"click",
+			"fill",
+			"snapshot",
+			"sessionId",
+			"live page",
+			"contrast:web_scrape"
+		]
+	}
+]

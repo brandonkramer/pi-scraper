@@ -103,6 +103,8 @@ function smokeParams(name: string): unknown {
 			return { content: "A short local text to summarize.", sentences: 1 };
 		case "web_get_result":
 			return { jobId: "missing-job" };
+		case "web_browser":
+			return { action: "navigate", sessionId: "smoke-session" };
 		default:
 			throw new Error("Missing smoke params");
 	}

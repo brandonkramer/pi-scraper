@@ -29,6 +29,7 @@ export interface SelectorParams {
 	limit?: number;
 	url?: string;
 	content?: string;
+	responseId?: string;
 	mode?: string;
 	format?: string;
 }

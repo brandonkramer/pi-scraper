@@ -146,3 +146,9 @@ This peer-optional design ensures users without custom LLM setups do not need to
 - For images/files, first extract the URL with selector/pattern, then call `web_scrape saveToFile=true` to download.
 - Adhoc mode requires a model adapter (Pi host model or registered adapter).
 - **Source grounding**: `action=adhoc` automatically post-processes LLM output to locate each extracted string value in the cleaned source text, returning `grounded[]` with `{field, value, sourceSpan: {start, end}}` for verifiable fields and `sourceSpan: null` for unverifiable ones.
+
+## When to switch tools
+
+- **Fields are behind a login or a click** (form, multi-step flow)? → authenticate with [`web_browser`](web_browser.md), then `web_extract mode=browser` with the **same `sessionId`** to extract the gated page (shared browser context).
+- **Want the whole page**, not specific fields? → [`web_scrape`](web_scrape.md).
+- **Same shape across many pages of a site**? → [`web_crawl`](web_crawl.md) (add `extract=api-surface` for docs). **Many independent URLs?** → [`web_batch`](web_batch.md).

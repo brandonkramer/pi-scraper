@@ -26,7 +26,9 @@ export function expandHome(input: string): string {
 }
 
 export function resolvePiStoragePaths(options: ResolveStorageOptions = {}): PiStoragePaths {
-	const root = path.resolve(expandHome(options.rootDir ?? "~/.pi/scraper"));
+	const root = path.resolve(
+		expandHome(options.rootDir ?? process.env.PI_SCRAPER_STORAGE_ROOT ?? "~/.pi/scraper"),
+	);
 	return {
 		root,
 		config: path.join(root, "config"),

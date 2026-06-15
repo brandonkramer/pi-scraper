@@ -8,6 +8,7 @@ import {
 } from "../../parse/adaptive/selector.ts";
 import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
 import { loadFingerprint, saveFingerprint } from "../../storage/fingerprints.ts";
+import { resolveExtractSource } from "../../tools/infra/extract-source.ts";
 import type { ScrapeMode } from "../../types.ts";
 import { extractFromSelectorResult, type SelectorExtractionResult } from "../selector/css.ts";
 
@@ -22,6 +23,7 @@ export interface SelectorRunParams {
 	limit?: number;
 	url?: string;
 	content?: string;
+	responseId?: string;
 	mode?: string;
 	format?: string;
 }
@@ -48,21 +50,52 @@ export async function runSelectorExtraction(
 	if (params.content) {
 		html = params.content;
 		sourceUrl = "provided content";
-	} else if (params.url) {
-		const scrapeResult = await scrapeForSelector(params.url, params.mode, scrapeDeps, signal);
-		if (!scrapeResult) {
+	} else if (params.responseId || params.url) {
+		const resolved = await resolveExtractSource(
+			{ content: params.content, url: params.url, responseId: params.responseId },
+			"selector",
+			{ requireHtml: true },
+		);
+		if ("details" in resolved) {
+			const err = (resolved.details as { error?: { code?: string; message?: string } }).error;
 			throw new SelectorInputError(
-				"SELECTOR_FETCH_FAILED",
-				"Could not fetch target URL for selector extraction.",
-				{ retryable: true, url: params.url },
+				err?.code ?? "SELECTOR_INPUT_MISSING",
+				err?.message ?? "Selector extraction input invalid.",
+				{ retryable: false, url: params.url },
 			);
 		}
-		html = scrapeResult;
-		sourceUrl = params.url;
+		if (resolved.primary === "responseId") {
+			if (!resolved.html) {
+				throw new SelectorInputError(
+					"EXTRACT_SOURCE_NO_HTML",
+					"Selector extraction requires HTML, but the stored source has no HTML.",
+					{ retryable: false, url: resolved.url },
+				);
+			}
+			html = resolved.html;
+			sourceUrl = resolved.url ?? params.responseId ?? "stored result";
+		} else if (params.url) {
+			const scrapeResult = await scrapeForSelector(params.url, params.mode, scrapeDeps, signal);
+			if (!scrapeResult) {
+				throw new SelectorInputError(
+					"SELECTOR_FETCH_FAILED",
+					"Could not fetch target URL for selector extraction.",
+					{ retryable: true, url: params.url },
+				);
+			}
+			html = scrapeResult;
+			sourceUrl = params.url;
+		} else {
+			throw new SelectorInputError(
+				"SELECTOR_INPUT_MISSING",
+				"Selector extraction requires url, content, or responseId.",
+				{ retryable: false },
+			);
+		}
 	} else {
 		throw new SelectorInputError(
 			"SELECTOR_INPUT_MISSING",
-			"Selector extraction requires url or content.",
+			"Selector extraction requires url, content, or responseId.",
 			{ retryable: false },
 		);
 	}
