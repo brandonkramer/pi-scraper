@@ -61,12 +61,21 @@ export async function listDeterministicExtractors() {
 			? `\nDiagnostics: ${registry.errors.map((e: ManifestDiagnostic) => e.message).join("; ")}`
 			: "";
 	return toolResult({
-		text: `${merged.length} extractor(s):\n${merged.map((item) => `- ${item.name}`).join("\n")}${diagnostics}`,
+		text: `${merged.length} extractor(s):\n${merged
+			.map((item) => {
+				const patterns =
+					item.urlPatterns.length > 0
+						? `  [${item.urlPatterns.join(", ")}]`
+						: "  [content-based, no URL]";
+				const desc = item.description ? ` — ${item.description}` : "";
+				return `- ${item.name}${desc}\n  ${patterns}`;
+			})
+			.join("\n")}${diagnostics}`,
 		data: merged,
 		format: "json",
-		summary: "Listed deterministic extractor capabilities.",
+		summary: `Listed ${merged.length} deterministic extractor capabilities.`,
 		assistantGuidance:
-			"Use action=vertical with extractor=<name> for supported known sites. GitHub: use extractor=github_repo for API metadata/README/tree. Hugging Face: extractor=huggingface_model accepts /owner/model and legacy /model; extractor=huggingface_dataset accepts /datasets/owner/dataset and legacy /datasets/dataset. Use action=pattern for deterministic markers/regex/excerpts and action=adhoc for model-backed schema extraction.",
+			"The list above shows each extractor's declared URL patterns. Use action=vertical with extractor=<name> only when the target URL matches the corresponding pattern — the extractor hits that site's structured API rather than scraping HTML. If the URL doesn't match any pattern, use web_scrape instead. Extractors marked [content-based, no URL] expect raw content via the content parameter, not a URL. For all other extraction (regex, selectors, excerpts, schema) use action=pattern or action=adhoc.",
 	});
 }
 

@@ -47,33 +47,33 @@ Each tool has a reference with full args, examples, and rules.
 
 Use `web_extract action=vertical extractor=<name> url=<url>` — bypasses HTML scraping via site APIs.
 
-| URL matches → | Use extractor | Ref |
-|---------------|---------------|-----|
-| `github.com/:owner/:repo` | `github_repo` | [ref](references/verticals/github.md) |
-| `github.com/:owner/:repo/issues/:number` | `github_issue` | [ref](references/verticals/github.md) |
-| `github.com/:owner/:repo/pull/:number` | `github_pr` | [ref](references/verticals/github.md) |
-| `github.com/:owner/:repo/releases/tag/:tag` | `github_release` | [ref](references/verticals/github.md) |
-| `gitlab.com/:owner/:repo` or self-hosted `:host/:owner/:repo` | `gitlab` | [ref](references/verticals/gitlab.md) |
-| docs sites (Docusaurus, ReadTheDocs, GitBook, MDN) | `docsite` | [ref](references/verticals/docsite.md) |
-| raw `.ts/.tsx/.js/.jsx/.py/.rs` source files | `docstrings` | [ref](references/verticals/docstrings.md) |
-| `npmjs.com/package/:name` | `npm` | [ref](references/verticals/package-registries.md) |
-| `pypi.org/project/:name` | `pypi` | [ref](references/verticals/package-registries.md) |
-| `crates.io/crates/:name` | `crates_io` | [ref](references/verticals/package-registries.md) |
-| `hub.docker.com/r/:ns/:repo` or `_/:repo` | `docker_hub` | [ref](references/verticals/docker-hub.md) |
-| YouTube video (`watch?v=`, `youtu.be`, `shorts`) — metadata, comments, transcripts/captions | `youtube` | [ref](references/verticals/youtube.md) |
-| reddit post (`/r/:sub/comments/:id`, `redd.it/:id`) | `reddit` | [ref](references/verticals/reddit.md) |
-| subreddit feed (`/r/:sub` + sort) | `reddit-listing` | [ref](references/verticals/reddit.md) |
-| `news.ycombinator.com/item?id=:id` | `hackernews` | [ref](references/verticals/hackernews.md) |
-| `stackoverflow.com/questions/:id` or `/:id/:slug` | `stackoverflow` | [ref](references/verticals/stackoverflow.md) |
-| `en.wikipedia.org/wiki/:title` or `:lang.wikipedia.org/wiki/:title` | `wikipedia` | [ref](references/verticals/wikipedia.md) |
-| `deepwiki.com/:owner/:repo` | `deepwiki` | [ref](references/verticals/deepwiki.md) |
-| `arxiv.org/abs/:id` or `arxiv.org/pdf/:id` | `arxiv` | [ref](references/verticals/arxiv.md) |
-| `huggingface.co/:owner/:model` or legacy `/:model` | `huggingface_model` | [ref](references/verticals/huggingface.md) |
-| `huggingface.co/datasets/:owner/:dataset` or legacy `/datasets/:dataset` | `huggingface_dataset` | [ref](references/verticals/huggingface.md) |
-| `ossinsight.io/collections` | `ossinsight_collections` | [ref](references/verticals/ossinsight.md) |
-| `ossinsight.io/collections/:slug` | `ossinsight_collection_ranking` | [ref](references/verticals/ossinsight.md) |
-| `ossinsight.io/trending[/:language]` | `ossinsight_trending_repos` | [ref](references/verticals/ossinsight.md) |
-| `ossinsight.io/analyze/:owner/:repo` | `ossinsight_repo_analytics` | [ref](references/verticals/ossinsight.md) |
+| URL matches → | Use extractor | Tips | Ref |
+|---------------|---------------|------|-----|
+| `github.com/:owner/:repo` | `github_repo` | | [ref](references/verticals/github.md) |
+| `github.com/:owner/:repo/issues/:number` | `github_issue` | | [ref](references/verticals/github.md) |
+| `github.com/:owner/:repo/pull/:number` | `github_pr` | | [ref](references/verticals/github.md) |
+| `github.com/:owner/:repo/releases/tag/:tag` | `github_release` | | [ref](references/verticals/github.md) |
+| `gitlab.com/:owner/:repo` or self-hosted `:host/:owner/:repo` | `gitlab` | | [ref](references/verticals/gitlab.md) |
+| docs sites (Docusaurus, ReadTheDocs, GitBook, MDN) | `docsite` | | [ref](references/verticals/docsite.md) |
+| raw `.ts/.tsx/.js/.jsx/.py/.rs` source files | `docstrings` | **Content-based** — pass raw source text via `content:` param, NOT a URL | [ref](references/verticals/docstrings.md) |
+| `npmjs.com/package/:name` | `npm` | | [ref](references/verticals/package-registries.md) |
+| `pypi.org/project/:name` | `pypi` | | [ref](references/verticals/package-registries.md) |
+| `crates.io/crates/:name` | `crates_io` | | [ref](references/verticals/package-registries.md) |
+| `hub.docker.com/r/:ns/:repo` or `_/:repo` | `docker_hub` | | [ref](references/verticals/docker-hub.md) |
+| YouTube video (`watch?v=`, `youtu.be`, `shorts`) — metadata, comments, transcripts/captions | `youtube` | | [ref](references/verticals/youtube.md) |
+| reddit post (`/r/:sub/comments/:id`, `redd.it/:id`) | `reddit` | | [ref](references/verticals/reddit.md) |
+| subreddit feed (`/r/:sub` + sort) | `reddit-listing` | | [ref](references/verticals/reddit.md) |
+| `news.ycombinator.com/item?id=:id` | `hackernews` | | [ref](references/verticals/hackernews.md) |
+| `stackoverflow.com/questions/:id` or `/:id/:slug` | `stackoverflow` | | [ref](references/verticals/stackoverflow.md) |
+| `en.wikipedia.org/wiki/:title` or `:lang.wikipedia.org/wiki/:title` | `wikipedia` | | [ref](references/verticals/wikipedia.md) |
+| `deepwiki.com/:owner/:repo` | `deepwiki` | Uses **deepwiki.com** (auto-generated code wikis), NOT en.wikipedia.org | [ref](references/verticals/deepwiki.md) |
+| `arxiv.org/abs/:id` or `arxiv.org/pdf/:id` | `arxiv` | | [ref](references/verticals/arxiv.md) |
+| `huggingface.co/:owner/:model` or legacy `/:model` | `huggingface_model` | | [ref](references/verticals/huggingface.md) |
+| `huggingface.co/datasets/:owner/:dataset` or legacy `/datasets/:dataset` | `huggingface_dataset` | | [ref](references/verticals/huggingface.md) |
+| `ossinsight.io/collections` | `ossinsight_collections` | Use ossinsight.io URLs, NOT github.com | [ref](references/verticals/ossinsight.md) |
+| `ossinsight.io/collections/:slug` | `ossinsight_collection_ranking` | Use ossinsight.io URLs; supports `?metric=` & `?period=` params | [ref](references/verticals/ossinsight.md) |
+| `ossinsight.io/trending[/:language]` | `ossinsight_trending_repos` | Use ossinsight.io URLs | [ref](references/verticals/ossinsight.md) |
+| `ossinsight.io/analyze/:owner/:repo` | `ossinsight_repo_analytics` | Use **ossinsight.io/analyze/:owner/:repo**, NOT github.com/:owner/:repo | [ref](references/verticals/ossinsight.md) |
 
 ### Custom vertical manifests
 
