@@ -76,10 +76,15 @@ describe("gitlab vertical extractor", () => {
 
 	it("extracts project metadata from gitlab.com", async () => {
 		clearManifestRegistryCache();
-		const result = (await runVerticalExtractor("gitlab", "https://gitlab.com/gitlab-org/gitlab", {
-			context: gitlabContext(),
-		})) as { data: Record<string, unknown>; error?: unknown; extractor: string; url: string };
+		const result = await runVerticalExtractor<Record<string, unknown>>(
+			"gitlab",
+			"https://gitlab.com/gitlab-org/gitlab",
+			{
+				context: gitlabContext(),
+			},
+		);
 		expect(result.error).toBeUndefined();
+		if (!result.data) throw new Error("expected data");
 		expect(result.data).toMatchObject({
 			fullName: "GitLab.org / GitLab",
 			owner: "gitlab-org",
@@ -97,12 +102,13 @@ describe("gitlab vertical extractor", () => {
 
 	it("extracts project metadata from self-hosted GitLab", async () => {
 		clearManifestRegistryCache();
-		const result = (await runVerticalExtractor(
+		const result = await runVerticalExtractor<Record<string, unknown>>(
 			"gitlab",
 			"https://gitlab.internal.company.com/team/project",
 			{ context: gitlabContext() },
-		)) as { data: Record<string, unknown>; error?: unknown; extractor: string; url: string };
+		);
 		expect(result.error).toBeUndefined();
+		if (!result.data) throw new Error("expected data");
 		expect(result.data).toMatchObject({
 			owner: "team",
 			name: "gitlab",
