@@ -28,8 +28,8 @@ describe("json walk rules", () => {
 					walkObjects: {
 						when: { has: "commentRenderer" },
 						emit: {
-							author: { path: "commentRenderer.authorText", transform: "youtubeRunsText" },
-							text: { path: "commentRenderer.contentText", transform: "youtubeRunsText" },
+							author: { path: "commentRenderer.authorText", transform: "runsText" },
+							text: { path: "commentRenderer.contentText", transform: "runsText" },
 						},
 					},
 				},

@@ -81,7 +81,7 @@ steps:
           walkObjects:
             first:
               path: commentsHeaderRenderer.countText
-              transform: youtubeRunsText
+              transform: runsText
     - jsonWalk:
         as: continuationToken
         from: next
@@ -124,16 +124,16 @@ steps:
                   emit:
                     author:
                       path: commentRenderer.authorText
-                      transform: youtubeRunsText
+                      transform: runsText
                     text:
                       path: commentRenderer.contentText
-                      transform: youtubeRunsText
+                      transform: runsText
                     publishedTime:
                       path: commentRenderer.publishedTimeText
-                      transform: youtubeRunsText
+                      transform: runsText
                     likeCount:
                       path: commentRenderer.voteCount
-                      transform: youtubeRunsText
+                      transform: runsText
               - walkObjects:
                   when:
                     has: commentEntityPayload

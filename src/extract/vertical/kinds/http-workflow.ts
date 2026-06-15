@@ -3,6 +3,7 @@ import { createStructuredError, hasStructuredError } from "../../../http/errors.
 import type { VerticalExtractorContext } from "../capabilities.ts";
 import { evaluateJsonWalkRule } from "../json-walk.ts";
 import type { VerticalManifest } from "../manifest-types.ts";
+import { absoluteUrl, builtinTransforms } from "../transforms.ts";
 
 type Scope = Record<string, unknown>;
 type WorkflowObject = Record<string, unknown>;
@@ -160,7 +161,7 @@ async function tryJsonStep(
 		try {
 			const page = context.fetchPage ? await context.fetchPage(target, signal) : undefined;
 			if (!page) throw new Error("tryJson requires page fetch support");
-			throwForStatus(page.status, page.text);
+			throwForStatus(page.status, page.text, step.onStatus);
 			const as = stringValue(step.as);
 			const endpointAs = stringValue(step.endpointAs);
 			const finalUrlAs = stringValue(step.finalUrlAs);
@@ -176,18 +177,13 @@ async function tryJsonStep(
 			throw normalizeWorkflowError(error);
 		}
 	}
-	if (step.fallback === "redditBlockedMetadata") {
-		scope[stringValue(step.as) || "response"] = redditBlockedMetadata(
-			scope,
-			robotsDenied.length > 0 ? robotsDenied : attempts,
-		);
-		return;
-	}
-	if (step.fallback === "redditListingBlockedMetadata") {
-		scope[stringValue(step.as) || "response"] = redditListingBlockedMetadata(
-			scope,
-			robotsDenied.length > 0 ? robotsDenied : attempts,
-		);
+	const fallback = record(step.fallback);
+	if (fallback) {
+		const fallbackScope: Scope = {
+			...scope,
+			attemptedEndpoints: robotsDenied.length > 0 ? robotsDenied : attempts,
+		};
+		scope[stringValue(step.as) || "response"] = project(fallback, fallbackScope, url);
 		return;
 	}
 	throw new Error(`No endpoint succeeded: ${attempts.join(", ")}`);
@@ -228,8 +224,7 @@ function evaluateExpression(expression: string, scope: Scope, url: URL): unknown
 }
 
 function evaluateExpressionAlternative(expression: string, scope: Scope, url: URL): unknown {
-	if (expression.startsWith("{{") && expression.endsWith("}}"))
-		return expandTemplate(expression, scope, url);
+	if (expression.includes("{{")) return expandTemplate(expression, scope, url);
 	const [selector = "", ...transforms] = expression.split("|").map((part) => part.trim());
 	let value = selector.startsWith("@.") ? readPath(scope, selector.slice(2)) : selector;
 	for (const transform of transforms) value = applyTransform(value, transform, {}, scope);
@@ -244,52 +239,18 @@ function applyTransform(
 ): unknown {
 	if (transform === "number") return toNumber(value);
 	if (transform === "trueOnly") return value === true ? true : undefined;
-	if (transform === "redditUrl") return redditUrl(value);
 	if (transform === "compact")
 		return Array.isArray(value) ? value.filter((item) => isPresent(item)) : value;
-	if (transform === "youtubeCaptionTrack")
-		return youtubeCaptionTrack(value, stringValue(scope.language));
-	if (transform === "youtubeTranscript")
-		return youtubeTranscript(value, readPath(scope, stringValue(options.trackFrom)));
+	if (transform.startsWith("absoluteUrl:"))
+		return absoluteUrl(value, transform.slice("absoluteUrl:".length));
 	if (transform.startsWith("map:")) return mapObjects(value, transform.slice(4));
+	const builtin = builtinTransforms.get(transform);
+	if (builtin)
+		return builtin(value, {
+			language: stringValue(scope.language),
+			track: readPath(scope, stringValue(options.trackFrom)),
+		});
 	return value;
-}
-
-function redditUrl(value: unknown): string | undefined {
-	if (typeof value !== "string" || !value) return undefined;
-	return value.startsWith("/") ? `https://www.reddit.com${value}` : value;
-}
-
-function youtubeCaptionTrack(value: unknown, language: string): unknown {
-	if (!Array.isArray(value)) return undefined;
-	return (
-		value.find(
-			(track) =>
-				trackField(track, "languageCode") === language && trackField(track, "kind") !== "asr",
-		) ??
-		value.find((track) => trackField(track, "languageCode") === language) ??
-		value.find((track) => trackField(track, "kind") !== "asr") ??
-		value[0]
-	);
-}
-
-function youtubeTranscript(raw: unknown, track: unknown): unknown {
-	if (typeof raw !== "string" || !record(track)) return undefined;
-	const segments = [...raw.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/gu)]
-		.map((match) => ({
-			text: decodeEntities(stripTags(match[2])).trim(),
-			start: Number.parseFloat(attr(match[1], "start") ?? "0"),
-			duration: Number.parseFloat(attr(match[1], "dur") ?? "0"),
-		}))
-		.filter((segment) => segment.text);
-	if (segments.length === 0) return undefined;
-	return {
-		languageCode: trackField(track, "languageCode"),
-		languageName: captionName(track),
-		isGenerated: trackField(track, "kind") === "asr",
-		segments,
-		text: segments.map((segment) => segment.text).join("\n"),
-	};
 }
 
 function endpointEnabled(endpoint: WorkflowObject, scope: Scope): boolean {
@@ -342,43 +303,15 @@ function switchValue(value: string, spec: string): string {
 	return value;
 }
 
-function throwForStatus(status: number, text: string): void {
-	if (status === 403) throw workflowError("REDDIT_BLOCKED", "Reddit returned 403/blocked.", false);
-	if (status === 429)
-		throw workflowError("REDDIT_RATE_LIMITED", "Reddit rate limit exceeded.", true);
+function throwForStatus(status: number, text: string, onStatus: unknown): void {
+	const entry = record(record(onStatus)?.[String(status)]);
+	if (entry)
+		throw workflowError(
+			stringValue(entry.code) || `HTTP_${status}`,
+			stringValue(entry.message) || `HTTP ${status}`,
+			entry.retryable === true,
+		);
 	if (status >= 400) throw new Error(`HTTP ${status}: ${text.slice(0, 120)}`);
-}
-
-function redditBlockedMetadata(scope: Scope, attemptedEndpoints: string[]): unknown {
-	const subreddit = valueToString(scope.subreddit) || undefined;
-	const postId = valueToString(scope.postId);
-	return {
-		id: postId,
-		subreddit,
-		permalink: subreddit
-			? `https://www.reddit.com/r/${subreddit}/comments/${postId}/`
-			: `https://www.reddit.com/comments/${postId}/`,
-		source: {
-			provider: "reddit",
-			endpoint: attemptedEndpoints[0] ?? "",
-			blocked: true,
-			attemptedEndpoints,
-		},
-	};
-}
-
-function redditListingBlockedMetadata(scope: Scope, attemptedEndpoints: string[]): unknown {
-	return {
-		subreddit: valueToString(scope.subreddit),
-		sort: valueToString(scope.sort) || "hot",
-		posts: [],
-		source: {
-			provider: "reddit",
-			endpoint: attemptedEndpoints[0] ?? "",
-			blocked: true,
-			attemptedEndpoints,
-		},
-	};
 }
 
 function normalizeWorkflowError(error: unknown): Error {
@@ -419,42 +352,6 @@ function readPath(value: unknown, path: string): unknown {
 		}
 	}
 	return current;
-}
-
-function captionName(track: unknown): string | undefined {
-	const name = readPath(track, "name.simpleText");
-	if (typeof name === "string") return name;
-	const runs = readPath(track, "name.runs");
-	return Array.isArray(runs)
-		? runs.map((run) => valueToString(readPath(run, "text"))).join("")
-		: undefined;
-}
-
-function trackField(track: unknown, field: string): string | undefined {
-	const value = readPath(track, field);
-	return typeof value === "string" ? value : undefined;
-}
-
-function attr(attrs: string | undefined, name: string): string | undefined {
-	return new RegExp(`${name}="([^"]*)"`, "u").exec(attrs ?? "")?.[1];
-}
-
-function decodeEntities(value: string): string {
-	return value.replaceAll(
-		/&(?:#(\d+)|#x([\da-f]+)|(amp|lt|gt|quot|apos));/giu,
-		(match, dec: string, hex: string, named: string) => {
-			if (dec) return String.fromCodePoint(Number.parseInt(dec, 10));
-			if (hex) return String.fromCodePoint(Number.parseInt(hex, 16));
-			return (
-				({ amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" } as Record<string, string>)[named] ??
-				match
-			);
-		},
-	);
-}
-
-function stripTags(value: string): string {
-	return value.replaceAll(/<[^>]+>/gu, "");
 }
 
 function toNumber(value: unknown): unknown {

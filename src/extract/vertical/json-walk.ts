@@ -1,4 +1,5 @@
 /** @file Declarative recursive JSON traversal and projection helpers. */
+import { absoluteUrl, builtinTransforms } from "./transforms.ts";
 
 export interface JsonWalkRuleSet {
 	comments?: unknown;
@@ -98,37 +99,20 @@ function applyTransforms(value: unknown, rawTransform: unknown): unknown {
 }
 
 function applyNamedTransform(value: unknown, transform: string): unknown {
-	if (transform === "youtubeRunsText" || transform === "runsText") return runsText(value);
-	if (transform === "redditUrl") return redditUrl(value);
 	if (transform === "number") return toNumber(value);
 	if (transform === "trueOnly") return value === true ? true : undefined;
 	if (transform === "trim") return typeof value === "string" ? value.trim() : value;
 	if (transform === "string") return stringValue(value);
+	if (transform.startsWith("absoluteUrl:"))
+		return absoluteUrl(value, transform.slice("absoluteUrl:".length));
+	const builtin = builtinTransforms.get(transform);
+	if (builtin) return builtin(value, {});
 	return value;
-}
-
-function runsText(value: unknown): string | undefined {
-	const object = record(value);
-	if (!object) return undefined;
-	if (typeof object.simpleText === "string") return object.simpleText;
-	const runs = Array.isArray(object.runs) ? object.runs : [];
-	const text = runs
-		.map((run) => {
-			const runObject = record(run);
-			return typeof runObject?.text === "string" ? runObject.text : "";
-		})
-		.join("");
-	return text || undefined;
 }
 
 function toNumber(value: unknown): number | undefined {
 	const parsed = Number(value);
 	return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function redditUrl(value: unknown): string | undefined {
-	if (typeof value !== "string" || !value) return undefined;
-	return value.startsWith("/") ? `https://www.reddit.com${value}` : value;
 }
 
 function firstStringByKey(value: unknown, keys: string[]): string | undefined {

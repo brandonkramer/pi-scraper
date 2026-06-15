@@ -29,7 +29,15 @@ steps:
         as: listingResponse
         endpointAs: endpoint
         finalUrlAs: finalUrl
-        fallback: redditListingBlockedMetadata
+        onStatus:
+          "403": { code: REDDIT_BLOCKED, message: "Reddit returned 403/blocked.", retryable: false }
+          "429": { code: REDDIT_RATE_LIMITED, message: "Reddit rate limit exceeded.", retryable: true }
+        fallback:
+          source:
+            object:
+              endpoint: "@.attemptedEndpoints[0]"
+              blocked: true
+              attemptedEndpoints: "@.attemptedEndpoints"
         endpoints:
           - url: https://www.reddit.com/r/{{subreddit|encodeURIComponent}}{{sort|switch:hot=,*=/$value}}.json
           - url: https://old.reddit.com/r/{{subreddit|encodeURIComponent}}{{sort|switch:hot=,*=/$value}}.json
@@ -57,7 +65,7 @@ steps:
                     url: data.url
                     permalink:
                       path: data.permalink
-                      transform: redditUrl
+                      transform: "absoluteUrl:https://www.reddit.com"
                     createdUtc:
                       path: data.created_utc
                       transform: number

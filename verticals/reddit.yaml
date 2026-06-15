@@ -28,7 +28,18 @@ steps:
         as: redditResponse
         endpointAs: endpoint
         finalUrlAs: finalUrl
-        fallback: redditBlockedMetadata
+        onStatus:
+          "403": { code: REDDIT_BLOCKED, message: "Reddit returned 403/blocked.", retryable: false }
+          "429": { code: REDDIT_RATE_LIMITED, message: "Reddit rate limit exceeded.", retryable: true }
+        fallback:
+          id: "{{postId}}"
+          subreddit: "{{subreddit}}"
+          permalink: "https://www.reddit.com/r/{{subreddit}}/comments/{{postId}}/"
+          source:
+            object:
+              endpoint: "@.attemptedEndpoints[0]"
+              blocked: true
+              attemptedEndpoints: "@.attemptedEndpoints"
         endpoints:
           - when: subreddit
             url: https://www.reddit.com/r/{{subreddit}}/comments/{{postId}}.json?limit=50&raw_json=1
@@ -43,7 +54,7 @@ steps:
         title: "@.redditResponse[0].data.children[0].data.title"
         author: "@.redditResponse[0].data.children[0].data.author"
         createdUtc: "@.redditResponse[0].data.children[0].data.created_utc|number"
-        permalink: "@.redditResponse[0].data.children[0].data.permalink|redditUrl || @.redditResponse.permalink"
+        permalink: "@.redditResponse[0].data.children[0].data.permalink|absoluteUrl:https://www.reddit.com || @.redditResponse.permalink"
         url: "@.redditResponse[0].data.children[0].data.url"
         selfText: "@.redditResponse[0].data.children[0].data.selftext"
         score: "@.redditResponse[0].data.children[0].data.score|number"
@@ -68,7 +79,7 @@ steps:
                     createdUtc: data.created_utc
                     permalink:
                       path: data.permalink
-                      transform: redditUrl
+                      transform: "absoluteUrl:https://www.reddit.com"
             dedupeBy:
               - id
             maxItems: 50
