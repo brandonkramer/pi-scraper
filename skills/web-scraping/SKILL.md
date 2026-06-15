@@ -1,6 +1,6 @@
 ---
 name: web-scraping
-description: "Use for known URLs/content to scrape/read with fast or browser mode, summarize, map robots/sitemaps/llms, crawl links, batch URLs, diff snapshots, extract JSON/regex/verticals/selector, get YouTube transcripts/captions, get responseId/jobId, drive/operate a live page interactively (navigate/click/fill/select via web_browser), not search/research. Verticals: github/stackoverflow/wikipedia/npm/pypi/crates/docker/youtube/reddit/hn/arxiv/hf/deepwiki/ossinsight/docsite"
+description: "Use for known URLs/content to scrape/read with fast or browser mode, summarize, map robots/sitemaps/llms, crawl links, batch URLs, diff snapshots, extract JSON/regex/verticals/selector, get YouTube transcripts/captions, get responseId/jobId, drive/operate a live page interactively (navigate/click/fill/select via web_browser), not search/research. Verticals: github/gitlab/stackoverflow/wikipedia/npm/pypi/crates/docker/youtube/reddit/hn/arxiv/hf/deepwiki/ossinsight/docsite"
 ---
 
 ## How to choose
@@ -52,6 +52,7 @@ Use `web_extract action=vertical extractor=<name> url=<url>` — bypasses HTML s
 | `github.com/:owner/:repo/issues/:number` | `github_issue` | [ref](references/verticals/github.md) |
 | `github.com/:owner/:repo/pull/:number` | `github_pr` | [ref](references/verticals/github.md) |
 | `github.com/:owner/:repo/releases/tag/:tag` | `github_release` | [ref](references/verticals/github.md) |
+| `gitlab.com/:owner/:repo` or self-hosted `:host/:owner/:repo` | `gitlab` | [ref](references/verticals/gitlab.md) |
 | docs sites (Docusaurus, ReadTheDocs, GitBook, MDN) | `docsite` | [ref](references/verticals/docsite.md) |
 | raw `.ts/.tsx/.js/.jsx/.py/.rs` source files | `docstrings` | [ref](references/verticals/docstrings.md) |
 | `npmjs.com/package/:name` | `npm` | [ref](references/verticals/package-registries.md) |

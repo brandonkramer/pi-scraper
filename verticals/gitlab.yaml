@@ -1,0 +1,74 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
+version: 1
+order: 90
+name: gitlab
+# api-json-aggregate: parallel JSON requests (requests.*) → extract (@.scope, |transforms).
+kind: api-json-aggregate
+description: GitLab project repository metadata, README, file tree, and stats.
+urlPatterns:
+  - https://:host/:owner/:repo
+  - https://:host/:owner/:repo/
+  - https://:host/:owner/*rest
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - repo_metadata
+  - readme
+  - file_tree
+  - stats
+source: builtin
+# JSON Schema for structured output validation.
+outputSchema:
+  type: object
+  properties:
+    fullName:
+      type: string
+    stars:
+      type: number
+    forks:
+      type: number
+    openIssues:
+      type: number
+    visibility:
+      type: string
+# Parallel JSON HTTP requests; each key is scope for extract (@.metadata, @.readme, …).
+requests:
+  # GitLab REST API v4 project metadata (optional; fallback when unavailable).
+  metadata:
+    optional: true
+    urlTemplate: https://{{host}}/api/v4/projects/{{owner|encodeURIComponent}}%2F{{repo|encodeURIComponent}}
+    fallback:
+      name_with_namespace: "{{owner}}/{{repo}}"
+      web_url: "{{url}}"
+      star_count: 0
+      forks_count: 0
+      open_issues_count: 0
+      default_branch: main
+  # Base64-encoded README body.
+  readme:
+    optional: true
+    urlTemplate: https://{{host}}/api/v4/projects/{{owner|encodeURIComponent}}%2F{{repo|encodeURIComponent}}/readme
+  # Git tree (top-level entries; GitLab default API returns paginated entries).
+  tree:
+    optional: true
+    urlTemplate: https://{{host}}/api/v4/projects/{{owner|encodeURIComponent}}%2F{{repo|encodeURIComponent}}/repository/tree?per_page=100&ref={{defaultBranch}}
+# Output projection: aggregate uses @.scope paths and |transforms.
+extract:
+  fullName: "@.metadata.name_with_namespace"
+  owner: "{{owner}}"
+  name: "@.metadata.name"
+  description: "@.metadata.description"
+  url: "@.metadata.web_url"
+  stars: "@.metadata.star_count"
+  forks: "@.metadata.forks_count"
+  openIssues: "@.metadata.open_issues_count"
+  defaultBranch: "@.metadata.default_branch"
+  visibility: "@.metadata.visibility"
+  topics: "@.metadata.topics"
+  readme: "@.readme.content|base64|truncate:10000"
+  readmeTruncated: "@.readme.content|base64|isLongerThan:10000|trueOnly"
+  fileTree: "@.tree|pick:id,name,type,path"

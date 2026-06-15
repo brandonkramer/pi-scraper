@@ -179,7 +179,7 @@ recipe:
 			expect(diagnostics.some((d) => d.message.includes("::1"))).toBe(true);
 		});
 
-		it("rejects templated host in request.urlTemplate", () => {
+		it("accepts {{host}} captures in request.urlTemplate (runtime SSRF)", () => {
 			const { diagnostics } = validateManifest(
 				{
 					name: "test",
@@ -191,7 +191,7 @@ recipe:
 				},
 				"user",
 			);
-			expect(diagnostics.some((d) => d.message.includes("templated host"))).toBe(true);
+			expect(diagnostics.some((d) => d.message.includes("templated host"))).toBe(false);
 		});
 
 		it("accepts Wikipedia language-templated hosts in request.urlTemplate", () => {

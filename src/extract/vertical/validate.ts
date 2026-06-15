@@ -465,25 +465,28 @@ function collectRequestUrlTemplate(
 			});
 		}
 		if (templateHost.includes("{{") || templateHost.includes("}}")) {
-			const concreteUrl = concreteUrlForTemplatedHost(urlTemplate);
-			if (concreteUrl) {
-				allUrlsToCheck.push({ url: concreteUrl, field });
+			// Full host capture ({{host}}, {{hostname}}) — SSRF at runtime.
+			if (templateHost === "{{host}}" || templateHost === "{{hostname}}") {
+				// Runtime SSRF in HttpClient.assertSafeUrl handles these.
 			} else {
-				diagnostics.push({
-					severity: "error",
-					message: `templated host in urlTemplate rejected (cannot validate at load): ${urlTemplate}`,
-					field,
-				});
+				const concreteUrl = concreteUrlForTemplatedHost(urlTemplate);
+				if (concreteUrl) {
+					allUrlsToCheck.push({ url: concreteUrl, field });
+				} else {
+					diagnostics.push({
+						severity: "error",
+						message: `templated host in urlTemplate rejected (cannot validate at load): ${urlTemplate}`,
+						field,
+					});
+				}
 			}
 		} else {
 			allUrlsToCheck.push({ url: urlTemplate, field });
 		}
 	} else if (urlTemplate.includes("{{host}}") || urlTemplate.includes("{{hostname}}")) {
-		diagnostics.push({
-			severity: "error",
-			message: `templated host in urlTemplate rejected (cannot validate at load): ${urlTemplate}`,
-			field,
-		});
+		// Host-capture templates are validated at runtime by the HTTP client's
+		// SSRF checks — they cannot be checked for private-network hosts at load
+		// time because the actual host is unknown until the URL is matched.
 	} else {
 		const concreteUrl = concreteUrlForTemplatedHost(urlTemplate);
 		if (concreteUrl) allUrlsToCheck.push({ url: concreteUrl, field });
