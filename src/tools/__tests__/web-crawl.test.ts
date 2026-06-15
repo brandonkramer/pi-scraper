@@ -1,13 +1,15 @@
-/** @file Tool-level regression coverage for web_crawl API-surface wiring. */
+/** @file All web_crawl tool tests — api-surface wiring + agentic response shaping. */
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createCrawlState, saveCrawlState } from "../../crawl/state.ts";
 import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { closeStorageDbs } from "../../storage/db/open.ts";
 import { readResponse } from "../../storage/responses/read.ts";
+import { storeResponse } from "../../storage/responses/store.ts";
 import type { ToolContext } from "../../types.ts";
 import { webCrawlTool } from "../web-crawl.ts";
 import { webGetResultTool } from "../web-get-result.ts";
@@ -16,10 +18,11 @@ let crawlRunCount = 0;
 
 vi.mock("../../crawl/runner.ts", () => ({
 	runCrawl: vi.fn(async (seedUrl: string) => {
-		const { createCrawlState, saveCrawlState } = await import("../../crawl/state.ts");
+		const { createCrawlState: makeState, saveCrawlState: persistState } =
+			await import("../../crawl/state.ts");
 		const { createJobManifest, writeJobManifest } = await import("../../storage/jobs/manifest.ts");
 		const crawlId = `crawl-api-surface-${++crawlRunCount}`;
-		const state = createCrawlState(seedUrl, crawlId);
+		const state = makeState(seedUrl, crawlId);
 		state.visited = [seedUrl];
 		state.results = [seedUrl];
 		state.metadata = {
@@ -30,7 +33,7 @@ vi.mock("../../crawl/runner.ts", () => ({
 			succeededCount: 1,
 			failedCount: 0,
 		};
-		const statePath = await saveCrawlState(state);
+		const statePath = await persistState(state);
 		await writeJobManifest(
 			createJobManifest({
 				jobId: crawlId,
@@ -148,6 +151,56 @@ describe("web_crawl api-surface extraction", () => {
 		}>;
 		expect(plainEnvelope.data.apiSurface).toBeUndefined();
 		expect(plain.content[0]?.text).not.toContain("apiSurface:");
+	});
+});
+
+describe("web_crawl agentic shaping", () => {
+	it("web_crawl action=list summarizes recommended actions", async () => {
+		await storeResponse(
+			{ url: "https://example.com", data: "crawl" },
+			{ responseId: "crawl-result-1" },
+		);
+		const state = createCrawlState("https://example.com", "crawl-agentic");
+		state.visited = ["https://example.com"];
+		state.results = ["https://example.com"];
+		state.metadata = {
+			...state.metadata!,
+			status: "done",
+			responseId: "crawl-result-1",
+		};
+		await saveCrawlState(state);
+
+		const result = await webCrawlTool.execute(
+			"call",
+			{ action: "list", seed: "https://example.com", limit: 5 },
+			signal,
+		);
+		const envelope = result.details as ToolContext;
+
+		expect(result.content[0]?.text).toContain("recommended action");
+		expect(envelope.answerContext).toContain("crawl-agentic");
+		expect(envelope.nextActions?.[0]?.tool).toBe("web_crawl");
+		expect(envelope.qualitySignals?.freshness).toBe("current");
+	});
+
+	it("web_crawl action=status reports one crawl by crawlId", async () => {
+		const state = createCrawlState("https://example.com", "crawl-status");
+		state.metadata = {
+			...state.metadata!,
+			status: "running",
+		};
+		await saveCrawlState(state);
+
+		const result = await webCrawlTool.execute(
+			"call",
+			{ action: "status", crawlId: "crawl-status" },
+			signal,
+		);
+		const envelope = result.details as ToolContext;
+
+		expect(result.content[0]?.text).toContain("Crawl crawl-status");
+		expect(envelope.data).toMatchObject({ crawlId: "crawl-status" });
+		expect(envelope.nextActions?.[0]?.tool).toBe("web_crawl");
 	});
 });
 

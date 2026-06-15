@@ -5,9 +5,9 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { PI_TRUNCATION_LIMITS } from "../../defaults.ts";
-import { readResponse } from "../../storage/responses/read.ts";
-import { truncateAndStore } from "../../storage/responses/truncate.ts";
+import { PI_TRUNCATION_LIMITS } from "../../../defaults.ts";
+import { readResponse } from "../read.ts";
+import { truncateAndStore } from "../truncate.ts";
 
 let homeDir: string;
 let originalHome: string | undefined;

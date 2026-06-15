@@ -5,9 +5,9 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import type { RenderComponent } from "../../tui/index.ts";
-import type { PiToolShell, ToolContext } from "../../types.ts";
-import { webTools } from "../infra/register.ts";
+import type { RenderComponent } from "../../../tui/index.ts";
+import type { PiToolShell, ToolContext } from "../../../types.ts";
+import { webTools } from "../register.ts";
 
 let homeDir: string;
 let originalHome: string | undefined;

@@ -1,15 +1,15 @@
 /** @file Model-registry **tests** module. */
 import { describe, expect, it, beforeEach } from "vitest";
 
-import type { ModelResponse } from "../../extract/adhoc/model.ts";
-import { resolveProviderPreference } from "../infra/model-adapter.ts";
+import type { ModelResponse } from "../../../extract/adhoc/model.ts";
+import { resolveProviderPreference } from "../model-adapter.ts";
 import {
 	ModelRegistry,
 	validateAdapterPayload,
 	initModelAdapterProtocol,
 	requestAdapterDiscovery,
 	type RegisteredAdapter,
-} from "../infra/model-registry.ts";
+} from "../model-registry.ts";
 
 function fakeAdapter(id: string): RegisteredAdapter {
 	return {

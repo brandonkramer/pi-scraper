@@ -1,8 +1,8 @@
 /**
- * @file Tool contract token stats — used by autoresearch to measure schema token usage. NOT a test
- *   file (no test runner dependency). Run: npx tsx src/tools/**tests**/tool-contract-stats.ts
+ * @file Tool contract token stats for autoresearch (schema token usage). Not a test; run with npx
+ *   tsx.
  */
-import { webTools } from "../infra/register.ts";
+import { webTools } from "../register.ts";
 
 function approxTokens(s: string): number {
 	const l = s.length;

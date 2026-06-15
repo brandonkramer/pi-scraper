@@ -6,9 +6,9 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BatchScrapeResult } from "../../batch/run.ts";
-import type { ScrapeResult } from "../../scrape/pipeline.ts";
 import { closeStorageDbs } from "../../storage/db/open.ts";
 import type { ToolContext } from "../../types.ts";
+import type { ScrapeResult } from "../pipeline.ts";
 
 const scrapePipelineMock = vi.hoisted(() => ({
 	scrapeUrl: vi.fn(),
@@ -17,7 +17,7 @@ const batchRunMock = vi.hoisted(() => ({
 	runBatchScrape: vi.fn(),
 }));
 
-vi.mock("../../scrape/pipeline.ts", () => ({
+vi.mock("../pipeline.ts", () => ({
 	scrapeUrl: scrapePipelineMock.scrapeUrl,
 }));
 
@@ -25,8 +25,8 @@ vi.mock("../../batch/run.ts", () => ({
 	runBatchScrape: batchRunMock.runBatchScrape,
 }));
 
-const { createWebScrapeTool } = await import("../web-scrape.ts");
-const { webBatchTool } = await import("../web-batch.ts");
+const { createWebScrapeTool } = await import("../../tools/web-scrape.ts");
+const { webBatchTool } = await import("../../tools/web-batch.ts");
 
 const signal = new AbortController().signal;
 let homeDir: string;

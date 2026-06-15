@@ -3,8 +3,8 @@ import { readdirSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import type { WebTool } from "../infra/define.ts";
-import { webTools } from "../infra/register.ts";
+import type { WebTool } from "../define.ts";
+import { webTools } from "../register.ts";
 
 interface ToolSelectionFixture {
 	id: string;
@@ -15,7 +15,7 @@ interface ToolSelectionFixture {
 	tags: string[];
 }
 
-const fixturesDir = new URL("../../../eval/tool-selection/fixtures/", import.meta.url);
+const fixturesDir = new URL("../../../../eval/tool-selection/fixtures/", import.meta.url);
 const fixtures = readdirSync(fixturesDir)
 	.filter((name) => name.endsWith(".json"))
 	.sort()

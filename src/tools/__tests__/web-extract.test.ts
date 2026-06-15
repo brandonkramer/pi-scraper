@@ -1,30 +1,95 @@
-/** @file Tools **tests** web-tools.test module. */
+/**
+ * @file All web_extract tool tests — one describe block per action. Actions: dispatcher, vertical,
+ *   pattern, surface, adhoc, summarize, selector, plus model-adapter provider routing (summarize +
+ *   adhoc). Shared helpers (signal, fakeScrapeDeps, fakeModelAdapter) live in ./fixtures.ts.
+ */
 import { readFileSync } from "node:fs";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import type { ModelAdapter, ModelRequest, ModelResponse } from "../../extract/adhoc/model.ts";
-import type { ScrapePipelineDeps } from "../../scrape/pipeline.ts";
-import { toolCall, type RenderComponent, type RenderTheme } from "../../tui/index.ts";
+import type {
+	ModelAdapter,
+	ModelRequest,
+	ModelResponse,
+	ModelUsage,
+} from "../../extract/adhoc/model.ts";
 import type { ToolContext } from "../../types.ts";
 import type { PiToolRegistrar, WebTool } from "../infra/define.ts";
+import {
+	modelRegistry,
+	initModelAdapterProtocol,
+	type RegisteredAdapter,
+} from "../infra/model-registry.ts";
 import { registerWebTools } from "../infra/register.ts";
+import { runSelectorExtractionTool } from "../web-extract-selector.ts";
 import { createWebExtractTool, webExtractTool } from "../web-extract.ts";
-import { webGetResultTool } from "../web-get-result.ts";
+import { fakeModelAdapter, fakeScrapeDeps, signal } from "./fixtures.ts";
+
+type HostModel = ExtensionContext["model"];
+
+// ---------------------------------------------------------------------------
+// dispatcher
+// ---------------------------------------------------------------------------
 
 function summarizeOrExtractAdapter(request: ModelRequest): string | { ok: boolean } {
 	return request.task === "summarize" ? "registered summary" : { ok: true };
 }
 
-function fixtureHeadingAdapter(request: ModelRequest): string {
-	return request.input.includes("Fixture Heading")
-		? "Summary from scraped page."
-		: "Summary from provided content.";
-}
+describe("web_extract — dispatcher", () => {
+	it("keeps the web_extract adapter vertical-agnostic", () => {
+		const source = readFileSync(new URL("../web-extract.ts", import.meta.url), "utf8");
 
-const signal = new AbortController().signal;
+		expect(source).not.toContain('"reddit"');
+		expect(source).not.toContain("'reddit'");
+	});
 
-describe("selected web tool handlers", () => {
+	it("returns structured missing-model errors for ad hoc extraction", async () => {
+		const result = await webExtractTool.execute("call", { url: "https://example.com" }, signal);
+		expect((result.details as ToolContext).error?.code).toBe("MODEL_ADAPTER_MISSING");
+		expect(result.content[0]?.text).toContain("model-backed");
+	});
+
+	it("registers model-backed extract and summarize paths", async () => {
+		const registered: WebTool[] = [];
+		const registrar = {
+			registerTool(tool: WebTool) {
+				registered.push(tool);
+			},
+		};
+		await registerWebTools(registrar as unknown as PiToolRegistrar);
+		void registered.find((tool) => tool.name === "web_scrape");
+		void registered.find((tool) => tool.name === "web_extract");
+		void registered.find((tool) => tool.name === "web_summarize");
+
+		// Adapters are resolved at execute time from context, not baked in at registration.
+		const adapter = fakeModelAdapter(summarizeOrExtractAdapter);
+		const extracted = await createWebExtractTool({ modelAdapter: adapter }).execute(
+			"call",
+			{ content: "content", prompt: "extract" },
+			signal,
+		);
+		expect((extracted.details as ToolContext<{ data: { ok: boolean } }>)?.data?.data?.ok).toBe(
+			true,
+		);
+
+		const summarizedDirectly = await createWebExtractTool({ modelAdapter: adapter }).execute(
+			"call",
+			{ action: "summarize", content: "content", sentences: 1 },
+			signal,
+		);
+		expect(summarizedDirectly.content[0]?.text).toBe("registered summary");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// action=vertical
+// ---------------------------------------------------------------------------
+
+describe("web_extract — action=vertical", () => {
 	it("lists vertical extractor capabilities through web_extract", async () => {
 		const result = await webExtractTool.execute("call", { action: "list" }, signal);
 		expect(result.content[0]?.text).toContain("extractor");
@@ -111,20 +176,13 @@ describe("selected web tool handlers", () => {
 		expect(opened?.browserBackend).toBe("cloak");
 		expect(opened?.sessionId).toMatch(/^vertical-/u);
 	});
+});
 
-	it("keeps web_extract adapter vertical-agnostic", () => {
-		const source = readFileSync(new URL("../web-extract.ts", import.meta.url), "utf8");
+// ---------------------------------------------------------------------------
+// action=pattern
+// ---------------------------------------------------------------------------
 
-		expect(source).not.toContain('"reddit"');
-		expect(source).not.toContain("'reddit'");
-	});
-
-	it("returns structured missing-model errors for ad hoc extraction", async () => {
-		const result = await webExtractTool.execute("call", { url: "https://example.com" }, signal);
-		expect((result.details as ToolContext).error?.code).toBe("MODEL_ADAPTER_MISSING");
-		expect(result.content[0]?.text).toContain("model-backed");
-	});
-
+describe("web_extract — action=pattern", () => {
 	it("runs deterministic pattern inspection without a model", async () => {
 		const result = await webExtractTool.execute(
 			"call",
@@ -264,25 +322,6 @@ describe("selected web tool handlers", () => {
 		expect(envelope.data?.contains[0]?.found).toBe(true);
 	});
 
-	it("extracts an API surface from provided documentation without a model", async () => {
-		const result = await webExtractTool.execute(
-			"call",
-			{
-				extract: "api-surface",
-				content:
-					"# Client\n\n## fetchMetrics()\nFetch metrics.\n\n```ts\nfetchMetrics(project: string)\n```",
-			},
-			signal,
-		);
-		const envelope = result.details as ToolContext<{
-			modules: Array<{ functions: Array<{ name: string }> }>;
-		}>;
-
-		expect(envelope.error).toBeUndefined();
-		expect(envelope.format).toBe("json");
-		expect(envelope.data?.modules[0]?.functions[0]?.name).toBe("fetchMetrics");
-	});
-
 	it("returns structured errors for invalid pattern regexes", async () => {
 		const result = await webExtractTool.execute(
 			"call",
@@ -290,183 +329,6 @@ describe("selected web tool handlers", () => {
 			signal,
 		);
 		expect((result.details as ToolContext).error?.code).toBe("PATTERN_INPUT_INVALID");
-	});
-
-	it("runs provided-content extraction with an injected model adapter", async () => {
-		const requests: unknown[] = [];
-		const tool = createWebExtractTool({
-			modelAdapter: fakeModelAdapter((request) => {
-				requests.push(request);
-				return { title: "Local title", kind: request.task };
-			}),
-		});
-
-		const result = await tool.execute(
-			"call",
-			{ content: "# Local title\nBody", prompt: "Extract title." },
-			signal,
-		);
-		const envelope = result.details as ToolContext<{
-			data: { title: string; kind: string };
-			input: { source: string };
-		}>;
-		expect(envelope.error).toBeUndefined();
-		expect(envelope.data?.data).toEqual({
-			title: "Local title",
-			kind: "extract",
-		});
-		expect(envelope.data?.input.source).toBe("provided");
-		expect(requests).toHaveLength(1);
-	});
-
-	it("scrapes URL content before model-backed extraction", async () => {
-		const requests: Array<{ input: string }> = [];
-		const tool = createWebExtractTool({
-			modelAdapter: fakeModelAdapter((request) => {
-				requests.push({ input: request.input });
-				return { headingFound: request.input.includes("Fixture Heading") };
-			}),
-			scrapeDeps: fakeScrapeDeps(),
-		});
-
-		const result = await tool.execute(
-			"call",
-			{
-				url: "https://example.com/page",
-				prompt: "Find heading.",
-				mode: "fast",
-			},
-			signal,
-		);
-		const envelope = result.details as ToolContext<{
-			data: { headingFound: boolean };
-			input: { source: string };
-		}>;
-		expect(envelope.error).toBeUndefined();
-		expect(envelope.data?.data.headingFound).toBe(true);
-		expect(envelope.data?.input.source).toBe("scrape");
-		expect(requests[0]?.input).toContain("Fixture Heading");
-	});
-
-	it("registers model-backed extract and summarize paths", async () => {
-		const registered: WebTool[] = [];
-		const registrar = {
-			registerTool(tool: WebTool) {
-				registered.push(tool);
-			},
-		};
-		await registerWebTools(registrar as unknown as PiToolRegistrar);
-		void registered.find((tool) => tool.name === "web_scrape");
-		void registered.find((tool) => tool.name === "web_extract");
-		void registered.find((tool) => tool.name === "web_summarize");
-
-		// Adapters are resolved at execute time from context, not baked in at registration
-		const adapter = fakeModelAdapter(summarizeOrExtractAdapter);
-		const extracted = await createWebExtractTool({ modelAdapter: adapter }).execute(
-			"call",
-			{ content: "content", prompt: "extract" },
-			signal,
-		);
-		expect((extracted.details as ToolContext<{ data: { ok: boolean } }>)?.data?.data?.ok).toBe(
-			true,
-		);
-
-		const summarizedDirectly = await createWebExtractTool({ modelAdapter: adapter }).execute(
-			"call",
-			{ action: "summarize", content: "content", sentences: 1 },
-			signal,
-		);
-		expect(summarizedDirectly.content[0]?.text).toBe("registered summary");
-	});
-
-	it("runs dedicated provided-content and URL-backed summarization", async () => {
-		const tool = createWebExtractTool({
-			modelAdapter: fakeModelAdapter(fixtureHeadingAdapter),
-			scrapeDeps: fakeScrapeDeps(),
-		});
-
-		const provided = await tool.execute(
-			"call",
-			{ action: "summarize", content: "Provided content", sentences: 1 },
-			signal,
-		);
-		expect(provided.content[0]?.text).toBe("Summary from provided content.");
-
-		const scraped = await tool.execute(
-			"call",
-			{
-				action: "summarize",
-				url: "https://example.com/page",
-				bullets: 2,
-				mode: "fast",
-			},
-			signal,
-		);
-		const envelope = scraped.details as ToolContext<{
-			summary: string;
-			input: { source: string };
-		}>;
-		expect(envelope.error).toBeUndefined();
-		expect(envelope.data?.summary).toBe("Summary from scraped page.");
-		expect(envelope.data?.input.source).toBe("scrape");
-	});
-
-	it("renders compact calls and expanded results", async () => {
-		const result = await webExtractTool.execute("call", { action: "list" }, signal);
-		expect(renderComponentText(webExtractTool.renderCall?.({ action: "list" }, undefined))).toBe(
-			"web_extract list",
-		);
-		expect(
-			renderComponentText(webExtractTool.renderResult?.(result, { expanded: true }, undefined)),
-		).toContain("extractor");
-	});
-
-	it("renders get-result collapsed status for found and missing results", async () => {
-		const missingResult = await webGetResultTool.execute("call", { jobId: "missing-job" }, signal);
-		expect(missingResult.isError).toBe(true);
-
-		const theme: RenderTheme = {
-			fg: (name, text) => `<fg:${name}>${text}</fg:${name}>`,
-			bg: (name, text) => `<bg:${name}>${text}</bg:${name}>`,
-		};
-		const found = renderComponentText(
-			webGetResultTool.renderResult?.(
-				{
-					content: [{ type: "text", text: "Stored result abc: 1 field" }],
-					details: { data: { ok: true }, truncated: false },
-				},
-				{ expanded: false },
-				theme,
-			),
-		);
-		const missing = renderComponentText(
-			webGetResultTool.renderResult?.(
-				{
-					content: [{ type: "text", text: "missing" }],
-					details: {
-						truncated: false,
-						error: {
-							code: "STORED_RESULT_NOT_FOUND",
-							phase: "retrieve",
-							message: "missing",
-							retryable: false,
-						},
-					},
-				},
-				{ expanded: false },
-				theme,
-			),
-		);
-
-		expect(found).toContain("<fg:accent>✓ result found</fg:accent>");
-		expect(missing).toContain("<bg:toolErrorBg>");
-		expect(missing).toContain("✕ no result");
-	});
-
-	it("wraps long custom renderer lines to the requested terminal width", () => {
-		const lines = toolCall("x".repeat(150), []).render(40);
-		expect(lines.length).toBeGreaterThan(1);
-		expect(lines.every((line) => line.length <= 40)).toBe(true);
 	});
 
 	it("extracts JSONPath-selected values for pattern inspection", async () => {
@@ -592,37 +454,977 @@ describe("selected web tool handlers", () => {
 	});
 });
 
-function renderComponentText(component: RenderComponent | undefined): string {
-	return component?.render(80).join("\n") ?? "";
-}
+// ---------------------------------------------------------------------------
+// action=surface (deterministic API surface)
+// ---------------------------------------------------------------------------
 
-function fakeModelAdapter(respond: (request: ModelRequest) => unknown): ModelAdapter {
+describe("web_extract — action=surface", () => {
+	it("extracts an API surface from provided documentation without a model", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				extract: "api-surface",
+				content:
+					"# Client\n\n## fetchMetrics()\nFetch metrics.\n\n```ts\nfetchMetrics(project: string)\n```",
+			},
+			signal,
+		);
+		const envelope = result.details as ToolContext<{
+			modules: Array<{ functions: Array<{ name: string }> }>;
+		}>;
+
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.format).toBe("json");
+		expect(envelope.data?.modules[0]?.functions[0]?.name).toBe("fetchMetrics");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// action=adhoc (model-backed extraction)
+// ---------------------------------------------------------------------------
+
+function mockHostExtractAdapter(usage?: ModelUsage): unknown {
 	return {
-		async run<T = unknown>(request: ModelRequest): Promise<ModelResponse<T>> {
-			const data = respond(request);
-			return {
-				data: data as T,
-				text: typeof data === "string" ? data : JSON.stringify(data),
-			};
+		async run<T>(_req: ModelRequest, _signal?: AbortSignal): Promise<ModelResponse<T>> {
+			return { data: { extracted: "host-model data" } as T, usage };
 		},
 	};
 }
 
-function fakeScrapeDeps(): ScrapePipelineDeps {
+describe("web_extract — action=adhoc host model via ctx", () => {
+	it("uses ctx.model when no explicit adapter is provided", async () => {
+		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const result = await tool.execute(
+			"call",
+			{ url: "https://example.com/page", prompt: "Extract heading." },
+			signal,
+			undefined,
+			{ model: mockHostExtractAdapter() as HostModel },
+		);
+		expect(
+			(result.details as { data?: { data?: { extracted: string } } }).data?.data?.extracted,
+		).toBe("host-model data");
+	});
+
+	it("forwards usage from host model to envelope", async () => {
+		const usage: ModelUsage = {
+			provider: "pi-host",
+			model: "gpt-4",
+			inputTokens: 200,
+			outputTokens: 75,
+		};
+		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const result = await tool.execute(
+			"call",
+			{ url: "https://example.com/page", prompt: "Extract heading." },
+			signal,
+			undefined,
+			{ model: mockHostExtractAdapter(usage) as HostModel },
+		);
+		expect((result.details as { modelUsage?: ModelUsage }).modelUsage).toEqual(usage);
+	});
+
+	it("does not emit event-bus discover when host model is available", async () => {
+		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const result = await tool.execute(
+			"call",
+			{ url: "https://example.com/page", prompt: "Extract heading." },
+			signal,
+			undefined,
+			{ model: mockHostExtractAdapter() as HostModel },
+		);
+		expect((result.details as { error?: { code: string } }).error).toBeUndefined();
+		expect(
+			(result.details as { data?: { data?: { extracted: string } } }).data?.data?.extracted,
+		).toBe("host-model data");
+	});
+});
+
+describe("web_extract — action=adhoc via injected adapter", () => {
+	it("runs provided-content extraction with an injected model adapter", async () => {
+		const requests: unknown[] = [];
+		const tool = createWebExtractTool({
+			modelAdapter: fakeModelAdapter((request) => {
+				requests.push(request);
+				return { title: "Local title", kind: request.task };
+			}),
+		});
+
+		const result = await tool.execute(
+			"call",
+			{ content: "# Local title\nBody", prompt: "Extract title." },
+			signal,
+		);
+		const envelope = result.details as ToolContext<{
+			data: { title: string; kind: string };
+			input: { source: string };
+		}>;
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.data?.data).toEqual({
+			title: "Local title",
+			kind: "extract",
+		});
+		expect(envelope.data?.input.source).toBe("provided");
+		expect(requests).toHaveLength(1);
+	});
+
+	it("scrapes URL content before model-backed extraction", async () => {
+		const requests: Array<{ input: string }> = [];
+		const tool = createWebExtractTool({
+			modelAdapter: fakeModelAdapter((request) => {
+				requests.push({ input: request.input });
+				return { headingFound: request.input.includes("Fixture Heading") };
+			}),
+			scrapeDeps: fakeScrapeDeps(),
+		});
+
+		const result = await tool.execute(
+			"call",
+			{
+				url: "https://example.com/page",
+				prompt: "Find heading.",
+				mode: "fast",
+			},
+			signal,
+		);
+		const envelope = result.details as ToolContext<{
+			data: { headingFound: boolean };
+			input: { source: string };
+		}>;
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.data?.data.headingFound).toBe(true);
+		expect(envelope.data?.input.source).toBe("scrape");
+		expect(requests[0]?.input).toContain("Fixture Heading");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// action=summarize
+// ---------------------------------------------------------------------------
+
+function fixtureHeadingAdapter(request: ModelRequest): string {
+	return request.input.includes("Fixture Heading")
+		? "Summary from scraped page."
+		: "Summary from provided content.";
+}
+
+function mockHostSummaryAdapter(usage?: ModelUsage): unknown {
 	return {
-		httpClient: {
-			async fetchUrl() {
-				const html = `<!doctype html><html><head><title>Fixture</title></head><body><main><h1>Fixture Heading</h1><p>Fixture body text.</p></main></body></html>`;
-				return {
-					url: "https://example.com/page",
-					finalUrl: "https://example.com/page",
-					status: 200,
-					headers: { "content-type": "text/html; charset=utf-8" },
-					contentType: "text/html; charset=utf-8",
-					text: html,
-					downloadedBytes: Buffer.byteLength(html),
-				};
+		async run<T>(_req: ModelRequest, _signal?: AbortSignal): Promise<ModelResponse<T>> {
+			return { data: "host-model summary" as T, usage };
+		},
+	};
+}
+
+function makeAdapter(label: string): {
+	adapter: { run<T>(_req: ModelRequest, _signal?: AbortSignal): Promise<ModelResponse<T>> };
+	calls: string[];
+} {
+	const calls: string[] = [];
+	return {
+		adapter: {
+			run<T>(_req: ModelRequest, _signal?: AbortSignal): Promise<ModelResponse<T>> {
+				calls.push(label);
+				return Promise.resolve({ data: `from-${label}` as T });
+			},
+		},
+		calls,
+	};
+}
+
+function mockAdapter(usage?: ModelUsage): ModelAdapter {
+	return {
+		async run<T>(_req: ModelRequest, _signal?: AbortSignal): Promise<ModelResponse<T>> {
+			return { data: "summary text" as T, usage };
+		},
+	};
+}
+
+describe("web_extract — action=summarize host model via ctx", () => {
+	it("uses ctx.model when no explicit adapter is provided", async () => {
+		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", url: "https://example.com/page", sentences: 2 },
+			signal,
+			undefined,
+			{ model: mockHostSummaryAdapter() as HostModel },
+		);
+		expect(result.content[0]?.text).toContain("host-model summary");
+	});
+
+	it("forwards usage from host model to envelope", async () => {
+		const usage: ModelUsage = {
+			provider: "pi-host",
+			model: "gpt-4",
+			inputTokens: 100,
+			outputTokens: 50,
+			totalTokens: 150,
+		};
+		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", url: "https://example.com/page", sentences: 2 },
+			signal,
+			undefined,
+			{ model: mockHostSummaryAdapter(usage) as HostModel },
+		);
+		expect((result.details as { modelUsage?: ModelUsage }).modelUsage).toEqual(usage);
+	});
+
+	it("does not emit MODEL_ADAPTER_MISSING when host model is available", async () => {
+		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", url: "https://example.com/page", sentences: 2 },
+			signal,
+			undefined,
+			{ model: mockHostSummaryAdapter() as HostModel },
+		);
+		expect((result.details as { error?: { code: string } }).error).toBeUndefined();
+		expect(result.content[0]?.text).toContain("host-model summary");
+	});
+});
+
+describe("web_extract — action=summarize adapter resolution precedence", () => {
+	it("options.modelAdapter beats ctx.model", async () => {
+		const injected = makeAdapter("injected");
+		const host = makeAdapter("host");
+		const tool = createWebExtractTool({
+			modelAdapter: injected.adapter as unknown as ModelAdapter,
+			scrapeDeps: fakeScrapeDeps(),
+		});
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", url: "https://example.com/page", sentences: 2 },
+			signal,
+			undefined,
+			{ model: host.adapter as unknown as HostModel },
+		);
+		expect(result.content[0]?.text).toContain("from-injected");
+		expect(injected.calls.length).toBe(1);
+		expect(host.calls.length).toBe(0);
+	});
+
+	it("ctx.model beats event-bus registry", async () => {
+		modelRegistry.clear();
+		const registered = makeAdapter("registry");
+		modelRegistry.register({
+			id: "test-registry",
+			label: "test",
+			capabilities: ["summarize"],
+			priority: 100,
+			adapter: registered.adapter as unknown as ModelAdapter,
+		});
+		const host = makeAdapter("host");
+		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", url: "https://example.com/page", sentences: 2 },
+			signal,
+			undefined,
+			{ model: host.adapter as unknown as HostModel },
+		);
+		expect(result.content[0]?.text).toContain("from-host");
+		expect(registered.calls.length).toBe(0);
+		expect(host.calls.length).toBe(1);
+	});
+
+	it("event-bus registry beats MODEL_ADAPTER_MISSING", async () => {
+		modelRegistry.clear();
+		const registered = makeAdapter("registry");
+		modelRegistry.register({
+			id: "test-registry",
+			label: "test",
+			capabilities: ["summarize"],
+			priority: 100,
+			adapter: registered.adapter as unknown as ModelAdapter,
+		});
+		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", url: "https://example.com/page", sentences: 2 },
+			signal,
+		);
+		expect(result.content[0]?.text).toContain("from-registry");
+		expect(registered.calls.length).toBe(1);
+	});
+});
+
+describe("web_extract — action=summarize ModelUsage forwarding", () => {
+	it("forwards full usage to envelope when adapter returns it", async () => {
+		const usage: ModelUsage = {
+			provider: "gemini-acp",
+			model: "gemini-2.0-flash",
+			inputTokens: 234,
+			outputTokens: 187,
+			totalTokens: 421,
+			costUSD: 0.0023,
+		};
+		const tool = createWebExtractTool({
+			modelAdapter: mockAdapter(usage),
+			scrapeDeps: fakeScrapeDeps(),
+		});
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", url: "https://example.com/page", sentences: 3 },
+			signal,
+		);
+		expect((result.details as { modelUsage?: ModelUsage }).modelUsage).toEqual(usage);
+	});
+
+	it("forwards partial usage (tokens but no cost)", async () => {
+		const usage: ModelUsage = {
+			provider: "ollama",
+			inputTokens: 100,
+			outputTokens: 50,
+		};
+		const tool = createWebExtractTool({
+			modelAdapter: mockAdapter(usage),
+			scrapeDeps: fakeScrapeDeps(),
+		});
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", url: "https://example.com/page", sentences: 3 },
+			signal,
+		);
+		const modelUsage = (result.details as { modelUsage?: ModelUsage }).modelUsage;
+		expect(modelUsage?.provider).toBe("ollama");
+		expect(modelUsage?.inputTokens).toBe(100);
+		expect(modelUsage?.outputTokens).toBe(50);
+		expect(modelUsage?.costUSD).toBeUndefined();
+	});
+
+	it("leaves modelUsage undefined when adapter returns no usage", async () => {
+		const tool = createWebExtractTool({
+			modelAdapter: mockAdapter(undefined),
+			scrapeDeps: fakeScrapeDeps(),
+		});
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", url: "https://example.com/page", sentences: 3 },
+			signal,
+		);
+		expect((result.details as { modelUsage?: ModelUsage }).modelUsage).toBeUndefined();
+	});
+
+	it("passes through garbage usage without validation", async () => {
+		const usage = {
+			provider: "bad-adapter",
+			inputTokens: "234" as unknown as number,
+		} as ModelUsage;
+		const tool = createWebExtractTool({
+			modelAdapter: mockAdapter(usage),
+			scrapeDeps: fakeScrapeDeps(),
+		});
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", url: "https://example.com/page", sentences: 3 },
+			signal,
+		);
+		const modelUsage = (result.details as { modelUsage?: ModelUsage }).modelUsage;
+		expect(modelUsage?.provider).toBe("bad-adapter");
+		expect(modelUsage?.inputTokens).toBe("234");
+	});
+});
+
+/** Build a mock Pi whose events honour DiscoverPayload filters. */
+type DiscoverHandlers = Map<string, Array<(payload: unknown) => void>>;
+
+function mockPiWithFilteredDiscover() {
+	const events: Array<{ event: string; payload: unknown }> = [];
+	const handlers: DiscoverHandlers = new Map();
+	const pi = {
+		events: {
+			on(event: string, handler: (payload: unknown) => void) {
+				if (!handlers.has(event)) handlers.set(event, []);
+				handlers.get(event)!.push(handler);
+			},
+			emit(event: string, payload: unknown) {
+				events.push({ event, payload });
+				for (const h of handlers.get(event) ?? []) h(payload);
+			},
+		},
+	};
+	return { pi, events, handlers };
+}
+
+function fakeRegisteredAdapter(id: string, capabilities: readonly string[]): RegisteredAdapter {
+	return {
+		id,
+		label: id,
+		capabilities: capabilities as RegisteredAdapter["capabilities"],
+		priority: 50,
+		adapter: {
+			async run<T>(): Promise<ModelResponse<T>> {
+				return { data: `from-${id}` as T };
 			},
 		},
 	};
 }
+
+function registerFilteredProvider(
+	handlers: DiscoverHandlers,
+	providerEntry: RegisteredAdapter,
+): void {
+	handlers.set("pi:model-adapter/discover", [
+		(payload: unknown) => {
+			const filter = payload as {
+				capabilities?: readonly string[];
+			};
+			if (matchesDiscoverFilter(providerEntry, filter.capabilities)) {
+				modelRegistry.register(providerEntry);
+			}
+		},
+	]);
+}
+
+function matchesDiscoverFilter(
+	providerEntry: RegisteredAdapter,
+	capabilities: readonly string[] | undefined,
+): boolean {
+	return (
+		capabilities === undefined ||
+		providerEntry.capabilities.some((capability) => capabilities.includes(capability))
+	);
+}
+
+describe("web_extract — action=summarize lazy filtered discover", () => {
+	beforeEach(() => {
+		modelRegistry.clear();
+	});
+
+	it("triggers filtered discover on first invocation when no adapter is registered", async () => {
+		const { pi, events } = mockPiWithFilteredDiscover();
+		initModelAdapterProtocol(pi);
+
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1 },
+			signal,
+			undefined,
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
+		);
+
+		const discovers = events.filter((e) => e.event === "pi:model-adapter/discover");
+		expect(discovers.length).toBeGreaterThanOrEqual(1);
+		const lazy = discovers.at(-1);
+		expect(lazy?.payload).toEqual({ capabilities: ["summarize"] });
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_MISSING",
+		);
+	});
+
+	it("lazy discover causes a matching provider to re-register and route", async () => {
+		const { pi, events, handlers } = mockPiWithFilteredDiscover();
+
+		const providerEntry = fakeRegisteredAdapter("gemini", ["summarize"]);
+		registerFilteredProvider(handlers, providerEntry);
+
+		initModelAdapterProtocol(pi);
+
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1 },
+			signal,
+			undefined,
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
+		);
+
+		expect(result.content[0]?.text).toContain("from-gemini");
+		const discovers = events.filter((e) => e.event === "pi:model-adapter/discover");
+		expect(discovers.length).toBeGreaterThanOrEqual(1);
+	});
+
+	it("provider with non-matching capability does not re-register under filtered discover", async () => {
+		const { pi, handlers } = mockPiWithFilteredDiscover();
+
+		const providerEntry = fakeRegisteredAdapter("extractor-only", ["extract"]);
+		registerFilteredProvider(handlers, providerEntry);
+
+		initModelAdapterProtocol(pi);
+		modelRegistry.clear();
+
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1 },
+			signal,
+			undefined,
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
+		);
+
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_MISSING",
+		);
+		expect(modelRegistry.list().map((e) => e.id)).toEqual([]);
+	});
+
+	it("second invocation does not re-emit discover (cache works)", async () => {
+		const { pi, events, handlers } = mockPiWithFilteredDiscover();
+
+		const providerEntry = fakeRegisteredAdapter("gemini", ["summarize"]);
+		registerFilteredProvider(handlers, providerEntry);
+
+		initModelAdapterProtocol(pi);
+
+		const tool = createWebExtractTool();
+		await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1 },
+			signal,
+			undefined,
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
+		);
+		const discoversAfterFirst = events.filter(
+			(e) => e.event === "pi:model-adapter/discover",
+		).length;
+
+		await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1 },
+			signal,
+			undefined,
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
+		);
+		const discoversAfterSecond = events.filter(
+			(e) => e.event === "pi:model-adapter/discover",
+		).length;
+
+		expect(discoversAfterSecond).toBe(discoversAfterFirst);
+	});
+});
+
+describe("web_extract — action=summarize via injected adapter", () => {
+	it("runs dedicated provided-content and URL-backed summarization", async () => {
+		const tool = createWebExtractTool({
+			modelAdapter: fakeModelAdapter(fixtureHeadingAdapter),
+			scrapeDeps: fakeScrapeDeps(),
+		});
+
+		const provided = await tool.execute(
+			"call",
+			{ action: "summarize", content: "Provided content", sentences: 1 },
+			signal,
+		);
+		expect(provided.content[0]?.text).toBe("Summary from provided content.");
+
+		const scraped = await tool.execute(
+			"call",
+			{
+				action: "summarize",
+				url: "https://example.com/page",
+				bullets: 2,
+				mode: "fast",
+			},
+			signal,
+		);
+		const envelope = scraped.details as ToolContext<{
+			summary: string;
+			input: { source: string };
+		}>;
+		expect(envelope.error).toBeUndefined();
+		expect(envelope.data?.summary).toBe("Summary from scraped page.");
+		expect(envelope.data?.input.source).toBe("scrape");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// action=selector
+// ---------------------------------------------------------------------------
+
+describe("web_extract — action=selector", () => {
+	let homeDir: string;
+	let originalHome: string | undefined;
+
+	beforeEach(async () => {
+		homeDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-selector-"));
+		originalHome = process.env.HOME;
+		process.env.HOME = homeDir;
+	});
+
+	afterEach(async () => {
+		if (originalHome === undefined) delete process.env.HOME;
+		else process.env.HOME = originalHome;
+		await rm(homeDir, { recursive: true, force: true });
+	});
+
+	it("extracts matching CSS selectors from content", async () => {
+		const result = await runSelectorExtractionTool(
+			{
+				action: "selector",
+				selector: ".product-card",
+				selectorType: "css",
+				content:
+					"<html><body><div class='product-card'><h2>Product 1</h2></div></div></body></html>",
+				identifier: "test-products",
+				autoSave: false,
+				adaptive: false,
+				threshold: 0.35,
+			},
+			{},
+			new AbortController().signal,
+		);
+
+		expect(result.content[0]?.text).toContain("Product 1");
+		expect(result.details?.data?.strategy).toBe("direct");
+		expect(result.details?.data?.directMatches).toBe(1);
+	});
+
+	it("saves fingerprint with autoSave", async () => {
+		const content = "<html><body><div class='card'><h2>Product 1</h2></div></body></html>";
+
+		// First call with autoSave
+		const first = await runSelectorExtractionTool(
+			{
+				action: "selector",
+				selector: ".card",
+				selectorType: "css",
+				content,
+				identifier: "autosave-test",
+				autoSave: true,
+				adaptive: false,
+				threshold: 0.35,
+			},
+			{},
+			new AbortController().signal,
+		);
+
+		expect(first.details?.data?.saved).toBe(true);
+
+		// Second call with adaptive + changed content
+		const second = await runSelectorExtractionTool(
+			{
+				action: "selector",
+				selector: ".card",
+				selectorType: "css",
+				content:
+					"<html><body><div class='wrapper'><div class='new-card'><h2>Product 1</h2></div></div></body></html>",
+				identifier: "autosave-test",
+				autoSave: false,
+				adaptive: true,
+				threshold: 0.3,
+			},
+			{},
+			new AbortController().signal,
+		);
+
+		expect(second.details?.data?.strategy).toBe("adaptive");
+		expect(second.details?.data?.score).toBeGreaterThan(0.3);
+		expect(second.content[0]?.text).toContain("Product 1");
+	});
+
+	it("returns structured none when selector doesn't match", async () => {
+		const result = await runSelectorExtractionTool(
+			{
+				action: "selector",
+				selector: ".does-not-exist",
+				selectorType: "css",
+				content: ".product-card>h2>Product 1</h2></div>",
+				identifier: "no-match-test",
+				adaptive: false,
+				autoSave: false,
+				threshold: 0.35,
+			},
+			{},
+			new AbortController().signal,
+		);
+
+		expect(result.details?.data?.strategy).toBe("none");
+		expect(result.details?.data?.directMatches).toBe(0);
+		expect(result.details?.data?.adaptiveMatches).toBe(0);
+	});
+
+	it("errors when selector is missing", async () => {
+		const result = await runSelectorExtractionTool(
+			{
+				action: "selector",
+				identifier: "missing-test",
+			},
+			{},
+			new AbortController().signal,
+		);
+
+		expect(result.details?.error?.code).toBe("SELECTOR_INPUT_MISSING");
+	});
+
+	it("handles text selector", async () => {
+		const result = await runSelectorExtractionTool(
+			{
+				action: "selector",
+				selector: "Product 1",
+				selectorType: "text",
+				content: "<html><body><div><h2>Product 1</h2></div></body></html>",
+				identifier: "text-test",
+				autoSave: false,
+				adaptive: false,
+				threshold: 0.35,
+			},
+			{},
+			new AbortController().signal,
+		);
+
+		expect(result.details?.data?.strategy).toBe("direct");
+		expect(result.content[0]?.text).toContain("Product 1");
+	});
+});
+
+// ---------------------------------------------------------------------------
+// action=vertical — live Stack Overflow summary smoke (network, opt-in)
+// ---------------------------------------------------------------------------
+
+describe.skipIf(process.env.PI_SCRAPER_LIVE !== "1")("live stackoverflow summary", () => {
+	it("includes answer count in collapsed vertical summary", async () => {
+		const result = await webExtractTool.execute(
+			"call",
+			{
+				action: "vertical",
+				extractor: "stackoverflow",
+				url: "https://stackoverflow.com/questions/11227809/why-is-conditional-processing-of-a-sorted-array-faster-than-of-an-unsorted-array",
+			},
+			AbortSignal.timeout(60_000),
+		);
+		const text = result.content[0]?.text ?? "";
+		expect(text).toContain("answers");
+		expect(text).not.toMatch(/\bvideo\b/iu);
+	}, 90_000);
+});
+
+// ---------------------------------------------------------------------------
+// Provider routing — model-adapter protocol resolution via the registry
+// (summarize + adhoc): provider=auto/explicit/off, capability + not-found errors.
+// ---------------------------------------------------------------------------
+
+function fakeAdapter(
+	id: string,
+	capabilities: Array<"summarize" | "extract">,
+	priority = 50,
+): ModelAdapter & { id: string; calls: ModelRequest[] } {
+	const calls: ModelRequest[] = [];
+	const adapter: ModelAdapter & { id: string; calls: ModelRequest[] } = {
+		id,
+		calls,
+		async run<T>(req: ModelRequest, _signal?: AbortSignal): Promise<ModelResponse<T>> {
+			calls.push(req);
+			return { data: `from-${id}` as T };
+		},
+	};
+	modelRegistry.register({
+		id,
+		label: id,
+		capabilities,
+		priority,
+		adapter,
+	});
+	return adapter;
+}
+
+describe("web_extract action=summarize provider routing", () => {
+	beforeEach(() => {
+		modelRegistry.clear();
+	});
+
+	it("routes to registered adapter with provider=auto", async () => {
+		fakeAdapter("gemini", ["summarize"]);
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1 },
+			signal,
+			undefined,
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
+		);
+		expect(result.content[0]?.text).toContain("from-gemini");
+	});
+
+	it("routes to explicit provider id", async () => {
+		fakeAdapter("ollama", ["summarize"]);
+		fakeAdapter("gemini", ["summarize"]);
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1, provider: "ollama" },
+			signal,
+			undefined,
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
+		);
+		expect(result.content[0]?.text).toContain("from-ollama");
+	});
+
+	it("returns MODEL_ADAPTER_MISSING with provider=off", async () => {
+		fakeAdapter("gemini", ["summarize"]);
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1, provider: "off" },
+			signal,
+		);
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_MISSING",
+		);
+	});
+
+	it("returns MODEL_ADAPTER_NOT_FOUND for unknown id", async () => {
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1, provider: "nonexistent" },
+			signal,
+		);
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_NOT_FOUND",
+		);
+	});
+
+	it("returns MODEL_ADAPTER_INCOMPATIBLE when id lacks capability", async () => {
+		fakeAdapter("extract-only", ["extract"]);
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1, provider: "extract-only" },
+			signal,
+		);
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_INCOMPATIBLE",
+		);
+	});
+
+	it("programmatic adapter beats registry", async () => {
+		fakeAdapter("gemini", ["summarize"]);
+		const tool = createWebExtractTool({
+			modelAdapter: {
+				async run<T>(): Promise<ModelResponse<T>> {
+					return { data: "injected" as T };
+				},
+			},
+		});
+		const result = await tool.execute(
+			"call",
+			{ action: "summarize", content: "page text", sentences: 1 },
+			signal,
+		);
+		expect(result.content[0]?.text).toContain("injected");
+	});
+});
+
+describe("web_extract action=adhoc provider routing", () => {
+	beforeEach(() => {
+		modelRegistry.clear();
+	});
+
+	it("routes to registered adapter with provider=auto", async () => {
+		fakeAdapter("gemini", ["extract"]);
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ content: "page text", prompt: "extract" },
+			signal,
+			undefined,
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
+		);
+		expect((result.details as { error?: unknown }).error).toBeUndefined();
+	});
+
+	it("routes to explicit provider id", async () => {
+		fakeAdapter("ollama", ["extract"]);
+		fakeAdapter("gemini", ["extract"]);
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ content: "page text", prompt: "extract", provider: "ollama" },
+			signal,
+			undefined,
+			{
+				getFlag: () => {
+					/* no-op */
+				},
+			},
+		);
+		expect((result.details as { error?: unknown }).error).toBeUndefined();
+	});
+
+	it("programmatic adapter beats registry", async () => {
+		fakeAdapter("gemini", ["extract"]);
+		const tool = createWebExtractTool({
+			modelAdapter: {
+				async run<T>(): Promise<ModelResponse<T>> {
+					return { data: "injected" as T };
+				},
+			},
+		});
+		const result = await tool.execute("call", { content: "page text", prompt: "extract" }, signal);
+		expect((result.details as { error?: unknown }).error).toBeUndefined();
+	});
+
+	it("returns MODEL_ADAPTER_MISSING with provider=off", async () => {
+		fakeAdapter("gemini", ["extract"]);
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ content: "page text", prompt: "extract", provider: "off" },
+			signal,
+		);
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_MISSING",
+		);
+	});
+
+	it("returns MODEL_ADAPTER_NOT_FOUND for unknown id", async () => {
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ content: "page text", prompt: "extract", provider: "nonexistent" },
+			signal,
+		);
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_NOT_FOUND",
+		);
+	});
+
+	it("returns MODEL_ADAPTER_INCOMPATIBLE when id lacks capability", async () => {
+		fakeAdapter("summarize-only", ["summarize"]);
+		const tool = createWebExtractTool();
+		const result = await tool.execute(
+			"call",
+			{ content: "page text", prompt: "extract", provider: "summarize-only" },
+			signal,
+		);
+		expect((result.details as { error?: { code: string } }).error?.code).toBe(
+			"MODEL_ADAPTER_INCOMPATIBLE",
+		);
+	});
+});

@@ -1,4 +1,4 @@
-/** @file Browser capture continuity — storeCapture, responseId extract, live capture. */
+/** @file All web_browser tool tests — validation, storeCapture, capture actions, payload helpers. */
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -100,6 +100,80 @@ function expectErrorShell(value: ResolvedSource): Exclude<ResolvedSource, Extrac
 	if (isExtractSourceResolution(value)) throw new Error("expected an error shell");
 	return value;
 }
+
+describe("webBrowserTool validation", () => {
+	it("requires sessionId", async () => {
+		const result = await webBrowserTool.execute(
+			"test",
+			{ action: "snapshot", sessionId: "" } as never,
+			signal,
+		);
+		expect((result.details as ToolContext).error?.code).toBe("BROWSER_SESSION_MISSING");
+	});
+
+	it("requires url navigate", async () => {
+		const result = await webBrowserTool.execute(
+			"test",
+			{ action: "navigate", sessionId: "s1" } as never,
+			signal,
+		);
+		expect((result.details as ToolContext).error?.code).toBe("BROWSER_URL_MISSING");
+	});
+
+	it("requires selector for click", async () => {
+		const result = await webBrowserTool.execute(
+			"test",
+			{ action: "click", sessionId: "s1" } as never,
+			signal,
+		);
+		expect((result.details as ToolContext).error?.code).toBe("BROWSER_SELECTOR_MISSING");
+	});
+
+	it("requires selector fill", async () => {
+		const result = await webBrowserTool.execute(
+			"test",
+			{ action: "fill", sessionId: "s1", value: "x" } as never,
+			signal,
+		);
+		expect((result.details as ToolContext).error?.code).toBe("BROWSER_SELECTOR_MISSING");
+	});
+
+	it("requires selector select", async () => {
+		const result = await webBrowserTool.execute(
+			"test",
+			{ action: "select", sessionId: "s1", value: "x" } as never,
+			signal,
+		);
+		expect((result.details as ToolContext).error?.code).toBe("BROWSER_SELECTOR_MISSING");
+	});
+
+	it("requires script for evaluate", async () => {
+		const result = await webBrowserTool.execute(
+			"test",
+			{ action: "evaluate", sessionId: "s1" } as never,
+			signal,
+		);
+		expect((result.details as ToolContext).error?.code).toBe("BROWSER_SCRIPT_MISSING");
+	});
+
+	it("requires sessionId for screenshot", async () => {
+		const result = await webBrowserTool.execute(
+			"test",
+			{ action: "screenshot", sessionId: "" } as never,
+			signal,
+		);
+		expect((result.details as ToolContext).error?.code).toBe("BROWSER_SESSION_MISSING");
+	});
+
+	it("requires sessionId for evaluate", async () => {
+		const result = await webBrowserTool.execute(
+			"test",
+			{ action: "evaluate", sessionId: "", script: "1+1" } as never,
+			signal,
+		);
+		expect((result.details as ToolContext).error?.code).toBe("BROWSER_SESSION_MISSING");
+	});
+});
 
 describe("web_browser storeCapture", () => {
 	it("returns responseId when storeCapture is true", async () => {
