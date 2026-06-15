@@ -2,6 +2,40 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [0.12.0] - 2026-06-15
+
+### Added
+
+- **`web_browser` tool** — stateful page-driving for live sites: `navigate`, `click`, `fill`, `select`, `inspect`, `read`, `screenshot`, `evaluate`, and `exportCookies`. Reuses `sessionId` across calls with `@eN` element refs from the latest inspect.
+- **`web_browser` session controls** — `timezone`, `locale`, and `browserProfile` at session start; `proxy` accepts a string or rotating array (same semantics as `web_scrape` / `web_crawl`).
+- **Vertical browser escalation** — `requiresBrowser` verticals auto-escalate to cloaked browser; `mode=browser` vertical GET reads run inside the page instead of a detached fetch.
+- **Fingerprint-backed vertical GETs** — static vertical reads route through the impit fingerprint client for better bot resistance on API/HTML endpoints.
+- **Wikipedia vertical extractor** — `web_extract action="vertical" extractor="wikipedia"` for article metadata and summary text.
+- **GitLab vertical extractor** — `web_extract action="vertical" extractor="gitlab"` for project metadata on `gitlab.com` URLs.
+- **Vertical URL mismatch hints** — failed vertical matches now suggest the correct extractor when a known pattern is close.
+- **`web_extract action=list` URL patterns** — list output now shows each vertical's URL patterns for faster routing.
+
+### Changed
+
+- **`web_browser` action names** — renamed `snapshot` → `inspect` and `capture` → `read` to match agent-facing vocabulary.
+- **Vertical engine decoupling** — built-in providers load separately from the manifest engine core without changing public extractor names.
+- **Shared HTTP client deps** — `web_batch` and `web_crawl` now share scrape-layer `httpClient` wiring.
+- **Tool choice params as enums** — discriminated tool params are real TypeBox enums with documented discriminator guards for tighter agent contracts.
+- **Dependency refresh** — updated runtime and dev dependencies; `pi-coding-agent` is a type-only devDependency.
+
+### Fixed
+
+- **Vertical manifest captures** — corrected crates.io capture, PyPI version routing, and GitHub tree branch handling.
+- **Reddit and Dev.to verticals** — improved handling and fallbacks for blocked or partial Reddit endpoints.
+- **Vertical failure output** — surfaces the error message and attempted URLs when extraction fails.
+- **`@earendil-works/pi-ai` optional compile** — model adapter stays compile-optional via a const dynamic-import specifier.
+- **`web_browser` TUI rendering** — navigate call headers no longer duplicate the URL; result URLs stay on one line.
+
+### Removed
+
+- **`gitingest` vertical** — removed in favor of the Wikipedia extractor and updated skill docs.
+- **`web_scrape` summarize** — page summarization lives exclusively under `web_extract action=summarize`.
+
 ## [0.11.1] - 2026-06-14
 
 ### Fixed
