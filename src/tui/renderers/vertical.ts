@@ -7,7 +7,8 @@ import type { RenderComponent, RenderTheme } from "../types.ts";
 
 type VerticalData = Record<string, unknown>;
 type BrowserFallback = { used: boolean; backend: string };
-type VerticalComment = { author?: string; text?: string };
+type VerticalComment = { author?: string; owner?: string; text?: string; body?: string };
+type VerticalAnswer = { owner?: string; body?: string; score?: number; isAccepted?: boolean };
 type TranscriptSegment = { text: string; start: number; duration?: number };
 type TranscriptPreview = { segments?: TranscriptSegment[]; text?: string };
 type BlockedSource = { reason?: string; attemptedEndpoints?: string[] };
@@ -43,20 +44,24 @@ export function renderVerticalResult(
 	if (!expanded || !data) return renderVerticalText(treeLine);
 
 	return renderVerticalText(() => {
-		const sections = buildToolResultTree(buildVerticalSections(data, browser));
+		const sections = buildToolResultTree(buildVerticalSections(name, data, browser));
 		const transcriptBlock = formatTranscriptBlock(
 			data.transcript as TranscriptPreview | undefined,
 			80,
 			theme,
 		);
-		const commentsBlock = formatCommentsBlock(
-			data.comments as VerticalComment[] | undefined,
-			80,
-			theme,
-		);
+		const answersBlock = isStackOverflowLike(name, data)
+			? formatAnswersBlock(data.answers as VerticalAnswer[] | undefined, 80, theme)
+			: "";
+		const commentsBlock =
+			isStackOverflowLike(name, data) && Array.isArray(data.answers) && data.answers.length > 0
+				? ""
+				: formatCommentsBlock(data.comments as VerticalComment[] | undefined, 80, theme);
 		const sourceSections = buildToolResultTree(buildSourceSections(data));
-		const hasVerticalBlocks = transcriptBlock || commentsBlock || sourceSections.length > 0;
-		if (sections.every((section) => section.name === "extraction") && !hasVerticalBlocks)
+		const hasVerticalBlocks = Boolean(
+			transcriptBlock || answersBlock || commentsBlock || sourceSections.length > 0,
+		);
+		if (shouldUseGenericVerticalDetails(sections, hasVerticalBlocks))
 			sections.push(
 				...buildToolResultDetails(data, {
 					hide: new Set<string>(),
@@ -65,13 +70,38 @@ export function renderVerticalResult(
 			);
 		const body = toolResultTree(sections, 80, theme);
 		const sourceBlock = toolResultTree(sourceSections, 80, theme);
-		return [treeLine(), transcriptBlock, body, commentsBlock, sourceBlock]
+		return [treeLine(), transcriptBlock, body, answersBlock, commentsBlock, sourceBlock]
 			.filter(Boolean)
 			.join("\n\n");
 	});
 }
 
+function isYouTubeLike(extractor: string, data: VerticalData): boolean {
+	return (
+		extractor === "youtube" ||
+		typeof data.channel === "string" ||
+		typeof data.lengthSeconds === "number" ||
+		data.transcript !== null ||
+		Array.isArray(data.transcriptTracks)
+	);
+}
+
+function isStackOverflowLike(extractor: string, data: VerticalData): boolean {
+	return (
+		extractor === "stackoverflow" || (typeof data.body === "string" && Array.isArray(data.answers))
+	);
+}
+
+function shouldUseGenericVerticalDetails(
+	sections: ReturnType<typeof buildToolResultTree>,
+	hasVerticalBlocks: boolean,
+): boolean {
+	if (hasVerticalBlocks) return false;
+	return sections.every((section) => section.name === "extraction");
+}
+
 function buildVerticalSections(
+	extractor: string,
 	data: VerticalData,
 	browserFallback?: BrowserFallback,
 ): ToolResultGroup[] {
@@ -84,6 +114,24 @@ function buildVerticalSections(
 				["browserBackend", browserFallback.backend],
 			],
 		});
+
+	if (isStackOverflowLike(extractor, data)) {
+		const questionRows: ToolResultGroup["rows"] = [];
+		if (typeof data.title === "string" && data.title) questionRows.push(["title", data.title]);
+		if (typeof data.body === "string" && data.body)
+			questionRows.push(["body", previewPlainText(data.body, 240)]);
+		if (typeof data.score === "number") questionRows.push(["score", data.score.toLocaleString()]);
+		if (typeof data.viewCount === "number")
+			questionRows.push(["views", data.viewCount.toLocaleString()]);
+		if (typeof data.answerCount === "number")
+			questionRows.push(["answers", data.answerCount.toLocaleString()]);
+		if (Array.isArray(data.tags) && data.tags.length > 0)
+			questionRows.push(["tags", data.tags.map(String).join(", ")]);
+		sections.push({ name: "question", rows: questionRows });
+		return sections;
+	}
+
+	if (!isYouTubeLike(extractor, data)) return sections;
 
 	const videoRows: ToolResultGroup["rows"] = [];
 	if (typeof data.title === "string" && data.title) videoRows.push(["title", data.title]);
@@ -166,6 +214,30 @@ function formatTranscriptBlock(
 	return lines.join("\n");
 }
 
+function formatAnswersBlock(
+	answers: VerticalAnswer[] | undefined,
+	width: number,
+	theme?: RenderTheme,
+): string {
+	if (!answers?.length) return "";
+	const preview = answers.slice(0, 5).map((answer, i) => {
+		const text = previewPlainText(answer.body ?? "", 180);
+		const owner = typeof answer.owner === "string" ? answer.owner : `#${i + 1}`;
+		const score =
+			typeof answer.score === "number"
+				? ` (${answer.score.toLocaleString()}${answer.isAccepted ? ", accepted" : ""})`
+				: "";
+		return `${owner}${score}: ${text}`;
+	});
+	return formatListBlock(
+		"answers",
+		preview,
+		width,
+		theme,
+		answers.length > 5 ? `${answers.length - 5} more answers` : undefined,
+	);
+}
+
 function formatCommentsBlock(
 	comments: VerticalComment[] | undefined,
 	width: number,
@@ -173,8 +245,9 @@ function formatCommentsBlock(
 ): string {
 	if (!comments?.length) return "";
 	const preview = comments.slice(0, 5).map((comment, i) => {
-		const text = (comment.text ?? "").replaceAll(/\s+/gu, " ").trim();
-		return `${comment.author ? `${comment.author}: ` : `${i + 1}. `}${text.length > 180 ? `${text.slice(0, 180)}…` : text}`;
+		const text = previewPlainText(comment.text ?? comment.body ?? "", 180);
+		const author = comment.author ?? comment.owner;
+		return `${author ? `${author}: ` : `${i + 1}. `}${text}`;
 	});
 	return formatListBlock(
 		"comments",
@@ -211,17 +284,31 @@ function formatTimestamp(seconds: number): string {
 	return `${Math.floor(totalSeconds / 60)}:${(totalSeconds % 60).toString().padStart(2, "0")}`;
 }
 
+function previewPlainText(value: string, maxLength: number): string {
+	const text = value
+		.replaceAll(/<[^>]+>/gu, " ")
+		.replaceAll(/\s+/gu, " ")
+		.trim();
+	if (text.length <= maxLength) return text;
+	return `${text.slice(0, maxLength - 1)}…`;
+}
+
 function extractorPreview(data: VerticalData | undefined): string {
 	if (!data) return "extracted JSON";
 	const trans = data.transcript as { text?: string; segments?: unknown[] } | undefined;
 	return (
 		[
 			typeof data.title === "string" && data.title ? data.title : undefined,
-			typeof data.views === "number" && data.views > 0
-				? `${(data.views / 1000000).toFixed(data.views >= 100000000 ? 0 : 1)}M views`
-				: typeof data.views === "string" && data.views
-					? `${data.views} views`
-					: undefined,
+			typeof data.viewCount === "number" && data.viewCount > 0
+				? `${data.viewCount.toLocaleString()} views`
+				: typeof data.views === "number" && data.views > 0
+					? `${(data.views / 1000000).toFixed(data.views >= 100000000 ? 0 : 1)}M views`
+					: typeof data.views === "string" && data.views
+						? `${data.views} views`
+						: undefined,
+			Array.isArray(data.answers) && data.answers.length > 0
+				? `${data.answers.length} answers`
+				: undefined,
 			trans?.segments ? `${trans.segments.length} segments` : undefined,
 			!trans?.text && typeof data.description === "string" && data.description
 				? `${data.description.replaceAll(/\s+/gu, " ").trim().slice(0, 120)}${data.description.length > 120 ? "\u2026" : ""}`

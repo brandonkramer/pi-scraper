@@ -24,6 +24,17 @@ const VALID_KINDS = new Set<ManifestKind>([
 ]);
 const VALID_SCHEMES = new Set(["http", "https"]);
 const MAX_NAME_LEN = 64;
+const ALLOWED_TEMPLATED_HOSTS = [/^\{\{lang\}\}\.wikipedia\.org$/u];
+
+function isAllowedTemplatedHost(templateHost: string): boolean {
+	return ALLOWED_TEMPLATED_HOSTS.some((pattern) => pattern.test(templateHost));
+}
+
+function concreteUrlForTemplatedHost(urlTemplate: string): string | undefined {
+	const templateHost = tryGetHost(urlTemplate);
+	if (!templateHost || !isAllowedTemplatedHost(templateHost)) return;
+	return urlTemplate.replaceAll("{{lang}}", "en");
+}
 
 export function validateManifest(
 	manifest: unknown,
@@ -454,11 +465,16 @@ function collectRequestUrlTemplate(
 			});
 		}
 		if (templateHost.includes("{{") || templateHost.includes("}}")) {
-			diagnostics.push({
-				severity: "error",
-				message: `templated host in urlTemplate rejected (cannot validate at load): ${urlTemplate}`,
-				field,
-			});
+			const concreteUrl = concreteUrlForTemplatedHost(urlTemplate);
+			if (concreteUrl) {
+				allUrlsToCheck.push({ url: concreteUrl, field });
+			} else {
+				diagnostics.push({
+					severity: "error",
+					message: `templated host in urlTemplate rejected (cannot validate at load): ${urlTemplate}`,
+					field,
+				});
+			}
 		} else {
 			allUrlsToCheck.push({ url: urlTemplate, field });
 		}
@@ -468,6 +484,9 @@ function collectRequestUrlTemplate(
 			message: `templated host in urlTemplate rejected (cannot validate at load): ${urlTemplate}`,
 			field,
 		});
+	} else {
+		const concreteUrl = concreteUrlForTemplatedHost(urlTemplate);
+		if (concreteUrl) allUrlsToCheck.push({ url: concreteUrl, field });
 	}
 }
 

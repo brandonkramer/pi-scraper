@@ -41,7 +41,18 @@ function parseUrlPattern(pattern: string): { host: string; pathname: string } | 
 
 function matchHostPattern(hostPattern: string, hostname: string): Values | undefined {
 	const host = hostname.toLowerCase();
-	if (hostPattern.startsWith(":")) return { [hostPattern.slice(1)]: host };
+	if (hostPattern.startsWith(":")) {
+		const capture = hostPattern.slice(1);
+		const subdomainCapture = /^([A-Za-z][\w-]*)\.(.+)$/u.exec(capture);
+		if (subdomainCapture) {
+			const [, name, suffix] = subdomainCapture;
+			if (!host.endsWith(`.${suffix}`) || host.length <= suffix.length + 1) return;
+			const subdomain = host.slice(0, host.length - suffix.length - 1);
+			if (!subdomain || subdomain.includes(".")) return;
+			return { [name]: subdomain };
+		}
+		return { [capture]: host };
+	}
 	if (hostPattern.startsWith("*.")) {
 		const suffix = hostPattern.slice(1);
 		return host.endsWith(suffix) && host.length > suffix.length ? {} : undefined;

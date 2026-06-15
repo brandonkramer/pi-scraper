@@ -1,0 +1,55 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
+version: 1
+order: 24
+name: wikipedia
+# api-json-aggregate: parallel MediaWiki REST + action API requests.
+kind: api-json-aggregate
+description: Wikipedia article title, summary, extract, sections, images, and references via the MediaWiki REST and action APIs.
+urlPatterns:
+  - https://en.wikipedia.org/wiki/:title
+  - https://:lang.wikipedia.org/wiki/:title
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - article_metadata
+  - summary
+  - extract
+  - sections
+  - images
+  - references
+source: builtin
+# Default language when the host is the bare en.wikipedia.org pattern.
+matchOptions:
+  defaults:
+    lang: en
+# Parallel JSON HTTP requests; each key is scope for extract (@.summary, @.sections, …).
+requests:
+  summary:
+    urlTemplate: https://{{lang}}.wikipedia.org/api/rest_v1/page/summary/{{title|encodeURIComponent}}
+  sections:
+    optional: true
+    urlTemplate: https://{{lang}}.wikipedia.org/w/api.php?action=parse&page={{title|encodeURIComponent}}&prop=sections&format=json
+  images:
+    optional: true
+    urlTemplate: https://{{lang}}.wikipedia.org/w/rest.php/v1/page/{{title|encodeURIComponent}}/links/media
+  references:
+    optional: true
+    urlTemplate: https://{{lang}}.wikipedia.org/w/api.php?action=parse&page={{title|encodeURIComponent}}&prop=externallinks&format=json
+# Output projection: aggregate uses @.scope paths and |transforms.
+extract:
+  lang: "@.summary.lang || {{lang}}"
+  title: "@.summary.title"
+  description: "@.summary.description"
+  extract: "@.summary.extract"
+  pageUrl: "@.summary.content_urls.desktop.page"
+  thumbnail: "@.summary.thumbnail.source"
+  revision: "@.summary.revision"
+  timestamp: "@.summary.timestamp"
+  wikibaseItem: "@.summary.wikibase_item"
+  sections: "@.sections.parse.sections|map:level=level,line=line,number=number,anchor=anchor|compact"
+  images: "@.images.files|map:title=title,url=preferred.url,width=preferred.width,height=preferred.height,originalUrl=original.url|compact"
+  references: "@.references.parse.externallinks"

@@ -70,10 +70,6 @@ Extract structured data from URLs or content — verticals, patterns, selectors,
 # Vertical — GitHub repo metadata/README/tree
 web_extract action=vertical extractor=github_repo url="https://github.com/can1357/oh-my-pi"
 
-# Vertical — GitIngest LLM-ready codebase digest for a GitHub repo
-web_extract action=vertical extractor=gitingest url="https://github.com/coderamp-labs/gitingest"
-web_extract action=vertical extractor=gitingest url="https://gitingest.com/coderamp-labs/gitingest?max_file_size=50&pattern_type=include&pattern=src/**/*.py"
-
 # Vertical — Hugging Face model (owner/model or legacy single-slug URL)
 web_extract action=vertical extractor=huggingface_model url="https://huggingface.co/google-bert/bert-base-uncased"
 web_extract action=vertical extractor=huggingface_model url="https://huggingface.co/bert-base-uncased"
@@ -81,6 +77,9 @@ web_extract action=vertical extractor=huggingface_model url="https://huggingface
 # Vertical — Hugging Face dataset (owner/dataset or legacy single-slug URL)
 web_extract action=vertical extractor=huggingface_dataset url="https://huggingface.co/datasets/rajpurkar/squad"
 web_extract action=vertical extractor=huggingface_dataset url="https://huggingface.co/datasets/cnn_dailymail"
+
+# Vertical — Stack Overflow question (metadata, answers, comments)
+web_extract action=vertical extractor=stackoverflow url="https://stackoverflow.com/questions/11227809/why-is-conditional-processing-of-a-sorted-array-faster-than-of-an-unsorted-array"
 
 # Pattern — sections from README
 web_extract action=pattern url=https://raw.githubusercontent.com/vitejs/vite/main/README.md sections=[{start:"## Packages",end:"## Contribution"}]

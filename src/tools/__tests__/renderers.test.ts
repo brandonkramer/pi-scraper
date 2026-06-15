@@ -357,6 +357,40 @@ describe("web tool renderers", () => {
 		expect(rendered).not.toContain("response payload");
 	});
 
+	it("formats Stack Overflow question, body, and answers in expanded view", () => {
+		const result = toolResult({
+			text: "ok",
+			data: {
+				extractor: "stackoverflow",
+				data: {
+					title: "Why is conditional processing faster?",
+					body: "<p>Branch prediction example</p>",
+					score: 27535,
+					viewCount: 1986373,
+					answerCount: 26,
+					tags: ["java", "performance"],
+					answers: [
+						{
+							owner: "Mystical",
+							body: "<p>Because branch prediction</p>",
+							score: 40000,
+							isAccepted: true,
+						},
+					],
+					comments: [{ owner: "Reader", body: "Great question" }],
+				},
+			},
+		});
+		const rendered = text(renderVerticalResult(result, true));
+		expect(rendered).toContain("question");
+		expect(rendered).toContain("Branch prediction example");
+		expect(rendered).toContain("answers");
+		expect(rendered).toContain("Mystical");
+		expect(rendered).toContain("Because branch prediction");
+		expect(rendered).not.toContain("video");
+		expect(rendered).not.toContain("\n  comments\n");
+	});
+
 	it("formats YouTube transcript continuations and comments as readable lists", () => {
 		const result = toolResult({
 			text: "ok",

@@ -80,7 +80,7 @@ export const webExtractSchema = Type.Object({
 	extractor: Type.Optional(
 		Type.Unsafe<string>({
 			description:
-				"For action=vertical: github_repo/npm/pypi/docsite/reddit/deepwiki/youtube/arxiv/huggingface_model/gitingest; action=list for full set.",
+				"For action=vertical: github_repo/npm/pypi/docsite/reddit/stackoverflow/deepwiki/youtube/arxiv/huggingface_model; action=list for full set.",
 		}),
 	),
 	url: Type.Optional(urlProperty()),

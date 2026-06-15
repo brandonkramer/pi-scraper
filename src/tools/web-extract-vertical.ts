@@ -66,7 +66,7 @@ export async function listDeterministicExtractors() {
 		format: "json",
 		summary: "Listed deterministic extractor capabilities.",
 		assistantGuidance:
-			"Use action=vertical with extractor=<name> for supported known sites. GitHub: use extractor=github_repo for API metadata/README/tree or extractor=gitingest for an LLM-ready codebase digest. Hugging Face: extractor=huggingface_model accepts /owner/model and legacy /model; extractor=huggingface_dataset accepts /datasets/owner/dataset and legacy /datasets/dataset. Use action=pattern for deterministic markers/regex/excerpts and action=adhoc for model-backed schema extraction.",
+			"Use action=vertical with extractor=<name> for supported known sites. GitHub: use extractor=github_repo for API metadata/README/tree. Hugging Face: extractor=huggingface_model accepts /owner/model and legacy /model; extractor=huggingface_dataset accepts /datasets/owner/dataset and legacy /datasets/dataset. Use action=pattern for deterministic markers/regex/excerpts and action=adhoc for model-backed schema extraction.",
 	});
 }
 
@@ -260,11 +260,19 @@ function extractorPreview(data: unknown): [string, string | undefined] {
 	// Title (used by youtube, npm, github, reddit, most verticals)
 	if (typeof d.title === "string" && d.title) parts.push(d.title);
 
-	// Views (youtube)
-	if (typeof d.views === "number" && d.views > 0) {
+	// Views (youtube, stackoverflow, etc.)
+	if (typeof d.viewCount === "number" && d.viewCount > 0) {
+		parts.push(`${d.viewCount.toLocaleString()} views`);
+	} else if (typeof d.views === "number" && d.views > 0) {
 		parts.push(`${(d.views / 1000000).toFixed(d.views >= 100000000 ? 0 : 1)}M views`);
 	} else if (typeof d.views === "string" && d.views) {
 		parts.push(`${d.views} views`);
+	}
+
+	// Answers (stackoverflow)
+	const answers = d.answers;
+	if (Array.isArray(answers) && answers.length > 0) {
+		parts.push(`${answers.length} answers`);
 	}
 
 	// Transcript preview (youtube)

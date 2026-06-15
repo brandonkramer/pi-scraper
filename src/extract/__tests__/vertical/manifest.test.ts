@@ -194,6 +194,28 @@ recipe:
 			expect(diagnostics.some((d) => d.message.includes("templated host"))).toBe(true);
 		});
 
+		it("accepts Wikipedia language-templated hosts in request.urlTemplate", () => {
+			const { manifest, diagnostics } = validateManifest(
+				{
+					name: "wikipedia",
+					kind: "api-json-aggregate",
+					version: 1,
+					description: "Wikipedia article extraction",
+					urlPatterns: ["https://:lang.wikipedia.org/wiki/:title"],
+					requests: {
+						summary: {
+							urlTemplate:
+								"https://{{lang}}.wikipedia.org/api/rest_v1/page/summary/{{title|encodeURIComponent}}",
+						},
+					},
+					extract: { title: "@.summary.title" },
+				},
+				"builtin",
+			);
+			expect(isManifestValid(manifest)).toBe(true);
+			expect(diagnostics.some((d) => d.message.includes("templated host"))).toBe(false);
+		});
+
 		it("rejects credential-like headers", () => {
 			const { manifest, diagnostics } = validateManifest(
 				{
@@ -593,6 +615,17 @@ recipe:
 				"https://example.com/item",
 			]);
 			expect(match).toEqual({ id: "42", foo: "bar" });
+		});
+
+		it("captures language subdomains in host patterns", () => {
+			const match = matchUrlPattern(
+				new URL("https://de.wikipedia.org/wiki/Python_(Programmiersprache)"),
+				["https://:lang.wikipedia.org/wiki/:title"],
+			);
+			expect(match).toEqual({
+				lang: "de",
+				title: "Python_(Programmiersprache)",
+			});
 		});
 	});
 

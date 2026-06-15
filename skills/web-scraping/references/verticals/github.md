@@ -28,29 +28,6 @@ web_extract action=vertical extractor=github_repo url="https://github.com/can135
 
 ---
 
-## `gitingest`
-
-**Matches:** `https://github.com/:owner/:repo` or `https://gitingest.com/:owner/:repo`
-
-LLM-ready codebase digest via GitIngest. Use this when you need prompt-friendly repository content instead of GitHub API metadata. Supports GitIngest query options on the URL: `max_file_size`, `pattern_type=include|exclude`, and `pattern`.
-
-### Example
-
-```
-web_extract action=vertical extractor=gitingest url="https://github.com/coderamp-labs/gitingest"
-web_extract action=vertical extractor=gitingest url="https://gitingest.com/coderamp-labs/gitingest?max_file_size=50&pattern_type=include&pattern=src/**/*.py"
-```
-
-**Returns:** owner, repo, repoUrl, shortRepoUrl, summary, digestUrl, tree, content, contentChars, contentTruncated, defaultMaxFileSizeKb, patternType, pattern
-
-### Rules
-
-- Use `github_repo` for metadata, README, and a shallow file tree.
-- Use `gitingest` when you need a digest formatted for LLM codebase review.
-- Large digests are bounded in tool output; use `digestUrl` from the result for the full GitIngest text file when available.
-
----
-
 ## `github_issue`
 
 **Matches:** `https://github.com/:owner/:repo/issues/:number`

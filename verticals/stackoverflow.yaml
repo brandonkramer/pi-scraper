@@ -1,0 +1,81 @@
+# Vertical manifest v1 — `kind` selects the runtime in src/extract/vertical/.
+version: 1
+order: 18
+name: stackoverflow
+# api-json-aggregate: parallel JSON requests (questions + answers + comments).
+kind: api-json-aggregate
+description: Stack Overflow question metadata, answers, and comments via the Stack Exchange API.
+urlPatterns:
+  - https://stackoverflow.com/questions/:id
+  - https://stackoverflow.com/questions/:id/:slug*
+# Runtime requirements for the scrape host.
+requirements:
+  requiresBrowser: false
+  requiresLLM: false
+  requiresCloud: false
+# Declared output facets (discovery / tooling).
+capabilities:
+  - question_metadata
+  - answers
+  - comments
+source: builtin
+# Parallel JSON HTTP requests; each key is scope for extract (@.question, @.answers, …).
+requests:
+  # Question body and metadata (Stack Exchange questions/{id}, filter=withbody).
+  question:
+    urlTemplate: https://api.stackexchange.com/2.3/questions/{{id|encodeURIComponent}}
+    queryPassthrough:
+      - key
+    queryParams:
+      site: stackoverflow
+      filter: withbody
+      pagesize: "1"
+  # Top answers by vote (expanded via /questions/{id}/answers).
+  answers:
+    optional: true
+    urlTemplate: https://api.stackexchange.com/2.3/questions/{{id|encodeURIComponent}}/answers
+    queryPassthrough:
+      - key
+    queryParams:
+      site: stackoverflow
+      filter: withbody
+      order: desc
+      sort: votes
+      pagesize: "30"
+  # Top comments by score on the question.
+  comments:
+    optional: true
+    urlTemplate: https://api.stackexchange.com/2.3/questions/{{id|encodeURIComponent}}/comments
+    queryPassthrough:
+      - key
+    queryParams:
+      site: stackoverflow
+      filter: withbody
+      order: desc
+      sort: votes
+      pagesize: "30"
+# Fail when the Stack Exchange API returns an error payload.
+throwIf:
+  path: "@.question.error_message"
+# Output projection: aggregate uses @.scope paths and |transforms.
+extract:
+  id: "@.question.items[0].question_id|number"
+  slug: "{{slug}}"
+  title: "@.question.items[0].title"
+  body: "@.question.items[0].body"
+  tags: "@.question.items[0].tags"
+  score: "@.question.items[0].score|number"
+  viewCount: "@.question.items[0].view_count|number"
+  answerCount: "@.question.items[0].answer_count|number"
+  isAnswered: "@.question.items[0].is_answered|trueOnly"
+  link: "@.question.items[0].link"
+  acceptedAnswerId: "@.question.items[0].accepted_answer_id"
+  createdAt: "@.question.items[0].creation_date|number"
+  lastActivityAt: "@.question.items[0].last_activity_date|number"
+  owner:
+    displayName: "@.question.items[0].owner.display_name"
+    reputation: "@.question.items[0].owner.reputation|number"
+    profileUrl: "@.question.items[0].owner.link"
+    userId: "@.question.items[0].owner.user_id|number"
+  answers: "@.answers.items|map:id=answer_id,body=body,score=score,isAccepted=is_accepted,createdAt=creation_date,lastActivityAt=last_activity_date,owner=owner.display_name|compact"
+  comments: "@.comments.items|map:id=comment_id,body=body,score=score,createdAt=creation_date,owner=owner.display_name|compact"
