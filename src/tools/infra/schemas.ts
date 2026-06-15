@@ -18,9 +18,7 @@ export const sessionOptionSchema = {
 } as const;
 
 export const modelProviderOptionSchema = {
-	provider: Type.Optional(
-		Type.Unsafe<string>({ description: "Model/auto/off" }),
-	),
+	provider: Type.Optional(Type.Unsafe<string>({ description: "Model/auto/off" })),
 } as const;
 
 export const scrapeOutputOptionSchema = {
@@ -30,9 +28,7 @@ export const scrapeOutputOptionSchema = {
 	stealth: Type.Optional(Type.Unsafe<boolean>({})),
 	autoWait: Type.Optional(Type.Unsafe<boolean>({})),
 	browserBackend: Type.Optional(
-		Type.Unsafe<"cloak" | "playwright">({
-			description: "cloak|playwright",
-		}),
+		Type.Unsafe<"cloak" | "playwright">({ enum: ["cloak", "playwright"] }),
 	),
 } as const;
 

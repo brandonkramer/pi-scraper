@@ -81,9 +81,7 @@ export const webScrapeSchema = Type.Object({
 	stealth: Type.Optional(Type.Unsafe<boolean>({})),
 	autoWait: Type.Optional(Type.Unsafe<boolean>({})),
 	browserBackend: Type.Optional(
-		Type.Unsafe<"cloak" | "playwright">({
-			description: "cloak|playwright",
-		}),
+		Type.Unsafe<"cloak" | "playwright">({ enum: ["cloak", "playwright"] }),
 	),
 });
 

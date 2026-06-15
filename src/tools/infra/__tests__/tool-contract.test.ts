@@ -47,6 +47,11 @@ const configOnlyFields = [
 	"maxAgeSeconds",
 ] as const;
 
+// Load-bearing guard. Tool-SELECTION accuracy degrades on description *collision*, not token count
+// (2026 research — docs/research/tool-contract-token-reduction-2026.md). These regexes assert each
+// tool keeps the distinguishing terms a model routes on; never trade them away for token savings.
+// The token ceilings above are the secondary guard — our 7-tool catalog sits far below the ~30-50
+// active-tool accuracy cliff, so collision is the real risk, not size.
 const discriminatorChecks: Record<string, RegExp[]> = {
 	web_scrape: [/read|fetch|extract/iu, /URL|content/iu],
 	web_crawl: [/crawl/iu, /status|list/iu, /pages|linked-page/iu],

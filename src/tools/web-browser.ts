@@ -82,7 +82,7 @@ export const webBrowserSchema = Type.Object({
 	value: Type.Optional(Type.Unsafe<string>({ description: "Value (fill/select)" })),
 	timeoutSeconds: Type.Optional(Type.Unsafe<number>({})),
 	browserBackend: Type.Optional(
-		Type.Unsafe<"cloak" | "playwright">({ description: "cloak|playwright" }),
+		Type.Unsafe<"cloak" | "playwright">({ enum: ["cloak", "playwright"] }),
 	),
 	// Array rotates round-robin per call, but the proxy binds at session-context creation
 	// (session-pool pins it) → "next proxy per new sessionId", not a mid-session IP swap.
@@ -109,7 +109,8 @@ export const webBrowserSchema = Type.Object({
 	caseSensitive: Type.Optional(Type.Unsafe<boolean>({})),
 	detail: Type.Optional(
 		Type.Unsafe<"interactive" | "outline" | "full">({
-			description: "inspect/navigate: outline|interactive|full",
+			enum: ["outline", "interactive", "full"],
+			description: "inspect/navigate",
 		}),
 	),
 	scope: Type.Optional(Type.Unsafe<string>({ description: "inspect: subtree to scan (@eN/CSS)" })),
