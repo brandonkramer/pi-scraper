@@ -1,11 +1,12 @@
 ---
 name: web-scraping
-description: "Use for known URLs/content to scrape/read with fast or browser mode, summarize, map robots/sitemaps/llms, crawl links, batch URLs, diff snapshots, extract JSON/regex/verticals/selector, get YouTube transcripts/captions, get responseId/jobId, drive/operate a live page interactively (navigate/click/fill/select via web_browser), not search/research. Verticals: github/gitlab/stackoverflow/wikipedia/npm/pypi/crates/docker/youtube/reddit/hn/arxiv/hf/deepwiki/ossinsight/docsite"
+description: "Use for known URLs/content to scrape/read with fast or browser mode, summarize, map robots/sitemaps/llms, crawl links, batch URLs, diff snapshots, extract JSON/regex/verticals/selector, get YouTube transcripts/captions, get responseId/jobId, drive/operate a live page interactively (navigate/click/fill/select via web_browser), not search/research. Verticals: github/gitlab/stackoverflow/wikipedia/npm/pypi/crates/docker/youtube/reddit/hn/arxiv/hf/deepwiki/ossinsight/docsite."
 ---
 
 ## How to choose
 
 1. **URL from a known site?** → use `web_extract action=vertical extractor=<name>` with the matching vertical (table below). Hits APIs directly — no HTML scraping. (GitHub, YouTube transcripts, npm, Reddit, Stack Overflow, PyPI, arXiv, Hugging Face, etc.)
+  If the vertical returns `URL metadata only`, `404`, empty data, or `not found`, check the vertical's reference page for fallback guidance.
 2. **Need the raw page content?** → `web_scrape`. Read a single URL. Add `mode=fingerprint` if bot-protected.
 3. **Need JS rendering, bot mitigation, or logged-in pages?** → use `mode=browser` (CloakBrowser default; `browserBackend=playwright` opt-out).
 4. **Need a summary?** → `web_extract action=summarize`. **Need structured data?** → `web_extract` with pattern (sections/regex/excerpts), selector (CSS class/ID/attribute/XPath), css-extract/xpath-extract (field-mapped JSON), regex-extract (capture groups), cosine (relevance scoring), or adhoc (LLM). For images/files, extract the URL then use `web_scrape saveToFile=true`.
