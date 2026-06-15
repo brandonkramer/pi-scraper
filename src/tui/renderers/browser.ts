@@ -1,7 +1,7 @@
 import type { PiToolShell, ToolContext } from "../../types.ts";
 import { toolExpandHint } from "../tool-labels.ts";
 import { toolProgressLayout } from "../tool-progress.ts";
-import { formatBytes, formatDuration, toolResource } from "../tool-resource.ts";
+import { formatBytes, formatDuration, toolResourceStatus } from "../tool-resource.ts";
 import {
 	buildToolResultTree,
 	toolResultTree,
@@ -56,7 +56,8 @@ export function renderWebBrowserResult(
 	const sections = resultSections(data);
 	return toolProgressLayout(
 		{
-			body: () => (url ? toolResource({ url, state: "done", theme }) : summary),
+			body: (width) =>
+				url ? toolResourceStatus({ url, label: "done", state: "done", width, theme }) : summary,
 			summary: url ? summary : undefined,
 			expanded,
 			// Per-action result tree: snapshot refs, screenshot image facts, or evaluate output.
