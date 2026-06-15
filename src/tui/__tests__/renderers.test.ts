@@ -521,6 +521,26 @@ describe("web tool renderers", () => {
 		expect(rendered).not.toContain("result");
 	});
 
+	it("renders vertical extraction failure with code and underlying message", () => {
+		const result = toolResult({
+			text: "└─ ✕ reddit failed · EXTRACTION_FAILED",
+			data: {
+				extractor: "reddit",
+				url: "https://www.reddit.com/r/programming/comments/zzz/nope/",
+				error: {
+					code: "EXTRACTION_FAILED",
+					message: "page.evaluate: Execution context was destroyed",
+					retryable: false,
+				},
+			},
+			summary: "└─ ✕ reddit failed · EXTRACTION_FAILED",
+		});
+		const rendered = text(webExtractTool.renderResult?.(result, { expanded: true }));
+		expect(rendered).toContain("reddit failed");
+		expect(rendered).toContain("EXTRACTION_FAILED");
+		expect(rendered).toContain("Execution context was destroyed");
+	});
+
 	it("shows generic vertical data when no specialized section matches", () => {
 		const result = toolResult({
 			text: "ok",

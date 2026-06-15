@@ -292,7 +292,8 @@ function verticalExtractorSummary(
 		return `${name} returned URL metadata only (${blocked.reason ?? ""})`;
 	}
 	if (result.error) {
-		return `\u2514\u2500 \u2715 ${name} failed \u00B7 ${result.error.code}`;
+		const detail = [result.error.code, result.error.message].filter(Boolean).join(" \u00B7 ");
+		return `\u2514\u2500 \u2715 ${name} failed \u00B7 ${detail}`;
 	}
 	const [metaLine] = extractorPreview(result.data);
 	const details = [metaLine, browserFallbackLabel(result.browserFallback)]
@@ -317,7 +318,12 @@ function verticalExtractorText(
 			.join("\n");
 	}
 	if (result.error) {
-		return `\u2514\u2500 \u2715 ${name} failed \u00B7 ${result.error.code}`;
+		return [
+			`\u2514\u2500 \u2715 ${name} failed \u00B7 ${result.error.code}${result.error.message ? ` \u00B7 ${result.error.message}` : ""}`,
+			attemptedText(result.sources?.map((source) => source.url)),
+		]
+			.filter(Boolean)
+			.join("\n");
 	}
 	const [metaLine] = extractorPreview(result.data);
 	const details = [metaLine, browserFallbackLabel(result.browserFallback)]

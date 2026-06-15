@@ -4,7 +4,9 @@ There are two Reddit extractors: `reddit` (single post with top comments) and `r
 
 Both use page fetch with robots.txt enforcement. They iterate through multiple API endpoints (`.json` suffix + old.reddit.com fallback) to handle blocking.
 
-Both manifests declare `requiresBrowser: true`, so `web_extract action=vertical` defaults them to `mode=browser browserBackend=cloak` (the `.json` fetch runs inside the cloaked browser, carrying its cookies + JS-challenge pass). Override with an explicit mode, e.g. `mode=fingerprint`, to opt out.
+Both manifests declare `requiresBrowser: true`, so `web_extract action=vertical` defaults them to `mode=browser browserBackend=cloak` (the `.json` fetch runs inside the cloaked browser, carrying its cookies + JS-challenge pass).
+
+> **Don't override the mode for Reddit.** Reddit now 403s the `.json` endpoints over plain HTTP and fingerprinted TLS alike, so `mode=fingerprint` (or any non-browser mode) silently degrades to `URL metadata only` — title/comments come back empty. Only `mode=browser browserBackend=cloak` returns structured data. Leave the default.
 
 ---
 

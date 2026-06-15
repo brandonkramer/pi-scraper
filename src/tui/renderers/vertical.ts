@@ -42,12 +42,16 @@ export function renderVerticalResult(
 	const wrapper = details?.data as VerticalData | undefined;
 	const name = typeof wrapper?.extractor === "string" ? wrapper.extractor : "extractor";
 
-	const error = (wrapper?.error ?? details?.error) as { code?: string } | undefined;
-	if (error)
+	const error = (wrapper?.error ?? details?.error) as
+		| { code?: string; message?: string }
+		| undefined;
+	if (error) {
+		const detail = [error.code ?? "FAILED", error.message].filter(Boolean).join(" \u00B7 ");
 		return renderVerticalText(
 			() =>
-				`\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${error.code ?? "FAILED"}`, theme)}`,
+				`\u2514\u2500 ${failure("\u2715", theme)} ${name} failed${muted(` \u00B7 ${detail}`, theme)}`,
 		);
+	}
 
 	const data = wrapper?.data as VerticalData | undefined;
 	const blocked = (data as { source?: BlockedSource & { blocked?: boolean } } | undefined)?.source;
