@@ -54,7 +54,7 @@ Ask naturally; Pi can choose the right web tool automatically:
 | `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 179 |
 | `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 51 |
 | `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 151 |
-| `web_browser` | 🖱️ Interactive | Driving a live page over steps: navigate, click, fill, select, inspect, read, screenshot, evaluate (stateful `@eN` refs). | 493 |
+| `web_browser` | 🖱️ Interactive | Driving a live page over steps: navigate, click, fill, select, inspect, read, screenshot, evaluate (stateful `@eN` refs). | 461 |
 | `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 407 |
 | `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 55 |
 
