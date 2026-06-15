@@ -14,7 +14,7 @@ urlPatterns:
   - https://reddit.com/r/:subreddit/:sort
 # Runtime requirements for the scrape host.
 requirements:
-  requiresBrowser: false
+  requiresBrowser: true
   requiresLLM: false
   requiresCloud: false
 # Declared output facets (discovery / tooling).

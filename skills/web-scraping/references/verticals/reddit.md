@@ -1,8 +1,10 @@
 # Reddit vertical extractors
 
-There are two Reddit extractors: `reddit` (single post with top comments) and `reddit-listing` (subreddit feed).
+There are two Reddit extractors: `reddit` (single post with top comments) and `reddit_listing` (subreddit feed).
 
 Both use page fetch with robots.txt enforcement. They iterate through multiple API endpoints (`.json` suffix + old.reddit.com fallback) to handle blocking.
+
+Both manifests declare `requiresBrowser: true`, so `web_extract action=vertical` defaults them to `mode=browser browserBackend=cloak` (the `.json` fetch runs inside the cloaked browser, carrying its cookies + JS-challenge pass). Override with an explicit mode, e.g. `mode=fingerprint`, to opt out.
 
 ---
 
@@ -23,7 +25,7 @@ web_extract action=reddit url="https://www.reddit.com/r/typescript/comments/1abc
 
 ---
 
-## `reddit-listing` — Subreddit feed
+## `reddit_listing` — Subreddit feed
 
 **Matches:**
 - `https://www.reddit.com/r/:subreddit` (default: hot)
@@ -35,7 +37,7 @@ web_extract action=reddit url="https://www.reddit.com/r/typescript/comments/1abc
 ### Example
 
 ```
-web_extract action=reddit-listing url="https://www.reddit.com/r/typescript"
+web_extract action=reddit_listing url="https://www.reddit.com/r/typescript"
 ```
 
 **Returns:** subreddit, sort, posts[{id, title, author, score, numComments, url, permalink, createdUtc, isNsfw, isSpoiler, flairText, linkFlair}], source
@@ -48,7 +50,7 @@ web_extract action=reddit-listing url="https://www.reddit.com/r/typescript"
 
 ## Fallback when the vertical fails
 
-If the vertical returns `URL metadata only` (Reddit's JSON API is blocked), the page is still readable. Fall back to:
+If the vertical still returns `URL metadata only` (blocked even through the cloaked browser, or CloakBrowser unavailable), the page is still readable. Fall back to:
 - `web_browser` with `browserBackend=cloak` — drives a real browser, handles bot mitigation, returns the accessibility tree with comments, navigation, and user profiles
 - Or `web_scrape` with `mode=browser browserBackend=cloak` — stateless read with a cloaked browser
 

@@ -11,8 +11,9 @@ urlPatterns:
   - https://reddit.com/r/:subreddit/comments/:postId/:slug*
   - https://redd.it/:postId
 # Runtime requirements for the scrape host.
+# requiresBrowser:true → web_extract defaults this vertical to mode:browser+cloak (Reddit 403s plain HTTP).
 requirements:
-  requiresBrowser: false
+  requiresBrowser: true
   requiresLLM: false
   requiresCloud: false
 # Declared output facets (discovery / tooling).

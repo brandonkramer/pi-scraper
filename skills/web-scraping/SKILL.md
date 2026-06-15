@@ -62,7 +62,7 @@ Use `web_extract action=vertical extractor=<name> url=<url>` — bypasses HTML s
 | `hub.docker.com/r/:ns/:repo` or `_/:repo` | `docker_hub` | | [ref](references/verticals/docker-hub.md) |
 | YouTube video (`watch?v=`, `youtu.be`, `shorts`) — metadata, comments, transcripts/captions | `youtube` | | [ref](references/verticals/youtube.md) |
 | reddit post (`/r/:sub/comments/:id`, `redd.it/:id`) | `reddit` | | [ref](references/verticals/reddit.md) |
-| subreddit feed (`/r/:sub` + sort) | `reddit-listing` | | [ref](references/verticals/reddit.md) |
+| subreddit feed (`/r/:sub` + sort) | `reddit_listing` | | [ref](references/verticals/reddit.md) |
 | `news.ycombinator.com/item?id=:id` | `hackernews` | | [ref](references/verticals/hackernews.md) |
 | `stackoverflow.com/questions/:id` or `/:id/:slug` | `stackoverflow` | | [ref](references/verticals/stackoverflow.md) |
 | `en.wikipedia.org/wiki/:title` or `:lang.wikipedia.org/wiki/:title` | `wikipedia` | | [ref](references/verticals/wikipedia.md) |

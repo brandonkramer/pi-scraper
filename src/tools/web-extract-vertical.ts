@@ -99,13 +99,14 @@ export async function runDeterministicExtractor(
 	}
 	const extractor: string = params.extractor;
 	const url: string = params.url;
+	const effectiveParams = await resolveVerticalBrowserParams(params, extractor);
 	const config = await loadEffectiveConfig();
 	await emitProgress(onUpdate, {
 		state: "processing",
 		url,
 		message: `extractor ${extractor}`,
 	});
-	const browser = await maybeOpenVerticalBrowser(url, params, options, signal, onUpdate);
+	const browser = await maybeOpenVerticalBrowser(url, effectiveParams, options, signal, onUpdate);
 	try {
 		const { runVerticalExtractor } = await loadVerticalRegistry();
 		const result = await runVerticalExtractor(
@@ -136,7 +137,7 @@ export async function runDeterministicExtractor(
 					...result,
 					browserFallback: {
 						used: true,
-						backend: params.browserBackend ?? "cloak",
+						backend: effectiveParams.browserBackend ?? "cloak",
 					},
 				}
 			: result;
@@ -163,6 +164,22 @@ interface VerticalBrowserSession {
 	prerenderedPage: VerticalExtractorPage;
 	client: Pick<HttpClient, "fetchUrl">;
 	close(): Promise<void>;
+}
+
+/**
+ * Manifests declaring requirements.requiresBrowser:true (e.g. Reddit, which 403s plain HTTP)
+ * escalate to mode:"browser" + cloak backend — but only when the caller did not pick a mode, so
+ * explicit overrides like mode:"fingerprint" still opt out. Vertical-agnostic: any blocked vertical
+ * opts in via its manifest, no per-name branching here.
+ */
+async function resolveVerticalBrowserParams(params: Params, extractor: string): Promise<Params> {
+	if (params.mode !== undefined) return params;
+	const { listExtractorCapabilities } = await loadVerticalRegistry();
+	const requiresBrowser =
+		listExtractorCapabilities().find((cap) => cap.name === extractor)?.requiresBrowser ?? false;
+	if (!requiresBrowser) return params;
+	// ponytail: backend pinned to cloak (Reddit's wall needs it); add a manifest backend field if a vertical needs playwright.
+	return { ...params, mode: "browser", browserBackend: params.browserBackend ?? "cloak" };
 }
 
 /**

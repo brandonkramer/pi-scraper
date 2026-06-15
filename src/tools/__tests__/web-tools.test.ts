@@ -80,6 +80,38 @@ describe("selected web tool handlers", () => {
 		expect(result.content[0]?.text).toContain("browser fallback · cloak");
 	});
 
+	it("defaults requiresBrowser verticals to browser+cloak when mode unset", async () => {
+		let opened: { sessionId?: string; browserBackend?: string } | undefined;
+		const tool = createWebExtractTool({
+			openBrowserFetchSession: async (input) => {
+				opened = input;
+				return {
+					rendered: { url: input.url, finalUrl: input.url, status: 200, html: "" },
+					pageFetch: async () => ({
+						status: 200,
+						text: "[]",
+						finalUrl: input.url,
+						contentType: "application/json",
+					}),
+					close: async () => {
+						/* no-op */
+					},
+				};
+			},
+		});
+		await tool.execute(
+			"call",
+			{
+				action: "vertical",
+				extractor: "reddit",
+				url: "https://www.reddit.com/r/typescript/comments/1abcde/x/",
+			},
+			signal,
+		);
+		expect(opened?.browserBackend).toBe("cloak");
+		expect(opened?.sessionId).toMatch(/^vertical-/u);
+	});
+
 	it("keeps web_extract adapter vertical-agnostic", () => {
 		const source = readFileSync(new URL("../web-extract.ts", import.meta.url), "utf8");
 
