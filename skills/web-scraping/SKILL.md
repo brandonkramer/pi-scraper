@@ -32,7 +32,7 @@ Each tool has a reference with full args, examples, and rules.
 | `web_scrape` + `diff` | Diff current content against stored snapshot | [ref](references/tools/web_diff.md) |
 | `web_extract` | Vertical/pattern/selector/strategy/adhoc extraction | [ref](references/tools/web_extract.md) |
 | `web_get_result` | Retrieve stored result by responseId/jobId/snapshot | [ref](references/tools/web_get_result.md) |
-| `web_browser` | Drive a live page: navigate/click/fill/select/snapshot + capture/screenshot/evaluate/exportCookies (stateful, `sessionId` required) | [ref](references/tools/web_browser.md) |
+| `web_browser` | Drive a live page: navigate/click/fill/select/inspect + read/screenshot/evaluate/exportCookies (stateful, `sessionId` required) | [ref](references/tools/web_browser.md) |
 
 ## Proxy quick rules
 

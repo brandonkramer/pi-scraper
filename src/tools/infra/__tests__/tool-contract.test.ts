@@ -53,7 +53,7 @@ const discriminatorChecks: Record<string, RegExp[]> = {
 	web_extract: [/verticals?|extractors?/iu, /patterns|regex/iu, /JSON\/schema/iu],
 	web_get_result: [/retrieve/iu, /stored response|job manifest/iu],
 	web_browser: [
-		/navigate|click|fill|select|snapshot|capture|screenshot|evaluate/iu,
+		/navigate|click|fill|select|inspect|read|screenshot|evaluate/iu,
 		/sessionId|stateful|live page/iu,
 	],
 };

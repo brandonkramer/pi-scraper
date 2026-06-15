@@ -1,6 +1,6 @@
 # `web_browser`
 
-Drive a **live page** over multiple steps: navigate, click, fill, select, snapshot — plus capture, screenshot, evaluate, exportCookies. **Stateful** — the page persists across calls, keyed by `sessionId`.
+Drive a **live page** over multiple steps: navigate, click, fill, select, inspect — plus read, screenshot, evaluate, exportCookies. **Stateful** — the page persists across calls, keyed by `sessionId`.
 
 > **`mode=browser` vs `web_browser`:** `mode=browser` renders and *reads* one URL (a stateless scrape). `web_browser` *operates* a page across steps (stateful session, clickable `@eN` refs). Different tools — read once vs drive.
 
@@ -12,19 +12,19 @@ Drive a **live page** over multiple steps: navigate, click, fill, select, snapsh
 | `click` | `selector` | Click an element |
 | `fill` | `selector` + `value` | Type into an input |
 | `select` | `selector` + `value` | Choose a `<select>` option |
-| `snapshot` | — | Re-read the page's interactive elements |
-| `capture` | — | Materialize the live page (post-interaction DOM) as markdown/text/html; add `storeCapture=true` to persist as a `responseId` |
+| `inspect` | — | Re-read the page's interactive elements (returns the a11y **snapshot** + `@eN` refs — how to *drive* the page) |
+| `read` | — | Extract the live page's content (post-interaction DOM) as markdown/text/html — what the page *says*; add `storeCapture=true` to persist as a `responseId` |
 | `screenshot` | — | Save a PNG of the page (or a `selector` element) to disk → `blobPath` + `responseId`. **Binary artifact, not inlined** (see warning below) |
 | `evaluate` | `script` | Run JS in the page → JSON-serialized result (30 s default timeout, output capped at 10 000 chars) |
 | `exportCookies` | `scopeUrl` | Copy the session's cookies for `scopeUrl` into the HTTP-session cookie jar; returns **counts only, never values** |
 
-`navigate`/`click`/`fill`/`select`/`snapshot` return the current `url` plus a fresh **snapshot**: an interactive-only accessibility tree (links, buttons, inputs, headings) flattened one-per-line, each carrying an `@eN` ref. Drive off those refs. `capture`/`screenshot`/`evaluate`/`exportCookies` return their own result instead (see below).
+`navigate`/`click`/`fill`/`select`/`inspect` return the current `url` plus a fresh **snapshot**: an interactive-only accessibility tree (links, buttons, inputs, headings) flattened one-per-line, each carrying an `@eN` ref. Drive off those refs. `read`/`screenshot`/`evaluate`/`exportCookies` return their own result instead (see below).
 
 ## Args
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `action` | enum | `navigate` \| `click` \| `fill` \| `select` \| `snapshot` \| `capture` \| `screenshot` \| `evaluate` \| `exportCookies` |
+| `action` | enum | `navigate` \| `click` \| `fill` \| `select` \| `inspect` \| `read` \| `screenshot` \| `evaluate` \| `exportCookies` |
 | `sessionId` | string | **Required.** Persistent page identity across calls |
 | `url` | string | Target (navigate) |
 | `selector` | string | CSS selector, or `@eN` ref from the **latest** snapshot |
@@ -33,8 +33,8 @@ Drive a **live page** over multiple steps: navigate, click, fill, select, snapsh
 | `browserBackend` | enum | `cloak` (default) \| `playwright` |
 | `proxy` | string | Proxy URL for the session |
 | `saveSession` | boolean | Persist cookies/storage for later reuse of this `sessionId` |
-| `storeCapture` | boolean | Persist the result as a retrievable `responseId` (capture/snapshot/screenshot/evaluate) |
-| `format` | enum | Output format for `capture` (markdown default) |
+| `storeCapture` | boolean | Persist the result as a retrievable `responseId` (read/inspect/screenshot/evaluate) |
+| `format` | enum | Output format for `read` (markdown default) |
 | `fullPage` | boolean | Full-page screenshot instead of viewport (screenshot) |
 | `script` | string | JavaScript to run in the page (evaluate) |
 | `scopeUrl` | string | Cookie scope URL (exportCookies; also required when `syncCookiesToHttpSession`) |
@@ -62,7 +62,7 @@ Refs come **from** a snapshot you have already read. You cannot act on a `@eN` y
 web_browser action=navigate sessionId="s1" url="https://example.com/login"
 
 # Re-read the current page's interactive elements
-web_browser action=snapshot sessionId="s1"
+web_browser action=inspect sessionId="s1"
 
 # Fill by CSS selector
 web_browser action=fill sessionId="s1" selector="#email" value="user@example.com"
@@ -83,13 +83,13 @@ web_browser action=navigate sessionId="s1" url="https://example.com" saveSession
 web_browser action=navigate sessionId="s1" url="https://example.com" browserBackend=playwright
 ```
 
-## Capture, screenshot, evaluate, exportCookies
+## Read, screenshot, evaluate, exportCookies
 
 These four act on the **current** live page (after your clicks/fills, no re-navigation) and return their own result instead of a snapshot.
 
 ```
-# Serialize the post-interaction DOM → markdown; persist for web_extract
-web_browser action=capture sessionId="s1" format=markdown storeCapture=true
+# Read the post-interaction DOM → markdown; persist for web_extract
+web_browser action=read sessionId="s1" format=markdown storeCapture=true
 web_extract responseId="<id>" action=adhoc prompt="list orders"
 
 # Screenshot → writes a PNG to disk, returns blobPath + responseId

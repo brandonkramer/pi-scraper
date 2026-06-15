@@ -31,8 +31,8 @@ const actionSchema = Type.Unsafe<
 	| "click"
 	| "fill"
 	| "select"
-	| "snapshot"
-	| "capture"
+	| "inspect"
+	| "read"
 	| "exportCookies"
 	| "screenshot"
 	| "evaluate"
@@ -42,13 +42,26 @@ const actionSchema = Type.Unsafe<
 		"click",
 		"fill",
 		"select",
-		"snapshot",
-		"capture",
+		"inspect",
+		"read",
 		"exportCookies",
 		"screenshot",
 		"evaluate",
 	],
 });
+
+/** Per-action glyph for the call header: `web_browser <glyph> <action>`. */
+const ACTION_GLYPH: Record<string, string> = {
+	navigate: "🧭",
+	click: "🖱️",
+	fill: "📝",
+	select: "🔽",
+	inspect: "💾",
+	read: "📌",
+	exportCookies: "🍪",
+	screenshot: "📸",
+	evaluate: "⏳",
+};
 
 export const webBrowserSchema = Type.Object({
 	action: actionSchema,
@@ -57,7 +70,7 @@ export const webBrowserSchema = Type.Object({
 	selector: Type.Optional(
 		Type.Unsafe<string>({
 			description:
-				"CSS selector, or @eN ref from the latest snapshot (stale after the page changes)",
+				"CSS selector, or @eN ref from the latest inspect (stale after the page changes)",
 		}),
 	),
 	value: Type.Optional(Type.Unsafe<string>({ description: "Value (fill/select)" })),
@@ -83,7 +96,7 @@ export const webBrowserTool = defineWebTool({
 	name: "web_browser",
 	label: "Browser",
 	description:
-		"Drive live page: navigate|click|fill|select|snapshot|capture|exportCookies|screenshot|evaluate. sessionId required.",
+		"Drive a live page (sessionId required): navigate · click/fill/select · inspect (re-read @eN refs to drive) · read (page content) · screenshot · evaluate · exportCookies.",
 	parameters: webBrowserSchema,
 	async execute(_id, params: Params, signal) {
 		if (!params.sessionId)
@@ -119,7 +132,7 @@ export const webBrowserTool = defineWebTool({
 			if (params.action === "exportCookies") {
 				return await runExportCookies(params);
 			}
-			if (params.action === "capture") {
+			if (params.action === "read") {
 				return await runCapture(params, signal);
 			}
 			if (params.action === "screenshot") {
@@ -129,9 +142,11 @@ export const webBrowserTool = defineWebTool({
 				return await runEvaluate(params, signal);
 			}
 
+			// Tool-facing "inspect" maps to the internal browser "snapshot" primitive (a11y tree).
+			const actionLabel = params.action;
 			const r = await browserAct(
 				{
-					action: params.action,
+					action: params.action === "inspect" ? "snapshot" : params.action,
 					sessionId: params.sessionId,
 					url: params.url,
 					selector: params.selector,
@@ -155,11 +170,11 @@ export const webBrowserTool = defineWebTool({
 				cookieNotice = `\n\n---\nAuth carry-over only: exported ${exported.cookieCount} cookie(s) for ${exported.scopeUrl} to HTTP session "${exported.targetSessionId}" (${exported.domains.join(", ") || "none"}).`;
 			}
 
-			const baseText = `${r.action} → ${r.url}\n\n${r.snapshot}${cookieNotice}`;
+			const baseText = `${actionLabel} → ${r.url}\n\n${r.snapshot}${cookieNotice}`;
 			if (!shouldStoreCapture(params)) {
 				return toolResult({
 					text: baseText,
-					data: r,
+					data: { ...r, action: actionLabel },
 					url: r.url,
 					status: r.status,
 					mode: r.backend,
@@ -172,7 +187,7 @@ export const webBrowserTool = defineWebTool({
 
 			const payload = buildBrowserCapturePayload({
 				sessionId: params.sessionId,
-				action: r.action,
+				action: actionLabel,
 				url: r.url,
 				backend: r.backend,
 				snapshot: r.snapshot,
@@ -186,7 +201,7 @@ export const webBrowserTool = defineWebTool({
 			});
 			return toolResult({
 				text: `${baseText}\n\nresponseId: ${stored.responseId}`,
-				data: { ...r, storedCapture: payload },
+				data: { ...r, action: actionLabel, storedCapture: payload },
 				url: r.url,
 				status: r.status,
 				mode: r.backend,
@@ -201,7 +216,13 @@ export const webBrowserTool = defineWebTool({
 	},
 	renderCall: (args, theme) =>
 		// ponytail: url omitted — the result line already shows finalUrl; keep selector (click/fill/select).
-		toolCall("web_browser", [args.action, args.selector ?? ""].filter(Boolean), theme),
+		toolCall(
+			"web_browser",
+			[`${ACTION_GLYPH[args.action] ?? ""} ${args.action}`.trim(), args.selector ?? ""].filter(
+				Boolean,
+			),
+			theme,
+		),
 	renderResult: (result, { expanded }, theme) => renderWebBrowserResult(result, expanded, theme),
 });
 
@@ -219,12 +240,12 @@ async function runCapture(params: Params, signal: AbortSignal) {
 		signal,
 	);
 	const textBody = captured.data.markdown ?? captured.data.text ?? captured.data.html ?? "";
-	const baseText = `capture (${format}) → ${captured.url}\n\n${textBody.slice(0, 4000)}`;
+	const baseText = `read (${format}) → ${captured.url}\n\n${textBody.slice(0, 4000)}`;
 
 	if (!shouldStoreCapture(params)) {
 		return toolResult({
 			text: baseText,
-			data: captured,
+			data: { ...captured, action: "read" },
 			url: captured.url,
 			finalUrl: captured.finalUrl,
 			status: captured.status,
@@ -258,7 +279,7 @@ async function runCapture(params: Params, signal: AbortSignal) {
 	});
 	return toolResult({
 		text: `${baseText}\n\nresponseId: ${stored.responseId}`,
-		data: { ...captured, storedCapture: payload },
+		data: { ...captured, action: "read", storedCapture: payload },
 		url: captured.url,
 		finalUrl: captured.finalUrl,
 		status: captured.status,

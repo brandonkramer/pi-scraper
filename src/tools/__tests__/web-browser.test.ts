@@ -105,7 +105,7 @@ describe("webBrowserTool validation", () => {
 	it("requires sessionId", async () => {
 		const result = await webBrowserTool.execute(
 			"test",
-			{ action: "snapshot", sessionId: "" } as never,
+			{ action: "inspect", sessionId: "" } as never,
 			signal,
 		);
 		expect((result.details as ToolContext).error?.code).toBe("BROWSER_SESSION_MISSING");
@@ -179,7 +179,7 @@ describe("web_browser storeCapture", () => {
 	it("returns responseId when storeCapture is true", async () => {
 		const result = await webBrowserTool.execute(
 			"test",
-			{ action: "snapshot", sessionId: "checkout", storeCapture: true } as never,
+			{ action: "inspect", sessionId: "checkout", storeCapture: true } as never,
 			signal,
 		);
 		const details = result.details as ToolContext;
@@ -192,7 +192,7 @@ describe("web_browser storeCapture", () => {
 	it("retrieves stored browser capture via web_get_result", async () => {
 		const stored = await webBrowserTool.execute(
 			"test",
-			{ action: "snapshot", sessionId: "checkout", storeCapture: true } as never,
+			{ action: "inspect", sessionId: "checkout", storeCapture: true } as never,
 			signal,
 		);
 		const responseId = (stored.details as ToolContext).responseId!;
@@ -208,7 +208,7 @@ describe("web_browser storeCapture", () => {
 	it("behaves as before without storeCapture", async () => {
 		const result = await webBrowserTool.execute(
 			"test",
-			{ action: "snapshot", sessionId: "checkout" } as never,
+			{ action: "inspect", sessionId: "checkout" } as never,
 			signal,
 		);
 		expect((result.details as ToolContext).responseId).toBeUndefined();
@@ -286,16 +286,16 @@ describe("web_extract responseId sources", () => {
 	});
 });
 
-describe("web_browser capture action", () => {
+describe("web_browser read action", () => {
 	it("stores live capture with responseId", async () => {
 		const result = await webBrowserTool.execute(
 			"test",
-			{ action: "capture", sessionId: "checkout", format: "markdown", storeCapture: true } as never,
+			{ action: "read", sessionId: "checkout", format: "markdown", storeCapture: true } as never,
 			signal,
 		);
 		const details = result.details as ToolContext;
 		expect(details.responseId).toBeTruthy();
-		expect(result.content[0]?.text).toContain("capture (markdown)");
+		expect(result.content[0]?.text).toContain("read (markdown)");
 		const stored = await readResponse(details.responseId!, { rootDir });
 		expect(isBrowserCapturePayload(stored.value)).toBe(false);
 		expect((stored.value as { kind: string }).kind).toBe("browser_live_capture");
