@@ -54,7 +54,7 @@ Ask naturally; Pi can choose the right web tool automatically:
 | `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 179 tokens |
 | `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 51 tokens |
 | `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 151 tokens |
-| `web_browser` | 🖱️ Interactive | Driving a live page: navigate, click, fill, select, snapshot. | 155 tokens |
+| `web_browser` | 🖱️ Interactive | Driving a live page over steps: navigate, click, fill, select, inspect, read, screenshot, evaluate (stateful `@eN` refs). | 532 tokens |
 | `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 407 tokens |
 | `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 55 tokens |
 
@@ -82,7 +82,7 @@ Ask naturally; Pi can choose the right web tool automatically:
 | **Map** | `url`, `maxSitemaps` | Site-wide discovery of robots.txt and sitemaps. |
 | **Storage** | `saveToFile` | `true` or `{dir, filename, maxBytes}` for disk storage. |
 | **Retrieval** | `responseId`, `jobId`, `snapshotUrl`, `snapshotName`, `snapshotTag` | Retrieve stored payloads and job manifests. |
-| **Browser** | `action` (navigate/click/fill/select/snapshot), `selector` (CSS or `@eN` ref), `value` | Stateful page driving via `web_browser`; `sessionId` required. |
+| **Browser** | `action` (navigate/click/fill/select/inspect/read/screenshot/evaluate/exportCookies), `selector` (CSS or `@eN` ref), `value`, `scope`/`roles`/`detail` (snapshot ladder), `linesMatching` (read grep), `proxy`/`timezone`/`locale`/`browserProfile` (bind at session start) | Stateful page driving via `web_browser`; `sessionId` required. |
 
 ---
 

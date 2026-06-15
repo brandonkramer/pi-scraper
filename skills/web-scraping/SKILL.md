@@ -1,6 +1,6 @@
 ---
 name: web-scraping
-description: "Use for known URLs/content to scrape/read with fast or browser mode, summarize, map robots/sitemaps/llms, crawl links, batch URLs, diff snapshots, extract JSON/regex/verticals/selector, get YouTube transcripts/captions, get responseId/jobId, drive/operate a live page interactively (navigate/click/fill/select via web_browser), not search/research. Verticals: github/gitlab/stackoverflow/wikipedia/npm/pypi/crates/docker/youtube/reddit/hn/arxiv/hf/deepwiki/ossinsight/docsite."
+description: "Use for known URLs/content to scrape/read with fast or browser mode, summarize, map robots/sitemaps/llms, crawl links, batch URLs, diff snapshots, extract JSON/regex/verticals/selector, get YouTube transcripts/captions, get responseId/jobId, drive/operate a live page across steps with web_browser (navigate/click/fill/select/read/screenshot/evaluate, persistent logged-in sessions), not search/research. Verticals: github/gitlab/stackoverflow/wikipedia/npm/pypi/crates/docker/youtube/reddit/hn/arxiv/hf/deepwiki/ossinsight/docsite."
 ---
 
 ## How to choose
@@ -22,6 +22,7 @@ Each tool has a reference with full args, examples, and rules.
 
 | Tool | When | Ref |
 |------|------|-----|
+| `web_browser` | Drive a live page: navigate/click/fill/select/inspect + read/screenshot/evaluate/exportCookies (stateful, `sessionId` required) | [ref](references/tools/web_browser.md) |
 | `web_scrape` | Read a single URL or inline content (check verticals table first for known sites) | [ref](references/tools/web_scrape.md) |
 | `web_scrape format=raw` | Verify raw server output (no transformations) | [ref](references/tools/web_scrape.md) |
 | `web_scrape format=text` | Get plain text with all HTML stripped | [ref](references/tools/web_scrape.md) |
@@ -32,7 +33,6 @@ Each tool has a reference with full args, examples, and rules.
 | `web_scrape` + `diff` | Diff current content against stored snapshot | [ref](references/tools/web_diff.md) |
 | `web_extract` | Vertical/pattern/selector/strategy/adhoc extraction | [ref](references/tools/web_extract.md) |
 | `web_get_result` | Retrieve stored result by responseId/jobId/snapshot | [ref](references/tools/web_get_result.md) |
-| `web_browser` | Drive a live page: navigate/click/fill/select/inspect + read/screenshot/evaluate/exportCookies (stateful, `sessionId` required) | [ref](references/tools/web_browser.md) |
 
 ## Proxy quick rules
 
@@ -104,4 +104,4 @@ web_scrape  url=".../dashboard" mode=browser sessionId="s1"  # same authed conte
 web_extract url=".../data" action=adhoc prompt="…" mode=browser sessionId="s1"
 ```
 
-`saveSession=true` persists to disk (resume after a restart); `clearSession=true` resets. Continuity holds only within `mode=browser` — `fast`/`fingerprint` use a separate cookie jar keyed by the same id. The handoff shares the **session** (cookies), not the live page's current view; the other tools open a fresh tab and re-navigate.
+`saveSession=true` persists to disk (resume after a restart). To wipe a session, pass `clearSession=true` on a scrape-family call (`web_scrape`/`web_extract`/`web_crawl`/`web_batch`) — `web_browser` itself has no `clearSession`. Continuity holds only within `mode=browser` — `fast`/`fingerprint` use a separate cookie jar keyed by the same id. The handoff shares the **session** (cookies), not the live page's current view; the other tools open a fresh tab and re-navigate.
