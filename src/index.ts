@@ -1,10 +1,9 @@
 /** @file Index module. */
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-import { closeAllBrowserSessions } from "./browser/session-pool.ts";
 import { registerWebCommands } from "./commands/register.ts";
-import { registerSessionStartHealthChecks, type PiHealthRegistrar } from "./health.ts";
-import { closeStorageDbs } from "./storage/db/open.ts";
+import { registerSessionStartHealthChecks } from "./health.ts";
+import { registerWebLifecycle } from "./lifecycle.ts";
 import { registerWebTools } from "./tools/infra/register.ts";
 
 export default async function registerPiScraperExtension(pi: ExtensionAPI): Promise<void> {
@@ -15,9 +14,9 @@ export default async function registerPiScraperExtension(pi: ExtensionAPI): Prom
 	});
 	await registerWebTools(pi);
 	registerWebCommands(pi);
-	registerSessionStartHealthChecks(pi as PiHealthRegistrar);
+	registerSessionStartHealthChecks(pi);
+	registerWebLifecycle(pi);
 	registerToolErrorPropagation(pi);
-	wireCleanupHooks();
 }
 
 function registerToolErrorPropagation(pi: ExtensionAPI): void {
@@ -26,20 +25,4 @@ function registerToolErrorPropagation(pi: ExtensionAPI): void {
 		const err = (event.details as { error?: unknown } | undefined)?.error;
 		return err ? { isError: true } : undefined;
 	});
-}
-
-function wireCleanupHooks(): void {
-	let cleanedUp = false;
-	const cleanup = async (): Promise<void> => {
-		if (cleanedUp) return;
-		cleanedUp = true;
-		await closeStorageDbs();
-		await closeAllBrowserSessions().catch(() => {
-			/* ignore */
-		});
-	};
-	const exitAfter = (code: number) => void cleanup().finally(() => process.exit(code));
-	process.once("SIGTERM", () => exitAfter(143));
-	process.once("SIGINT", () => exitAfter(130));
-	process.once("beforeExit", () => void cleanup());
 }

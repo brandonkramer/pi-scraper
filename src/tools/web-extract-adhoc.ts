@@ -5,11 +5,7 @@ import type { GroundedField } from "../extract/grounding.ts";
 import { sourceNote } from "./infra/agentic-context.ts";
 import type { ToolExecutionContext } from "./infra/define.ts";
 import { storedSourceNote } from "./infra/extract-source.ts";
-import {
-	resolveAdapterFromRegistry,
-	resolveModelAdapterFromContext,
-	resolveProviderPreference,
-} from "./infra/model-adapter.ts";
+import { resolvePreferredModelAdapter, resolveProviderPreference } from "./infra/model-adapter.ts";
 import { modelRegistry } from "./infra/model-registry.ts";
 import {
 	missingModelResult,
@@ -35,10 +31,12 @@ export async function runAdHocExtraction(
 		configProvider: config.modelProvider,
 		capability: "extract",
 	});
-	const adapter =
-		options.modelAdapter ??
-		resolveModelAdapterFromContext(context) ??
-		resolveAdapterFromRegistry(preference, "extract");
+	const adapter = resolvePreferredModelAdapter({
+		explicitAdapter: options.modelAdapter,
+		context,
+		preference,
+		capability: "extract",
+	});
 	if (!adapter) {
 		if (preference === "off") {
 			return missingModelResult(

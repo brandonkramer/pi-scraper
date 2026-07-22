@@ -16,12 +16,15 @@ description: "Use for known URLs/content to scrape/read with fast or browser mod
 8. **Get a previous result back?** → `web_get_result` by responseId, jobId, or snapshot.
 9. **Operate a page (click/fill/submit, multi-step)?** → `web_browser` — stateful driving via `@eN` refs. *Read* a page once → `mode=browser`; *drive* it over steps → `web_browser`.
 
+If a specialized tool is not active, call `web_tools query="<capability>"` first. It searches crawl, map, batch, retrieval, and interactive-browser tools and activates matching tools for the session.
+
 ## Tools
 
 Each tool has a reference with full args, examples, and rules.
 
 | Tool | When | Ref |
 |------|------|-----|
+| `web_tools` | Find and activate specialized web tools on demand | — |
 | `web_browser` | Drive a live page: navigate/click/fill/select/inspect + read/screenshot/evaluate/exportCookies (stateful, `sessionId` required) | [ref](references/tools/web_browser.md) |
 | `web_scrape` | Read a single URL or inline content (check verticals table first for known sites) | [ref](references/tools/web_scrape.md) |
 | `web_scrape format=raw` | Verify raw server output (no transformations) | [ref](references/tools/web_scrape.md) |

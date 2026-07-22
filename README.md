@@ -6,7 +6,7 @@
 
 [![NPM Version](https://img.shields.io/npm/v/pi-scraper?color=blue&style=flat-square)](https://www.npmjs.com/package/pi-scraper)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
-[![Pi Compatibility](https://img.shields.io/badge/pi-%3E%3D0.74.0-purple?style=flat-square)](https://github.com/earendil-works/pi-agent)
+[![Pi Compatibility](https://img.shields.io/badge/pi-%3E%3D0.81.0-purple?style=flat-square)](https://github.com/earendil-works/pi)
 
 `pi-scraper` reads known URLs and sites. Use it to scrape, summarize one page, crawl, map URLs, diff snapshots, retrieve stored results, or download/extract deterministic/structured data — including CloakBrowser-backed browser mode with C++ fingerprint patches and persistent sessions.
 
@@ -50,16 +50,19 @@ Ask naturally; Pi can choose the right web tool automatically:
 
 | Tool | Capability | Best For... | Contract ≈ |
 | :--- | :--- | :--- | :---: |
-| `web_scrape` | 🏠 Local | Reading a single URL as Markdown, Text, or HTML. | 268 |
-| `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 179 |
-| `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 51 |
-| `web_batch` | 📦 Bulk | Scaping multiple independent URLs concurrently. | 151 |
-| `web_browser` | 🖱️ Interactive | Driving a live page over steps: navigate, click, fill, select, inspect, read, screenshot, evaluate (stateful `@eN` refs). | 461 |
-| `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 407 |
-| `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 55 |
+| `web_tools` | 🧭 Loader | Finding and activating specialized web tools on demand. | 119 |
+| `web_scrape` | 🏠 Local | Reading a single URL as Markdown, Text, or HTML. | 213 |
+| `web_crawl` | 🕷️ Resumable | BFS crawling to build local datasets or context packages. | 152 |
+| `web_map` | 🗺️ Discovery | Inventorying URLs via robots.txt, sitemaps, and llms.txt. | 43 |
+| `web_batch` | 📦 Bulk | Scraping multiple independent URLs concurrently. | 141 |
+| `web_browser` | 🖱️ Interactive | Driving a live page over steps: navigate, click, fill, select, inspect, read, screenshot, evaluate (stateful `@eN` refs). | 496 |
+| `web_extract` | 🔍 Structured | Deterministic, selector-based, or LLM-backed extraction. | 392 |
+| `web_get_result` | 📂 Retrieval | Accessing stored results, job manifests, or snapshots. | 52 |
 
 > [!NOTE]
 > **Contract** is the total tokens for the tool declaration.
+>
+> On Pi 0.81+, only `web_scrape`, `web_extract`, and `web_tools` start active. `web_tools` progressively enables crawl, map, batch, retrieval, or interactive-browser capabilities and activates matching tools additively. This reduces the initial declaration budget from 1,489 to 724 tokens (51.4%) while preserving native registration. Hosts without Pi's active-tool API keep all seven web tools active.
 
 ---
 
@@ -207,11 +210,10 @@ Extract structured data using CSS selectors, XPath, or plain text search.
 - **`sourceSpan: null`** — value could not be verified in source (not a failure; field is still returned).
 - Tool summary shows `(verified/total fields source-grounded)`.
 
-### 🤖 Peer-Optional Fallback Model Adapter
-For `web_extract action=summarize` or `action=adhoc` when no explicit adapter is provided:
-- Seamlessly falls back to the user's locally-configured Pi model (OpenAI, Anthropic, Gemini, Bedrock, etc.) if no registered adapter is available.
-- Uses lazy dynamic imports of `@earendil-works/pi-ai` for a **zero install footprint** for users who only use deterministic scraping and crawling.
-- Also participates in the cross-extension `pi:model-adapter/*` event protocol so provider extensions can lend their LLM transport.
+### 🤖 Pi 0.81 Model Adapter
+For `web_extract action=summarize` or `action=adhoc`, an explicitly supplied adapter wins. `provider=auto` then uses Pi's active host model before the cross-extension `pi:model-adapter/*` registry; a named provider selects that registry entry, and `provider=off` disables model use.
+
+A fixed provider/model fallback can be configured through `piAiProvider` and `piAiModel`. Its peer-optional Pi runtime is imported only when both values are set, so deterministic scraping and crawling do not initialize model dependencies.
 
 ---
 
@@ -239,7 +241,7 @@ Configure how the crawler discovers and explores links using the `strategy` para
 | Backend | Default | Browser | Stealth level | Requirement |
 |---------|----------|---------|---------------|-------------|
 | `"cloak"` | ✅ | CloakBrowser Chromium 145 | C++ source-level (48 patches) | Bundled |
-| `"playwright"` | ❌ | Stock Playwright Chromium | JS `page.evaluate()` via `stealth=true` | `npm install playwright` |
+| `"playwright"` | ❌ | Stock Playwright Chromium | JS `page.evaluate()` via `stealth=true` | `bun add playwright` |
 
 ### 🛡️ Fingerprint evasion
 
@@ -438,7 +440,14 @@ Use the `/scrape-config` slash command to manage your settings interactively or 
 /scrape-config scrape-mode browser        # Set default mode to browser
 /scrape-config robots off                 # Disable robots.txt respect
 /scrape-config cache clear                # Wipe the local response cache
+/scrape-config model-provider auto        # Host model, then registered adapters
 ```
+
+To pin the Pi runtime fallback, add `piAiProvider` and `piAiModel` to `~/.pi/scraper/config/web.json`, or set `PI_AI_PROVIDER` and `PI_AI_MODEL`. The adapter follows Pi 0.81 authentication, abort, provider-error, and usage semantics.
+
+Session startup refreshes config/manifests and registers the configured model adapter. Session shutdown unregisters it and closes downloads, browser sessions, and storage without installing process-level exit handlers.
+
+Project manifests are loaded from the current Pi session working directory only when that context is trusted; caches are isolated by working directory and trust state.
 
 ---
 
@@ -448,22 +457,25 @@ If you are contributing to or building on top of `pi-scraper`:
 
 ### Requirements
 - **Node.js**: `>=22.19.0`
-- **Pi**: `>=0.74.0`
+- **Bun**: `>=1.3.14`
+- **Pi**: `>=0.81.0`
+
+Pi supplies its core AI, coding-agent, TUI, and TypeBox modules as shared peers; development pins them to the tested 0.81.1 line without bundling duplicate runtime copies.
 
 ### Build & Test
 ```bash
-npm install        # Install dependencies
-npm run typecheck  # Verify types
-npm test           # Run unit tests
-npm run test:tools # Run tool smoke tests
+bun install        # Install dependencies
+bun run typecheck  # Verify types
+bun test           # Run unit tests
+bun run test:tools # Run tool smoke tests
 ```
 
 ### 🔄 Playwright backend (opt-out)
 
 To use stock Playwright Chromium instead of CloakBrowser:
 ```bash
-npm install playwright
-npx playwright install chromium
+bun add playwright
+bunx playwright install chromium
 ```
 
 ```

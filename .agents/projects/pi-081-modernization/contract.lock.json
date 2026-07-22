@@ -1,0 +1,22 @@
+{
+  "contract_files": {
+    "GOAL.md": "sha256:9c485d1d5a9cf9f6a5d96eb9566ef43e099b13ff5fa2650518b9e49c227c8a6a",
+    "LOOP.md": "sha256:3166c570b5af08a3adbd380ee3a8b5d46b8627b4ec515806f532b2f1244e02be",
+    "PLAN.md": "sha256:68d4e86d414c3938bd80a6d0e0e34410a58d8c36f762d20b15f70d9ed201d3c0",
+    "SPEC.md": "sha256:f31f7ef91a1bd9e192f3a5a35c9fb987e0d3393082ecbff809cc511c312177be",
+    "TASKS.md#contract": "sha256:e5f89985d3fef8c7568e1789775d70cf7cee118cafaebf561567293e30604212",
+    "project.toml#contract": "sha256:8cd2c4a510c150ad2d67b1854a3558e7eb79451a1f3657b3740800ffd4779538"
+  },
+  "contract_sha256": "sha256:325221c34c60bfa06ae54036efdc80ddd5cfabee47818208860a572b365c36b8",
+  "dossier_version": 1,
+  "loop_version": "1.0.0",
+  "project_id": "pi-081-modernization",
+  "schema_version": 2,
+  "spec_version": "1.0.0",
+  "state_files": {
+    "RESEARCH.md": "sha256:139df61650e1abf18b7cb9d573ea9dc506d936a2a8c03d0e168f4d10ee4c4857",
+    "TASKS.md": "sha256:a50b94bd328a050035158ce0e5f66e79b1f096d44cdb4a20ef0fc88fd0693b30",
+    "project.toml": "sha256:e7635e28bbcb6e3566d350d2440e9c57746e566d777976a2b4e4e635543af678"
+  },
+  "state_sha256": "sha256:872f252291c68413caff3e4946f70299051c85c6673c146f5e1dda0c50784535"
+}

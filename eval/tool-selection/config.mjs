@@ -3,6 +3,11 @@
  * data, consumed by score.mjs/run.mjs. Magic numbers live here, not in runner
  * branches (task 79, convention 4).
  */
+import { readFileSync } from "node:fs";
+
+const contractBudget = JSON.parse(
+	readFileSync(new URL("./contract-budget.json", import.meta.url), "utf8"),
+);
 
 /** Gate thresholds. A run FAILs if any metric crosses its bound. */
 export const THRESHOLDS = {
@@ -10,7 +15,8 @@ export const THRESHOLDS = {
 	negativeNoToolPrecision: 0.9,
 	invocationExactArgAccuracy: 0.9,
 	criticalConfusions: 0,
-	contractTokenBudget: 1080,
+	contractTokenBudget: contractBudget.fullCatalogTokenBudget,
+	minimumInitialPromptReduction: contractBudget.minimumInitialPromptReduction,
 };
 
 /** Discriminator args that route within a god-tool; scored for exact match. */

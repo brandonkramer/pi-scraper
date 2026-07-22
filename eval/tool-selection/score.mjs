@@ -170,6 +170,13 @@ export function gateFailures(report) {
 		failures.push(
 			`contract tokens ${String(report.contractTokenEstimate)} > budget ${String(t.contractTokenBudget)}`,
 		);
+	if (
+		report.deferredLoading &&
+		report.deferredLoading.reduction < t.minimumInitialPromptReduction
+	)
+		failures.push(
+			`initial prompt reduction ${pct(report.deferredLoading.reduction)} < ${pct(t.minimumInitialPromptReduction)}`,
+		);
 	return failures;
 }
 

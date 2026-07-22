@@ -30,14 +30,14 @@ To use stock Playwright Chromium instead:
 web_scrape url="https://example.com" mode=browser browserBackend=playwright
 ```
 
-This requires Playwright to be installed: `npm install playwright` and `npx playwright install chromium`.
+This requires Playwright to be installed: `bun add playwright` and `bunx playwright install chromium`.
 
 ## Backend options
 
 | Value | Browser | Stealth at | Requirement |
 |-------|---------|------------|-------------|
 | `"cloak"` (default) | CloakBrowser patched Chromium 145 | C++ source level | Bundled |
-| `"playwright"` | Stock Chromium | JS evaluate (stealth=true) | `npm install playwright` |
+| `"playwright"` | Stock Chromium | JS evaluate (stealth=true) | `bun add playwright` |
 
 ## Session
 

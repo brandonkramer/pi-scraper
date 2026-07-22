@@ -49,11 +49,20 @@ describe("tool-selection score", () => {
 	});
 
 	it("flips the gate when contracts breach the token budget", () => {
-		const bloated = [{ ...leanContracts[0], description: "z".repeat(5000) }];
+		const bloated = [{ ...leanContracts[0], description: "z".repeat(8000) }];
 		const report = score(bloated, correct);
 		expect(report.contractTokenEstimate).toBeGreaterThan(report.thresholds.contractTokenBudget);
 		const failures = gateFailures(report);
 		expect(failures).toHaveLength(1);
 		expect(failures[0]).toMatch(/contract tokens/u);
+	});
+
+	it("flips the gate when deferred loading saves too little prompt space", () => {
+		const report = score(leanContracts, correct);
+		report.deferredLoading = {
+			reduction: report.thresholds.minimumInitialPromptReduction - 0.01,
+		};
+
+		expect(gateFailures(report).join(" ")).toMatch(/initial prompt reduction/u);
 	});
 });

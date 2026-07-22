@@ -2,12 +2,13 @@
 import { describe, expect, it, beforeEach } from "vitest";
 
 import type { ModelResponse } from "../../../extract/adhoc/model.ts";
-import { resolveProviderPreference } from "../model-adapter.ts";
+import { resolvePreferredModelAdapter, resolveProviderPreference } from "../model-adapter.ts";
 import {
 	ModelRegistry,
 	validateAdapterPayload,
 	initModelAdapterProtocol,
 	requestAdapterDiscovery,
+	modelRegistry,
 	type RegisteredAdapter,
 } from "../model-registry.ts";
 
@@ -201,6 +202,45 @@ describe("resolveProviderPreference", () => {
 				capability: "summarize",
 			}),
 		).toBe("ollama");
+	});
+});
+
+describe("resolvePreferredModelAdapter", () => {
+	beforeEach(() => modelRegistry.clear());
+
+	it("honors off even when the Pi host has an active model", () => {
+		const context = {
+			model: { provider: "host" },
+			modelRegistry: {
+				getProvider: () => undefined,
+				getApiKeyAndHeaders: () => Promise.resolve({ ok: false, error: "unused" }),
+			},
+		};
+		expect(
+			resolvePreferredModelAdapter({
+				context,
+				preference: "off",
+				capability: "summarize",
+			}),
+		).toBeUndefined();
+	});
+
+	it("routes an explicit id instead of silently using the Pi host model", () => {
+		const named = fakeAdapter("named");
+		modelRegistry.register(named);
+		const resolved = resolvePreferredModelAdapter({
+			context: {
+				model: { provider: "host" },
+				modelRegistry: {
+					getProvider: () => undefined,
+					getApiKeyAndHeaders: () => Promise.resolve({ ok: false, error: "unused" }),
+				},
+			},
+			preference: "named",
+			capability: "summarize",
+		});
+
+		expect(resolved).toBe(named.adapter);
 	});
 });
 

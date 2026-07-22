@@ -3,6 +3,7 @@ import { type Static, Type } from "typebox";
 
 import type { OpenBrowserFetchSession } from "../browser/playwright.ts";
 import type { ModelAdapter } from "../extract/adhoc/model.ts";
+import type { SymbolIncludeFilter } from "../extract/api-surface/types.ts";
 import type { PatternSectionRequest } from "../extract/pattern/index.ts";
 import type { PatternExcerptRequest, PatternRegexRequest } from "../extract/pattern/types.ts";
 import type { ScrapePipelineDeps } from "../scrape/pipeline.ts";
@@ -88,17 +89,17 @@ export const webExtractSchema = Type.Object({
 	content: Type.Optional(Type.Unsafe<string>({})),
 	responseId: Type.Optional(Type.Unsafe<string>({})),
 	prompt: Type.Optional(Type.Unsafe<string>({})),
-	schema: Type.Optional(Type.Any()),
+	schema: Type.Optional(Type.Unknown()),
 	sentences: Type.Optional(Type.Unsafe<number>({})),
 	bullets: Type.Optional(Type.Unsafe<number>({})),
 	...modelProviderOptionSchema,
 	...scrapeOutputOptionSchema,
 	sourceFormat: Type.Optional(Type.Unsafe<string>({})),
-	include: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
+	include: Type.Optional(Type.Unsafe<SymbolIncludeFilter[]>({})),
 	extractSchema: Type.Optional(extractSchemaPresetSchema),
 	length: Type.Optional(Type.Unsafe<boolean | string>({ type: ["boolean", "string"] })),
-	markers: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
-	contains: Type.Optional(Type.Unsafe<any[]>({})), // oxlint-disable-line typescript/no-explicit-any
+	markers: Type.Optional(Type.Unsafe<string[]>({})),
+	contains: Type.Optional(Type.Unsafe<string[]>({})),
 	excerpts: Type.Optional(
 		Type.Unsafe<PatternExcerptRequest[]>({
 			description: "{needle,before,after,occ}",
@@ -161,9 +162,9 @@ export function createWebExtractTool(
 		parameters: webExtractSchema,
 		async execute(_toolCallId, params: Params, signal, onUpdate, context) {
 			const action = inferExtractAction(params);
-			if (action === "list") return await listDeterministicExtractors();
+			if (action === "list") return await listDeterministicExtractors(context);
 			if (action === "vertical")
-				return await runDeterministicExtractor(params, options, signal, onUpdate);
+				return await runDeterministicExtractor(params, options, signal, onUpdate, context);
 			if (action === "pattern")
 				return await runPatternInspection(params, options, signal, onUpdate);
 			if (action === "surface")

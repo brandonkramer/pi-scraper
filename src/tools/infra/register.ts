@@ -1,8 +1,6 @@
 /** @file Tools register module. */
-import type { ExtensionAPI, ToolDefinition } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-import { cleanupOldDownloads } from "../../http/download-storage.ts";
-import { tryCreatePiAiAdapter } from "../../model-adapter/pi-ai-adapter.ts";
 import { webBatchTool } from "../web-batch.ts";
 import { webBrowserTool } from "../web-browser.ts";
 import { webCrawlTool } from "../web-crawl.ts";
@@ -10,8 +8,18 @@ import { webExtractTool } from "../web-extract.ts";
 import { webGetResultTool } from "../web-get-result.ts";
 import { webMapTool } from "../web-map.ts";
 import { webScrapeTool } from "../web-scrape.ts";
-import type { PiToolRegistrar, WebTool } from "./define.ts";
-import { initModelAdapterProtocol, modelRegistry } from "./model-registry.ts";
+import {
+	configureInitialWebTools,
+	createWebToolsLoader,
+	WEB_TOOL_LOADER_NAME,
+} from "../web-tools.ts";
+import {
+	configureToolFlagReader,
+	type PiToolRegistrar,
+	toPiToolDefinition,
+	type WebTool,
+} from "./define.ts";
+import { initModelAdapterProtocol } from "./model-registry.ts";
 
 export const webTools: readonly WebTool[] = [
 	webScrapeTool,
@@ -25,28 +33,31 @@ export const webTools: readonly WebTool[] = [
 
 export async function registerWebTools(pi: ExtensionAPI | PiToolRegistrar): Promise<void> {
 	initModelAdapterProtocol(pi);
-	for (const tool of webTools) {
-		// ExtensionAPI.registerTool expects ToolDefinition; our WebTools are valid
-		// at runtime but not structurally assignable due to renderCall/theme differences.
-		(pi as ExtensionAPI).registerTool(tool as unknown as ToolDefinition);
-	}
-	// Fire-and-forget TTL cleanup for old downloads
-	cleanupOldDownloads().catch(() => null);
-
-	// Peer-optional pi-ai fallback adapter (env/config-pinned provider/model)
-	const piAi = await tryCreatePiAiAdapter({
-		provider: process.env.PI_AI_PROVIDER,
-		model: process.env.PI_AI_MODEL,
+	configureToolFlagReader((name) => {
+		const value = pi.getFlag?.(name);
+		return typeof value === "string" ? value : undefined;
 	});
-	if (piAi) {
-		const piProvider = process.env.PI_AI_PROVIDER ?? "?";
-		const piModel = process.env.PI_AI_MODEL ?? "?";
-		modelRegistry.register({
-			id: "pi-ai",
-			label: `Pi AI (${piProvider}/${piModel})`,
-			capabilities: ["summarize", "extract"],
-			priority: 30,
-			adapter: piAi,
-		});
+	if (!supportsDeferredToolLoading(pi)) {
+		for (const tool of webTools) pi.registerTool(tool);
+		return;
 	}
+
+	for (const tool of webTools) pi.registerTool(toPiToolDefinition(tool));
+	pi.registerTool(toPiToolDefinition(createWebToolsLoader(pi)));
+	pi.on("session_start", () => configureInitialWebTools(pi));
 }
+
+function supportsDeferredToolLoading(pi: ExtensionAPI | PiToolRegistrar): pi is ExtensionAPI {
+	return (
+		"getActiveTools" in pi &&
+		typeof pi.getActiveTools === "function" &&
+		"getAllTools" in pi &&
+		typeof pi.getAllTools === "function" &&
+		"setActiveTools" in pi &&
+		typeof pi.setActiveTools === "function" &&
+		"on" in pi &&
+		typeof pi.on === "function"
+	);
+}
+
+export const initialWebToolNames = ["web_scrape", "web_extract", WEB_TOOL_LOADER_NAME] as const;

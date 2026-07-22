@@ -8,7 +8,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { Api, AssistantMessage, Model } from "@earendil-works/pi-ai";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type {
@@ -18,7 +18,7 @@ import type {
 	ModelUsage,
 } from "../../extract/adhoc/model.ts";
 import type { ToolContext } from "../../types.ts";
-import type { PiToolRegistrar, WebTool } from "../infra/define.ts";
+import type { PiToolRegistrar, ToolExecutionContext, WebTool } from "../infra/define.ts";
 import {
 	modelRegistry,
 	initModelAdapterProtocol,
@@ -28,8 +28,6 @@ import { registerWebTools } from "../infra/register.ts";
 import { runSelectorExtractionTool } from "../web-extract-selector.ts";
 import { createWebExtractTool, webExtractTool } from "../web-extract.ts";
 import { fakeModelAdapter, fakeScrapeDeps, signal } from "./fixtures.ts";
-
-type HostModel = ExtensionContext["model"];
 
 // ---------------------------------------------------------------------------
 // dispatcher
@@ -517,23 +515,74 @@ describe("web_extract — action=surface", () => {
 // action=adhoc (model-backed extraction)
 // ---------------------------------------------------------------------------
 
-function mockHostExtractAdapter(usage?: ModelUsage): unknown {
-	return {
-		async run<T>(_req: ModelRequest, _signal?: AbortSignal): Promise<ModelResponse<T>> {
-			return { data: { extracted: "host-model data" } as T, usage };
-		},
+function mockPiHostContext(
+	text: string,
+	usage?: ModelUsage,
+	label = "host",
+): { context: ToolExecutionContext; calls: string[] } {
+	const calls: string[] = [];
+	const model: Model<Api> = {
+		id: usage?.model ?? "gpt-4",
+		name: usage?.model ?? "gpt-4",
+		api: "test-api",
+		provider: "pi-host",
+		baseUrl: "https://example.test",
+		reasoning: false,
+		input: ["text"],
+		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+		contextWindow: 10_000,
+		maxTokens: 1_000,
 	};
+	const input = usage?.inputTokens ?? 0;
+	const output = usage?.outputTokens ?? 0;
+	const message: AssistantMessage = {
+		role: "assistant",
+		content: [{ type: "text", text }],
+		api: model.api,
+		provider: model.provider,
+		model: model.id,
+		usage: {
+			input,
+			output,
+			cacheRead: 0,
+			cacheWrite: 0,
+			totalTokens: usage?.totalTokens ?? input + output,
+			cost: {
+				input: 0,
+				output: 0,
+				cacheRead: 0,
+				cacheWrite: 0,
+				total: usage?.costUSD ?? 0,
+			},
+		},
+		stopReason: "stop",
+		timestamp: Date.now(),
+	};
+	const context = {
+		model,
+		modelRegistry: {
+			getProvider: () => ({
+				streamSimple: () => {
+					calls.push(label);
+					return { result: () => Promise.resolve(message) };
+				},
+			}),
+			getApiKeyAndHeaders: () => Promise.resolve({ ok: true as const }),
+		},
+	} as unknown as ToolExecutionContext;
+	return { context, calls };
 }
 
 describe("web_extract — action=adhoc host model via ctx", () => {
 	it("uses ctx.model when no explicit adapter is provided", async () => {
 		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const host = mockPiHostContext('{"extracted":"host-model data"}');
 		const result = await tool.execute(
 			"call",
 			{ url: "https://example.com/page", prompt: "Extract heading." },
 			signal,
 			undefined,
-			{ model: mockHostExtractAdapter() as HostModel },
+			host.context,
 		);
 		expect(
 			(result.details as { data?: { data?: { extracted: string } } }).data?.data?.extracted,
@@ -542,30 +591,32 @@ describe("web_extract — action=adhoc host model via ctx", () => {
 
 	it("forwards usage from host model to envelope", async () => {
 		const usage: ModelUsage = {
-			provider: "pi-host",
+			provider: "pi-host/gpt-4",
 			model: "gpt-4",
 			inputTokens: 200,
 			outputTokens: 75,
 		};
 		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const host = mockPiHostContext('{"extracted":"host-model data"}', usage);
 		const result = await tool.execute(
 			"call",
 			{ url: "https://example.com/page", prompt: "Extract heading." },
 			signal,
 			undefined,
-			{ model: mockHostExtractAdapter(usage) as HostModel },
+			host.context,
 		);
-		expect((result.details as { modelUsage?: ModelUsage }).modelUsage).toEqual(usage);
+		expect((result.details as { modelUsage?: ModelUsage }).modelUsage).toMatchObject(usage);
 	});
 
 	it("does not emit event-bus discover when host model is available", async () => {
 		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const host = mockPiHostContext('{"extracted":"host-model data"}');
 		const result = await tool.execute(
 			"call",
 			{ url: "https://example.com/page", prompt: "Extract heading." },
 			signal,
 			undefined,
-			{ model: mockHostExtractAdapter() as HostModel },
+			host.context,
 		);
 		expect((result.details as { error?: { code: string } }).error).toBeUndefined();
 		expect(
@@ -642,14 +693,6 @@ function fixtureHeadingAdapter(request: ModelRequest): string {
 		: "Summary from provided content.";
 }
 
-function mockHostSummaryAdapter(usage?: ModelUsage): unknown {
-	return {
-		async run<T>(_req: ModelRequest, _signal?: AbortSignal): Promise<ModelResponse<T>> {
-			return { data: "host-model summary" as T, usage };
-		},
-	};
-}
-
 function makeAdapter(label: string): {
 	adapter: { run<T>(_req: ModelRequest, _signal?: AbortSignal): Promise<ModelResponse<T>> };
 	calls: string[];
@@ -677,43 +720,46 @@ function mockAdapter(usage?: ModelUsage): ModelAdapter {
 describe("web_extract — action=summarize host model via ctx", () => {
 	it("uses ctx.model when no explicit adapter is provided", async () => {
 		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const host = mockPiHostContext("host-model summary");
 		const result = await tool.execute(
 			"call",
 			{ action: "summarize", url: "https://example.com/page", sentences: 2 },
 			signal,
 			undefined,
-			{ model: mockHostSummaryAdapter() as HostModel },
+			host.context,
 		);
 		expect(result.content[0]?.text).toContain("host-model summary");
 	});
 
 	it("forwards usage from host model to envelope", async () => {
 		const usage: ModelUsage = {
-			provider: "pi-host",
+			provider: "pi-host/gpt-4",
 			model: "gpt-4",
 			inputTokens: 100,
 			outputTokens: 50,
 			totalTokens: 150,
 		};
 		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const host = mockPiHostContext("host-model summary", usage);
 		const result = await tool.execute(
 			"call",
 			{ action: "summarize", url: "https://example.com/page", sentences: 2 },
 			signal,
 			undefined,
-			{ model: mockHostSummaryAdapter(usage) as HostModel },
+			host.context,
 		);
-		expect((result.details as { modelUsage?: ModelUsage }).modelUsage).toEqual(usage);
+		expect((result.details as { modelUsage?: ModelUsage }).modelUsage).toMatchObject(usage);
 	});
 
 	it("does not emit MODEL_ADAPTER_MISSING when host model is available", async () => {
 		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
+		const host = mockPiHostContext("host-model summary");
 		const result = await tool.execute(
 			"call",
 			{ action: "summarize", url: "https://example.com/page", sentences: 2 },
 			signal,
 			undefined,
-			{ model: mockHostSummaryAdapter() as HostModel },
+			host.context,
 		);
 		expect((result.details as { error?: { code: string } }).error).toBeUndefined();
 		expect(result.content[0]?.text).toContain("host-model summary");
@@ -723,7 +769,7 @@ describe("web_extract — action=summarize host model via ctx", () => {
 describe("web_extract — action=summarize adapter resolution precedence", () => {
 	it("options.modelAdapter beats ctx.model", async () => {
 		const injected = makeAdapter("injected");
-		const host = makeAdapter("host");
+		const host = mockPiHostContext("from-host");
 		const tool = createWebExtractTool({
 			modelAdapter: injected.adapter as unknown as ModelAdapter,
 			scrapeDeps: fakeScrapeDeps(),
@@ -733,11 +779,11 @@ describe("web_extract — action=summarize adapter resolution precedence", () =>
 			{ action: "summarize", url: "https://example.com/page", sentences: 2 },
 			signal,
 			undefined,
-			{ model: host.adapter as unknown as HostModel },
+			host.context,
 		);
 		expect(result.content[0]?.text).toContain("from-injected");
 		expect(injected.calls.length).toBe(1);
-		expect(host.calls.length).toBe(0);
+		expect(host.calls).toHaveLength(0);
 	});
 
 	it("ctx.model beats event-bus registry", async () => {
@@ -750,18 +796,18 @@ describe("web_extract — action=summarize adapter resolution precedence", () =>
 			priority: 100,
 			adapter: registered.adapter as unknown as ModelAdapter,
 		});
-		const host = makeAdapter("host");
+		const host = mockPiHostContext("from-host");
 		const tool = createWebExtractTool({ scrapeDeps: fakeScrapeDeps() });
 		const result = await tool.execute(
 			"call",
 			{ action: "summarize", url: "https://example.com/page", sentences: 2 },
 			signal,
 			undefined,
-			{ model: host.adapter as unknown as HostModel },
+			host.context,
 		);
 		expect(result.content[0]?.text).toContain("from-host");
 		expect(registered.calls.length).toBe(0);
-		expect(host.calls.length).toBe(1);
+		expect(host.calls).toHaveLength(1);
 	});
 
 	it("event-bus registry beats MODEL_ADAPTER_MISSING", async () => {

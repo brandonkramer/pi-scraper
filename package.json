@@ -33,21 +33,23 @@
 	"scripts": {
 		"prepare": "lefthook install",
 		"typecheck": "tsc --noEmit",
+		"lint": "oxlint .",
+		"format:check": "oxfmt --check package.json eval/tool-selection/config.mjs eval/tool-selection/run.mjs eval/tool-selection/score.mjs eval/tool-selection/score.test.mjs eval/tool-selection/run-pi.mjs src/__tests__/config.test.ts src/__tests__/health.test.ts src/__tests__/lifecycle.test.ts src/batch/__tests__/progress-state.test.ts src/batch/progress-state.ts src/commands/__tests__/scrape-config-status.test.ts src/commands/define.ts src/commands/scrape-config-status.ts src/config.ts src/extract/__tests__/vertical/manifest-registry-trust.test.ts src/extract/vertical/loader.ts src/extract/vertical/manifest-registry.ts src/extract/vertical/registry.ts src/health.ts src/index.ts src/lifecycle.ts src/model-adapter/__tests__/pi-ai-adapter.test.ts src/model-adapter/pi-ai-adapter.ts src/tools/__tests__/web-extract.test.ts src/tools/infra/__tests__/documentation-contract.test.ts src/tools/infra/__tests__/model-registry.test.ts src/tools/infra/__tests__/register.test.ts src/tools/infra/__tests__/tool-contract.test.ts src/tools/infra/define.ts src/tools/infra/model-adapter.ts src/tools/infra/register.ts src/tools/web-batch.ts src/tools/web-crawl-run.ts src/tools/web-extract-adhoc.ts src/tools/web-extract-summarize.ts src/tools/web-extract-vertical.ts src/tools/web-extract.ts src/tools/web-tools.ts src/tui/tool-batch.ts src/tui/tool-resource.ts src/tui/tool-status.ts src/tui/tui.ts src/tui/types.ts",
 		"test": "vitest run",
-		"test:tools": "vitest run src/tools/__tests__/tools-smoke.test.ts --reporter=verbose",
-		"test:selection": "vitest run src/tools/__tests__/tool-contract.test.ts src/tools/__tests__/tool-selection-fixtures.test.ts eval/tool-selection/score.test.mjs --reporter=verbose",
-		"eval:selection": "node eval/tool-selection/run.mjs",
-		"eval:selection:pi": "PI_TOOL_SELECTION_EVAL_COMMAND='node eval/tool-selection/adapters/pi.mjs' node eval/tool-selection/run.mjs",
-		"eval:selection:contract": "PI_TOOL_SELECTION_NO_CUES=1 PI_TOOL_SELECTION_EVAL_COMMAND='node eval/tool-selection/adapters/pi.mjs' node eval/tool-selection/run.mjs",
-		"smoke:live": "vitest run src/tools/__tests__/tools-smoke.live.test.ts --reporter=verbose",
+		"test:tools": "vitest run src/tools/infra/__tests__/tools-smoke.test.ts --reporter=verbose",
+		"test:selection": "vitest run src/tools/infra/__tests__/tool-contract.test.ts src/tools/infra/__tests__/tool-selection-fixtures.test.ts src/tools/infra/__tests__/documentation-contract.test.ts eval/tool-selection/score.test.mjs --reporter=verbose",
+		"eval:selection": "bun eval/tool-selection/run.mjs",
+		"eval:selection:pi": "bun eval/tool-selection/run-pi.mjs",
+		"eval:selection:contract": "bun eval/tool-selection/run-pi.mjs --contract-only",
+		"smoke:live": "vitest run src/tools/infra/__tests__/tools-smoke.live.test.ts --reporter=verbose",
 		"smoke:browser": "vitest run src/browser/__tests__/browser-smoke.test.ts --reporter=verbose",
-		"audit:strict": "npm audit --omit=dev --audit-level=high",
-		"lint:workflows": "github-actionlint .github/workflows/*.yml",
-		"check": "npm run typecheck && npm test",
-		"prepublishOnly": "npm run typecheck"
+		"audit:strict": "bun audit --prod --audit-level=high",
+		"lint:workflows": "github-actionlint",
+		"package:check": "bun pm pack --dry-run --ignore-scripts",
+		"check": "bun run typecheck && bun run lint && bun run format:check && bun run test:selection && bun run test",
+		"prepublishOnly": "bun run typecheck"
 	},
 	"dependencies": {
-		"@earendil-works/pi-tui": "^0.79.4",
 		"@mozilla/readability": "^0.6.0",
 		"cloakbrowser": "^0.3.31",
 		"css-select": "^7.0.0",
@@ -62,12 +64,13 @@
 		"socks": "^2.8.9",
 		"turndown": "^7.2.4",
 		"turndown-plugin-gfm": "^1.0.2",
-		"typebox": "^1.2.10",
-		"undici": "^8.4.1",
+		"undici": "^8.8.0",
 		"yaml": "^2.9.0"
 	},
 	"devDependencies": {
-		"@earendil-works/pi-coding-agent": "^0.79.4",
+		"@earendil-works/pi-ai": "^0.81.1",
+		"@earendil-works/pi-coding-agent": "^0.81.1",
+		"@earendil-works/pi-tui": "^0.81.1",
 		"@types/node": "latest",
 		"@types/turndown": "^5.0.6",
 		"cheerio": "^1.2.0",
@@ -79,28 +82,29 @@
 		"oxfmt": "^0.54.0",
 		"oxlint": "^1.63.0",
 		"oxlint-tsgolint": "^0.23.0",
+		"typebox": "1.1.38",
 		"typescript": "latest",
 		"vitest": "^4.1.8"
 	},
 	"peerDependencies": {
-		"@earendil-works/pi-ai": "^0.79.4"
-	},
-	"peerDependenciesMeta": {
-		"@earendil-works/pi-ai": {
-			"optional": true
-		}
+		"@earendil-works/pi-ai": "*",
+		"@earendil-works/pi-coding-agent": "*",
+		"@earendil-works/pi-tui": "*",
+		"typebox": "*"
 	},
 	"optionalDependencies": {
 		"pdfjs-dist": "^6.0.227",
 		"playwright": "^1.60.0"
 	},
 	"overrides": {
-		"fast-xml-builder": "^1.1.7"
+		"fast-xml-builder": "^1.1.7",
+		"tar": "^7.5.21"
 	},
 	"engines": {
 		"node": ">=22.19.0",
-		"pi": ">=0.79.0"
+		"pi": ">=0.81.0"
 	},
+	"packageManager": "bun@1.3.14",
 	"pi": {
 		"extensions": [
 			"./src/index.ts"

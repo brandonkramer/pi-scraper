@@ -8,9 +8,9 @@ import {
 	muted,
 	separator,
 } from "./tui.ts";
-import type { RenderTheme } from "./types.ts";
+import type { RenderTheme, ThemeBackgroundName } from "./types.ts";
 
-function bgStart(name: string, theme?: RenderTheme): string {
+function bgStart(name: ThemeBackgroundName, theme?: RenderTheme): string {
 	const reset = "\u001B[49m";
 	try {
 		const value = theme?.bg?.(name, "") ?? "";
@@ -21,7 +21,11 @@ function bgStart(name: string, theme?: RenderTheme): string {
 }
 
 /** Paints only the first rendered line with a background for error/result emphasis. */
-export function paintFirstLineBg(lines: string[], bgName: string, theme?: RenderTheme): string[] {
+export function paintFirstLineBg(
+	lines: string[],
+	bgName: ThemeBackgroundName,
+	theme?: RenderTheme,
+): string[] {
 	if (lines.length === 0 || !theme?.bg) return lines;
 	return lines.map((line, index) =>
 		index === 0 ? `${backgroundText(bgName, line, theme)}${bgStart(bgName, theme)}` : line,
@@ -51,7 +55,7 @@ export function renderStatusPill(o: {
 	width: number;
 	theme?: RenderTheme;
 	startedAtMs?: number;
-	restoreBg?: string;
+	restoreBg?: ThemeBackgroundName;
 }): string {
 	const cw = Math.max(1, o.width - 2);
 	const labelBase = ` ${o.label} `;

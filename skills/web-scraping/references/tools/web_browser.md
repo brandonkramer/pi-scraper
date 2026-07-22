@@ -185,7 +185,7 @@ web_extract responseId="<id>" action=adhoc prompt="list orders"    # extracts th
   - *navigate:* **outline** (default — landmarks/role counts/headings, no refs) → **interactive** (`scope`/`roles`, or `detail="interactive"` — `@eN` refs) → **full** (`detail="full"` — raw tree).
   - *read:* **digest** (default — outline + counts) → **`linesMatching`** snippets → **full body** (`storeCapture=true` → `responseId`).
 - `navigate` returns an **outline**, not refs — drill with `scope`/`roles` to get `@eN` refs. `click`/`fill`/`select`/`inspect` already return the interactive list. For page prose/markdown use `read`, or `web_scrape` (`mode=browser` shares the same CloakBrowser backend).
-- `browserBackend=playwright` needs `npm install playwright` + `npx playwright install chromium`; `cloak` is bundled.
+- `browserBackend=playwright` needs `bun add playwright` + `bunx playwright install chromium`; `cloak` is bundled.
 - **`proxy` / `timezone` / `locale` / `browserProfile` bind at session-context CREATION only.** They take effect on the first call that creates the `sessionId`'s context; a session reuses its context and ignores new values on later calls. To change any of them — including rotating to the next proxy in a `proxy` array — use a **new `sessionId`** (an array rotates per call, but each session pins one proxy, so it's "next IP per new session", not a mid-session swap).
 - `saveSession=true` persists storageState; reuse the `sessionId` to resume logged-in state.
 - Same SSRF route guard as the other tools — loopback/private URLs are blocked.

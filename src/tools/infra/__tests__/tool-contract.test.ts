@@ -1,8 +1,23 @@
 /** @file Tools **tests** tool-contract.test module. */
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
+import { createWebToolsLoader } from "../../web-tools.ts";
 import type { WebTool } from "../define.ts";
-import { webTools } from "../register.ts";
+import { initialWebToolNames, webTools } from "../register.ts";
+
+interface ContractBudget {
+	fullCatalogTokenBudget: number;
+	minimumInitialPromptReduction: number;
+}
+
+const contractBudget = JSON.parse(
+	readFileSync(
+		new URL("../../../../eval/tool-selection/contract-budget.json", import.meta.url),
+		"utf8",
+	),
+) as ContractBudget;
 
 const expectedNames = [
 	"web_scrape",
@@ -76,13 +91,33 @@ describe("web tool contracts", () => {
 			tokens: approximateTokens(serializeContract(tool).length),
 		}));
 		const totalTokens = contractStats.reduce((total, stat) => total + stat.tokens, 0);
-		// Measured 1487 after compressing the web_browser description + param descriptions
-		// (2026-06; was 1526); +~4% headroom.
-		expect(totalTokens).toBeLessThanOrEqual(1546);
+		expect(totalTokens).toBeLessThanOrEqual(contractBudget.fullCatalogTokenBudget);
 		for (const stat of contractStats) {
 			const name = stat.name as (typeof expectedNames)[number];
 			expect(stat.tokens).toBeLessThanOrEqual(perToolTokenCeilings[name]);
 		}
+	});
+
+	it("keeps the initial deferred catalog materially smaller", () => {
+		const initialNameSet = new Set<string>(initialWebToolNames);
+		const loader = createWebToolsLoader({
+			getActiveTools: () => [],
+			getAllTools: () => [],
+			setActiveTools: (_names) => undefined,
+		});
+		const initialTools = [...webTools.filter((tool) => initialNameSet.has(tool.name)), loader];
+		const fullTokens = webTools.reduce(
+			(total, tool) => total + approximateTokens(serializeContract(tool).length),
+			0,
+		);
+		const initialTokens = initialTools.reduce(
+			(total, tool) => total + approximateTokens(serializeContract(tool).length),
+			0,
+		);
+		const reduction = 1 - initialTokens / fullTokens;
+
+		expect(initialTools.map((tool) => tool.name)).toEqual(initialWebToolNames);
+		expect(reduction).toBeGreaterThanOrEqual(contractBudget.minimumInitialPromptReduction);
 	});
 
 	it("keeps advanced scrape fields off lean tools", () => {

@@ -1,114 +1,31 @@
 /** @file Tools model-adapter module. */
-import type { ModelAdapter, ModelRequest, ModelResponse } from "../../extract/adhoc/model.ts";
-import { isUnknownRecord, type UnknownRecord } from "../../types.ts";
+import type { ModelAdapter } from "../../extract/adhoc/model.ts";
+import {
+	createPiHostModelAdapter,
+	type PiHostModelContext,
+} from "../../model-adapter/pi-ai-adapter.ts";
+import { isUnknownRecord } from "../../types.ts";
 import { modelRegistry, type ModelCapability, type ResolvePreference } from "./model-registry.ts";
-type Runner = (payload: unknown, signal?: AbortSignal) => Promise<unknown> | unknown;
 
 /**
- * Resolves the optional model adapter from the Pi host context.
- *
- * @remarks
- *   Pi has evolved its model APIs over time, so this boundary intentionally uses narrow duck
- *   typing. When a host exposes a selected-model runner on the handler context, the tools can call
- *   it; otherwise model-backed `web_scrape`, `web_extract`, and `web_summarize` paths fall through
- *   to the event-bus registry or return the stable `MODEL_ADAPTER_MISSING` error.
+ * Resolve the active Pi 0.81 model through its authenticated provider. No completion methods are
+ * inferred from model metadata.
  */
-export function resolveModelAdapterFromContext(source: unknown): ModelAdapter | undefined {
-	if (isUnknownRecord(source)) {
-		const configured = source.modelAdapter;
-		if (isModelAdapter(configured)) return configured;
-	}
-	const runner = findRunner(source);
-	if (!runner) return;
-	return {
-		async run<T = unknown>(request: ModelRequest, signal?: AbortSignal) {
-			const raw = await runner(buildModelPayload(request), signal);
-			return normalizeModelResponse<T>(request, raw);
-		},
-	};
+export function resolveModelAdapterFromContext(source?: unknown): ModelAdapter | undefined {
+	if (!isPiModelContext(source)) return undefined;
+	return createPiHostModelAdapter({ model: source.model, modelRegistry: source.modelRegistry });
 }
 
-function findRunner(source: unknown): Runner | undefined {
-	if (!isUnknownRecord(source)) return;
-	for (const key of ["runModel", "generate", "chat", "complete"] as const) {
-		if (typeof source[key] === "function") return source[key].bind(source) as Runner;
-	}
-	for (const key of ["model", "selectedModel", "models"] as const) {
-		const candidate = source[key];
-		if (!isUnknownRecord(candidate)) continue;
-		for (const method of ["run", "generate", "chat", "complete"] as const) {
-			if (typeof candidate[method] === "function") {
-				return candidate[method].bind(candidate) as Runner;
-			}
-		}
-	}
-}
-
-function buildModelPayload(request: ModelRequest): UnknownRecord {
-	const prompt = modelPrompt(request);
-	return {
-		...request,
-		prompt,
-		messages: [{ role: "user", content: [{ type: "text", text: prompt }] }],
-	};
-}
-
-function modelPrompt(request: ModelRequest): string {
-	if (request.task === "summarize") {
-		return `${request.prompt ?? "Summarize this page."}\n\n${request.input}`;
-	}
-	const schema = request.schema ? `\nJSON schema or shape:\n${JSON.stringify(request.schema)}` : "";
-	return [
-		"Extract structured JSON from this page content.",
-		request.prompt ? `Instructions: ${request.prompt}` : undefined,
-		schema || undefined,
-		"Return only JSON.",
-		"",
-		request.input,
-	]
-		.filter(Boolean)
-		.join("\n");
-}
-
-function normalizeModelResponse<T>(request: ModelRequest, raw: unknown): ModelResponse<T> {
-	if (isUnknownRecord(raw) && "data" in raw) {
-		return raw as unknown as ModelResponse<T>;
-	}
-	const text = extractText(raw);
-	const data = request.task === "extract" ? (parseJsonOrText(text) as T) : (text as T);
-	return { data, text, raw };
-}
-
-function extractText(value: unknown): string {
-	if (typeof value === "string") return value;
-	if (!isUnknownRecord(value))
-		return value === null || value === undefined ? "" : JSON.stringify(value);
-	if (typeof value.text === "string") return value.text;
-	if (typeof value.output === "string") return value.output;
-	if (typeof value.message === "string") return value.message;
-	if (Array.isArray(value.content)) {
-		return value.content
-			.map((item) => {
-				if (typeof item === "string") return item;
-				if (isUnknownRecord(item) && typeof item.text === "string") return item.text;
-				return "";
-			})
-			.filter(Boolean)
-			.join("\n");
-	}
-	return JSON.stringify(value);
-}
-
-function parseJsonOrText(text: string): unknown {
-	try {
-		return JSON.parse(text);
-	} catch {
-		return text;
-	}
-}
-
-function isModelAdapter(value: unknown): value is ModelAdapter {
-	return isUnknownRecord(value) && typeof value.run === "function";
+function isPiModelContext(
+	value: unknown,
+): value is PiHostModelContext & { model: NonNullable<PiHostModelContext["model"]> } {
+	if (!isUnknownRecord(value) || !isUnknownRecord(value.model)) return false;
+	const registry = value.modelRegistry;
+	return (
+		isUnknownRecord(registry) &&
+		typeof registry.getProvider === "function" &&
+		typeof registry.getApiKeyAndHeaders === "function"
+	);
 }
 
 /** Resolve a model adapter from the cross-extension registry. */
@@ -117,6 +34,24 @@ export function resolveAdapterFromRegistry(
 	capability: ModelCapability,
 ): ModelAdapter | undefined {
 	return modelRegistry.resolve(preference, capability);
+}
+
+/** Resolve the user preference without letting the ambient Pi model bypass `off` or an explicit id. */
+export function resolvePreferredModelAdapter(options: {
+	explicitAdapter?: ModelAdapter;
+	context?: unknown;
+	preference: ResolvePreference;
+	capability: ModelCapability;
+}): ModelAdapter | undefined {
+	if (options.explicitAdapter) return options.explicitAdapter;
+	if (options.preference === "off") return undefined;
+	if (options.preference !== "auto") {
+		return resolveAdapterFromRegistry(options.preference, options.capability);
+	}
+	return (
+		resolveModelAdapterFromContext(options.context) ??
+		resolveAdapterFromRegistry("auto", options.capability)
+	);
 }
 
 /**

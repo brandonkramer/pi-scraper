@@ -14,7 +14,7 @@ import type {
 	VerticalExtractorProgress,
 } from "../vertical/capabilities.ts";
 import { parseManifestText } from "./loader.ts";
-import type { ManifestRegistryEntry } from "./manifest-registry.ts";
+import type { ManifestRegistryEntry, ManifestRegistryOptions } from "./manifest-registry.ts";
 import type { VerticalManifest } from "./manifest-types.ts";
 import { matchManifestUrl } from "./matcher.ts";
 
@@ -94,6 +94,7 @@ export interface VerticalRegistryDeps {
 		"cacheTtlSeconds" | "maxAgeSeconds" | "refresh" | "respectRobots"
 	>;
 	onProgress?(options: VerticalExtractorProgress): void | Promise<void>;
+	manifestOptions?: ManifestRegistryOptions;
 }
 
 export function listExtractorCapabilities(): ExtractorCapability[] {
@@ -149,9 +150,9 @@ function isVerticalManifest(value: unknown): value is VerticalManifest {
 }
 
 /** Build the full manifest registry including built-in + user manifests. */
-export async function buildManifestRegistry(includeProject = false) {
+export async function buildManifestRegistry(options?: boolean | ManifestRegistryOptions) {
 	const { buildManifestRegistry: build } = await import("./manifest-registry.ts");
-	return await build(includeProject);
+	return await build(options ?? { includeProject: false });
 }
 
 export async function runVerticalExtractor<T = unknown>(
@@ -164,7 +165,7 @@ export async function runVerticalExtractor<T = unknown>(
 
 	// Check manifest registry first — user overrides take priority
 	const manifestMod = await import("./manifest-registry.ts");
-	const registry = await manifestMod.buildManifestRegistry();
+	const registry = await manifestMod.buildManifestRegistry(deps.manifestOptions);
 	const entry = registry.get(name);
 	if (entry?.isDeclarative) {
 		const captures = matchManifestUrl(entry.manifest, url);

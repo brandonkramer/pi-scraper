@@ -1,5 +1,8 @@
 /** @file Shared Pi command adapter contracts for web commands. */
-import type { ExtensionUIDialogOptions } from "@earendil-works/pi-coding-agent";
+import type {
+	ExtensionCommandContext,
+	ExtensionUIDialogOptions,
+} from "@earendil-works/pi-coding-agent";
 import type { Static, TSchema } from "typebox";
 
 import type { PiToolShell } from "../types.ts";
@@ -11,8 +14,10 @@ export type CommandExecute<TParams> = (
 
 /** Subset of ExtensionCommandContext used by web commands. */
 export interface CommandContext {
-	signal?: AbortSignal;
-	hasUI?: boolean;
+	signal?: ExtensionCommandContext["signal"];
+	hasUI?: ExtensionCommandContext["hasUI"];
+	model?: ExtensionCommandContext["model"];
+	modelRegistry?: ExtensionCommandContext["modelRegistry"];
 	ui?: {
 		notify(message: string, type?: "info" | "warning" | "error"): void;
 		select?(

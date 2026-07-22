@@ -5,17 +5,17 @@ pre-commit:
   jobs:
     - name: oxfmt
       glob: "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc}"
-      run: npx oxfmt --no-error-on-unmatched-pattern {staged_files}
+      run: bunx oxfmt --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true
     - name: oxlint
       glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
-      run: npx oxlint {staged_files}
+      run: bunx oxlint {staged_files}
 pre-push:
   parallel: false
   jobs:
     - name: oxlint
-      run: npx oxlint .
+      run: bun run lint
     - name: typecheck
-      run: npm run typecheck
+      run: bun run typecheck
     - name: test
-      run: npm test
+      run: bun run test

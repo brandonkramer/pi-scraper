@@ -6,7 +6,7 @@ import { toolResourceStatus } from "./tool-resource.ts";
 import { withSpinnerFooter } from "./tool-spinner.ts";
 import { renderStatusPill, statusPillWidth } from "./tool-status.ts";
 import { muted } from "./tui.ts";
-import type { RenderComponent, RenderTheme } from "./types.ts";
+import type { RenderComponent, RenderTheme, ThemeBackgroundName } from "./types.ts";
 
 /**
  * Renders the live batch/crawl row list from a `batchProgress` progress envelope.
@@ -77,7 +77,7 @@ function renderBatchProgressText(
 	width: number,
 	expanded: boolean,
 	theme?: RenderTheme,
-	restoreBg?: string,
+	restoreBg?: ThemeBackgroundName,
 ): string {
 	const label = batch.label ?? "web_batch";
 	const title = toolCallStatus(

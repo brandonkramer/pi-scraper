@@ -65,17 +65,19 @@ export async function crawlRun(params: Params, signal: AbortSignal, onUpdate?: T
 			onProgress: (progress) => {
 				updateUrlBatchProgress(progressView, progress.state, progress.url);
 				if (progress.total) progressView.total = progress.total;
-				void emitProgress(onUpdate, {
-					state: progress.state,
-					current: progress.current,
-					total: progress.total,
-					url: progress.url,
-					message: progress.message,
-					data: {
-						metadata: progress.metadata,
-						batchProgress: cloneBatchProgress(progressView),
-					},
-				});
+				if (onUpdate) {
+					void emitProgress(onUpdate, {
+						state: progress.state,
+						current: progress.current,
+						total: progress.total,
+						url: progress.url,
+						message: progress.message,
+						data: {
+							metadata: progress.metadata,
+							batchProgress: cloneBatchProgress(progressView),
+						},
+					});
+				}
 			},
 		},
 		{},

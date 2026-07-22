@@ -1,15 +1,9 @@
 /** @file Health session-start module. */
-import { clearEffectiveConfigCache } from "./config.ts";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 export interface HealthWarning {
 	code: string;
 	message: string;
-}
-
-export interface PiHealthRegistrar {
-	on(event: "session_start", handler: (event: unknown, ctx: unknown) => void | Promise<void>): void;
-	warn?: (message: string) => void;
-	notify?: (message: string | { type?: string; message: string }) => void;
 }
 
 export interface HealthCheckDeps {
@@ -18,19 +12,18 @@ export interface HealthCheckDeps {
 }
 
 export function registerSessionStartHealthChecks(
-	pi: PiHealthRegistrar,
+	pi: ExtensionAPI,
 	deps: HealthCheckDeps = {},
 ): void {
-	pi.on("session_start", () => {
-		clearEffectiveConfigCache();
+	pi.on("session_start", (_event, context) => {
 		void runSessionStartHealthChecks({
 			...deps,
 			onWarning: (warning) => {
 				deps.onWarning?.(warning);
-				emitWarning(pi, warning);
+				emitWarning(context, warning);
 			},
 		}).catch((error) =>
-			emitWarning(pi, {
+			emitWarning(context, {
 				code: "WEB_HEALTH_CHECK_FAILED",
 				message: error instanceof Error ? error.message : "pi-scraper health check failed",
 			}),
@@ -51,7 +44,7 @@ export async function runSessionStartHealthChecks(
 		warn({
 			code: "PLAYWRIGHT_UNAVAILABLE",
 			message:
-				"Playwright backend is unavailable for browser mode use with browserBackend: 'playwright'. CloakBrowser is the default backend and should be available. To use Playwright instead, run `npm install playwright` and `npx playwright install chromium`.",
+				"Playwright backend is unavailable for browser mode use with browserBackend: 'playwright'. CloakBrowser is the default backend and should be available. To use Playwright instead, run `bun add playwright` and `bunx playwright install chromium`.",
 		});
 	}
 
@@ -68,8 +61,7 @@ async function checkPlaywrightAvailable(): Promise<boolean> {
 	}
 }
 
-function emitWarning(pi: PiHealthRegistrar, warning: HealthWarning): void {
+function emitWarning(context: ExtensionContext, warning: HealthWarning): void {
 	const message = `pi-scraper ${warning.code}: ${warning.message}`;
-	if (pi.warn) pi.warn(message);
-	else if (pi.notify) pi.notify({ type: "warning", message });
+	context.ui.notify(message, "warning");
 }

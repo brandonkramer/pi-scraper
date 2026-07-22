@@ -66,10 +66,12 @@ export const webBatchTool = defineWebTool({
 				storeFullResults: true,
 				onProgress: (progress) => {
 					updateIndexedBatchProgress(batchProgress, progress.state, progress.current, progress.url);
-					void emitProgress(onUpdate, {
-						...progress,
-						data: { batchProgress: cloneBatchProgress(batchProgress) },
-					});
+					if (onUpdate) {
+						void emitProgress(onUpdate, {
+							...progress,
+							data: { batchProgress: cloneBatchProgress(batchProgress) },
+						});
+					}
 				},
 			},
 			{},

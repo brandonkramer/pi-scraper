@@ -1,8 +1,13 @@
-/**
- * @file Peer-optional pi-ai fallback adapter. Lazily imports @earendil-works/pi-ai and builds a
- *   ModelAdapter from env/config-pinned provider + model. Only active when the package is installed
- *   AND both PI_AI_PROVIDER and PI_AI_MODEL are set.
- */
+/** @file Pi 0.81 model adapters for configured runtimes and the active Pi session model. */
+import type {
+	Api,
+	AssistantMessage,
+	Context,
+	Model,
+	ModelsSimpleStreamOptions,
+	Provider,
+} from "@earendil-works/pi-ai";
+
 import type {
 	ModelAdapter,
 	ModelRequest,
@@ -15,74 +20,135 @@ export interface PiAiAdapterOptions {
 	model: string;
 }
 
-/** Narrow type covering the pi-ai functions we need at runtime. */
-interface PiAiModule {
-	getModel(provider: string, model: string): unknown;
+export interface PiModelsClient {
+	getModel(provider: string, model: string): Model<Api> | undefined;
 	completeSimple(
-		model: unknown,
-		context: unknown,
-	): Promise<{ content?: unknown[]; usage?: object }>;
-	calculateCost(model: unknown, _usage: unknown): { total?: number } | undefined;
+		model: Model<Api>,
+		context: Context,
+		options?: ModelsSimpleStreamOptions,
+	): Promise<AssistantMessage>;
 }
 
-// Specifier in a const so tsc keeps pi-ai compile-optional (the optional peer is absent in CI's
-// `npm ci`). Same pattern as pdf.ts' PDFJS_IMPORT. Do not inline back to a string literal.
-const PI_AI_IMPORT = "@earendil-works/pi-ai";
+export interface PiAiAdapterDependencies {
+	createRuntime(): Promise<PiModelsClient>;
+}
+
+export type PiRequestAuth =
+	| {
+			ok: true;
+			apiKey?: string;
+			headers?: Record<string, string>;
+			env?: Record<string, string>;
+	  }
+	| { ok: false; error: string };
+
+export interface PiHostModelRegistry {
+	getProvider(provider: string): Provider | undefined;
+	getApiKeyAndHeaders(model: Model<Api>): Promise<PiRequestAuth>;
+}
+
+export interface PiHostModelContext {
+	model: Model<Api> | undefined;
+	modelRegistry: PiHostModelRegistry;
+}
+type CompleteMessage = (context: Context, signal?: AbortSignal) => Promise<AssistantMessage>;
+
+const PI_CODING_AGENT_IMPORT = "@earendil-works/pi-coding-agent";
 
 /**
- * Try to create a pi-ai ModelAdapter. Returns undefined when: - pi-ai is not installed (import
- * throws) - provider or model is missing - provider/model is not recognized by pi-ai (getModel
- * returns undefined)
+ * Create an adapter for an explicitly selected provider/model using Pi's current ModelRuntime.
+ * Returns undefined when configuration, the host package, runtime initialization, or the model is
+ * unavailable.
  */
 export async function tryCreatePiAiAdapter(
 	opts?: Partial<PiAiAdapterOptions>,
+	dependencies: Partial<PiAiAdapterDependencies> = {},
 ): Promise<ModelAdapter | undefined> {
 	const provider = opts?.provider ?? process.env.PI_AI_PROVIDER;
 	const modelId = opts?.model ?? process.env.PI_AI_MODEL;
 	if (!provider || !modelId) return undefined;
 
-	let piAi: PiAiModule;
+	let runtime: PiModelsClient;
 	try {
-		piAi = (await import(PI_AI_IMPORT)) as unknown as PiAiModule;
+		runtime = await (dependencies.createRuntime ?? createDefaultRuntime)();
 	} catch {
 		return undefined;
 	}
 
-	// oxlint-disable-next-line typescript/no-unnecessary-condition -- runtime env values may be unrecognized
-	const resolvedModel = piAi.getModel(provider, modelId);
-	if (!resolvedModel) return undefined;
+	const model = runtime.getModel(provider, modelId);
+	if (!model) return undefined;
+	return createPiModelAdapter(model, (context, signal) =>
+		runtime.completeSimple(model, context, { signal }),
+	);
+}
 
-	const label = `${provider}/${modelId}`;
+/** Build an adapter around Pi's active model and authenticated provider. */
+export function createPiHostModelAdapter(context: PiHostModelContext): ModelAdapter | undefined {
+	const model = context.model;
+	if (!model) return undefined;
 
+	return createPiModelAdapter(model, async (requestContext, signal) => {
+		const provider = context.modelRegistry.getProvider(model.provider);
+		if (!provider) {
+			throw new Error(`Pi provider "${model.provider}" is unavailable.`);
+		}
+		const auth = await context.modelRegistry.getApiKeyAndHeaders(model);
+		if (!auth.ok) throw new Error(auth.error);
+		const stream = provider.streamSimple(model, requestContext, {
+			signal,
+			apiKey: auth.apiKey,
+			headers: auth.headers,
+			env: auth.env,
+		});
+		return await stream.result();
+	});
+}
+
+/** Convert a current Pi model completion function to the scraper's small model boundary. */
+export function createPiModelAdapter(model: Model<Api>, complete: CompleteMessage): ModelAdapter {
 	return {
 		async run<T>(request: ModelRequest, signal?: AbortSignal): Promise<ModelResponse<T>> {
-			if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-
-			const prompt = buildPrompt(request);
-
-			// pi-ai's Context type is not re-exported; construct a duck-typed object
-			// that matches the expected shape at runtime.
-			const ctx: unknown = {
-				messages: [
-					{
-						role: "user",
-						timestamp: Date.now(),
-						content: [{ type: "text", text: prompt }],
-					},
-				],
-			};
-
-			// Race the LLM call against the abort signal
-			const message = await Promise.race([
-				piAi.completeSimple(resolvedModel, ctx),
-				abortSignalRace(signal),
-			]);
-
+			throwIfAborted(signal);
+			const message = await complete(buildContext(request), signal);
+			assertSuccessfulMessage(message);
 			const text = extractText(message);
 			const data = request.task === "extract" ? (parseJsonOrText(text) as T) : (text as T);
-			const usage = buildUsage(piAi, resolvedModel, message, provider, modelId, label);
-			return { data, text, raw: message as unknown, usage };
+			return {
+				data,
+				text,
+				raw: message,
+				usage: buildUsage(message, model),
+			};
 		},
+	};
+}
+
+async function createDefaultRuntime(): Promise<PiModelsClient> {
+	const imported: unknown = await import(PI_CODING_AGENT_IMPORT);
+	if (!isRuntimeModule(imported)) {
+		throw new Error("Pi ModelRuntime is unavailable.");
+	}
+	return await imported.ModelRuntime.create();
+}
+
+function isRuntimeModule(
+	value: unknown,
+): value is { ModelRuntime: { create(): Promise<PiModelsClient> } } {
+	if (typeof value !== "object" || value === null || !("ModelRuntime" in value)) return false;
+	const runtime = value.ModelRuntime;
+	if (typeof runtime !== "function") return false;
+	return "create" in runtime && typeof runtime.create === "function";
+}
+
+function buildContext(request: ModelRequest): Context {
+	return {
+		messages: [
+			{
+				role: "user",
+				timestamp: Date.now(),
+				content: [{ type: "text", text: buildPrompt(request) }],
+			},
+		],
 	};
 }
 
@@ -105,13 +171,26 @@ function buildPrompt(request: ModelRequest): string {
 		.join("\n");
 }
 
-function extractText(message: { content?: unknown[] }): string {
-	if (!message.content) return "";
-	return (message.content as Array<Record<string, unknown>>)
+function assertSuccessfulMessage(message: AssistantMessage): void {
+	if (message.stopReason === "aborted") {
+		throw new DOMException(message.errorMessage ?? "Aborted", "AbortError");
+	}
+	if (message.stopReason === "error") {
+		throw new Error(message.errorMessage ?? "Pi model request failed.");
+	}
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+	if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+}
+
+function extractText(message: AssistantMessage): string {
+	return message.content
 		.filter(
-			(c): c is { type: string; text: string } => c.type === "text" && typeof c.text === "string",
+			(content): content is Extract<AssistantMessage["content"][number], { type: "text" }> =>
+				content.type === "text",
 		)
-		.map((c) => c.text)
+		.map((content) => content.text)
 		.join("\n");
 }
 
@@ -123,53 +202,13 @@ function parseJsonOrText(text: string): unknown {
 	}
 }
 
-function buildUsage(
-	piAi: PiAiModule,
-	model: unknown,
-	message: { usage?: object },
-	provider: string,
-	modelId: string,
-	label: string,
-): ModelUsage {
-	const usage: ModelUsage = {
-		provider: label,
-		model: modelId,
+function buildUsage(message: AssistantMessage, requestedModel: Model<Api>): ModelUsage {
+	return {
+		provider: `${message.provider}/${message.model}`,
+		model: message.model || requestedModel.id,
+		inputTokens: message.usage.input,
+		outputTokens: message.usage.output,
+		totalTokens: message.usage.totalTokens,
+		costUSD: message.usage.cost.total,
 	};
-	const msgUsage = message.usage as Record<string, unknown> | undefined;
-	if (msgUsage) {
-		usage.inputTokens = msgUsage.input as number | undefined;
-		usage.outputTokens = msgUsage.output as number | undefined;
-		usage.totalTokens = msgUsage.totalTokens as number | undefined;
-		try {
-			const cost = piAi.calculateCost(model, msgUsage);
-			if (cost && typeof cost.total === "number") {
-				usage.costUSD = cost.total;
-			}
-		} catch {
-			// Cost calculation is best-effort
-		}
-	}
-	return usage;
-}
-
-/**
- * Return a promise that never resolves — rejects with AbortError when the signal fires. Ensures the
- * race above doesn't race against undefined.
- */
-function abortSignalRace(signal?: AbortSignal): Promise<never> {
-	return new Promise((_resolve, reject) => {
-		if (!signal) {
-			// Never settle if no signal — the other branch must win
-			return;
-		}
-		if (signal.aborted) {
-			reject(new DOMException("Aborted", "AbortError"));
-			return;
-		}
-		const onAbort = () => {
-			signal.removeEventListener("abort", onAbort);
-			reject(new DOMException("Aborted", "AbortError"));
-		};
-		signal.addEventListener("abort", onAbort);
-	});
 }

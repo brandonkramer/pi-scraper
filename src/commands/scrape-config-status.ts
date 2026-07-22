@@ -4,7 +4,10 @@ import { loadEffectiveConfig, type EffectiveWebConfig } from "../config.ts";
  *   chain, and cache stats.
  */
 import { DEFAULT_MAX_BYTES } from "../defaults.ts";
-import { resolveModelAdapterFromContext } from "../tools/infra/model-adapter.ts";
+import {
+	resolveModelAdapterFromContext,
+	resolveProviderPreference,
+} from "../tools/infra/model-adapter.ts";
 import { modelRegistry } from "../tools/infra/model-registry.ts";
 import { toolResult } from "../tools/infra/result.ts";
 import type { CommandContext } from "./define.ts";
@@ -63,19 +66,28 @@ async function assembleStatusReport(
 		},
 	];
 
-	const auto = modelRegistry.resolve("auto", "summarize");
-	const activeResolution = auto
-		? `would route through "${modelRegistry.list().find((e) => e.adapter === auto)?.id ?? "unknown"}"`
-		: "no matching adapter registered";
+	const preference = resolveProviderPreference({
+		envProvider: process.env.PI_WEB_MODEL_PROVIDER,
+		configProvider: config.modelProvider,
+		capability: "summarize",
+	});
+	const registered = modelRegistry.resolve(preference, "summarize");
+	const registeredId = modelRegistry.list().find((entry) => entry.adapter === registered)?.id;
+	const activeResolution =
+		preference === "off"
+			? "model-backed actions disabled"
+			: preference === "auto" && piHost.detected
+				? "Pi-host model preempts registered adapters"
+				: registered
+					? `would route through "${registeredId ?? "unknown"}"`
+					: `no matching adapter for "${preference}"`;
 
 	return {
 		effectiveConfig: config,
 		piHostModel: piHost,
 		registeredAdapters: adapters,
 		resolutionPrecedence: precedence,
-		activeResolution: piHost.detected
-			? "Pi-host model preempts registered adapters"
-			: activeResolution,
+		activeResolution,
 	};
 }
 
@@ -103,6 +115,8 @@ function formatStatusText(report: WebConfigStatusReport): string {
 		`- respectRobots: ${cfg.scrapeDefaults.respectRobots ?? true}`,
 		`- maxBytes: ${cfg.scrapeDefaults.maxBytes ?? DEFAULT_MAX_BYTES}`,
 		`- modelProvider: ${formatModelProvider(cfg.modelProvider)}`,
+		`- piAiProvider: ${cfg.piAiProvider ?? process.env.PI_AI_PROVIDER ?? "(unset)"}`,
+		`- piAiModel: ${cfg.piAiModel ?? process.env.PI_AI_MODEL ?? "(unset)"}`,
 		"",
 		"Model adapter resolution (summarize capability):",
 		`- Pi-host model: ${report.piHostModel.label}`,
