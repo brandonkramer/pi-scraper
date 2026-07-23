@@ -25,6 +25,7 @@ const { createWebScrapeTool, diffInterpretation } = await import("../web-scrape.
 
 const signal = new AbortController().signal;
 let rootDir: string;
+let originalStorageRoot: string | undefined;
 
 function fakeScrapeResult(url: string, text: string): ScrapeResult {
 	return {
@@ -50,14 +51,16 @@ function fakeScrapeResult(url: string, text: string): ScrapeResult {
 
 beforeEach(async () => {
 	rootDir = await mkdtemp(join(tmpdir(), "scrape-snap-"));
-	process.env.PI_STORAGE_DIR = rootDir;
+	originalStorageRoot = process.env.PI_SCRAPER_STORAGE_ROOT;
+	process.env.PI_SCRAPER_STORAGE_ROOT = rootDir;
 	setFtsAvailabilityForTests(false);
 	scrapePipelineMock.scrapeUrl.mockReset();
 });
 
 afterEach(async () => {
-	closeStorageDbs();
-	delete process.env.PI_STORAGE_DIR;
+	await closeStorageDbs();
+	if (originalStorageRoot === undefined) delete process.env.PI_SCRAPER_STORAGE_ROOT;
+	else process.env.PI_SCRAPER_STORAGE_ROOT = originalStorageRoot;
 	setFtsAvailabilityForTests(undefined);
 	await rm(rootDir, { recursive: true, force: true });
 });

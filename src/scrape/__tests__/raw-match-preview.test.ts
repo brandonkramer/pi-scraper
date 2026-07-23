@@ -29,22 +29,22 @@ const { createWebScrapeTool } = await import("../../tools/web-scrape.ts");
 const { webBatchTool } = await import("../../tools/web-batch.ts");
 
 const signal = new AbortController().signal;
-let homeDir: string;
-let originalHome: string | undefined;
+let rootDir: string;
+let originalStorageRoot: string | undefined;
 
 beforeEach(async () => {
-	homeDir = await mkdtemp(join(tmpdir(), "pi-scraper-raw-preview-"));
-	originalHome = process.env.HOME;
-	process.env.HOME = homeDir;
+	rootDir = await mkdtemp(join(tmpdir(), "pi-scraper-raw-preview-"));
+	originalStorageRoot = process.env.PI_SCRAPER_STORAGE_ROOT;
+	process.env.PI_SCRAPER_STORAGE_ROOT = rootDir;
 	scrapePipelineMock.scrapeUrl.mockReset();
 	batchRunMock.runBatchScrape.mockReset();
 });
 
 afterEach(async () => {
-	closeStorageDbs();
-	if (originalHome === undefined) delete process.env.HOME;
-	else process.env.HOME = originalHome;
-	await rm(homeDir, { recursive: true, force: true });
+	await closeStorageDbs();
+	if (originalStorageRoot === undefined) delete process.env.PI_SCRAPER_STORAGE_ROOT;
+	else process.env.PI_SCRAPER_STORAGE_ROOT = originalStorageRoot;
+	await rm(rootDir, { recursive: true, force: true });
 });
 
 describe("raw line-match previews", () => {

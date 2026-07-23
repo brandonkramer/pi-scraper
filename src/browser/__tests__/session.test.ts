@@ -16,19 +16,19 @@ import {
 	validateSessionId,
 } from "../session.ts";
 
-let homeDir: string;
-let originalHome: string | undefined;
+let rootDir: string;
+let originalStorageRoot: string | undefined;
 
 beforeEach(async () => {
-	homeDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-session-"));
-	originalHome = process.env.HOME;
-	process.env.HOME = homeDir;
+	rootDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-session-"));
+	originalStorageRoot = process.env.PI_SCRAPER_STORAGE_ROOT;
+	process.env.PI_SCRAPER_STORAGE_ROOT = rootDir;
 });
 
 afterEach(async () => {
-	if (originalHome === undefined) delete process.env.HOME;
-	else process.env.HOME = originalHome;
-	await rm(homeDir, { recursive: true, force: true });
+	if (originalStorageRoot === undefined) delete process.env.PI_SCRAPER_STORAGE_ROOT;
+	else process.env.PI_SCRAPER_STORAGE_ROOT = originalStorageRoot;
+	await rm(rootDir, { recursive: true, force: true });
 });
 
 describe("validateSessionId", () => {
@@ -84,7 +84,7 @@ describe("saveBrowserSessionStorageState", () => {
 		expect(stats.isFile()).toBe(true);
 	});
 
-	it("writes storage.json with 0o600 mode", async () => {
+	it.skipIf(process.platform === "win32")("writes storage.json with 0o600 mode", async () => {
 		await saveBrowserSessionStorageState("perms-test", { cookies: [] });
 		const p = resolveBrowserSessionStoragePath("perms-test");
 		const stats = await stat(p);

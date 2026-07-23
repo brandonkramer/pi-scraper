@@ -21,7 +21,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
 	setFtsAvailabilityForTests(undefined);
-	closeStorageDbs();
+	await closeStorageDbs();
 	await rm(rootDir, { recursive: true, force: true });
 });
 
@@ -90,7 +90,7 @@ describe("SQLite-backed storage", () => {
 		const first = await readResponse<{ body: string }>("legacy", {
 			rootDir,
 		});
-		closeStorageDbs();
+		await closeStorageDbs();
 		const second = await readResponse<{ body: string }>("legacy", {
 			rootDir,
 		});
@@ -109,7 +109,7 @@ describe("SQLite-backed storage", () => {
 		await writeFile(path.join(rootDir, "crawl", "old-crawl", "state.json"), JSON.stringify(legacy));
 
 		const migrated = await loadCrawlState("old-crawl", { rootDir });
-		closeStorageDbs();
+		await closeStorageDbs();
 		const migratedAgain = await loadCrawlState("old-crawl", { rootDir });
 
 		expect(migrated.frontier[0]?.url).toBe("https://example.com/a");

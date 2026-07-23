@@ -120,5 +120,5 @@ jobs:
       - name: Tool contract + selection gate
         run: bun run test:selection
 
-      - name: Tool smoke
-        run: bun run test:tools
+      - name: Full test suite
+        run: bun run test

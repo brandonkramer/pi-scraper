@@ -17,6 +17,7 @@ import type {
 	ModelResponse,
 	ModelUsage,
 } from "../../extract/adhoc/model.ts";
+import { closeStorageDbs } from "../../storage/db/open.ts";
 import type { ToolContext } from "../../types.ts";
 import type { PiToolRegistrar, ToolExecutionContext, WebTool } from "../infra/define.ts";
 import {
@@ -1136,19 +1137,20 @@ describe("web_extract — action=summarize via injected adapter", () => {
 // ---------------------------------------------------------------------------
 
 describe("web_extract — action=selector", () => {
-	let homeDir: string;
-	let originalHome: string | undefined;
+	let rootDir: string;
+	let originalStorageRoot: string | undefined;
 
 	beforeEach(async () => {
-		homeDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-selector-"));
-		originalHome = process.env.HOME;
-		process.env.HOME = homeDir;
+		rootDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-selector-"));
+		originalStorageRoot = process.env.PI_SCRAPER_STORAGE_ROOT;
+		process.env.PI_SCRAPER_STORAGE_ROOT = rootDir;
 	});
 
 	afterEach(async () => {
-		if (originalHome === undefined) delete process.env.HOME;
-		else process.env.HOME = originalHome;
-		await rm(homeDir, { recursive: true, force: true });
+		await closeStorageDbs();
+		if (originalStorageRoot === undefined) delete process.env.PI_SCRAPER_STORAGE_ROOT;
+		else process.env.PI_SCRAPER_STORAGE_ROOT = originalStorageRoot;
+		await rm(rootDir, { recursive: true, force: true });
 	});
 
 	it("extracts matching CSS selectors from content", async () => {
