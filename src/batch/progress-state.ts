@@ -49,8 +49,9 @@ export function updateIndexedBatchProgress(
 	const item = progress.items[index];
 	// oxlint-disable-next-line typescript/no-unnecessary-condition -- defensive guard; runtime conditions can diverge from inferred type
 	if (!item) return;
+	const previousStatus = item.status;
 	applyProgressItemStatus(item, state, url);
-	recountBatchProgress(progress);
+	adjustBatchProgressCounts(progress, previousStatus, item.status);
 }
 
 export function updateUrlBatchProgress(
@@ -65,9 +66,10 @@ export function updateUrlBatchProgress(
 		item = { url, status: "queued" };
 		progress.items.push(item);
 	}
+	const previousStatus = item.status;
 	applyProgressItemStatus(item, status, url);
 	progress.total = Math.max(progress.total, progress.items.length);
-	recountBatchProgress(progress);
+	adjustBatchProgressCounts(progress, previousStatus, item.status);
 }
 
 function applyProgressItemStatus(
@@ -87,12 +89,22 @@ function batchStatusFromState(state: string): BatchProgressStatus {
 	return state === "queued" || state === "waiting" ? "queued" : "processing";
 }
 
-function recountBatchProgress(progress: BatchProgressView): void {
-	progress.completed = progress.items.filter(
-		(entry) => entry.status === "done" || entry.status === "error",
-	).length;
-	progress.succeeded = progress.items.filter((entry) => entry.status === "done").length;
-	progress.failed = progress.items.filter((entry) => entry.status === "error").length;
+function adjustBatchProgressCounts(
+	progress: BatchProgressView,
+	previousStatus: BatchProgressStatus,
+	nextStatus: BatchProgressStatus,
+): void {
+	if (previousStatus === nextStatus) return;
+	if (isCompleted(previousStatus)) progress.completed -= 1;
+	if (isCompleted(nextStatus)) progress.completed += 1;
+	if (previousStatus === "done") progress.succeeded -= 1;
+	if (nextStatus === "done") progress.succeeded += 1;
+	if (previousStatus === "error") progress.failed -= 1;
+	if (nextStatus === "error") progress.failed += 1;
+}
+
+function isCompleted(status: BatchProgressStatus): boolean {
+	return status === "done" || status === "error";
 }
 
 interface CrawlPageLike {

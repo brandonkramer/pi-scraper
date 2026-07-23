@@ -45,4 +45,12 @@ describe("web config settings", () => {
 			maxBytes: 4096,
 		});
 	});
+
+	it("persists explicit Pi runtime provider and model settings", async () => {
+		await saveConfig({ piAiProvider: " anthropic ", piAiModel: " claude-opus-4-7 " }, { rootDir });
+		const effective = await loadEffectiveConfig({ rootDir });
+
+		expect(effective.piAiProvider).toBe("anthropic");
+		expect(effective.piAiModel).toBe("claude-opus-4-7");
+	});
 });

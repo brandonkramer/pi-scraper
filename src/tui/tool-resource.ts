@@ -5,7 +5,7 @@ import {
 	statusPillWidth,
 } from "./tool-status.ts";
 import { muted, inlineThemeText } from "./tui.ts";
-import type { RenderTheme } from "./types.ts";
+import type { RenderTheme, ThemeBackgroundName } from "./types.ts";
 
 function paintAccentUrl(url: string, width: number, theme?: RenderTheme): string {
 	const t =
@@ -120,7 +120,7 @@ export interface ToolResourceStatusRow {
 	label?: string;
 	startedAtMs?: number;
 	statusBox?: string;
-	restoreBg?: string;
+	restoreBg?: ThemeBackgroundName;
 }
 
 /** Inputs for compact resource rows, badge rows, and full status rows. */

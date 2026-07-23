@@ -1,7 +1,7 @@
 /** Core TUI text and theme helpers shared by cards and renderer adapters. */
 import { type Component, type MarkdownTheme, Text, truncateToWidth } from "@earendil-works/pi-tui";
 
-import type { RenderTheme } from "./types.ts";
+import type { RenderTheme, ThemeBackgroundName, ThemeColorName } from "./types.ts";
 
 /**
  * Applies a foreground theme color and normalizes full resets to foreground resets.
@@ -13,7 +13,7 @@ import type { RenderTheme } from "./types.ts";
  * ```
  */
 export function inlineThemeText(
-	name: string,
+	name: ThemeColorName,
 	text: string,
 	theme?: RenderTheme,
 ): string | undefined {
@@ -25,7 +25,11 @@ export function inlineThemeText(
  *
  * `danger` is normalized to the shared `error` tone.
  */
-export function paintFg(theme: RenderTheme | undefined, tone: string, text: string): string {
+export function paintFg(
+	theme: RenderTheme | undefined,
+	tone: ThemeColorName | "danger",
+	text: string,
+): string {
 	if (tone === "accent") return theme?.fg?.("accent", text) ?? text;
 	return inlineThemeText(tone === "danger" ? "error" : tone, text, theme) ?? text;
 }
@@ -46,7 +50,11 @@ export const separator = (theme?: RenderTheme) => muted(" · ", theme);
  *
  * Falls back to the raw text so renderer output is never blocked by theming.
  */
-export function backgroundText(name: string, text: string, theme?: RenderTheme): string {
+export function backgroundText(
+	name: ThemeBackgroundName,
+	text: string,
+	theme?: RenderTheme,
+): string {
 	try {
 		return theme?.bg?.(name, text) ?? text;
 	} catch {
@@ -65,7 +73,7 @@ export function activity(text: string, theme?: RenderTheme): string {
  * Used when result previews render markdown instead of plain wrapped text.
  */
 export function getMarkdownTheme(theme?: RenderTheme): MarkdownTheme {
-	const themed = (name: string) => (text: string) => theme?.fg?.(name, text) ?? text;
+	const themed = (name: ThemeColorName) => (text: string) => theme?.fg?.(name, text) ?? text;
 	return {
 		heading: themed("accent"),
 		link: themed("accent"),

@@ -25,13 +25,20 @@ async function main() {
 		valueFlag(args, "--out-dir") ?? path.join(rootDir, "bench/results/tool-selection"),
 	);
 	const fixtures = await loadFixtures();
-	const tools = await loadWebTools();
+	const { tools, initialTools } = await loadWebTools();
 	const contracts = tools.map((tool) => ({
 		name: tool.name,
 		label: tool.label,
 		description: tool.description,
 		parameters: tool.parameters,
 	}));
+	const initialContracts = initialTools.map((tool) => ({
+		name: tool.name,
+		label: tool.label,
+		description: tool.description,
+		parameters: tool.parameters,
+	}));
+	const deferredLoading = buildDeferredLoadingBenchmark(contracts, initialContracts);
 	const predictionMode = predictionsPath
 		? "predictions-file"
 		: process.env.PI_TOOL_SELECTION_EVAL_COMMAND
@@ -45,7 +52,10 @@ async function main() {
 	const reports = [];
 	for (let i = 0; i < runs; i++) {
 		const predictions = await loadPredictions({ predictionsPath, contracts, fixtures });
-		reports.push(buildReport({ contracts, fixtures, predictions, predictionMode }));
+		reports.push({
+			...buildReport({ contracts, fixtures, predictions, predictionMode }),
+			deferredLoading,
+		});
 	}
 	const report = runs > 1 ? aggregateReports(reports) : reports[0];
 	const markdown = renderMarkdown(report);
@@ -104,7 +114,37 @@ async function loadWebTools() {
 		{ cwd: rootDir, stdio: "pipe" },
 	);
 	const mod = await import(pathToFileURL(path.join(outDir, "tools/infra/register.js")));
-	return mod.webTools;
+	const loaderMod = await import(pathToFileURL(path.join(outDir, "tools/web-tools.js")));
+	const loader = loaderMod.createWebToolsLoader({
+		getActiveTools: () => [],
+		getAllTools: () => [],
+		setActiveTools: (names) => {
+			void names;
+		},
+	});
+	const initialNames = new Set(mod.initialWebToolNames);
+	return {
+		tools: mod.webTools,
+		initialTools: [...mod.webTools.filter((tool) => initialNames.has(tool.name)), loader],
+	};
+}
+
+function buildDeferredLoadingBenchmark(fullContracts, initialContracts) {
+	const fullTokens = contractTokens(fullContracts);
+	const initialTokens = contractTokens(initialContracts);
+	return {
+		fullTokens,
+		initialTokens,
+		reduction: fullTokens === 0 ? 0 : 1 - initialTokens / fullTokens,
+		initialTools: initialContracts.map((contract) => contract.name),
+	};
+}
+
+function contractTokens(contracts) {
+	return contracts.reduce(
+		(total, contract) => total + Math.ceil(JSON.stringify(contract).length / 4),
+		0,
+	);
 }
 
 async function loadPredictions({ predictionsPath, contracts, fixtures }) {
@@ -147,6 +187,7 @@ function renderMarkdown(report) {
 	if (multi) lines.push(`Runs: ${String(report.runs)} (gate on mean)`);
 	lines.push(
 		`Contract estimate: ${String(report.contractTokenEstimate)} tokens (budget ${String(report.thresholds.contractTokenBudget)})`,
+		`Initial deferred catalog: ${String(report.deferredLoading.initialTokens)} tokens (${pct(report.deferredLoading.reduction)} reduction)`,
 		"",
 		"## Summary",
 		"",

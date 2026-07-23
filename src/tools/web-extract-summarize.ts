@@ -4,11 +4,7 @@ import { summarizePage } from "../extract/summarize.ts";
 import { sourceNote } from "./infra/agentic-context.ts";
 import type { ToolExecutionContext } from "./infra/define.ts";
 import { storedSourceNote } from "./infra/extract-source.ts";
-import {
-	resolveAdapterFromRegistry,
-	resolveModelAdapterFromContext,
-	resolveProviderPreference,
-} from "./infra/model-adapter.ts";
+import { resolvePreferredModelAdapter, resolveProviderPreference } from "./infra/model-adapter.ts";
 import {
 	modelRegistry,
 	requestAdapterDiscovery,
@@ -41,14 +37,21 @@ export async function runSummarize(
 		configProvider: config.modelProvider,
 		capability: "summarize",
 	});
-	let adapter =
-		options.modelAdapter ??
-		resolveModelAdapterFromContext(context) ??
-		resolveAdapterFromRegistry(preference, "summarize");
-	if (!adapter && !lazyDiscoverRequested.has("summarize")) {
+	let adapter = resolvePreferredModelAdapter({
+		explicitAdapter: options.modelAdapter,
+		context,
+		preference,
+		capability: "summarize",
+	});
+	if (preference !== "off" && !adapter && !lazyDiscoverRequested.has("summarize")) {
 		requestAdapterDiscovery(undefined, { capabilities: ["summarize"] });
 		lazyDiscoverRequested.add("summarize");
-		adapter = options.modelAdapter ?? resolveAdapterFromRegistry(preference, "summarize");
+		adapter = resolvePreferredModelAdapter({
+			explicitAdapter: options.modelAdapter,
+			context,
+			preference,
+			capability: "summarize",
+		});
 	}
 	if (!adapter) {
 		if (preference === "off") {
@@ -79,10 +82,13 @@ export async function runSummarize(
 		);
 	}
 	try {
+		const { include, extractSchema, ...summaryParams } = params;
+		void include;
+		void extractSchema;
 		const result = await summarizePage(
 			{
 				...config.scrapeDefaults,
-				...params,
+				...summaryParams,
 				mode: params.mode ?? config.scrapeMode,
 				format: config.outputFormat,
 			},

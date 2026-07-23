@@ -24,6 +24,8 @@ export interface EffectiveWebConfig extends Required<
 > {
 	scrapeDefaults: PersistedScrapeDefaults;
 	modelProvider?: ModelProviderConfig;
+	piAiProvider?: string;
+	piAiModel?: string;
 }
 
 export type ConfigOptions = ResolveStorageOptions;
@@ -33,6 +35,8 @@ export const DEFAULT_WEB_CONFIG: EffectiveWebConfig = {
 	outputFormat: DEFAULT_OUTPUT_FORMAT,
 	scrapeDefaults: {},
 	modelProvider: undefined,
+	piAiProvider: undefined,
+	piAiModel: undefined,
 };
 
 export function configFilePath(options: ConfigOptions = {}): string {
@@ -120,6 +124,8 @@ export function mergeConfig(config: WebConfig): EffectiveWebConfig {
 			...config.scrapeDefaults,
 		},
 		modelProvider: config.modelProvider ?? DEFAULT_WEB_CONFIG.modelProvider,
+		piAiProvider: config.piAiProvider ?? DEFAULT_WEB_CONFIG.piAiProvider,
+		piAiModel: config.piAiModel ?? DEFAULT_WEB_CONFIG.piAiModel,
 	};
 }
 
@@ -131,7 +137,15 @@ function normalizeConfig(input: unknown): WebConfig {
 		outputFormat: raw.outputFormat,
 		scrapeDefaults: normalizeScrapeDefaults(raw.scrapeDefaults),
 		modelProvider: normalizeModelProvider(raw.modelProvider),
+		piAiProvider: nonEmptyString(raw.piAiProvider),
+		piAiModel: nonEmptyString(raw.piAiModel),
 	};
+}
+
+function nonEmptyString(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	return trimmed || undefined;
 }
 
 function normalizeModelProvider(input: unknown): ModelProviderConfig | undefined {

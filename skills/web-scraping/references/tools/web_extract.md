@@ -122,14 +122,11 @@ web_extract action=list
 
 For project/user YAML manifest additions or overrides, see [custom vertical manifest ref](../verticals/custom.md).
 
-## Fallback Model Adapter (`@earendil-works/pi-ai`)
+## Model adapter resolution (Pi 0.81+)
 
-For summarizing or extracting unstructured text (`web_extract action=summarize` or `action=adhoc`), the scraper employs a tiered fallback adapter system:
-- **Primary**: Pi's host model (`ctx.model`).
-- **Secondary**: Peer-optional `@earendil-works/pi-ai` adapter (lazy-loaded and auto-registered with priority 30) using custom configs (`piAiProvider`/`piAiModel`).
-- **Fallback**: The cross-extension `pi:model-adapter/*` event-bus registry.
+For model-backed actions, an explicitly injected adapter wins. `provider=auto` then uses Pi's active host model before the cross-extension `pi:model-adapter/*` registry. A named provider selects that registry entry; `provider=off` disables model use even when Pi has an active model.
 
-This peer-optional design ensures users without custom LLM setups do not need to install heavy AI dependencies.
+The configured Pi runtime adapter (`piAiProvider`/`piAiModel`, or `PI_AI_PROVIDER`/`PI_AI_MODEL`) resolves a fixed model through Pi 0.81's model runtime. It forwards authentication, headers, abort signals, provider errors, and Pi usage/cost data.
 
 ## Rules
 

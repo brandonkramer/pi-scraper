@@ -5,7 +5,10 @@ import type {
 	VerticalExtractionResult,
 	VerticalExtractorPage,
 } from "../extract/vertical/capabilities.ts";
-import type { ManifestRegistry } from "../extract/vertical/manifest-registry.ts";
+import type {
+	ManifestRegistry,
+	ManifestRegistryOptions,
+} from "../extract/vertical/manifest-registry.ts";
 import type { ManifestDiagnostic } from "../extract/vertical/manifest-types.ts";
 import { matchManifestUrl } from "../extract/vertical/matcher.ts";
 import type {
@@ -19,7 +22,7 @@ import type { ExtractorCapability } from "../types.ts";
  * @file Web_extract action="vertical" and action="list" handlers — deterministic extractor
  *   capabilities and vertical extraction.
  */
-import type { ToolUpdate } from "./infra/define.ts";
+import type { ToolExecutionContext, ToolUpdate } from "./infra/define.ts";
 import { emitProgress } from "./infra/progress.ts";
 import { inputErrorResult, toolResult } from "./infra/result.ts";
 import type { Params, WebExtractToolOptions } from "./web-extract.ts";
@@ -36,7 +39,7 @@ type VerticalRegistryModule = {
 	createBrowserReadClient: typeof createBrowserReadClientFn;
 	listExtractorCapabilities: typeof listExtractorCapabilitiesFn;
 	runVerticalExtractor: typeof runVerticalExtractorFn;
-	buildManifestRegistry: (includeProject?: boolean) => Promise<ManifestRegistry>;
+	buildManifestRegistry: (options?: boolean | ManifestRegistryOptions) => Promise<ManifestRegistry>;
 };
 
 let verticalRegistryPromise: Promise<VerticalRegistryModule> | undefined;
@@ -46,10 +49,10 @@ function loadVerticalRegistry(): Promise<VerticalRegistryModule> {
 	return verticalRegistryPromise;
 }
 
-export async function listDeterministicExtractors() {
+export async function listDeterministicExtractors(context?: ToolExecutionContext) {
 	const { listExtractorCapabilities, buildManifestRegistry } = await loadVerticalRegistry();
 	const capabilities = listExtractorCapabilities();
-	const registry = await buildManifestRegistry();
+	const registry = await buildManifestRegistry(manifestOptions(context));
 	const { listManifestExtractors } = await import("../extract/vertical/manifest-registry.ts");
 	const manifestItems = listManifestExtractors(registry);
 	const merged = manifestItems.map((item) => {
@@ -89,6 +92,7 @@ export async function runDeterministicExtractor(
 	options: WebExtractToolOptions,
 	signal: AbortSignal,
 	onUpdate?: ToolUpdate,
+	context?: ToolExecutionContext,
 ) {
 	if (!params.extractor || !params.url) {
 		return inputErrorResult(
@@ -100,7 +104,8 @@ export async function runDeterministicExtractor(
 	}
 	const extractor: string = params.extractor;
 	const url: string = params.url;
-	const mismatch = await suggestExtractorForUrl(extractor, url);
+	const registryOptions = manifestOptions(context);
+	const mismatch = await suggestExtractorForUrl(extractor, url, registryOptions);
 	if (mismatch) return mismatch;
 	const effectiveParams = await resolveVerticalBrowserParams(params, extractor);
 	const config = await loadEffectiveConfig();
@@ -124,6 +129,7 @@ export async function runDeterministicExtractor(
 					refresh: config.scrapeDefaults.refresh,
 					respectRobots: params.respectRobots,
 				},
+				manifestOptions: registryOptions,
 				onProgress: onUpdate
 					? (progress) =>
 							emitProgress(onUpdate, {
@@ -171,7 +177,11 @@ export async function runDeterministicExtractor(
  * https://:host/:owner/:repo) can't claim unrelated URLs; anything else falls through to the normal
  * not-found/unsupported errors.
  */
-async function suggestExtractorForUrl(extractor: string, url: string) {
+async function suggestExtractorForUrl(
+	extractor: string,
+	url: string,
+	options: ManifestRegistryOptions,
+) {
 	let parsed: URL;
 	try {
 		parsed = new URL(url);
@@ -179,7 +189,7 @@ async function suggestExtractorForUrl(extractor: string, url: string) {
 		return;
 	}
 	const { buildManifestRegistry } = await loadVerticalRegistry();
-	const registry = await buildManifestRegistry();
+	const registry = await buildManifestRegistry(options);
 	const requested = registry.get(extractor);
 	if (requested && matchManifestUrl(requested.manifest, parsed)) return;
 	const host = parsed.hostname.toLowerCase();
@@ -196,6 +206,14 @@ async function suggestExtractorForUrl(extractor: string, url: string) {
 		"vertical_extract",
 		`extractor="${extractor}" does not match this URL. Use extractor="${alt.manifest.name}" — it matches: ${patterns}`,
 	);
+}
+
+function manifestOptions(context?: ToolExecutionContext): ManifestRegistryOptions {
+	return {
+		includeProject: true,
+		cwd: context?.cwd ?? process.cwd(),
+		projectTrusted: context?.isProjectTrusted?.() ?? false,
+	};
 }
 
 /**

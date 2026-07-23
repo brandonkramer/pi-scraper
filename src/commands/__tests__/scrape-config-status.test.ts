@@ -60,12 +60,12 @@ describe("runScrapeConfigStatus", () => {
 		expect(details.data?.resolutionPrecedence).toBeDefined();
 	});
 
-	it("detects Pi host model when ctx.model is present", async () => {
+	it("detects an active Pi model through the Pi 0.81 model registry", async () => {
 		const result = await runScrapeConfigStatus({ action: "status" }, {
-			model: {
-				async run(): Promise<{ data: string }> {
-					return { data: "" };
-				},
+			model: { provider: "anthropic" },
+			modelRegistry: {
+				getProvider: () => undefined,
+				getApiKeyAndHeaders: () => Promise.resolve({ ok: false, error: "unused" }),
 			},
 		} as unknown as CommandContext);
 		const details = result.details as {

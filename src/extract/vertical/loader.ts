@@ -18,6 +18,12 @@ export interface LayeredManifestLoadResult {
 	errors: ManifestDiagnostic[];
 }
 
+export interface LayeredManifestLoadOptions {
+	includeProject?: boolean;
+	projectTrusted?: boolean;
+	cwd?: string;
+}
+
 interface ManifestLoadResult {
 	manifests: VerticalManifest[];
 	errors: ManifestDiagnostic[];
@@ -25,19 +31,20 @@ interface ManifestLoadResult {
 
 /** Load manifests in precedence layers: package < global user < project. */
 export async function loadLayeredManifests(
-	includeProject = true,
+	options: LayeredManifestLoadOptions = {},
 ): Promise<LayeredManifestLoadResult> {
+	const includeProject = options.includeProject ?? true;
+	const projectTrusted = options.projectTrusted ?? false;
+	const cwd = options.cwd ?? process.cwd();
 	const packageResult = await loadManifestsFromDirectory(resolvePackageVerticalsDir(), "builtin");
 	const globalResult = await loadManifestsFromDirectory(
 		path.join(resolvePiStoragePaths().root, "verticals"),
 		"user",
 	);
-	const projectResult = includeProject
-		? await loadManifestsFromDirectory(
-				path.join(process.cwd(), ".pi", "scraper", "verticals"),
-				"project",
-			)
-		: { manifests: [], errors: [] };
+	const projectResult =
+		includeProject && projectTrusted
+			? await loadManifestsFromDirectory(path.join(cwd, ".pi", "scraper", "verticals"), "project")
+			: { manifests: [], errors: [] };
 
 	return {
 		packageManifests: packageResult.manifests,

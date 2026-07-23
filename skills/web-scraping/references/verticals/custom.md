@@ -16,6 +16,8 @@ Use this when the target has stable URL patterns and structured HTML/text/API re
 | User | `~/.pi/scraper/verticals/<name>.yaml` | Personal extractors or overrides available across projects. |
 | Built-in examples | package `verticals/*.yaml` | Complete examples bundled with `pi-scraper`. |
 
+Project manifests are resolved from the current Pi session working directory and loaded only for a trusted project. Manifest caches are isolated by working directory and trust state, so a trusted project cannot leak overrides into another session.
+
 Load precedence:
 
 1. Built-in package manifests

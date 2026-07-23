@@ -37,7 +37,7 @@ If you're tempted to reach for:
 - `curl -s <raw-source-url> | grep -A 10 "@param"` (fragile, one language)
 - `python -c "import ast; ..."` (Python-only, extra runtime)
 - `typedoc --json ... | jq '...'` (TypeScript-only, heavy tool install)
-- `npm install -g documentation && documentation read ...` (heavy JS tooling)
+- `bun add -g documentation && documentation read ...` (heavy JS tooling)
 
 **Stop.** This vertical parses TS/JS/Py/Rust source files server-side and returns structured export symbols with full parameter/return type annotations in one call. Language auto-detection, no CLI tools, no extra installs.
 

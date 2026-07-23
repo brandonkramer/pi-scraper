@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { loadLayeredManifests } from "./loader.ts";
 import type { ManifestDiagnostic, ManifestSource, VerticalManifest } from "./manifest-types.ts";
 /** @file Manifest registry — merges package, global, and project vertical manifests. */
@@ -26,25 +28,61 @@ export interface ManifestRegistry {
 	match(url: URL): { entry: ManifestRegistryEntry; captures: Record<string, string> } | undefined;
 }
 
-let cachedRegistry: ManifestRegistry | undefined;
-let cachedIncludeProject = true;
+export interface ManifestRegistryOptions {
+	includeProject?: boolean;
+	projectTrusted?: boolean;
+	cwd?: string;
+}
 
-export async function buildManifestRegistry(includeProject = true): Promise<ManifestRegistry> {
-	if (cachedRegistry && cachedIncludeProject === includeProject) return cachedRegistry;
+const registryCache = new Map<string, Promise<ManifestRegistry>>();
 
-	const layered = await loadLayeredManifests(includeProject);
-	const registry = mergeManifests(
-		layered.packageManifests,
-		[...layered.globalManifests, ...layered.projectManifests],
-		layered.errors,
-	);
-	cachedRegistry = registry;
-	cachedIncludeProject = includeProject;
-	return registry;
+export async function buildManifestRegistry(
+	input: boolean | ManifestRegistryOptions = {},
+): Promise<ManifestRegistry> {
+	const options = normalizeRegistryOptions(input);
+	const includeProject = options.includeProject && options.projectTrusted;
+	const projectRoot = includeProject ? pathKey(options.cwd) : "<project-disabled>";
+	const cacheKey = `${includeProject ? "project" : "shared"}:${projectRoot}`;
+	let cached = registryCache.get(cacheKey);
+	if (!cached) {
+		cached = loadLayeredManifests({
+			includeProject,
+			projectTrusted: options.projectTrusted,
+			cwd: options.cwd,
+		}).then((layered) =>
+			mergeManifests(
+				layered.packageManifests,
+				[...layered.globalManifests, ...layered.projectManifests],
+				layered.errors,
+			),
+		);
+		registryCache.set(cacheKey, cached);
+		cached.catch(() => registryCache.delete(cacheKey));
+	}
+	return await cached;
 }
 
 export function clearManifestRegistryCache(): void {
-	cachedRegistry = undefined;
+	registryCache.clear();
+}
+
+function normalizeRegistryOptions(
+	input: boolean | ManifestRegistryOptions,
+): Required<ManifestRegistryOptions> {
+	if (typeof input === "boolean") {
+		return { includeProject: input, projectTrusted: input, cwd: process.cwd() };
+	}
+	const includeProject = input.includeProject ?? true;
+	return {
+		includeProject,
+		projectTrusted: input.projectTrusted ?? false,
+		cwd: input.cwd ?? process.cwd(),
+	};
+}
+
+function pathKey(cwd: string): string {
+	const normalized = path.resolve(cwd).replaceAll("\\", "/").replace(/\/$/u, "");
+	return process.platform === "win32" ? normalized.toLowerCase() : normalized;
 }
 
 /**
