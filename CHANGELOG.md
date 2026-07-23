@@ -2,6 +2,16 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [0.13.1] - 2026-07-23
+
+### Changed
+
+- **CloakBrowser 0.5.1** — upgraded the cloaked browser backend from the 0.3.x release line.
+
+### Fixed
+
+- **Windows persistent-profile coverage** — the live browser smoke now closes and reopens a disk-backed profile, and teardown waits for all browser sessions to close before removing temporary storage.
+
 ## [0.13.0] - 2026-07-23
 
 ### Added
