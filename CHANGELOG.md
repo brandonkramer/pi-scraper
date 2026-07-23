@@ -2,6 +2,26 @@
 
 All notable changes to `pi-scraper` are summarized from the git history and release tags.
 
+## [0.13.0] - 2026-07-23
+
+### Added
+
+- **Pi 0.81 model runtime integration** — model selection, authentication, cancellation, provider errors, and usage reporting now flow through Pi's supported runtime APIs while preserving explicit and cross-extension adapters.
+- **Deferred `web_tools` discovery** — Pi 0.81 hosts start with the common tools plus a loader that activates crawl, map, batch, stored-result, and interactive-browser tools on demand; legacy hosts retain the full tool set.
+
+### Changed
+
+- **Pi-native extension lifecycle** — configuration, health checks, model adapters, browser sessions, downloads, and storage now follow Pi session start/shutdown events without process-level exit handlers.
+- **Trusted project manifests** — project-local extractor manifests are scoped by session working directory and trust state so untrusted contexts fail closed and cannot reuse another project's cache.
+- **Smaller initial tool contract** — deferred activation reduces the initial declaration budget from 1,489 to 724 estimated tokens (51.4%) while keeping all public capabilities registered.
+- **Faster batch progress accounting** — incremental counters replace repeated whole-batch scans, removing quadratic progress overhead on large batches.
+- **Runtime and tooling baseline** — requires Pi 0.81+ and Node.js 22.19+, treats Pi core packages as host-supplied peers, and uses Bun for development, validation, and lockfile management.
+
+### Fixed
+
+- **Windows test isolation and cleanup** — storage-backed tests use per-test roots, await SQLite shutdown before deleting temporary files, and keep download cleanup inside fixtures.
+- **Cross-platform validation** — path and permission assertions are portable on Windows, and Windows CI now runs the full test suite.
+
 ## [0.12.0] - 2026-06-15
 
 ### Added
