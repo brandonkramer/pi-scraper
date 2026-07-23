@@ -1,6 +1,6 @@
 {
 	"name": "pi-scraper",
-	"version": "0.13.0",
+	"version": "0.13.1",
 	"description": "Crawl, map, and structured extraction for Pi — scraper-first, Pi-native, and local-first.",
 	"keywords": [
 		"crawler",
@@ -51,7 +51,7 @@
 	},
 	"dependencies": {
 		"@mozilla/readability": "^0.6.0",
-		"cloakbrowser": "^0.3.31",
+		"cloakbrowser": "^0.5.1",
 		"css-select": "^7.0.0",
 		"dom-serializer": "^3.1.1",
 		"domhandler": "^6.0.1",
