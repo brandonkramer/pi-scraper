@@ -26,6 +26,7 @@ import { webGetResultTool } from "../web-get-result.ts";
 
 const signal = new AbortController().signal;
 let rootDir: string;
+let originalStorageRoot: string | undefined;
 
 const mockAction: BrowserActionResult = {
 	action: "snapshot",
@@ -79,13 +80,14 @@ vi.mock("../../browser/capture.ts", () => ({
 
 beforeEach(async () => {
 	rootDir = await mkdtemp(path.join(tmpdir(), "pi-browser-capture-"));
+	originalStorageRoot = process.env.PI_SCRAPER_STORAGE_ROOT;
 	process.env.PI_SCRAPER_STORAGE_ROOT = rootDir;
 });
 
 afterEach(async () => {
-	delete process.env.PI_SCRAPER_STORAGE_ROOT;
-	closeStorageDbs();
-
+	await closeStorageDbs();
+	if (originalStorageRoot === undefined) delete process.env.PI_SCRAPER_STORAGE_ROOT;
+	else process.env.PI_SCRAPER_STORAGE_ROOT = originalStorageRoot;
 	await rm(rootDir, { recursive: true, force: true });
 	vi.clearAllMocks();
 });

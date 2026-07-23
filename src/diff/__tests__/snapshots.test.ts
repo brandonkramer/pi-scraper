@@ -28,7 +28,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-	closeStorageDbs();
+	await closeStorageDbs();
 	await rm(rootDir, { recursive: true, force: true });
 });
 

@@ -96,12 +96,12 @@ describe("deriveFilename", () => {
 
 describe("getDownloadsBaseDir", () => {
 	it("uses override when provided", () => {
-		expect(getDownloadsBaseDir("/tmp/custom")).toBe("/tmp/custom");
+		expect(getDownloadsBaseDir("/tmp/custom")).toBe(path.resolve("/tmp/custom"));
 	});
 
 	it("defaults to ~/.pi/scraper/downloads", () => {
 		const dir = getDownloadsBaseDir();
-		expect(dir).toContain(".pi/scraper/downloads");
+		expect(dir).toContain(path.join(".pi", "scraper", "downloads"));
 	});
 });
 
@@ -113,7 +113,7 @@ describe("saveBodyToDownloads", () => {
 	});
 
 	afterAll(async () => {
-		await cleanupOldDownloads(0);
+		await cleanupOldDownloads(0, testDir);
 	});
 
 	it("saves body to content-addressed path", async () => {

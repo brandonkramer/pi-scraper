@@ -6,22 +6,24 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { PI_TRUNCATION_LIMITS } from "../../../defaults.ts";
+import { closeStorageDbs } from "../../db/open.ts";
 import { readResponse } from "../read.ts";
 import { truncateAndStore } from "../truncate.ts";
 
-let homeDir: string;
-let originalHome: string | undefined;
+let rootDir: string;
+let originalStorageRoot: string | undefined;
 
 beforeEach(async () => {
-	homeDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-truncation-"));
-	originalHome = process.env.HOME;
-	process.env.HOME = homeDir;
+	rootDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-truncation-"));
+	originalStorageRoot = process.env.PI_SCRAPER_STORAGE_ROOT;
+	process.env.PI_SCRAPER_STORAGE_ROOT = rootDir;
 });
 
 afterEach(async () => {
-	if (originalHome === undefined) delete process.env.HOME;
-	else process.env.HOME = originalHome;
-	await rm(homeDir, { recursive: true, force: true });
+	await closeStorageDbs();
+	if (originalStorageRoot === undefined) delete process.env.PI_SCRAPER_STORAGE_ROOT;
+	else process.env.PI_SCRAPER_STORAGE_ROOT = originalStorageRoot;
+	await rm(rootDir, { recursive: true, force: true });
 });
 
 describe("truncated full output storage", () => {
@@ -34,9 +36,7 @@ describe("truncated full output storage", () => {
 		expect(truncated.truncated).toBe(true);
 		expect(truncated.text.length).toBeLessThan(fullText.length);
 		expect(truncated.metadata?.responseId).toBeTruthy();
-		expect(truncated.metadata?.fullOutputPath).toContain(
-			path.join(homeDir, ".pi", "scraper", "blobs"),
-		);
+		expect(truncated.metadata?.fullOutputPath).toContain(path.join(rootDir, "blobs"));
 
 		const retrieved = await readResponse<typeof payload>(responseIdFrom(truncated));
 

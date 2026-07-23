@@ -20,7 +20,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
 	vi.useRealTimers();
-	closeStorageDbs();
+	await closeStorageDbs();
 	await agent.close();
 	await rm(rootDir, { recursive: true, force: true });
 });

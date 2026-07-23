@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { closeStorageDbs } from "../../db/open.ts";
 import { resolvePiStoragePaths } from "../../paths.ts";
 import { readResponse } from "../read.ts";
 import { storeResponse } from "../store.ts";
@@ -17,6 +18,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+	await closeStorageDbs();
 	await rm(rootDir, { recursive: true, force: true });
 });
 

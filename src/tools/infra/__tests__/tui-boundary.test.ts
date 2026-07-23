@@ -1,10 +1,11 @@
 /** @file Guard that tool renderers use the named TUI component surface only. */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-const toolsRoot = new URL("../..", import.meta.url).pathname;
+const toolsRoot = fileURLToPath(new URL("../..", import.meta.url));
 const allowedIndexImports = new Set(["toolCall", "RenderComponent", "RenderTheme"]);
 
 describe("tool TUI import boundary", () => {

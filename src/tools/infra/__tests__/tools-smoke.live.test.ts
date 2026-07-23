@@ -5,24 +5,26 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { closeStorageDbs } from "../../../storage/db/open.ts";
 import type { ToolContext } from "../../../types.ts";
 import { webMapTool } from "../../web-map.ts";
 import { webScrapeTool } from "../../web-scrape.ts";
 
 const liveEnabled = process.env.PI_SCRAPER_LIVE === "1";
-let homeDir: string;
-let originalHome: string | undefined;
+let rootDir: string;
+let originalStorageRoot: string | undefined;
 
 beforeEach(async () => {
-	homeDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-live-"));
-	originalHome = process.env.HOME;
-	process.env.HOME = homeDir;
+	rootDir = await mkdtemp(path.join(tmpdir(), "pi-scraper-live-"));
+	originalStorageRoot = process.env.PI_SCRAPER_STORAGE_ROOT;
+	process.env.PI_SCRAPER_STORAGE_ROOT = rootDir;
 });
 
 afterEach(async () => {
-	if (originalHome === undefined) delete process.env.HOME;
-	else process.env.HOME = originalHome;
-	await rm(homeDir, { recursive: true, force: true });
+	await closeStorageDbs();
+	if (originalStorageRoot === undefined) delete process.env.PI_SCRAPER_STORAGE_ROOT;
+	else process.env.PI_SCRAPER_STORAGE_ROOT = originalStorageRoot;
+	await rm(rootDir, { recursive: true, force: true });
 });
 
 describe.skipIf(!liveEnabled)("opt-in live network smoke", () => {
@@ -55,7 +57,7 @@ describe.skipIf(!liveEnabled)("opt-in live network smoke", () => {
 
 		expect(envelope.error).toBeUndefined();
 		expect(envelope.responseId).toBeTruthy();
-		expect(envelope.fullOutputPath).toContain(path.join(homeDir, ".pi", "results"));
+		expect(envelope.fullOutputPath).toContain(path.join(rootDir, "blobs"));
 	});
 });
 
